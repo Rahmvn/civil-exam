@@ -1,0 +1,6 @@
+
+# Paystack calls this endpoint directly and does not send a Supabase JWT,
+# so JWT verification must be disabled or every webhook call is rejected with 401.
+[functions.paystack-webhook]
+enabled = true
+verify_jwt = false

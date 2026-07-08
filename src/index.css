@@ -1,0 +1,126 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --font-sans:
+    "Inter", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display:
+    "Inter", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --green-900: #022c22;
+  --green-800: #064e3b;
+  --green-700: #0f766e;
+  --gold: #8a6d1d;
+  --cream: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+
+  --color-brand: var(--green-800);
+  --color-brand-strong: var(--green-900);
+  --color-brand-soft: #ecfdf5;
+  --color-ink: var(--text);
+  --color-ink-soft: #475569;
+  --color-paper: var(--cream);
+  --color-border-brand: rgba(6, 78, 59, 0.12);
+  --on-dark: #f8fafc;
+
+  --color-bg: var(--color-paper);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: #cbd5e1;
+  --color-text: var(--color-ink);
+  --color-text-soft: var(--color-ink-soft);
+  --color-text-muted: var(--muted);
+
+  --color-primary: var(--color-brand);
+  --color-primary-dark: var(--color-brand-strong);
+  --color-primary-soft: var(--color-brand-soft);
+  --color-accent: var(--color-brand);
+  --color-accent-dark: var(--gold);
+  --color-accent-soft: #f8f5e8;
+  --color-danger: #b45309;
+  --color-danger-soft: #fff7ed;
+  --color-success: #0f766e;
+  --color-success-soft: #f0fdfa;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+
+  --shadow-xs: 0 1px 2px rgba(16, 21, 29, 0.05);
+  --shadow-sm: 0 6px 18px -12px rgba(15, 23, 42, 0.14);
+  --shadow-md: 0 16px 36px -22px rgba(15, 23, 42, 0.18);
+  --shadow-lg: 0 24px 52px -28px rgba(15, 23, 42, 0.2);
+
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-bg);
+}
+
+button,
+a {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
+}
+
+.primary-action:hover,
+.secondary-action:hover,
+.nav-chip:hover,
+button:not(.link-button):not(.ghost-button):not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.text-link:hover,
+.link-button:hover,
+a:not(.primary-action):not(.secondary-action):not(.nav-chip):not(.ghost-button):hover {
+  color: var(--color-primary-dark);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0;
+}
