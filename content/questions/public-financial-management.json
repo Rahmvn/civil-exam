@@ -1,0 +1,50 @@
+[
+  {
+    "subject_slug": "public-financial-management",
+    "difficulty": "medium",
+    "question_text": "Which document provides detailed rules for the receipt, custody, and disbursement of public funds in the federal service?",
+    "option_a": "Public Service Rules",
+    "option_b": "Financial Regulations",
+    "option_c": "Constitution of the Federal Republic of Nigeria",
+    "option_d": "Code of Conduct Bureau Act",
+    "correct_option": "B",
+    "explanation": "Financial Regulations set out the detailed control rules for collecting, keeping, and spending public funds.",
+    "reference_note": "Federal Government Financial Regulations",
+    "source_note": "Development seed question - not official exam content",
+    "status": "published",
+    "batch_number": 1,
+    "batch_position": 1
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "difficulty": "easy",
+    "question_text": "The officer primarily responsible for keeping vote books up to date in a department is the",
+    "option_a": "Accounting Officer",
+    "option_b": "Store Officer",
+    "option_c": "Cashier",
+    "option_d": "Internal Auditor",
+    "correct_option": "A",
+    "explanation": "The Accounting Officer bears the core responsibility for ensuring financial records, including vote books, are properly maintained.",
+    "reference_note": "Federal Government Financial Regulations",
+    "source_note": "Development seed question - not official exam content",
+    "status": "published",
+    "batch_number": 1,
+    "batch_position": 2
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "difficulty": "medium",
+    "question_text": "Why is segregation of duties important in public financial management?",
+    "option_a": "It reduces the number of vouchers used",
+    "option_b": "It allows one officer to control every transaction",
+    "option_c": "It helps prevent error and fraud by separating key responsibilities",
+    "option_d": "It removes the need for internal audit",
+    "correct_option": "C",
+    "explanation": "Segregation of duties lowers control risk because authorization, custody, and record-keeping are not concentrated in one person.",
+    "reference_note": "Internal control principles in public finance",
+    "source_note": "Development seed question - not official exam content",
+    "status": "published",
+    "batch_number": 1,
+    "batch_position": 3
+  }
+]
