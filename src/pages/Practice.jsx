@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import {
@@ -7,10 +7,7 @@ import {
   getSubjects,
   submitAttempt,
 } from "../lib/appApi";
-import {
-  getAnsweredQuestionCount,
-} from "../lib/accessModel";
-import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import { clearPracticeBatch, readPracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
 
@@ -30,7 +27,6 @@ export default function Practice() {
   const navigate = useNavigate();
   const { subjectSlug } = useParams();
   const [summary, setSummary] = useState(null);
-  const [subjects, setSubjects] = useState([]);
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,18 +38,22 @@ export default function Practice() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [emptyMessage, setEmptyMessage] = useState("");
+  const bootstrapReadyRef = useRef(false);
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
-  const answeredQuestionCount = getAnsweredQuestionCount(summary);
   const batchMeta = questions[0]
     ? {
         batchNumber: Number(questions[0].batch_number ?? 1),
+        batchSize: Number(questions[0].batch_size ?? questions.length),
         passMarkPercent: Number(questions[0].pass_mark_percent ?? 70),
+        isFreeAttempt: Boolean(questions[0].is_free_attempt),
       }
     : {
         batchNumber: Number(location.state?.batchNumber ?? 1),
+        batchSize: Number(location.state?.batchSize ?? 0),
         passMarkPercent: Number(location.state?.passMarkPercent ?? 70),
+        isFreeAttempt: Boolean(location.state?.isFreeAttempt ?? false),
       };
   const requiresAccess =
     error.includes("Unlock full access") ||
@@ -61,6 +61,9 @@ export default function Practice() {
     emptyMessage.includes("Unlock full access");
 
   useEffect(() => {
+    let active = true;
+    bootstrapReadyRef.current = false;
+
     async function bootstrap() {
       try {
         const [nextSummary, nextSubjects] = await Promise.all([
@@ -69,24 +72,33 @@ export default function Practice() {
         ]);
         const nextSubject = nextSubjects.find((item) => item.slug === subjectSlug) ?? null;
 
+        if (!active) return;
         setSummary(nextSummary);
-        setSubjects(nextSubjects);
         setSubject(nextSubject);
       } catch (loadError) {
+        if (!active || isExpectedAbortError(loadError)) return;
         logAppError("Practice bootstrap", loadError);
         setError(
           friendlyErrorMessage(loadError, "We could not prepare this module. Please try again."),
         );
       } finally {
-        setLoading(false);
+        if (active) {
+          bootstrapReadyRef.current = true;
+          setLoading(false);
+        }
       }
     }
 
     void bootstrap();
+
+    return () => {
+      active = false;
+    };
   }, [subjectSlug]);
 
   useEffect(() => {
-    if (!subject) return undefined;
+    if (!subject || !bootstrapReadyRef.current) return undefined;
+    let active = true;
 
     async function loadBatch() {
       setLoading(true);
@@ -101,7 +113,16 @@ export default function Practice() {
       const storedBatch = readPracticeBatch(subject.slug);
 
       if (storedBatch?.length > 0) {
+        if (!active) return;
         setQuestions(storedBatch);
+        setLoading(false);
+        return;
+      }
+
+      if (summary && !summary.has_paid_access && !summary.free_module_subject_slug) {
+        if (!active) return;
+        setQuestions([]);
+        setEmptyMessage("Start your free batch from the dashboard to continue.");
         setLoading(false);
         return;
       }
@@ -113,13 +134,16 @@ export default function Practice() {
         });
 
         if (nextQuestions.length === 0) {
+          if (!active) return;
           setQuestions([]);
           setEmptyMessage("Questions for this module are not available yet.");
           return;
         }
 
+        if (!active) return;
         setQuestions(nextQuestions);
       } catch (loadError) {
+        if (!active || isExpectedAbortError(loadError)) return;
         logAppError(`Practice questions:${subject.slug}`, loadError);
         setQuestions([]);
         setEmptyMessage(
@@ -129,12 +153,18 @@ export default function Practice() {
           ),
         );
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     void loadBatch();
-  }, [location.key, subject]);
+
+    return () => {
+      active = false;
+    };
+  }, [location.key, subject, summary]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -143,13 +173,15 @@ export default function Practice() {
     setError("");
 
     try {
-      const submittedAnswers = questions.map((question) => ({
-        question_id: question.id,
-        selected_option: answers[question.id] ?? "",
-        time_spent_seconds: timeSpent[question.id] ?? 0,
-        display_order: question.display_order ?? 0,
-        batch_number: question.batch_number ?? batchMeta.batchNumber,
-      })).filter((item) => item.selected_option);
+      const submittedAnswers = questions
+        .map((question) => ({
+          question_id: question.id,
+          selected_option: answers[question.id] ?? "",
+          time_spent_seconds: timeSpent[question.id] ?? 0,
+          display_order: question.display_order ?? 0,
+          batch_number: question.batch_number ?? batchMeta.batchNumber,
+        }))
+        .filter((item) => item.selected_option);
 
       const nextResult = await submitAttempt({
         mode: "timed_mock",
@@ -248,66 +280,65 @@ export default function Practice() {
 
   return (
     <AppFrame>
-      <section className="practice-shell">
-        <header className="practice-topbar">
+      <section className="practice-page">
+        <header className="practice-page-header">
           <div>
-            <p className="eyebrow">Practice module</p>
-            <h1 className="page-title">{subject?.name}</h1>
+            <p className="eyebrow">Practice</p>
+            <h1>{subject?.name ?? "Module practice"}</h1>
+            <p>
+              {`Batch ${batchMeta.batchNumber} · Question ${questions.length > 0 ? currentIndex + 1 : 0} of ${questions.length}`}
+            </p>
           </div>
-          <div className="practice-topbar-actions">
-            <Link className="text-link" to="/dashboard">
-              Dashboard
+          <div className="practice-page-actions">
+            <Link className="secondary-action" to="/dashboard#modules">
+              Back to modules
             </Link>
-            <div
-              className={`timer ${remainingSeconds <= 300 ? "timer-warning" : ""}`}
-              aria-label="Time remaining"
-            >
-              <span className="timer-label">Time left</span>
-              <span className="timer-value">{formatTime(remainingSeconds)}</span>
+            <div className={`practice-timer ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
+              <span>Time left</span>
+              <strong>{formatTime(remainingSeconds)}</strong>
             </div>
           </div>
         </header>
 
-        <section className="filter-panel">
+        <section className="practice-session-banner">
           <div>
-            <strong>{questions.length > 0 ? `${questions.length} questions` : "Questions will appear here"}</strong>
-            <p className="filter-status">Batch {batchMeta.batchNumber}</p>
-            <p className="filter-status">Pass mark: {batchMeta.passMarkPercent}%</p>
-            {!summary?.has_paid_access && (
-              <>
-                <p className="filter-status">Free access: Batch 1 of one selected module</p>
-                <p className="filter-status">{answeredQuestionCount > 0 ? `${answeredQuestionCount} answers submitted so far` : "One retry is allowed if the first batch attempt fails"}</p>
-              </>
-            )}
+            <span>Batch</span>
+            <strong>{batchMeta.batchNumber}</strong>
           </div>
-          <div className="subject-switcher">
-            {subjects.map((item) => (
-              <Link
-                key={item.id}
-                className={`nav-chip ${item.slug === subjectSlug ? "active" : ""}`}
-                to={`/practice/${item.slug}`}
-              >
-                {item.name}
-              </Link>
-            ))}
+          <div>
+            <span>Questions</span>
+            <strong>{questions.length}</strong>
+          </div>
+          <div>
+            <span>Pass mark</span>
+            <strong>{batchMeta.passMarkPercent}%</strong>
+          </div>
+          <div>
+            <span>Access</span>
+            <strong>{summary?.has_paid_access ? "Full access" : batchMeta.isFreeAttempt ? "Free batch" : "Practice"}</strong>
           </div>
         </section>
+
+        {questions.length > 0 && batchMeta.batchSize > 0 && questions.length < batchMeta.batchSize && (
+          <section className="practice-note">
+            Showing available practice questions for this module.
+          </section>
+        )}
 
         {error && <section className="state-card inline-state">{error}</section>}
 
         {questions.length === 0 ? (
           <section className="empty-panel">
-            <p className="eyebrow">Module practice</p>
             <h2>{emptyMessage || "Questions for this module are not available yet."}</h2>
             <p>
-              {emptyMessage.includes("Start your free batch")
+              {emptyMessage.includes("Confirm your free batch start")
                 ? "Return to the dashboard and confirm your free batch before entering this module."
                 : emptyMessage.includes("Choose a module")
                   ? "Return to the dashboard and choose a module to continue."
                   : "If this batch has not been started yet, return to the dashboard and begin from the module list."}
             </p>
             <div className="hero-actions">
-              <Link className="secondary-action" to="/dashboard">
+              <Link className="secondary-action" to="/dashboard#modules">
                 Back to dashboard
               </Link>
               {requiresAccess && !summary?.has_paid_access && (
@@ -318,32 +349,37 @@ export default function Practice() {
             </div>
           </section>
         ) : (
-          <section className="exam-layout">
-            <aside className="exam-sidebar">
-              <p className="eyebrow">Batch progress</p>
-              <h2>{answeredCount} answered</h2>
-              <div className="progress-track">
-                <span style={{ width: `${progressPercent}%` }} />
+          <section className="practice-session-layout">
+            <aside className="practice-session-sidebar">
+              <div className="practice-sidebar-block">
+                <p className="eyebrow">Progress</p>
+                <h2>{answeredCount} answered</h2>
+                <p>{questions.length - answeredCount} still open.</p>
+                <div className="progress-track">
+                  <span style={{ width: `${progressPercent}%` }} />
+                </div>
               </div>
-              <p>{questions.length - answeredCount} questions still open.</p>
 
-              <div className="question-map">
-                {questions.map((question, index) => {
-                  const isActive = index === currentIndex;
-                  const isAnswered = Boolean(answers[question.id]);
-                  const isFlagged = flagged.includes(question.id);
+              <div className="practice-sidebar-block">
+                <p className="eyebrow">Question map</p>
+                <div className="question-map">
+                  {questions.map((question, index) => {
+                    const isActive = index === currentIndex;
+                    const isAnswered = Boolean(answers[question.id]);
+                    const isFlagged = flagged.includes(question.id);
 
-                  return (
-                    <button
-                      key={question.id}
-                      className={`question-dot ${isActive ? "active" : ""} ${isAnswered ? "answered" : ""} ${isFlagged ? "flagged" : ""}`}
-                      onClick={() => setCurrentIndex(index)}
-                      type="button"
-                    >
-                      {index + 1}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={question.id}
+                        className={`question-dot ${isActive ? "active" : ""} ${isAnswered ? "answered" : ""} ${isFlagged ? "flagged" : ""}`}
+                        onClick={() => setCurrentIndex(index)}
+                        type="button"
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <button
@@ -356,13 +392,11 @@ export default function Practice() {
               </button>
             </aside>
 
-            <section className="question-panel">
-              <div className="question-meta">
+            <section className="practice-question-card">
+              <div className="practice-question-meta">
                 <span>{subject?.name}</span>
                 <span>{`Batch ${batchMeta.batchNumber}`}</span>
-                <span>
-                  Question {currentIndex + 1} of {questions.length}
-                </span>
+                <span>{`Question ${currentIndex + 1} of ${questions.length}`}</span>
               </div>
 
               <h2>{currentQuestion?.question_text}</h2>
@@ -385,11 +419,11 @@ export default function Practice() {
                 })}
               </div>
 
-              <footer className="question-actions">
+              <footer className="practice-question-actions">
                 <button className="ghost-button" onClick={toggleFlag} type="button">
                   {flagged.includes(currentQuestion.id) ? "Remove flag" : "Flag for review"}
                 </button>
-                <div>
+                <div className="practice-question-nav">
                   <button
                     className="ghost-button"
                     disabled={currentIndex === 0}
@@ -398,13 +432,22 @@ export default function Practice() {
                   >
                     Previous
                   </button>
-                  <button
-                    disabled={currentIndex === questions.length - 1}
-                    onClick={() => setCurrentIndex((value) => value + 1)}
-                    type="button"
-                  >
-                    Next
-                  </button>
+                  {currentIndex === questions.length - 1 ? (
+                    <button
+                      disabled={submitting || answeredCount === 0}
+                      onClick={() => void submitCurrentSession()}
+                      type="button"
+                    >
+                      {submitting ? "Submitting..." : "Submit"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setCurrentIndex((value) => value + 1)}
+                      type="button"
+                    >
+                      Next
+                    </button>
+                  )}
                 </div>
               </footer>
             </section>

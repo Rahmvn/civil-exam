@@ -1,6 +1,5 @@
 import { supabase } from "./supabaseClient";
 import { EXAM_MODULES, NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
-import { logAppError } from "./errors";
 
 export const DIFFICULTIES = ["easy", "medium", "hard"];
 export const QUESTION_STATUSES = ["draft", "review", "published"];
@@ -11,7 +10,6 @@ function ensureArray(value) {
 
 function requireData({ data, error }) {
   if (error) {
-    logAppError("Supabase request", error);
     throw error;
   }
 

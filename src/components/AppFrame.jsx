@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import AuthPromptModal from "./AuthPromptModal";
 import { supabase } from "../lib/supabaseClient";
+import { formatServiceLevelLabel } from "../lib/serviceLevel";
 import { useAuth } from "../lib/useAuth";
 
 function appNavClassName({ isActive }) {
-  return `app-nav-link ${isActive ? "active" : ""}`;
+  return `authenticated-nav-link ${isActive ? "active" : ""}`;
 }
 
 export function PublicNav({ showBrand = true, sticky = true }) {
   const { user } = useAuth();
   const navCtaLabel = user ? "Open dashboard" : "Get started";
-  const navigate = useNavigate();
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   function handlePrimaryClick() {
     if (user) {
-      navigate("/dashboard");
+      window.location.href = "/dashboard";
       return;
     }
 
@@ -53,118 +53,244 @@ export function PublicNav({ showBrand = true, sticky = true }) {
 export function AppFrame({ children }) {
   const { profile, isAdmin } = useAuth();
   const location = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const levelBadge = profile?.service_level ?? "Account";
-  const practiceLink = location.pathname.startsWith("/practice") ? location.pathname : "/dashboard#modules";
-  const practiceNavClass = `app-nav-link ${location.pathname.startsWith("/practice") ? "active" : ""}`;
-  const accessNavClass = `app-nav-link ${location.pathname === "/access" ? "active" : ""}`;
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const accountMenuRef = useRef(null);
+  const accountButtonRef = useRef(null);
+  const levelBadge = formatServiceLevelLabel(profile?.service_level);
+  const accountLabel = profile?.full_name?.trim() || "Your account";
+  const accountInitials = useMemo(() => {
+    const parts = accountLabel
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2);
+
+    if (parts.length === 0) return "A";
+    return parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
+  }, [accountLabel]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return undefined;
+
+    function handlePointerDown(event) {
+      const target = event.target;
+
+      if (
+        accountMenuRef.current?.contains(target) ||
+        accountButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setAccountMenuOpen(false);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [accountMenuOpen]);
+
+  function closeAccountMenu() {
+    setAccountMenuOpen(false);
+  }
+
+  function openSignOutConfirm() {
+    closeAccountMenu();
+    setShowSignOutConfirm(true);
+  }
 
   async function signOut() {
-    closeMenu();
+    setShowSignOutConfirm(false);
+    closeAccountMenu();
     await supabase.auth.signOut();
   }
 
-  function closeMenu() {
-    setMenuOpen(false);
+  const isModulesActive =
+    location.pathname === "/dashboard" && location.hash === "#modules";
+  const isDashboardActive =
+    location.pathname === "/dashboard" && location.hash !== "#modules";
+
+  function bottomNavClassName(isActive) {
+    return `authenticated-bottom-link ${isActive ? "active" : ""}`;
   }
 
   return (
-    <main className="app-shell">
-      <div className="app-layout">
-        <aside className="app-sidebar">
-          <div className="app-sidebar-brand">
-            <Link to="/dashboard" className="brand-lockup">
-              <strong>FPS Exam Practice</strong>
-              <span>Civil service exam prep</span>
-            </Link>
-            <span className="level-badge">{levelBadge}</span>
-          </div>
-
-          <nav className="app-sidebar-nav" aria-label="Primary">
-            <NavLink className={appNavClassName} to="/dashboard">
-              Dashboard
-            </NavLink>
-            <Link className={practiceNavClass} to={practiceLink}>
-              Practice
-            </Link>
-            <NavLink className={appNavClassName} to="/review">
-              Review
-            </NavLink>
-            <Link className={accessNavClass} to="/access">
-              Access
-            </Link>
-            <NavLink className={appNavClassName} to="/profile">
-              Profile
-            </NavLink>
-            {isAdmin && (
-              <Link className="app-nav-link" to="/admin">
-                Admin
-              </Link>
-            )}
-          </nav>
-
-          <div className="app-sidebar-footer">
-            <button className="ghost-button app-sidebar-signout" type="button" onClick={signOut}>
-              Sign out
-            </button>
-          </div>
-        </aside>
-
-        <div className="app-main">
-          <header className="mobile-app-header">
-            <div className="mobile-brand">
-              <Link to="/dashboard" className="brand-lockup">
+    <>
+      <main className="authenticated-shell">
+        <div className="authenticated-frame">
+          <header className="authenticated-header">
+            <div className="authenticated-brand-row">
+              <Link
+                onClick={closeAccountMenu}
+                to="/dashboard"
+                className="brand-lockup authenticated-brand"
+              >
                 <strong>FPS Exam Practice</strong>
-                <span>Civil service exam prep</span>
+                <span>Federal public service promotion exam practice</span>
               </Link>
             </div>
-            <span className="level-badge mobile-level-badge">{levelBadge}</span>
-            <button
-              aria-controls="mobile-app-menu"
-              aria-expanded={menuOpen}
-              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-              className={`mobile-menu-button ${menuOpen ? "is-open" : ""}`}
-              onClick={() => setMenuOpen((value) => !value)}
-              type="button"
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-          </header>
-          {menuOpen && (
-            <nav className="mobile-app-menu" id="mobile-app-menu" aria-label="Mobile">
-              <NavLink className={appNavClassName} onClick={closeMenu} to="/dashboard">
+
+            <nav className="authenticated-nav" aria-label="Primary">
+              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/dashboard">
                 Dashboard
               </NavLink>
-              <Link className={practiceNavClass} onClick={closeMenu} to={practiceLink}>
-                Practice
-              </Link>
-              <NavLink className={appNavClassName} onClick={closeMenu} to="/review">
+              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/review">
                 Review
               </NavLink>
-              <Link className={accessNavClass} onClick={closeMenu} to="/access">
+              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/access">
                 Access
-              </Link>
-              <NavLink className={appNavClassName} onClick={closeMenu} to="/profile">
+              </NavLink>
+              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/profile">
                 Profile
               </NavLink>
               {isAdmin && (
-                <Link className="app-nav-link" onClick={closeMenu} to="/admin">
+                <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/admin">
+                  Admin
+                </NavLink>
+              )}
+            </nav>
+
+            <div className="authenticated-actions">
+              {levelBadge && <span className="level-badge authenticated-level-badge">{levelBadge}</span>}
+              <button
+                className="authenticated-signout"
+                onClick={openSignOutConfirm}
+                type="button"
+              >
+                Sign out
+              </button>
+              <button
+                ref={accountButtonRef}
+                aria-controls="authenticated-account-menu"
+                aria-expanded={accountMenuOpen}
+                aria-label={accountMenuOpen ? "Close account menu" : "Open account menu"}
+                className="authenticated-account-toggle"
+                onClick={() => setAccountMenuOpen((value) => !value)}
+                type="button"
+              >
+                <span>{accountInitials}</span>
+              </button>
+            </div>
+          </header>
+
+          {accountMenuOpen && (
+            <div
+              className="authenticated-account-menu"
+              id="authenticated-account-menu"
+              ref={accountMenuRef}
+              role="menu"
+            >
+              <div className="authenticated-account-summary">
+                <strong>{accountLabel}</strong>
+                {levelBadge && <span>{levelBadge}</span>}
+              </div>
+              <Link
+                className="authenticated-account-link"
+                onClick={closeAccountMenu}
+                role="menuitem"
+                to="/profile"
+              >
+                Profile
+              </Link>
+              {isAdmin && (
+                <Link
+                  className="authenticated-account-link"
+                  onClick={closeAccountMenu}
+                  role="menuitem"
+                  to="/admin"
+                >
                   Admin
                 </Link>
               )}
-              <button className="mobile-signout-button sign-out" type="button" onClick={signOut}>
+              <button
+                className="authenticated-account-signout"
+                onClick={openSignOutConfirm}
+                role="menuitem"
+                type="button"
+              >
                 Sign out
               </button>
-            </nav>
+            </div>
           )}
-          {children}
-          <footer className="app-footer">
+
+          <div className="authenticated-content">{children}</div>
+
+          <footer className="authenticated-footer">
             <span>FPS Exam Practice</span>
+            <Link onClick={closeAccountMenu} to="/access">
+              Access and payment
+            </Link>
           </footer>
         </div>
-      </div>
-    </main>
+
+        <nav className="authenticated-bottom-nav" aria-label="Mobile primary">
+          <Link className={bottomNavClassName(isDashboardActive)} onClick={closeAccountMenu} to="/dashboard">
+            Dashboard
+          </Link>
+          <Link
+            className={bottomNavClassName(isModulesActive)}
+            onClick={closeAccountMenu}
+            to="/dashboard#modules"
+          >
+            Modules
+          </Link>
+          <NavLink
+            className={({ isActive }) => bottomNavClassName(isActive)}
+            onClick={closeAccountMenu}
+            to="/review"
+          >
+            Review
+          </NavLink>
+          <NavLink
+            className={({ isActive }) => bottomNavClassName(isActive)}
+            onClick={closeAccountMenu}
+            to="/access"
+          >
+            Access
+          </NavLink>
+        </nav>
+      </main>
+
+      {showSignOutConfirm && (
+        <div
+          className="auth-modal-backdrop"
+          role="presentation"
+          onClick={() => setShowSignOutConfirm(false)}
+        >
+          <section
+            aria-labelledby="signout-confirm-title"
+            aria-modal="true"
+            className="auth-modal-card signout-confirm-modal"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <h2 id="signout-confirm-title">Sign out?</h2>
+            <p>You’ll need to sign in again to continue practising.</p>
+            <div className="auth-modal-actions signout-confirm-actions">
+              <button
+                className="ghost-button"
+                onClick={() => setShowSignOutConfirm(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button className="primary-action" onClick={() => void signOut()} type="button">
+                Sign out
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   );
 }

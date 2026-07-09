@@ -11,6 +11,13 @@ function formatNaira(kobo) {
   }).format((kobo ?? 0) / 100);
 }
 
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
+}
+
 export default function Access() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +46,7 @@ export default function Access() {
 
     if (summary.has_paid_access) {
       return summary.access_expires_at
-        ? `Active until ${new Date(summary.access_expires_at).toLocaleDateString()}.`
+        ? `Full access is active until ${formatDate(summary.access_expires_at)}.`
         : "Full access is active.";
     }
 
@@ -47,7 +54,7 @@ export default function Access() {
       return "Your free module has been selected. Batch 1 is available, with one retry if the first attempt fails.";
     }
 
-    return "You can start Batch 1 of one module for free.";
+    return "You can start Batch 1 of one selected module for free.";
   }, [summary]);
 
   async function startPayment() {
@@ -75,67 +82,60 @@ export default function Access() {
 
   return (
     <AppFrame>
-      <section className="dashboard-stage">
-        <section className="dashboard-hero premium-hero">
-          <div className="hero-copy">
+      <section className="access-page">
+        <header className="access-page-header">
+          <div>
             <p className="eyebrow">Access</p>
-            <h1>
-              {loading
-                ? "Loading access..."
-                : summary?.has_paid_access
-                ? "Full access is active."
-                  : "Free access covers Batch 1 of one selected module."}
-            </h1>
-            <p className="hero-summary">
+            <h1>{loading ? "Loading access..." : summary?.has_paid_access ? "Full access active" : "Unlock full access"}</h1>
+            <p>
               {summary?.has_paid_access
-                ? "You can continue with all available modules, all batches, unlimited retries, review history, and progress tracking."
-                : "You can practise Batch 1 of one selected module for free. If your first attempt fails, you get one retry on that same batch."}
+                ? "You can continue with all modules, all available batches, review history, and progress tracking."
+                : "Free access covers Batch 1 of one selected module. If the first attempt fails, one retry is allowed on that same batch."}
             </p>
-            <p className="support-copy">
-              {summary?.has_paid_access
-                ? "Later batches, retries, review history, and progress tracking stay available while your access is active."
-                : "Full access unlocks all modules, all batches, unlimited retries, review history, and progress tracking."}
-            </p>
-            {error && <p className="notice error">{error}</p>}
           </div>
-
-          <aside className="access-card">
-            <span className="panel-label">Current status</span>
-            <strong>{summary?.has_paid_access ? "Paid" : "Free account"}</strong>
+          <aside className="access-status-card">
+            <span>Status</span>
+            <strong>{summary?.has_paid_access ? "Full access" : "Free access"}</strong>
             <p>{summary ? accessStatus : "Your access details will appear here once they are available."}</p>
             {!summary?.has_paid_access && (
-              <button type="button" disabled={paying || loading || !summary} onClick={startPayment}>
+              <button disabled={paying || loading || !summary} onClick={startPayment} type="button">
                 {paying ? "Redirecting..." : `Unlock full access for ${formatNaira(summary?.price_kobo ?? 250000)}`}
               </button>
             )}
           </aside>
+        </header>
+
+        {error && <p className="notice error">{error}</p>}
+
+        <section className="access-grid">
+          <article className="access-detail-card">
+            <p className="eyebrow">Free access</p>
+            <h2>Batch 1 of one selected module</h2>
+            <ul className="access-list">
+              <li>Start Batch 1 of one module for free.</li>
+              <li>Review your result after submission.</li>
+              <li>If the first attempt fails, retry that same batch once.</li>
+              <li>Batch 2 and other modules require full access.</li>
+            </ul>
+          </article>
+
+          <article className="access-detail-card">
+            <p className="eyebrow">Full access</p>
+            <h2>All modules and all batches</h2>
+            <ul className="access-list">
+              <li>All available modules.</li>
+              <li>All unlocked batches as content grows.</li>
+              <li>Unlimited retries and review history.</li>
+              <li>Progress tracking across your practice sessions.</li>
+            </ul>
+          </article>
         </section>
 
-        <section className="two-column-section">
-          <section className="side-panel">
-            <p className="eyebrow">What you get</p>
-            <div className="attempt-list">
-              <article>
-                <div>
-                  <strong>Free access</strong>
-                  <span>Batch 1 of one selected module, with one retry if the first attempt fails.</span>
-                </div>
-              </article>
-              <article>
-                <div>
-                  <strong>Full access</strong>
-                  <span>All modules, all batches, unlimited retries, review history, and progress tracking.</span>
-                </div>
-              </article>
-            </div>
-          </section>
-
-          <aside className="side-panel">
-            <p className="eyebrow">Payment support</p>
-            <p className="support-copy">
-              If a payment does not reflect immediately, keep your reference and return to this page after verification.
-            </p>
-          </aside>
+        <section className="access-support-note">
+          <p className="eyebrow">Payment support</p>
+          <p>
+            If payment does not reflect immediately, keep your payment reference and return here after verification.
+          </p>
         </section>
       </section>
     </AppFrame>

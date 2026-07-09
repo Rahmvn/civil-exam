@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { getAttemptReview, getModuleProgress, getReviewQueue } from "../lib/appApi";
-import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 
 function getPercent(score, total) {
   if (!total) return 0;
   return Math.round((score / total) * 100);
+}
+
+function formatDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString();
 }
 
 function getActionConfig(nextAction, subjectSlug) {
@@ -51,33 +58,52 @@ export default function Review() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+
     async function loadReview() {
       try {
         const [nextReview, nextQueue, nextProgress] = await Promise.all([
           getAttemptReview(attemptId),
-          getReviewQueue(10),
+          getReviewQueue(8),
           getModuleProgress(),
         ]);
 
+        if (!active) return;
         setReviewRows(Array.isArray(nextReview) ? nextReview : []);
         setReviewQueue(Array.isArray(nextQueue) ? nextQueue : []);
         setModuleProgress(Array.isArray(nextProgress) ? nextProgress : []);
       } catch (loadError) {
+        if (!active || isExpectedAbortError(loadError)) return;
         logAppError("Review load", loadError);
         setError(
           friendlyErrorMessage(loadError, "We could not load the review page. Please try again."),
         );
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     }
 
     void loadReview();
+
+    return () => {
+      active = false;
+    };
   }, [attemptId]);
 
+  const orderedReviewRows = useMemo(
+    () =>
+      [...reviewRows].sort(
+        (left, right) =>
+          Number(left.display_order ?? 0) - Number(right.display_order ?? 0),
+      ),
+    [reviewRows],
+  );
+
   const reviewSummary = useMemo(() => {
-    if (reviewRows.length === 0) return null;
-    const first = reviewRows[0];
+    if (orderedReviewRows.length === 0) return null;
+    const first = orderedReviewRows[0];
     const progressForSubject = moduleProgress.find((item) => item.subject_id === first.subject_id);
 
     return {
@@ -100,7 +126,7 @@ export default function Review() {
         location.state?.subject?.slug ??
         null,
     };
-  }, [location.state?.passMarkPercent, location.state?.subject?.slug, moduleProgress, reviewRows]);
+  }, [location.state?.passMarkPercent, location.state?.subject?.slug, moduleProgress, orderedReviewRows]);
 
   const fallbackSummary = useMemo(() => {
     const result = location.state?.result;
@@ -116,7 +142,7 @@ export default function Review() {
       score,
       totalQuestions,
       subjectId: location.state?.subject?.id ?? null,
-      subjectName: location.state?.subject?.name ?? result.subject_name ?? "Module session",
+      subjectName: location.state?.subject?.name ?? result.subject_name ?? "Module batch",
       batchNumber: Number(result.batch_number ?? 1),
       scorePercent: Number(result.score_percent ?? getPercent(score, totalQuestions)),
       passed: Boolean(result.passed),
@@ -128,13 +154,15 @@ export default function Review() {
   }, [location.state]);
 
   const activeSummary = reviewSummary ?? fallbackSummary;
-  const hasAttemptHistory = Boolean(activeSummary) || reviewQueue.length > 0;
+  const correctCount = activeSummary?.score ?? 0;
+  const totalQuestions = activeSummary?.totalQuestions ?? 0;
+  const wrongCount = Math.max(totalQuestions - correctCount, 0);
   const actionConfig = getActionConfig(activeSummary?.nextAction, activeSummary?.subjectSlug);
 
-  const recommendedAction = useMemo(() => {
-    if (!activeSummary) return "Complete a batch to start review.";
+  const outcomeText = useMemo(() => {
+    if (!activeSummary) return "Complete a batch and your review will appear here.";
     if (activeSummary.nextAction === "proceed_next_batch") {
-      return "You passed this batch. Continue to the next batch when you are ready.";
+      return "You passed this batch. Continue when you are ready.";
     }
     if (activeSummary.nextAction === "unlock_full_access") {
       return "Full access is required to continue beyond this point.";
@@ -142,64 +170,95 @@ export default function Review() {
     return "Review your mistakes, then retry this batch.";
   }, [activeSummary]);
 
+  const summaryReady = Boolean(activeSummary);
+  const showInitialLoading = loading && !summaryReady;
+
   return (
     <AppFrame>
-      <section className="practice-shell">
-        <header className="practice-topbar">
+      <section className="review-page">
+        <header className="review-page-header">
           <div>
             <p className="eyebrow">Review</p>
-            <h1 className="page-title">Review your batch result.</h1>
+            <h1>Review your batch</h1>
+            <p>{outcomeText}</p>
           </div>
-          <div className="practice-topbar-actions">
-            <Link className="text-link" to="/dashboard">
-              Dashboard
-            </Link>
-          </div>
+          <Link className="secondary-action" to="/dashboard">
+            Back to dashboard
+          </Link>
         </header>
 
-        {loading ? (
+        {showInitialLoading ? (
           <section className="state-card">Loading your review...</section>
         ) : (
           <>
             {error && <section className="state-card inline-state">{error}</section>}
 
-            <section className="result-summary">
-              <p className="eyebrow">Latest batch</p>
-              <h1>{activeSummary?.scorePercent ?? 0}%</h1>
-              <p>
-                {activeSummary
-                  ? `${activeSummary.subjectName} - Batch ${activeSummary.batchNumber}`
-                  : "No completed batch found yet."}
-              </p>
-              {activeSummary && (
-                <>
-                  <p className="support-copy">
-                    {`${activeSummary.score}/${activeSummary.totalQuestions} correct · Pass mark ${activeSummary.passMarkPercent}% · ${activeSummary.passed ? "Passed" : "Retry required"}`}
-                  </p>
-                  <p className="support-copy">{recommendedAction}</p>
-                  {activeSummary.retryNumber > 0 && (
-                    <p className="support-copy">Retry attempt: {activeSummary.retryNumber}</p>
+            <section className="review-summary-card">
+              <div className="review-summary-main">
+                <div className="review-summary-copy">
+                  <p className="eyebrow">Latest result</p>
+                  <h2>{activeSummary?.subjectName ?? "No completed batch yet"}</h2>
+                  {activeSummary ? (
+                    <p>
+                      {`Batch ${activeSummary.batchNumber} · ${activeSummary.passed ? "Passed" : "Retry required"} · Pass mark ${activeSummary.passMarkPercent}%`}
+                    </p>
+                  ) : (
+                    <p>No completed batch found yet.</p>
                   )}
-                </>
-              )}
-              <div className="hero-actions">
-                <Link className="primary-action" to={actionConfig.primaryTo}>
-                  {actionConfig.primaryLabel}
-                </Link>
-                {actionConfig.secondaryTo && (
-                  <Link className="secondary-action" to={actionConfig.secondaryTo}>
-                    {actionConfig.secondaryLabel}
-                  </Link>
+                </div>
+                {activeSummary && (
+                  <span className={`review-result-badge ${activeSummary.passed ? "is-pass" : "is-retry"}`}>
+                    {activeSummary.passed ? "Passed" : "Retry required"}
+                  </span>
                 )}
               </div>
-              {fallbackSummary && !reviewSummary && (
-                <p className="support-copy">Your latest result is being prepared for review.</p>
+
+              {activeSummary && (
+                <>
+                  <div className="review-metric-grid">
+                    <article>
+                      <span>Score</span>
+                      <strong>{activeSummary.scorePercent}%</strong>
+                    </article>
+                    <article>
+                      <span>Correct</span>
+                      <strong>{correctCount}</strong>
+                    </article>
+                    <article>
+                      <span>Wrong</span>
+                      <strong>{wrongCount}</strong>
+                    </article>
+                    <article>
+                      <span>Completed</span>
+                      <strong>{formatDate(activeSummary.completedAt) || "Today"}</strong>
+                    </article>
+                  </div>
+
+                  {activeSummary.retryNumber > 0 && (
+                    <p className="review-summary-note">{`Retry attempt: ${activeSummary.retryNumber}`}</p>
+                  )}
+
+                  <div className="review-summary-actions">
+                    <Link className="primary-action" to={actionConfig.primaryTo}>
+                      {actionConfig.primaryLabel}
+                    </Link>
+                    {actionConfig.secondaryTo && (
+                      <Link className="secondary-action" to={actionConfig.secondaryTo}>
+                        {actionConfig.secondaryLabel}
+                      </Link>
+                    )}
+                  </div>
+                </>
               )}
             </section>
 
-            {reviewRows.length > 0 && (
-              <section className="review-list">
-                {reviewRows.map((row, index) => {
+            {loading && summaryReady && (
+              <section className="state-card inline-state">Loading full answer review...</section>
+            )}
+
+            {orderedReviewRows.length > 0 && (
+              <section className="review-answer-list">
+                {orderedReviewRows.map((row, index) => {
                   const answerText = row.selected_option
                     ? row[`option_${row.selected_option.toLowerCase()}`]
                     : "Not answered";
@@ -208,27 +267,31 @@ export default function Review() {
                     : "";
 
                   return (
-                    <article key={row.question_id} className="review-card">
-                      <div className="review-card-header">
-                        <span>
-                          Q{index + 1} - Batch {row.batch_number} - {row.subject_name}
-                        </span>
-                        <strong className={row.is_correct ? "is-correct" : "is-wrong"}>
+                    <article key={row.question_id} className="review-answer-card">
+                      <div className="review-answer-top">
+                        <div>
+                          <span>{`Question ${Number(row.display_order ?? index + 1)}`}</span>
+                          <strong>{`Batch ${row.batch_number}`}</strong>
+                        </div>
+                        <span className={`review-answer-state ${row.is_correct ? "is-correct" : "is-wrong"}`}>
                           {row.is_correct ? "Correct" : "Incorrect"}
-                        </strong>
+                        </span>
                       </div>
-                      <h2>{row.question_text}</h2>
-                      <div className="review-answer">
-                        <p>
-                          <strong>Your answer:</strong>{" "}
-                          {row.selected_option ? `${row.selected_option}. ${answerText}` : "Not answered"}
-                        </p>
-                        <p>
-                          <strong>Correct answer:</strong>{" "}
-                          {row.correct_option ? `${row.correct_option}. ${correctText}` : "Answer key will be added."}
-                        </p>
+
+                      <h3>{row.question_text}</h3>
+
+                      <div className="review-answer-grid">
+                        <div>
+                          <span>Your answer</span>
+                          <p>{row.selected_option ? `${row.selected_option}. ${answerText}` : "Not answered"}</p>
+                        </div>
+                        <div>
+                          <span>Correct answer</span>
+                          <p>{row.correct_option ? `${row.correct_option}. ${correctText}` : "Answer key will be added."}</p>
+                        </div>
                       </div>
-                      <div className="explanation-box">
+
+                      <div className="review-explanation">
                         <strong>Explanation</strong>
                         <p>{row.explanation?.trim() || "Explanation will be added."}</p>
                         <p>
@@ -242,46 +305,27 @@ export default function Review() {
               </section>
             )}
 
-            <section className="landing-section compact-section">
-              <div className="section-heading left-heading">
-                <p className="eyebrow">Weak-area queue</p>
-                <h2>Questions worth seeing again.</h2>
-              </div>
-              {!hasAttemptHistory ? (
-                <section className="side-panel">
-                  <p className="support-copy">Weak areas will appear after real attempts.</p>
-                </section>
-              ) : reviewQueue.length === 0 ? (
-                <section className="side-panel">
-                  <p className="support-copy">Your weak-area queue will build up as you practise.</p>
-                </section>
-              ) : (
-                <div className="review-list">
+            {reviewQueue.length > 0 && (
+              <section className="review-side-section">
+                <div className="dashboard-section-heading">
+                  <div>
+                    <p className="eyebrow">Review queue</p>
+                    <h2>Questions worth revisiting</h2>
+                  </div>
+                </div>
+                <div className="dashboard-attempt-list">
                   {reviewQueue.map((item) => (
-                    <article key={item.question_id} className="review-card compact-review-card">
-                      <div className="review-card-header">
-                        <span>{item.subject_name}</span>
-                        <strong>{item.times_missed} misses</strong>
+                    <article key={item.question_id}>
+                      <div>
+                        <strong>{item.subject_name}</strong>
+                        <span>{item.question_text}</span>
                       </div>
-                      <h2>{item.question_text}</h2>
-                      <div className="explanation-box">
-                        <strong>Answer</strong>
-                        <p>
-                          {item.correct_option
-                            ? `${item.correct_option}. ${item[`option_${item.correct_option.toLowerCase()}`] ?? "Answer text will be added."}`
-                            : "Answer key will be added."}
-                        </p>
-                        <p>{item.explanation?.trim() || "Explanation will be added."}</p>
-                        <p>
-                          <strong>Reference:</strong>{" "}
-                          {item.reference_note?.trim() || "Reference will be added."}
-                        </p>
-                      </div>
+                      <span className="dashboard-mini-tag">{item.times_missed} misses</span>
                     </article>
                   ))}
                 </div>
-              )}
-            </section>
+              </section>
+            )}
           </>
         )}
       </section>

@@ -87,8 +87,25 @@ function includesAny(message, markers) {
   return markers.some((marker) => message.includes(marker));
 }
 
+export function isExpectedAbortError(error) {
+  const message = normalizeMessage(error).toLowerCase();
+
+  if (!message) return false;
+
+  return includesAny(message, [
+    "aborterror",
+    "aborted",
+    "signal is aborted",
+    "request was cancelled",
+    "request was canceled",
+    "the user aborted a request",
+  ]);
+}
+
 export function logAppError(context, error) {
   if (!import.meta.env.DEV) return;
+  if (error?.__loggedByApp) return;
+  if (isExpectedAbortError(error)) return;
 
   try {
     if (error && typeof error === "object") {

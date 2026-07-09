@@ -42,7 +42,7 @@ export default function ProfileOnboardingModal({ nextPath = "/dashboard", onClos
       });
 
       await refreshProfile(user.id);
-      onComplete?.();
+      await onComplete?.();
       navigate(nextPath, { replace: true });
     } catch (error) {
       logAppError("Profile onboarding save", error);

@@ -1,8 +1,10 @@
 import { AppFrame } from "../components/AppFrame";
+import { formatServiceLevelLabel } from "../lib/serviceLevel";
 import { useAuth } from "../lib/useAuth";
 
 export default function Profile() {
   const { profile } = useAuth();
+  const serviceLevelLabel = formatServiceLevelLabel(profile?.service_level);
 
   return (
     <AppFrame>
@@ -17,7 +19,7 @@ export default function Profile() {
           </div>
           <aside className="readiness-panel">
             <span className="panel-label">Locked level</span>
-            <strong>{profile?.service_level}</strong>
+            <strong>{serviceLevelLabel || "Not set"}</strong>
             <p>Contact support if it ever needs correction.</p>
           </aside>
         </section>
