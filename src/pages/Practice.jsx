@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import {
   getCandidateSummary,
@@ -26,6 +26,7 @@ export default function Practice() {
   const location = useLocation();
   const navigate = useNavigate();
   const { subjectSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const [summary, setSummary] = useState(null);
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -41,6 +42,7 @@ export default function Practice() {
   const bootstrapReadyRef = useRef(false);
 
   const currentQuestion = questions[currentIndex];
+  const requestedBatchNumber = Number(searchParams.get("batch") ?? location.state?.batchNumber ?? 0) || null;
   const answeredCount = Object.keys(answers).length;
   const batchMeta = questions[0]
     ? {
@@ -111,8 +113,12 @@ export default function Practice() {
       setRemainingSeconds(EXAM_DURATION_MINUTES * 60);
 
       const storedBatch = readPracticeBatch(subject.slug);
+      const storedBatchNumber = Number(storedBatch?.[0]?.batch_number ?? 0) || null;
 
-      if (storedBatch?.length > 0) {
+      if (
+        storedBatch?.length > 0 &&
+        (!requestedBatchNumber || storedBatchNumber === requestedBatchNumber)
+      ) {
         if (!active) return;
         setQuestions(storedBatch);
         setLoading(false);
@@ -130,6 +136,7 @@ export default function Practice() {
       try {
         const nextQuestions = await getPracticeQuestions({
           subjectId: subject.id,
+          batchNumber: requestedBatchNumber,
           limit: undefined,
         });
 
@@ -164,7 +171,7 @@ export default function Practice() {
     return () => {
       active = false;
     };
-  }, [location.key, subject, summary]);
+  }, [location.key, requestedBatchNumber, subject, summary]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -187,6 +194,7 @@ export default function Practice() {
         mode: "timed_mock",
         subjectId: subject.id,
         answers: submittedAnswers,
+        batchNumber: batchMeta.batchNumber,
       });
 
       clearPracticeBatch(subject.slug);
@@ -198,6 +206,7 @@ export default function Practice() {
             ...subject,
             slug: subject.slug,
           },
+          batchNumber: batchMeta.batchNumber,
           passMarkPercent: batchMeta.passMarkPercent,
         },
       });

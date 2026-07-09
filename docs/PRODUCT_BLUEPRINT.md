@@ -381,7 +381,7 @@ Important:
 
 ## 7. Batch Progression Model
 
-The product should eventually move from simple shared-question access to structured batch progression inside each module.
+The product now uses structured batch progression inside each module.
 
 Rules:
 
@@ -393,12 +393,16 @@ Rules:
 - Users attempt one batch at a time.
 - A batch is a fixed group of questions.
 - If the user scores 70% or higher, the batch is passed.
-- Passing a batch unlocks the next batch.
+- Free access is limited to Batch 1 of one selected module.
+- Free module lock happens only after explicit confirmation to start the free batch.
+- Passing a free batch does not unlock the next batch; it triggers an unlock-full-access prompt.
+- Paid users can access any published batch in a module.
+- For paid users, progress affects recommendations, not access control.
 - If the user scores below 70%, the user goes to the review page.
 - The review page shows mistakes, correct answers, explanations, and references.
 - The user can retry the same batch.
 - Retrying the same batch uses the same questions but shuffled.
-- The next batch must not unlock until the current batch is passed.
+- For free users, the next batch must not unlock until full access is purchased.
 - During development only, the app may allow smaller batches if there are fewer seed questions.
 
 The app should eventually track:

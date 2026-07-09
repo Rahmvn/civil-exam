@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
-import { getAttemptReview, getModuleProgress, getReviewQueue } from "../lib/appApi";
+import { getAttemptReview, getReviewQueue } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 
 function getPercent(score, total) {
@@ -16,19 +16,32 @@ function formatDate(value) {
   return date.toLocaleDateString();
 }
 
-function getActionConfig(nextAction, subjectSlug) {
-  switch (nextAction) {
-    case "proceed_next_batch":
+function getActionConfig(summary) {
+  const subjectSlug = summary?.subjectSlug ?? null;
+  const currentBatchNumber = Number(summary?.batchNumber ?? 1);
+  const nextBatchNumber = Number(summary?.nextBatchNumber ?? 0) || null;
+  const retryPath = subjectSlug ? `/practice/${subjectSlug}?batch=${currentBatchNumber}` : "/dashboard";
+  const nextPath = subjectSlug && nextBatchNumber ? `/practice/${subjectSlug}?batch=${nextBatchNumber}` : "/dashboard";
+
+  switch (summary?.nextAction) {
+    case "next_batch":
       return {
-        primaryLabel: "Proceed to next batch",
-        primaryTo: subjectSlug ? `/practice/${subjectSlug}` : "/dashboard",
+        primaryLabel: nextBatchNumber ? `Start Batch ${nextBatchNumber}` : "Continue",
+        primaryTo: nextPath,
         secondaryLabel: "Back to dashboard",
         secondaryTo: "/dashboard",
       };
-    case "retry_batch":
+    case "retry_or_next":
       return {
-        primaryLabel: "Retry this batch",
-        primaryTo: subjectSlug ? `/practice/${subjectSlug}` : "/dashboard",
+        primaryLabel: `Retry Batch ${currentBatchNumber}`,
+        primaryTo: retryPath,
+        secondaryLabel: nextBatchNumber ? `Try Batch ${nextBatchNumber}` : "Back to dashboard",
+        secondaryTo: nextBatchNumber ? nextPath : "/dashboard",
+      };
+    case "retry_free_batch":
+      return {
+        primaryLabel: `Retry Batch ${currentBatchNumber}`,
+        primaryTo: retryPath,
         secondaryLabel: "Back to dashboard",
         secondaryTo: "/dashboard",
       };
@@ -39,11 +52,46 @@ function getActionConfig(nextAction, subjectSlug) {
         secondaryLabel: "Back to dashboard",
         secondaryTo: "/dashboard",
       };
+    case "review_only":
+      return {
+        primaryLabel: `Retry Batch ${currentBatchNumber}`,
+        primaryTo: retryPath,
+        secondaryLabel: "Back to dashboard",
+        secondaryTo: "/dashboard",
+      };
+    case "module_complete":
+      return {
+        primaryLabel: "Back to dashboard",
+        primaryTo: "/dashboard",
+        secondaryLabel: `Retry Batch ${currentBatchNumber}`,
+        secondaryTo: retryPath,
+      };
     default:
       return {
         primaryLabel: "Back to dashboard",
         primaryTo: "/dashboard",
       };
+  }
+}
+
+function getOutcomeText(summary) {
+  if (!summary) return "Complete a batch and your review will appear here.";
+
+  switch (summary.nextAction) {
+    case "next_batch":
+      return summary.nextBatchNumber
+        ? `You passed this batch. Batch ${summary.nextBatchNumber} is available next.`
+        : "You passed this batch.";
+    case "retry_or_next":
+      return "You scored below 70%. You can retry, or continue if another published batch is available.";
+    case "retry_free_batch":
+      return "You scored below 70%. You can retry your free batch once.";
+    case "unlock_full_access":
+      return "Full access is required to continue beyond this point.";
+    case "module_complete":
+      return "You passed the latest published batch in this module.";
+    default:
+      return "Review your mistakes, then retry this batch.";
   }
 }
 
@@ -53,7 +101,6 @@ export default function Review() {
   const attemptId = searchParams.get("attempt");
   const [reviewRows, setReviewRows] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
-  const [moduleProgress, setModuleProgress] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -62,16 +109,14 @@ export default function Review() {
 
     async function loadReview() {
       try {
-        const [nextReview, nextQueue, nextProgress] = await Promise.all([
+        const [nextReview, nextQueue] = await Promise.all([
           getAttemptReview(attemptId),
           getReviewQueue(8),
-          getModuleProgress(),
         ]);
 
         if (!active) return;
         setReviewRows(Array.isArray(nextReview) ? nextReview : []);
         setReviewQueue(Array.isArray(nextQueue) ? nextQueue : []);
-        setModuleProgress(Array.isArray(nextProgress) ? nextProgress : []);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
         logAppError("Review load", loadError);
@@ -104,7 +149,6 @@ export default function Review() {
   const reviewSummary = useMemo(() => {
     if (orderedReviewRows.length === 0) return null;
     const first = orderedReviewRows[0];
-    const progressForSubject = moduleProgress.find((item) => item.subject_id === first.subject_id);
 
     return {
       attemptId: first.attempt_id,
@@ -113,20 +157,17 @@ export default function Review() {
       totalQuestions: first.total_questions,
       subjectId: first.subject_id,
       subjectName: first.subject_name,
+      subjectSlug: first.subject_slug,
       batchNumber: Number(first.batch_number ?? 1),
       scorePercent: Number(first.score_percent ?? getPercent(first.score, first.total_questions)),
       passed: Boolean(first.passed),
       retryNumber: Number(first.retry_number ?? 0),
-      nextAction: first.next_action ?? "back_to_dashboard",
-      passMarkPercent: Number(
-        progressForSubject?.pass_mark_percent ?? location.state?.passMarkPercent ?? 70,
-      ),
-      subjectSlug:
-        progressForSubject?.subject_slug ??
-        location.state?.subject?.slug ??
-        null,
+      nextAction: first.next_action ?? "review_only",
+      passMarkPercent: Number(first.pass_mark_percent ?? location.state?.passMarkPercent ?? 70),
+      nextBatchNumber: Number(first.next_batch_number ?? 0) || null,
+      canRetry: Boolean(first.can_retry ?? true),
     };
-  }, [location.state?.passMarkPercent, location.state?.subject?.slug, moduleProgress, orderedReviewRows]);
+  }, [location.state?.passMarkPercent, orderedReviewRows]);
 
   const fallbackSummary = useMemo(() => {
     const result = location.state?.result;
@@ -143,13 +184,15 @@ export default function Review() {
       totalQuestions,
       subjectId: location.state?.subject?.id ?? null,
       subjectName: location.state?.subject?.name ?? result.subject_name ?? "Module batch",
-      batchNumber: Number(result.batch_number ?? 1),
+      subjectSlug,
+      batchNumber: Number(result.batch_number ?? location.state?.batchNumber ?? 1),
       scorePercent: Number(result.score_percent ?? getPercent(score, totalQuestions)),
       passed: Boolean(result.passed),
       retryNumber: Number(result.retry_number ?? 0),
-      nextAction: result.next_action ?? "back_to_dashboard",
+      nextAction: result.next_action ?? "review_only",
       passMarkPercent: Number(location.state?.passMarkPercent ?? 70),
-      subjectSlug,
+      nextBatchNumber: Number(result.next_batch_number ?? 0) || null,
+      canRetry: result.can_retry ?? true,
     };
   }, [location.state]);
 
@@ -157,19 +200,8 @@ export default function Review() {
   const correctCount = activeSummary?.score ?? 0;
   const totalQuestions = activeSummary?.totalQuestions ?? 0;
   const wrongCount = Math.max(totalQuestions - correctCount, 0);
-  const actionConfig = getActionConfig(activeSummary?.nextAction, activeSummary?.subjectSlug);
-
-  const outcomeText = useMemo(() => {
-    if (!activeSummary) return "Complete a batch and your review will appear here.";
-    if (activeSummary.nextAction === "proceed_next_batch") {
-      return "You passed this batch. Continue when you are ready.";
-    }
-    if (activeSummary.nextAction === "unlock_full_access") {
-      return "Full access is required to continue beyond this point.";
-    }
-    return "Review your mistakes, then retry this batch.";
-  }, [activeSummary]);
-
+  const actionConfig = getActionConfig(activeSummary);
+  const outcomeText = getOutcomeText(activeSummary);
   const summaryReady = Boolean(activeSummary);
   const showInitialLoading = loading && !summaryReady;
 

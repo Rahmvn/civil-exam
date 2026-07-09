@@ -89,6 +89,16 @@ export async function getModuleProgress() {
   return ensureArray(requireData(await supabase.rpc("get_module_progress")));
 }
 
+export async function getModuleBatchAccess(subjectSlug = null) {
+  const payload = {};
+
+  if (subjectSlug) {
+    payload.requested_subject_slug = subjectSlug;
+  }
+
+  return ensureArray(requireData(await supabase.rpc("get_module_batch_access", payload)));
+}
+
 export async function getModuleAvailability() {
   const rows = await getModuleProgress();
 
@@ -124,7 +134,7 @@ export async function getAttemptReview(attemptId = null) {
   ));
 }
 
-export async function getPracticeQuestions({ subjectId, limit = 30 }) {
+export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber = null }) {
   if (!subjectId) return [];
 
   const payload = {
@@ -135,26 +145,40 @@ export async function getPracticeQuestions({ subjectId, limit = 30 }) {
     payload.requested_limit = limit;
   }
 
+  if (typeof batchNumber === "number" && Number.isFinite(batchNumber)) {
+    payload.requested_batch_number = batchNumber;
+  }
+
   return ensureArray(requireData(await supabase.rpc("get_practice_questions", payload)));
 }
 
-export async function startPracticeBatch(subjectSlug) {
+export async function startPracticeBatch(subjectSlug, batchNumber = null) {
   if (!subjectSlug) return [];
 
-  return ensureArray(requireData(
-    await supabase.rpc("start_practice_batch", {
-      requested_subject_slug: subjectSlug,
-    }),
-  ));
+  const payload = {
+    requested_subject_slug: subjectSlug,
+  };
+
+  if (typeof batchNumber === "number" && Number.isFinite(batchNumber)) {
+    payload.requested_batch_number = batchNumber;
+  }
+
+  return ensureArray(requireData(await supabase.rpc("start_practice_batch", payload)));
 }
 
-export async function submitAttempt({ mode, subjectId, answers }) {
+export async function submitAttempt({ mode, subjectId, answers, batchNumber = null }) {
+  const payload = {
+    submitted_mode: mode,
+    submitted_subject_id: subjectId,
+    submitted_answers: answers,
+  };
+
+  if (typeof batchNumber === "number" && Number.isFinite(batchNumber)) {
+    payload.submitted_batch_number = batchNumber;
+  }
+
   const rows = requireData(
-    await supabase.rpc("submit_attempt", {
-      submitted_mode: mode,
-      submitted_subject_id: subjectId,
-      submitted_answers: answers,
-    }),
+    await supabase.rpc("submit_attempt", payload),
   );
 
   return rows?.[0] ?? null;

@@ -4,7 +4,7 @@ import { AppFrame } from "../components/AppFrame";
 import ProfileOnboardingModal from "../components/ProfileOnboardingModal";
 import {
   getCandidateSummary,
-  getModuleAvailability,
+  getModuleBatchAccess,
   getModuleProgress,
   getRecentAttempts,
   getReviewQueue,
@@ -35,6 +35,13 @@ function formatAttemptPercent(attempt) {
 function getFirstName(fullName) {
   if (!fullName) return "";
   return fullName.trim().split(/\s+/)[0] ?? "";
+}
+
+function getSubjectSlugFromPracticeTarget(target) {
+  if (typeof target !== "string") return null;
+
+  const match = target.match(/^\/practice\/([^/?#]+)/i);
+  return match?.[1] ?? null;
 }
 
 function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfirm }) {
@@ -77,9 +84,9 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [progress, setProgress] = useState([]);
+  const [moduleBatchAccess, setModuleBatchAccess] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
-  const [availabilityBySubject, setAvailabilityBySubject] = useState({});
   const [loading, setLoading] = useState(true);
   const [subjectsNotice, setSubjectsNotice] = useState("");
   const [attemptsNotice, setAttemptsNotice] = useState("");
@@ -99,7 +106,7 @@ export default function Dashboard() {
       { key: "summary", promise: getCandidateSummary() },
       { key: "subjects", promise: getSubjects() },
       { key: "progress", promise: getModuleProgress() },
-      { key: "availability", promise: getModuleAvailability() },
+      { key: "batchAccess", promise: getModuleBatchAccess() },
       { key: "attempts", promise: getRecentAttempts() },
       { key: "review", promise: getReviewQueue(6) },
     ];
@@ -120,17 +127,8 @@ export default function Dashboard() {
         if (request.key === "progress") {
           setProgress(Array.isArray(result.value) ? result.value : []);
         }
-        if (request.key === "availability") {
-          const entries = Array.isArray(result.value)
-            ? result.value.map((item) => [
-                item.subject_id,
-                {
-                  hasContent: Boolean(item.has_content),
-                  isPrepared: Boolean(item.is_prepared),
-                },
-              ])
-            : [];
-          setAvailabilityBySubject(Object.fromEntries(entries));
+        if (request.key === "batchAccess") {
+          setModuleBatchAccess(Array.isArray(result.value) ? result.value : []);
         }
         if (request.key === "attempts") {
           setAttempts(Array.isArray(result.value) ? result.value : []);
@@ -153,7 +151,7 @@ export default function Dashboard() {
         setSubjectsNotice("Modules are not available right now.");
       }
       if (request.key === "progress") setProgress([]);
-      if (request.key === "availability") setAvailabilityBySubject({});
+      if (request.key === "batchAccess") setModuleBatchAccess([]);
       if (request.key === "attempts") {
         setAttempts([]);
         setAttemptsNotice("Recent attempts could not be loaded right now.");
@@ -184,6 +182,17 @@ export default function Dashboard() {
     () => Object.fromEntries(progress.map((item) => [item.subject_id, item])),
     [progress],
   );
+  const batchAccessBySubject = useMemo(() => {
+    const grouped = {};
+
+    moduleBatchAccess.forEach((row) => {
+      if (!row?.subject_slug) return;
+      grouped[row.subject_slug] ??= [];
+      grouped[row.subject_slug].push(row);
+    });
+
+    return grouped;
+  }, [moduleBatchAccess]);
   const subjectNameBySlug = useMemo(
     () => Object.fromEntries(subjects.map((item) => [item.slug, item.name])),
     [subjects],
@@ -193,17 +202,23 @@ export default function Dashboard() {
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
   const isPaidUser = Boolean(summary?.has_paid_access);
   const hasAttempts = attempts.length > 0;
-  const availableSubjects = subjects.filter((subject) => availabilityBySubject[subject.id]?.hasContent);
-  const hasAvailableContent = availableSubjects.length > 0;
+  const availableSubjects = subjects.filter((subject) =>
+    (batchAccessBySubject[subject.slug] ?? []).some((row) => Number(row.published_question_count ?? 0) > 0),
+  );
+  const hasAvailableContent = moduleBatchAccess.some((row) => Number(row.published_question_count ?? 0) > 0);
   const noModuleContent =
     profileComplete &&
     subjects.length > 0 &&
-    Object.keys(availabilityBySubject).length > 0 &&
+    moduleBatchAccess.length > 0 &&
     availableSubjects.length === 0;
   const weakAreaItems = reviewQueue.slice(0, 4);
   const pendingTarget = location.state?.onboardingTarget ?? null;
-  const activeOnboardingTarget = onboardingTarget ?? pendingTarget;
+  const activeOnboardingSubjectSlug = getSubjectSlugFromPracticeTarget(onboardingTarget ?? pendingTarget);
   const onboardingModalOpen = showOnboardingModal || Boolean(pendingTarget);
+  const onboardingNextPath =
+    onboardingTarget === "/access" || pendingTarget === "/access"
+      ? "/access"
+      : "/dashboard#modules";
 
   useEffect(() => {
     if (!pendingTarget) return;
@@ -228,18 +243,31 @@ export default function Dashboard() {
     setShowOnboardingModal(true);
   }
 
+  function openOnboardingForAccess() {
+    setOnboardingTarget("/access");
+    setShowOnboardingModal(true);
+  }
+
+  function getRecommendedBatchRow(subject) {
+    const rows = batchAccessBySubject[subject.slug] ?? [];
+
+    if (rows.length === 0) return null;
+
+    return (
+      rows.find((row) => row.is_recommended) ??
+      rows.find((row) => row.can_start) ??
+      rows.find((row) => Number(row.published_question_count ?? 0) > 0) ??
+      rows[0]
+    );
+  }
+
   function getModuleCta(subject) {
     const subjectProgress = progressBySubject[subject.id] ?? null;
-    const hasContent = Boolean(availabilityBySubject[subject.id]?.hasContent);
-    const currentBatchNumber = Number(subjectProgress?.current_batch_number ?? 1);
-    const lastBatchPassed = subjectProgress?.last_batch_passed === true;
-    const selectedForFreeAccess = Boolean(subjectProgress?.selected_for_free_access);
-    const freeRetryConsumed = Boolean(subjectProgress?.free_retry_consumed);
-    const freeFirstAttemptCompleted = selectedForFreeAccess
-      ? Boolean(summary?.free_first_attempt_completed)
-      : false;
-    const isSelectedFreeModule = freeModuleSlug === subject.slug || selectedForFreeAccess;
-    const hasCompletedAttempts = Number(subjectProgress?.completed_attempts ?? 0) > 0;
+    const batchRow = getRecommendedBatchRow(subject);
+    const batchNumber = Number(batchRow?.batch_number ?? subjectProgress?.current_batch_number ?? 1);
+    const hasContent = Number(batchRow?.published_question_count ?? 0) > 0;
+    const hasCompletedAttempts = Number(batchRow?.attempt_count ?? subjectProgress?.completed_attempts ?? 0) > 0;
+    const lastBatchPassed = batchRow?.passed ?? subjectProgress?.last_batch_passed === true;
 
     if (!profileComplete) {
       return {
@@ -252,21 +280,25 @@ export default function Dashboard() {
       return { label: "Coming soon", disabled: true };
     }
 
-    if (isPaidUser) {
-      if (hasCompletedAttempts && lastBatchPassed === false) {
-        return { label: `Retry Batch ${currentBatchNumber}`, to: `/practice/${subject.slug}` };
-      }
-
-      if (hasCompletedAttempts) {
-        return { label: `Continue Batch ${currentBatchNumber}`, to: `/practice/${subject.slug}` };
-      }
-
-      return { label: "Start Batch 1", to: `/practice/${subject.slug}` };
+    if (!batchRow) {
+      return { label: "Coming soon", disabled: true };
     }
 
-    if (!hasSelectedFreeModule) {
+    if (batchRow.state === "unavailable_not_published") {
+      return { label: "Coming soon", disabled: true };
+    }
+
+    if (batchRow.state === "locked_requires_payment") {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (!batchRow.can_start) {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (!isPaidUser && !hasSelectedFreeModule && batchRow.reason_code === "free_batch_available") {
       return {
-        label: "Start Batch 1",
+        label: `Start Batch ${batchNumber}`,
         action: () => {
           setCtaError("");
           setStartConfirmSubject(subject);
@@ -274,65 +306,37 @@ export default function Dashboard() {
       };
     }
 
-    if (!isSelectedFreeModule) {
-      return { label: "Unlock full access", to: "/access" };
+    if (batchRow.state === "completed_failed") {
+      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
     }
 
-    if (lastBatchPassed || freeRetryConsumed) {
-      return { label: "Unlock full access", to: "/access" };
+    if (hasCompletedAttempts && lastBatchPassed === false) {
+      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
     }
 
-    if (freeFirstAttemptCompleted) {
-      return { label: "Retry Batch 1", to: `/practice/${subject.slug}` };
+    if (hasCompletedAttempts) {
+      return { label: `Continue Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
     }
 
-    return { label: "Continue Batch 1", to: `/practice/${subject.slug}` };
+    return { label: `Start Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
   }
 
   function getModuleStatus(subject) {
-    const subjectProgress = progressBySubject[subject.id] ?? null;
-    const hasContent = Boolean(availabilityBySubject[subject.id]?.hasContent);
-    const currentBatchNumber = Number(subjectProgress?.current_batch_number ?? 1);
-    const completedAttempts = Number(subjectProgress?.completed_attempts ?? 0);
-    const lastBatchPassed = subjectProgress?.last_batch_passed;
-    const isSelectedFreeModule = freeModuleSlug === subject.slug || Boolean(subjectProgress?.selected_for_free_access);
-    const retryConsumed = Boolean(subjectProgress?.free_retry_consumed);
+    const batchRow = getRecommendedBatchRow(subject);
+    const currentBatchNumber = Number(batchRow?.batch_number ?? 1);
 
     if (!profileComplete) {
       return "Complete details to start";
     }
 
-    if (!hasContent) {
+    if (!batchRow || Number(batchRow.published_question_count ?? 0) === 0) {
       return "Coming soon";
     }
 
-    if (isPaidUser) {
-      if (completedAttempts > 0 && lastBatchPassed === false) {
-        return `Retry Batch ${currentBatchNumber}`;
-      }
-      if (completedAttempts > 0) {
-        return `Continue Batch ${currentBatchNumber}`;
-      }
-      return "Start Batch 1";
-    }
-
-    if (!hasSelectedFreeModule) {
-      return "Batch 1 available";
-    }
-
-    if (!isSelectedFreeModule) {
-      return "Unlock required";
-    }
-
-    if (lastBatchPassed) {
-      return "Batch 1 passed";
-    }
-
-    if (retryConsumed) {
-      return "Retry used";
-    }
-
-    return completedAttempts > 0 ? "Retry available" : "Free batch selected";
+    if (batchRow.state === "locked_requires_payment") return "Unlock required";
+    if (batchRow.state === "completed_passed") return `Passed Batch ${currentBatchNumber}`;
+    if (batchRow.state === "completed_failed") return `Retry Batch ${currentBatchNumber}`;
+    return `Batch ${currentBatchNumber} available`;
   }
 
   const dashboardIntro = !profileComplete
@@ -366,10 +370,10 @@ export default function Dashboard() {
     setCtaError("");
 
     try {
-      const batch = await startPracticeBatch(startConfirmSubject.slug);
+      const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
       storePracticeBatch(startConfirmSubject.slug, batch);
       setStartConfirmSubject(null);
-      navigate(`/practice/${startConfirmSubject.slug}`, {
+      navigate(`/practice/${startConfirmSubject.slug}?batch=1`, {
         state: { batchStarted: true },
       });
     } catch (error) {
@@ -407,9 +411,15 @@ export default function Dashboard() {
             <p>{accessText}</p>
             <span>{accessHelper}</span>
             {!isPaidUser && hasAvailableContent && (
-              <Link className="secondary-action" to="/access">
-                Unlock full access
-              </Link>
+              profileComplete ? (
+                <Link className="secondary-action" to="/access">
+                  Unlock full access
+                </Link>
+              ) : (
+                <button className="secondary-action" onClick={openOnboardingForAccess} type="button">
+                  Unlock full access
+                </button>
+              )
             )}
           </aside>
         </section>
@@ -469,14 +479,20 @@ export default function Dashboard() {
                 <div className="dashboard-module-list">
                   {subjects.map((subject) => {
                     const subjectProgress = progressBySubject[subject.id] ?? null;
-                    const hasContent = Boolean(availabilityBySubject[subject.id]?.hasContent);
+                    const batchRow = getRecommendedBatchRow(subject);
+                    const moduleRows = batchAccessBySubject[subject.slug] ?? [];
+                    const hasContent = moduleRows.some((row) => Number(row.published_question_count ?? 0) > 0);
                     const cta = getModuleCta(subject);
                     const status = getModuleStatus(subject);
-                    const currentBatchNumber = Number(subjectProgress?.current_batch_number ?? 1);
-                    const completedAttempts = Number(subjectProgress?.completed_attempts ?? 0);
+                    const currentBatchNumber = Number(batchRow?.batch_number ?? subjectProgress?.current_batch_number ?? 1);
+                    const completedAttempts = Number(batchRow?.attempt_count ?? subjectProgress?.completed_attempts ?? 0);
                     const lastScorePercent = Number(subjectProgress?.last_score_percent ?? 0);
                     const weakQuestionCount = Number(subjectProgress?.weak_question_count ?? 0);
-                    const lastBatchPassed = subjectProgress?.last_batch_passed;
+                    const lastBatchPassed = batchRow?.passed ?? subjectProgress?.last_batch_passed;
+                    const publishedBatchList = moduleRows
+                      .filter((row) => Number(row.published_question_count ?? 0) > 0)
+                      .map((row) => row.batch_number)
+                      .sort((left, right) => left - right);
 
                     return (
                       <article className="dashboard-module-row" key={subject.id}>
@@ -492,6 +508,11 @@ export default function Dashboard() {
                                 ? subject.description ?? "Practice questions are available for this module."
                                 : "Questions for this module are not available yet."}
                           </p>
+                          {publishedBatchList.length > 0 && (
+                            <p className="section-note">
+                              {`Published batches: ${publishedBatchList.map((value) => `Batch ${value}`).join(", ")}`}
+                            </p>
+                          )}
                           <dl className="dashboard-module-meta">
                             <div>
                               <dt>Current batch</dt>
@@ -610,8 +631,8 @@ export default function Dashboard() {
 
       {onboardingModalOpen && (
         <ProfileOnboardingModal
-          key={activeOnboardingTarget ?? "dashboard-onboarding"}
-          nextPath={activeOnboardingTarget ?? "/dashboard"}
+          key={activeOnboardingSubjectSlug ?? "dashboard-onboarding"}
+          nextPath={onboardingNextPath}
           onClose={closeOnboardingModal}
           onComplete={async () => {
             await loadDashboardData({ showLoading: false });
