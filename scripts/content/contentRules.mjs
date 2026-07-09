@@ -4,8 +4,33 @@ export const SUBJECT_BATCH_SIZES = {
   "current-affairs": 20,
 };
 
+export const ACTIVE_SUBJECT_SLUGS = new Set([
+  "public-financial-management",
+  "public-service-rules",
+  "current-affairs",
+]);
+
 export const VALID_STATUSES = new Set(["draft", "published", "archived"]);
+export const IMPORTER_VALID_STATUSES = new Set(["draft", "review", "published"]);
 export const VALID_CORRECT_OPTIONS = new Set(["A", "B", "C", "D", null]);
+export const IMPORT_REQUIRED_FIELDS = [
+  "subject_slug",
+  "question_text",
+  "option_a",
+  "option_b",
+  "option_c",
+  "option_d",
+  "correct_option",
+  "batch_number",
+  "batch_position",
+  "status",
+  "source_note",
+];
+export const DEV_SEED_SOURCE_MARKERS = [
+  "development seed question",
+  "dev_seed_gl07",
+  "dev_seed_gl08",
+];
 
 export const OBJECTIVE_REQUIRED_FIELDS = [
   "subject_slug",
@@ -39,3 +64,4 @@ export const REPORT_DIRECTORIES = {
 };
 
 export const IMPORT_READY_DIRECTORY = "contents/import-ready";
+export const IMPORTER_INPUT_DIRECTORY = "content/questions";
