@@ -261,6 +261,66 @@ export default function Dashboard() {
     );
   }
 
+  function getBatchStateLabel(row) {
+    const batchNumber = Number(row?.batch_number ?? 1);
+
+    switch (row?.state) {
+      case "completed_passed":
+        return `Passed Batch ${batchNumber}`;
+      case "completed_failed":
+        return `Retry Batch ${batchNumber}`;
+      case "locked_requires_payment":
+        return "Unlock required";
+      case "unavailable_not_published":
+        return "Coming soon";
+      default:
+        return `Batch ${batchNumber} available`;
+    }
+  }
+
+  function getBatchCardCta(subject, row) {
+    const batchNumber = Number(row?.batch_number ?? 1);
+
+    if (!profileComplete) {
+      return {
+        label: "Set your grade level",
+        action: () => openOnboardingForPractice(subject.slug),
+      };
+    }
+
+    if (!row || Number(row.published_question_count ?? 0) === 0 || row.state === "unavailable_not_published") {
+      return { label: "Coming soon", disabled: true };
+    }
+
+    if (row.state === "locked_requires_payment" || !row.can_start) {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (!isPaidUser && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
+      return {
+        label: "Start free batch",
+        action: () => {
+          setCtaError("");
+          setStartConfirmSubject(subject);
+        },
+      };
+    }
+
+    if (row.state === "completed_passed") {
+      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    }
+
+    if (row.state === "completed_failed") {
+      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    }
+
+    if (row.attempt_count > 0) {
+      return { label: `Continue Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    }
+
+    return { label: `Start Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+  }
+
   function getModuleCta(subject) {
     const subjectProgress = progressBySubject[subject.id] ?? null;
     const batchRow = getRecommendedBatchRow(subject);
@@ -537,6 +597,39 @@ export default function Dashboard() {
                               <dd>{completedAttempts > 0 ? weakQuestionCount : "None yet"}</dd>
                             </div>
                           </dl>
+                          {moduleRows.length > 0 && (
+                            <div className="dashboard-module-batch-list">
+                              {moduleRows.map((row) => {
+                                const batchCta = getBatchCardCta(subject, row);
+                                return (
+                                  <article className="dashboard-module-batch-card" key={`${subject.slug}-${row.batch_number}`}>
+                                    <div className="dashboard-module-batch-copy">
+                                      <strong>{`Batch ${row.batch_number}`}</strong>
+                                      <span>{getBatchStateLabel(row)}</span>
+                                      {row.is_recommended && isPaidUser && (
+                                        <span className="dashboard-mini-tag">Recommended next</span>
+                                      )}
+                                    </div>
+                                    <div className="dashboard-module-batch-action">
+                                      {batchCta.disabled ? (
+                                        <button disabled type="button">
+                                          {batchCta.label}
+                                        </button>
+                                      ) : batchCta.action ? (
+                                        <button className="ghost-button" onClick={batchCta.action} type="button">
+                                          {batchCta.label}
+                                        </button>
+                                      ) : (
+                                        <Link className="ghost-button" to={batchCta.to}>
+                                          {batchCta.label}
+                                        </Link>
+                                      )}
+                                    </div>
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
 
                         <div className="dashboard-module-side">
