@@ -13,6 +13,11 @@ const validCorrectOptions = new Set(["A", "B", "C", "D"]);
 const validStatuses = new Set(["draft", "review", "published"]);
 const validDifficulties = new Set(["easy", "medium", "hard"]);
 
+function normalizeSubjectSlug(value) {
+  const slug = normalizeText(value);
+  return slug === "current-affairs-general-knowledge" ? "current-affairs" : slug;
+}
+
 async function loadLocalEnvFile(fileName) {
   const envPath = path.join(projectRoot, fileName);
 
@@ -86,7 +91,9 @@ function questionMatches(existing, next) {
     normalizeText(existing.source_note) === next.source_note &&
     normalizeText(existing.status).toLowerCase() === next.status &&
     normalizeText(existing.difficulty).toLowerCase() === next.difficulty &&
-    normalizeOptional(existing.service_level) === next.service_level
+    normalizeOptional(existing.service_level) === next.service_level &&
+    Number(existing.batch_number ?? 1) === next.batch_number &&
+    Number(existing.batch_position ?? 0) === Number(next.batch_position ?? 0)
   );
 }
 
@@ -124,8 +131,23 @@ function validateQuestion(record, sourceFile) {
     throw new Error(`${sourceFile}: difficulty must be easy, medium, or hard`);
   }
 
+  const batchNumber = Number.parseInt(record.batch_number ?? 1, 10);
+  if (!Number.isInteger(batchNumber) || batchNumber < 1) {
+    throw new Error(`${sourceFile}: batch_number must be a positive integer`);
+  }
+
+  const rawBatchPosition = record.batch_position;
+  const batchPosition =
+    rawBatchPosition === undefined || rawBatchPosition === null || rawBatchPosition === ""
+      ? null
+      : Number.parseInt(rawBatchPosition, 10);
+
+  if (batchPosition !== null && (!Number.isInteger(batchPosition) || batchPosition < 1)) {
+    throw new Error(`${sourceFile}: batch_position must be a positive integer when provided`);
+  }
+
   return {
-    subject_slug: normalizeText(record.subject_slug),
+    subject_slug: normalizeSubjectSlug(record.subject_slug),
     question_text: normalizeText(record.question_text),
     option_a: normalizeText(record.option_a),
     option_b: normalizeText(record.option_b),
@@ -138,6 +160,8 @@ function validateQuestion(record, sourceFile) {
     status,
     difficulty,
     service_level: normalizeOptional(record.service_level),
+    batch_number: batchNumber,
+    batch_position: batchPosition,
   };
 }
 
@@ -213,7 +237,12 @@ async function main() {
 
   if (subjectError) throw subjectError;
 
-  const subjectBySlug = new Map((subjects ?? []).map((subject) => [subject.slug, subject]));
+  const subjectBySlug = new Map();
+
+  for (const subject of subjects ?? []) {
+    subjectBySlug.set(subject.slug, subject);
+    subjectBySlug.set(normalizeSubjectSlug(subject.slug), subject);
+  }
 
   for (const question of questions) {
     if (!subjectBySlug.has(question.subject_slug)) {
@@ -224,7 +253,7 @@ async function main() {
   const { data: existingQuestions, error: existingError } = await supabase
     .from("questions")
     .select(
-      "id, subject_id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, reference_note, source_note, status, difficulty, service_level",
+      "id, subject_id, question_text, option_a, option_b, option_c, option_d, correct_option, explanation, reference_note, source_note, status, difficulty, service_level, batch_number, batch_position",
     )
     .eq("exam_pack_id", activePack.id);
 
@@ -263,6 +292,8 @@ async function main() {
       reference_note: question.reference_note,
       source_note: question.source_note,
       status: question.status,
+      batch_number: question.batch_number,
+      batch_position: question.batch_position,
     };
 
     if (existing?.id) {
@@ -313,6 +344,8 @@ async function main() {
         reference_note: row.reference_note,
         source_note: row.source_note,
         status: row.status,
+        batch_number: row.batch_number,
+        batch_position: row.batch_position,
       })
       .eq("id", row.id)
       .select("id");

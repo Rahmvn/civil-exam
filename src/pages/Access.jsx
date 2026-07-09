@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppFrame } from "../components/AppFrame";
 import { getCandidateSummary, initializePayment } from "../lib/appApi";
-import { FREE_QUESTION_LIMIT, getAnsweredQuestionCount, getFreeQuestionsRemaining } from "../lib/accessModel";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 
 function formatNaira(kobo) {
@@ -35,10 +34,21 @@ export default function Access() {
     void loadAccess();
   }, []);
 
-  const trialRemaining = useMemo(() => {
-    return getFreeQuestionsRemaining(summary);
+  const accessStatus = useMemo(() => {
+    if (!summary) return "";
+
+    if (summary.has_paid_access) {
+      return summary.access_expires_at
+        ? `Active until ${new Date(summary.access_expires_at).toLocaleDateString()}.`
+        : "Full access is active.";
+    }
+
+    if (summary.free_module_subject_slug) {
+      return "Your free module has been selected. Batch 1 is available, with one retry if the first attempt fails.";
+    }
+
+    return "You can start Batch 1 of one module for free.";
   }, [summary]);
-  const answeredQuestionCount = getAnsweredQuestionCount(summary);
 
   async function startPayment() {
     setPaying(true);
@@ -73,16 +83,18 @@ export default function Access() {
               {loading
                 ? "Loading access..."
                 : summary?.has_paid_access
-                  ? "Full access is active."
-                  : "Stay with the free experience until you need more."}
+                ? "Full access is active."
+                  : "Free access covers Batch 1 of one selected module."}
             </h1>
             <p className="hero-summary">
-              The app is designed to let you feel the study quality first. When you are ready,
-              unlock the full pack with one flat payment.
+              {summary?.has_paid_access
+                ? "You can continue with all available modules, all batches, unlimited retries, review history, and progress tracking."
+                : "You can practise Batch 1 of one selected module for free. If your first attempt fails, you get one retry on that same batch."}
             </p>
             <p className="support-copy">
-              Paid access unlocks all available content in the active pack. If some batches are still
-              being uploaded, you will still see clear empty states instead of broken pages.
+              {summary?.has_paid_access
+                ? "Later batches, retries, review history, and progress tracking stay available while your access is active."
+                : "Full access unlocks all modules, all batches, unlimited retries, review history, and progress tracking."}
             </p>
             {error && <p className="notice error">{error}</p>}
           </div>
@@ -90,14 +102,7 @@ export default function Access() {
           <aside className="access-card">
             <span className="panel-label">Current status</span>
             <strong>{summary?.has_paid_access ? "Paid" : "Free account"}</strong>
-            <p>
-              {summary?.has_paid_access
-                ? `Active until ${new Date(summary.access_expires_at).toLocaleDateString()}.`
-                : summary
-                  ? `${trialRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining.`
-                  : "Your access details will appear here once they are available."}
-            </p>
-            {!summary?.has_paid_access && summary && <p>{answeredQuestionCount} answered so far.</p>}
+            <p>{summary ? accessStatus : "Your access details will appear here once they are available."}</p>
             {!summary?.has_paid_access && (
               <button type="button" disabled={paying || loading || !summary} onClick={startPayment}>
                 {paying ? "Redirecting..." : `Unlock full access for ${formatNaira(summary?.price_kobo ?? 250000)}`}
@@ -108,18 +113,18 @@ export default function Access() {
 
         <section className="two-column-section">
           <section className="side-panel">
-            <p className="eyebrow">What stays the same</p>
+            <p className="eyebrow">What you get</p>
             <div className="attempt-list">
               <article>
                 <div>
-                  <strong>Your level remains locked</strong>
-                  <span>Unlocking access never changes the level attached to your account.</span>
+                  <strong>Free access</strong>
+                  <span>Batch 1 of one selected module, with one retry if the first attempt fails.</span>
                 </div>
               </article>
               <article>
                 <div>
-                  <strong>Review and explanations stay central</strong>
-                  <span>The paid unlock simply extends your practice depth.</span>
+                  <strong>Full access</strong>
+                  <span>All modules, all batches, unlimited retries, review history, and progress tracking.</span>
                 </div>
               </article>
             </div>
@@ -128,8 +133,7 @@ export default function Access() {
           <aside className="side-panel">
             <p className="eyebrow">Payment support</p>
             <p className="support-copy">
-              If a payment does not reflect immediately, keep your reference and return to this page
-              after verification.
+              If a payment does not reflect immediately, keep your reference and return to this page after verification.
             </p>
           </aside>
         </section>

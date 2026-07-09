@@ -9,13 +9,15 @@ import {
   getRecentAttempts,
   getReviewQueue,
   getSubjects,
+  startPracticeBatch,
 } from "../lib/appApi";
 import {
   FREE_QUESTION_LIMIT,
   getFreeQuestionsRemaining,
   hasReachedFreeLimit,
 } from "../lib/accessModel";
-import { logAppError } from "../lib/errors";
+import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { storePracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
 
 function formatExpiryDate(value) {
@@ -37,6 +39,36 @@ function getFirstName(fullName) {
   return fullName.trim().split(/\s+/)[0] ?? "";
 }
 
+function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfirm }) {
+  if (!subject) return null;
+
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={loading ? undefined : onCancel}>
+      <section
+        aria-labelledby="free-batch-modal-title"
+        aria-modal="true"
+        className="auth-modal-card"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="free-batch-modal-title">Start your free batch?</h2>
+        <p>
+          This will use your free module. You&apos;ll be able to practise Batch 1 of this module
+          for free. To access other modules or continue to later batches, unlock full access.
+        </p>
+        <div className="auth-modal-actions">
+          <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
+            {loading ? "Starting..." : "Start free batch"}
+          </button>
+          <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
+            Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { profile, profileComplete } = useAuth();
   const location = useLocation();
@@ -54,6 +86,9 @@ export default function Dashboard() {
   const [reviewNotice, setReviewNotice] = useState("");
   const [onboardingTarget, setOnboardingTarget] = useState(null);
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [startConfirmSubject, setStartConfirmSubject] = useState(null);
+  const [startingBatch, setStartingBatch] = useState(false);
+  const [ctaError, setCtaError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -167,11 +202,13 @@ export default function Dashboard() {
 
   const freeQuestionsRemaining = useMemo(() => getFreeQuestionsRemaining(summary), [summary]);
   const firstName = getFirstName(profile?.full_name);
-  const freeLimitReached = hasReachedFreeLimit(summary);
   const progressBySubject = useMemo(
     () => Object.fromEntries(progress.map((item) => [item.subject_id, item])),
     [progress],
   );
+  const summaryBySubjectSlug = summary?.free_module_subject_slug ?? null;
+  const hasSelectedFreeModule = Boolean(summaryBySubjectSlug);
+  const isPaidUser = Boolean(summary?.has_paid_access);
   const hasAttempts = attempts.length > 0;
   const availableSubjects = subjects.filter(
     (subject) => availabilityBySubject[subject.id]?.hasContent,
@@ -201,8 +238,7 @@ export default function Dashboard() {
   const lastAttemptPercent = attempts.length > 0
     ? formatScore(attempts[0].score, attempts[0].total_questions)
     : null;
-  const canStartPractice = Boolean(firstAvailableSubject) && !freeLimitReached && profileComplete;
-  const shouldShowUnlock = hasAvailableContent && freeLimitReached && !summary?.has_paid_access;
+  const shouldShowUnlock = hasAvailableContent && !isPaidUser && hasReachedFreeLimit(summary);
   const dashboardTitle = !profileComplete
     ? "Set your grade level"
     : noModuleContent
@@ -219,49 +255,7 @@ export default function Dashboard() {
     ? formatExpiryDate(summary?.access_expires_at)
       ? `Unlocked until ${formatExpiryDate(summary.access_expires_at)}.`
       : "Full access is active."
-    : `${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining.`;
-  const recommendation = !profileComplete
-    ? {
-        title: "Set your grade level to begin.",
-        text: "Complete your details before your first practice session.",
-        actionLabel: firstSubject ? "Set your grade level" : null,
-        onAction: firstSubject ? () => openOnboardingForPractice(firstSubject.slug) : null,
-      }
-    : !hasAvailableContent
-      ? {
-          title: "Questions are being prepared.",
-          text: "Your modules will become available once questions are uploaded.",
-        }
-      : shouldShowUnlock
-        ? {
-            title: "Unlock full access to continue.",
-            text: "You have reached your free practice limit for available modules.",
-            actionLabel: "View access options",
-            to: "/access",
-          }
-        : hasWeakAreas
-          ? {
-              title: "Review missed questions before your next session.",
-              text: "Your weak-area queue is ready for another pass.",
-              actionLabel: "Open review",
-              to: "/review",
-            }
-          : !hasAttempts && firstAvailableSubject
-            ? {
-                title: `Start with ${firstAvailableSubject.name}.`,
-                text: "Begin your first practice session and build up your analytics.",
-                actionLabel: profileComplete ? "Start practice" : "Complete details",
-                to: profileComplete ? `/practice/${firstAvailableSubject.slug}` : null,
-                onAction: !profileComplete ? () => openOnboardingForPractice(firstAvailableSubject.slug) : null,
-              }
-            : firstAvailableSubject
-              ? {
-                  title: "Continue practice.",
-                  text: `Pick up from ${firstAvailableSubject.name} and keep your preparation moving.`,
-                  actionLabel: "Continue practice",
-                  to: `/practice/${firstAvailableSubject.slug}`,
-                }
-              : null;
+      : `${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining.`;
   const weakAreaItems = reviewQueue.slice(0, 5);
   const readinessSubjects = (subjects.length > 0
     ? subjects.slice(0, 3)
@@ -285,6 +279,144 @@ export default function Dashboard() {
     setShowOnboardingModal(true);
   }
 
+  function getModuleCta(subject) {
+    const subjectProgress = progressBySubject[subject.id] ?? null;
+    const hasContent = Boolean(availabilityBySubject[subject.id]?.hasContent);
+    const currentBatchNumber = Number(subjectProgress?.current_batch_number ?? 1);
+    const lastBatchPassed = subjectProgress?.last_batch_passed === true;
+    const selectedForFreeAccess = Boolean(subjectProgress?.selected_for_free_access);
+    const freeRetryConsumed = Boolean(subjectProgress?.free_retry_consumed);
+    const freeFirstAttemptCompleted = selectedForFreeAccess
+      ? Boolean(summary?.free_first_attempt_completed)
+      : false;
+    const isSelectedFreeModule = summaryBySubjectSlug === subject.slug || selectedForFreeAccess;
+    const hasCompletedAttempts = Number(subjectProgress?.completed_attempts ?? 0) > 0;
+
+    if (!profileComplete) {
+      return {
+        label: "Set your grade level",
+        action: () => openOnboardingForPractice(subject.slug),
+      };
+    }
+
+    if (!hasContent) {
+      return { label: "Coming soon", disabled: true };
+    }
+
+    if (isPaidUser) {
+      if (hasCompletedAttempts && lastBatchPassed === false) {
+        return { label: `Retry Batch ${currentBatchNumber}`, to: `/practice/${subject.slug}` };
+      }
+
+      if (hasCompletedAttempts) {
+        return { label: `Continue Batch ${currentBatchNumber}`, to: `/practice/${subject.slug}` };
+      }
+
+      return { label: "Start Batch 1", to: `/practice/${subject.slug}` };
+    }
+
+    if (!hasSelectedFreeModule) {
+      return {
+        label: "Start Batch 1",
+        action: () => {
+          setCtaError("");
+          setStartConfirmSubject(subject);
+        },
+      };
+    }
+
+    if (!isSelectedFreeModule) {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (lastBatchPassed) {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (freeRetryConsumed) {
+      return { label: "Unlock full access", to: "/access" };
+    }
+
+    if (freeFirstAttemptCompleted) {
+      return { label: "Retry Batch 1", to: `/practice/${subject.slug}` };
+    }
+
+    return {
+      label: hasCompletedAttempts ? "Continue Batch 1" : "Continue Batch 1",
+      to: `/practice/${subject.slug}`,
+    };
+  }
+
+  const primaryModuleCta = firstAvailableSubject ? getModuleCta(firstAvailableSubject) : null;
+  const recommendation = !profileComplete
+    ? {
+        title: "Set your grade level to begin.",
+        text: "Complete your details before your first practice session.",
+        actionLabel: firstSubject ? "Set your grade level" : null,
+        onAction: firstSubject ? () => openOnboardingForPractice(firstSubject.slug) : null,
+      }
+    : !hasAvailableContent
+      ? {
+          title: "Questions are being prepared.",
+          text: "Your modules will become available once questions are uploaded.",
+        }
+      : !isPaidUser && hasSelectedFreeModule && summary?.free_first_attempt_completed && summary?.free_retry_consumed
+        ? {
+            title: "Unlock full access to continue.",
+            text: "Your free batch retry has been used. Unlock full access to continue with more modules and batches.",
+            actionLabel: "View access options",
+            to: "/access",
+          }
+        : !isPaidUser && hasSelectedFreeModule && firstAvailableSubject && summaryBySubjectSlug !== firstAvailableSubject.slug
+          ? {
+              title: "Your free batch is locked to another module.",
+              text: "Unlock full access to practise other modules or continue to later batches.",
+              actionLabel: "Unlock full access",
+              to: "/access",
+            }
+          : hasWeakAreas
+            ? {
+                title: "Review missed questions before your next session.",
+                text: "Your weak-area queue is ready for another pass.",
+                actionLabel: "Open review",
+                to: "/review",
+              }
+            : primaryModuleCta
+              ? {
+                  title: !hasAttempts && firstAvailableSubject
+                    ? `Start with ${firstAvailableSubject.name}.`
+                    : "Continue practice.",
+                  text: "Move forward one batch at a time and review each result clearly.",
+                  actionLabel: primaryModuleCta.label,
+                  to: primaryModuleCta.to ?? null,
+                  onAction: primaryModuleCta.action ?? null,
+                }
+              : null;
+
+  async function confirmStartFreeBatch() {
+    if (!startConfirmSubject) return;
+
+    setStartingBatch(true);
+    setCtaError("");
+
+    try {
+      const batch = await startPracticeBatch(startConfirmSubject.slug);
+      storePracticeBatch(startConfirmSubject.slug, batch);
+      setStartConfirmSubject(null);
+      navigate(`/practice/${startConfirmSubject.slug}`, {
+        state: {
+          batchStarted: true,
+        },
+      });
+    } catch (error) {
+      logAppError(`Dashboard start batch:${startConfirmSubject.slug}`, error);
+      setCtaError(friendlyErrorMessage(error, "We could not start this batch right now."));
+      setStartConfirmSubject(null);
+    } finally {
+      setStartingBatch(false);
+    }
+  }
+
   function closeOnboardingModal() {
     setShowOnboardingModal(false);
     setOnboardingTarget(null);
@@ -306,6 +438,7 @@ export default function Dashboard() {
             )}
             <h1>{dashboardTitle}</h1>
             <p className="dashboard-header-summary">{dashboardHeading}</p>
+            {ctaError && <p className="notice error">{ctaError}</p>}
           </div>
           {!noModuleContent && (
             <article className="dashboard-note dashboard-header-card">
@@ -321,10 +454,6 @@ export default function Dashboard() {
                   <button className="primary-action" onClick={recommendation.onAction} type="button">
                     {recommendation.actionLabel}
                   </button>
-                ) : canStartPractice ? (
-                  <Link className="primary-action" to={`/practice/${firstAvailableSubject.slug}`}>
-                    {hasAttempts ? "Continue practice" : "Start practice"}
-                  </Link>
                 ) : shouldShowUnlock ? (
                   <Link className="primary-action" to="/access">
                     Unlock full access
@@ -480,22 +609,19 @@ export default function Dashboard() {
                     const weakQuestionCount = Number(subjectProgress?.weak_question_count ?? 0);
                     const mastered = Number(subjectProgress?.mastered_attempts ?? 0) > 0;
                     const shouldShowComingSoon = profileComplete && !hasContent;
-                    const shouldShowModuleUnlock = profileComplete && hasContent && freeLimitReached && !summary?.has_paid_access;
-                    const moduleCta = !profileComplete
-                      ? { label: "Start", action: () => openOnboardingForPractice(subject.slug) }
-                      : shouldShowComingSoon
-                        ? { label: "Coming soon", disabled: true }
-                        : shouldShowModuleUnlock
-                          ? { label: "Unlock access", to: "/access" }
-                          : { label: hasSubjectAttempts ? "Continue" : "Start", to: `/practice/${subject.slug}` };
+                    const moduleCta = getModuleCta(subject);
+                    const currentBatchNumber = Number(subjectProgress?.current_batch_number ?? 1);
+                    const selectedForFreeAccess = Boolean(subjectProgress?.selected_for_free_access);
                     const moduleStatus = !profileComplete
                       ? "Complete details to start"
                       : !availabilityKnown
                         ? "Availability pending"
                         : hasContent
-                          ? summary?.has_paid_access
-                            ? "Full access"
-                            : "Available"
+                          ? isPaidUser
+                            ? `Batch ${currentBatchNumber} ready`
+                            : selectedForFreeAccess
+                              ? "Free batch selected"
+                              : "Batch 1 available"
                           : "Coming soon";
 
                     return (
@@ -516,8 +642,8 @@ export default function Dashboard() {
                         </div>
                         <div className="dashboard-module-meta">
                           <span>
-                            <strong>{hasSubjectAttempts ? completedAttempts : "0"}</strong>
-                            Sessions
+                            <strong>{`Batch ${currentBatchNumber}`}</strong>
+                            Current batch
                           </span>
                           <span>
                             <strong>{hasSubjectAttempts ? `${lastScorePercent}%` : "No attempt"}</strong>
@@ -624,6 +750,12 @@ export default function Dashboard() {
           }}
         />
       )}
+      <FreeBatchConfirmationModal
+        loading={startingBatch}
+        onCancel={() => setStartConfirmSubject(null)}
+        onConfirm={() => void confirmStartFreeBatch()}
+        subject={startConfirmSubject}
+      />
     </AppFrame>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import {
   getCandidateSummary,
@@ -11,12 +11,11 @@ import {
   FREE_QUESTION_LIMIT,
   getAnsweredQuestionCount,
   getFreeQuestionsRemaining,
-  hasReachedFreeLimit,
 } from "../lib/accessModel";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { clearPracticeBatch, readPracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
 
-const QUESTION_LIMIT = 30;
 const EXAM_DURATION_MINUTES = 30;
 
 function formatTime(totalSeconds) {
@@ -27,38 +26,9 @@ function formatTime(totalSeconds) {
   return `${minutes}:${seconds}`;
 }
 
-function UpgradePrompt({ open, onClose }) {
-  if (!open) return null;
-
-  return (
-    <div className="auth-modal-backdrop" role="presentation" onClick={onClose}>
-      <section
-        aria-labelledby="upgrade-modal-title"
-        aria-modal="true"
-        className="auth-modal-card"
-        role="dialog"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2 id="upgrade-modal-title">Unlock full practice</h2>
-        <p>
-          You have completed your free practice questions. Activate full access to continue
-          practising all available modules in the active pack.
-        </p>
-        <div className="auth-modal-actions">
-          <Link className="primary-action" to="/access">
-            Unlock full access
-          </Link>
-          <button className="ghost-button" onClick={onClose} type="button">
-            Not now
-          </button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
 export default function Practice() {
   const { profileComplete } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const { subjectSlug } = useParams();
   const [summary, setSummary] = useState(null);
@@ -74,13 +44,24 @@ export default function Practice() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [emptyMessage, setEmptyMessage] = useState("");
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
   const freeQuestionsRemaining = getFreeQuestionsRemaining(summary);
   const answeredQuestionCount = getAnsweredQuestionCount(summary);
-  const freeLimitReached = hasReachedFreeLimit(summary);
+  const batchMeta = questions[0]
+    ? {
+        batchNumber: Number(questions[0].batch_number ?? 1),
+        passMarkPercent: Number(questions[0].pass_mark_percent ?? 70),
+      }
+    : {
+        batchNumber: Number(location.state?.batchNumber ?? 1),
+        passMarkPercent: Number(location.state?.passMarkPercent ?? 70),
+      };
+  const requiresAccess =
+    error.includes("Unlock full access") ||
+    error.includes("Batch 2 requires full access") ||
+    emptyMessage.includes("Unlock full access");
 
   useEffect(() => {
     async function bootstrap() {
@@ -104,73 +85,59 @@ export default function Practice() {
       }
     }
 
-    bootstrap();
+    void bootstrap();
   }, [subjectSlug]);
 
   useEffect(() => {
     if (!subject) return undefined;
 
-    async function run() {
-      if (freeLimitReached) {
-        setQuestions([]);
-        setEmptyMessage("");
-        setShowUpgradePrompt(true);
-        return;
-      }
-
-      if (!subject.id) {
-        setQuestions([]);
-        setAnswers({});
-        setTimeSpent({});
-        setFlagged([]);
-        setCurrentIndex(0);
-        setRemainingSeconds(EXAM_DURATION_MINUTES * 60);
-        setEmptyMessage("Questions for this batch are not available yet.");
-        setLoading(false);
-        return;
-      }
-
+    async function loadBatch() {
       setLoading(true);
       setError("");
-      setQuestions([]);
+      setEmptyMessage("");
       setAnswers({});
       setTimeSpent({});
       setFlagged([]);
       setCurrentIndex(0);
       setRemainingSeconds(EXAM_DURATION_MINUTES * 60);
-      setEmptyMessage("");
+
+      const storedBatch = readPracticeBatch(subject.slug);
+
+      if (storedBatch?.length > 0) {
+        setQuestions(storedBatch);
+        setLoading(false);
+        return;
+      }
 
       try {
         const nextQuestions = await getPracticeQuestions({
           subjectId: subject.id,
-          limit: QUESTION_LIMIT,
+          limit: undefined,
         });
-        setQuestions(nextQuestions);
 
         if (nextQuestions.length === 0) {
-          setEmptyMessage("Questions for this batch are not available yet.");
+          setQuestions([]);
+          setEmptyMessage("Questions for this module are not available yet.");
+          return;
         }
+
+        setQuestions(nextQuestions);
       } catch (loadError) {
         logAppError(`Practice questions:${subject.slug}`, loadError);
-        const message = friendlyErrorMessage(
-          loadError,
-          "We could not load questions for this module. Please try again.",
+        setQuestions([]);
+        setEmptyMessage(
+          friendlyErrorMessage(
+            loadError,
+            "We could not load this batch right now. Start again from the dashboard.",
+          ),
         );
-
-        if (message === "Free trial limit reached") {
-          setShowUpgradePrompt(true);
-        } else {
-          setError(
-            message,
-          );
-        }
       } finally {
         setLoading(false);
       }
     }
 
-    void run();
-  }, [freeLimitReached, subject, summary?.has_paid_access]);
+    void loadBatch();
+  }, [location.key, subject]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -179,11 +146,13 @@ export default function Practice() {
     setError("");
 
     try {
-      const submittedAnswers = Object.entries(answers).map(([questionId, selectedOption]) => ({
-        question_id: questionId,
-        selected_option: selectedOption,
-        time_spent_seconds: timeSpent[questionId] ?? 0,
-      }));
+      const submittedAnswers = questions.map((question) => ({
+        question_id: question.id,
+        selected_option: answers[question.id] ?? "",
+        time_spent_seconds: timeSpent[question.id] ?? 0,
+        display_order: question.display_order ?? 0,
+        batch_number: question.batch_number ?? batchMeta.batchNumber,
+      })).filter((item) => item.selected_option);
 
       const nextResult = await submitAttempt({
         mode: "timed_mock",
@@ -191,23 +160,27 @@ export default function Practice() {
         answers: submittedAnswers,
       });
 
+      clearPracticeBatch(subject.slug);
       setSummary(await getCandidateSummary());
       navigate(`/review?attempt=${nextResult.attempt_id}`, {
         state: {
           result: nextResult,
-          subject,
-          questionBank: questions,
+          subject: {
+            ...subject,
+            slug: subject.slug,
+          },
+          passMarkPercent: batchMeta.passMarkPercent,
         },
       });
     } catch (submitError) {
       logAppError(`Practice submit:${subject?.slug ?? "unknown"}`, submitError);
       setError(
-        friendlyErrorMessage(submitError, "We could not submit this session. Please try again."),
+        friendlyErrorMessage(submitError, "We could not submit this batch. Please try again."),
       );
     } finally {
       setSubmitting(false);
     }
-  }, [answers, navigate, questions, subject, submitting, timeSpent]);
+  }, [answers, batchMeta.batchNumber, batchMeta.passMarkPercent, navigate, questions, subject, submitting, timeSpent]);
 
   useEffect(() => {
     if (questions.length === 0 || submitting) return undefined;
@@ -273,7 +246,7 @@ export default function Practice() {
   }
 
   if (loading && questions.length === 0) {
-    return <main className="state-shell">Loading your module...</main>;
+    return <main className="state-shell">Loading your batch...</main>;
   }
 
   return (
@@ -301,15 +274,14 @@ export default function Practice() {
         <section className="filter-panel">
           <div>
             <strong>{questions.length > 0 ? `${questions.length} questions` : "Questions will appear here"}</strong>
-            <p className="filter-status">
-              {summary?.has_paid_access
-                ? "Full pack active"
-                : `${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining`}
-            </p>
-            {questions.length > 0 && questions.length < QUESTION_LIMIT && (
-              <p className="filter-status">Showing available practice questions for this module.</p>
+            <p className="filter-status">Batch {batchMeta.batchNumber}</p>
+            <p className="filter-status">Pass mark: {batchMeta.passMarkPercent}%</p>
+            {!summary?.has_paid_access && (
+              <>
+                <p className="filter-status">{`${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining`}</p>
+                <p className="filter-status">{answeredQuestionCount} answered so far</p>
+              </>
             )}
-            {!summary?.has_paid_access && <p className="filter-status">{answeredQuestionCount} answered so far</p>}
           </div>
           <div className="subject-switcher">
             {subjects.map((item) => (
@@ -329,27 +301,21 @@ export default function Practice() {
         {questions.length === 0 ? (
           <section className="empty-panel">
             <p className="eyebrow">Module practice</p>
-            <h2>
-              {freeLimitReached
-                ? "Your free practice limit has been reached."
-                : emptyMessage || "Questions for this batch are not available yet."}
-            </h2>
+            <h2>{emptyMessage || "Questions for this module are not available yet."}</h2>
             <p>
-              {freeLimitReached
-                ? "Unlock full access to continue practising all available modules in the active pack."
-                : !subject?.id
-                ? "This module is available in your dashboard, but questions have not been uploaded yet."
-                : summary?.has_paid_access
-                ? "Return later or try another module when content is uploaded."
-                : "Free preview questions will appear here when they are available for this module."}
+              {emptyMessage.includes("Start your free batch")
+                ? "Return to the dashboard and confirm your free batch before entering this module."
+                : emptyMessage.includes("Choose a module")
+                  ? "Return to the dashboard and choose a module to continue."
+                  : "If this batch has not been started yet, return to the dashboard and begin from the module list."}
             </p>
             <div className="hero-actions">
               <Link className="secondary-action" to="/dashboard">
                 Back to dashboard
               </Link>
-              {(!summary?.has_paid_access || freeLimitReached) && (
+              {requiresAccess && !summary?.has_paid_access && (
                 <Link className="primary-action" to="/access">
-                  View access
+                  Unlock full access
                 </Link>
               )}
             </div>
@@ -357,7 +323,7 @@ export default function Practice() {
         ) : (
           <section className="exam-layout">
             <aside className="exam-sidebar">
-              <p className="eyebrow">Session progress</p>
+              <p className="eyebrow">Batch progress</p>
               <h2>{answeredCount} answered</h2>
               <div className="progress-track">
                 <span style={{ width: `${progressPercent}%` }} />
@@ -389,13 +355,14 @@ export default function Practice() {
                 onClick={() => void submitCurrentSession()}
                 type="button"
               >
-                {submitting ? "Submitting..." : "Submit session"}
+                {submitting ? "Submitting..." : "Submit batch"}
               </button>
             </aside>
 
             <section className="question-panel">
               <div className="question-meta">
                 <span>{subject?.name}</span>
+                <span>{`Batch ${batchMeta.batchNumber}`}</span>
                 <span>
                   Question {currentIndex + 1} of {questions.length}
                 </span>
@@ -447,7 +414,6 @@ export default function Practice() {
           </section>
         )}
       </section>
-      <UpgradePrompt onClose={() => setShowUpgradePrompt(false)} open={showUpgradePrompt} />
     </AppFrame>
   );
 }

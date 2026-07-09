@@ -129,10 +129,23 @@ export async function getAttemptReview(attemptId = null) {
 export async function getPracticeQuestions({ subjectId, limit = 30 }) {
   if (!subjectId) return [];
 
+  const payload = {
+    requested_subject_id: subjectId,
+  };
+
+  if (typeof limit === "number") {
+    payload.requested_limit = limit;
+  }
+
+  return ensureArray(requireData(await supabase.rpc("get_practice_questions", payload)));
+}
+
+export async function startPracticeBatch(subjectSlug) {
+  if (!subjectSlug) return [];
+
   return ensureArray(requireData(
-    await supabase.rpc("get_practice_questions", {
-      requested_subject_id: subjectId,
-      requested_limit: limit,
+    await supabase.rpc("start_practice_batch", {
+      requested_subject_slug: subjectSlug,
     }),
   ));
 }

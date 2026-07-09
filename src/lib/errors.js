@@ -4,6 +4,12 @@ const KNOWN_USER_MESSAGES = new Map([
   ["Choose a module before starting practice", "Choose a module to continue."],
   ["Complete your profile setup before starting practice", "Complete your details to start practice."],
   ["Complete your profile setup before submitting practice", "Complete your details to start practice."],
+  ["Confirm your free batch start from the dashboard.", "Start your free batch from the dashboard to continue."],
+  ["Your free batch is locked to another module. Unlock full access to continue.", "Your free batch is already locked to another module. Unlock full access to continue."],
+  ["Unlock full access to continue.", "Unlock full access to continue."],
+  ["Unlock full access to continue to the next batch.", "Batch 2 requires full access."],
+  ["Questions for this module are not available yet.", "Questions for this module are not available yet."],
+  ["This batch is no longer available. Start again from the dashboard.", "This batch is no longer available. Start again from the dashboard."],
   ["Your service level is locked. Contact support if it needs correction", "Your service level is locked. Contact support if it needs correction."],
   ["Profile setup cannot be reopened", "Your profile has already been completed."],
   ["Free trial limit reached", "Your free practice limit has been reached."],
@@ -132,7 +138,7 @@ export function friendlyErrorMessage(error, fallback = "Something went wrong. Pl
   }
 
   if (includesAny(message, QUESTION_CONTENT_MARKERS)) {
-    return "Practice questions for this level are still being prepared.";
+    return "Practice questions for this module are not available yet.";
   }
 
   return fallback;
