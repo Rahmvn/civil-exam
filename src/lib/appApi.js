@@ -79,7 +79,7 @@ export async function getSubjects() {
   const rows = requireData(
     await supabase
       .from("subjects")
-      .select("id, slug, name, description, sort_order")
+      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   );
@@ -107,7 +107,7 @@ export async function getRecentAttempts() {
     await supabase
       .from("attempts")
       .select(
-        "id, mode, score, total_questions, completed_at, started_at, service_level, subjects(name, slug)",
+        "id, mode, score, total_questions, completed_at, started_at, service_level, batch_number, score_percent, passed, retry_number, subjects(name, slug)",
       )
       .order("started_at", { ascending: false })
       .limit(6),
@@ -194,10 +194,13 @@ export async function getAdminQuestions() {
     await supabase
       .from("questions")
       .select(
-        "id, question_text, service_level, difficulty, status, explanation, reference_note, source_note, option_a, option_b, option_c, option_d, correct_option, subject_id, subjects(name, slug)",
+        "id, question_text, service_level, difficulty, status, explanation, reference_note, source_note, option_a, option_b, option_c, option_d, correct_option, subject_id, batch_number, batch_position, subjects(name, slug)",
       )
+      .order("subject_id", { ascending: true })
+      .order("batch_number", { ascending: true })
+      .order("batch_position", { ascending: true, nullsFirst: false })
       .order("updated_at", { ascending: false })
-      .limit(100),
+      .limit(200),
   );
 }
 
@@ -217,6 +220,8 @@ export async function saveQuestion(question, userId) {
     reference_note: question.reference_note.trim(),
     source_note: question.source_note.trim(),
     status: question.status,
+    batch_number: Number(question.batch_number ?? 1),
+    batch_position: question.batch_position ? Number(question.batch_position) : null,
     updated_by: userId,
   };
 

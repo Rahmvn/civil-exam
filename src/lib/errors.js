@@ -12,7 +12,7 @@ const KNOWN_USER_MESSAGES = new Map([
   ["This batch is no longer available. Start again from the dashboard.", "This batch is no longer available. Start again from the dashboard."],
   ["Your service level is locked. Contact support if it needs correction", "Your service level is locked. Contact support if it needs correction."],
   ["Profile setup cannot be reopened", "Your profile has already been completed."],
-  ["Free trial limit reached", "Your free practice limit has been reached."],
+  ["Free trial limit reached", "Your free batch access has been used."],
   ["Payment reference is required", "We could not confirm your payment yet. Please try again."],
   ["Payment has not been completed", "We could not confirm your payment yet. Please try again."],
   ["This payment reference does not belong to your account", "We could not confirm your payment yet. Please try again."],

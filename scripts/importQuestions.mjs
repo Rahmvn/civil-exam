@@ -12,6 +12,7 @@ const contentDir = path.join(projectRoot, "content", "questions");
 const validCorrectOptions = new Set(["A", "B", "C", "D"]);
 const validStatuses = new Set(["draft", "review", "published"]);
 const validDifficulties = new Set(["easy", "medium", "hard"]);
+const devSeedMarker = "development seed question";
 
 function normalizeSubjectSlug(value) {
   const slug = normalizeText(value);
@@ -78,6 +79,21 @@ function buildQuestionKey(subjectSlug, questionText) {
   return `${subjectSlug}::${normalizeText(questionText).toLowerCase()}`;
 }
 
+function buildBatchKey(subjectSlug, batchNumber) {
+  return `${subjectSlug}::batch-${batchNumber}`;
+}
+
+function createImportContext() {
+  return {
+    warnings: [],
+    statusCounts: new Map(),
+  };
+}
+
+function addWarning(context, message) {
+  context.warnings.push(message);
+}
+
 function questionMatches(existing, next) {
   return (
     normalizeText(existing.question_text) === next.question_text &&
@@ -97,7 +113,7 @@ function questionMatches(existing, next) {
   );
 }
 
-function validateQuestion(record, sourceFile) {
+function validateQuestion(record, sourceFile, context) {
   const requiredFields = [
     "subject_slug",
     "question_text",
@@ -125,10 +141,18 @@ function validateQuestion(record, sourceFile) {
   if (!validStatuses.has(status)) {
     throw new Error(`${sourceFile}: status must be draft, review, or published`);
   }
+  if (status !== "published") {
+    addWarning(context, `${sourceFile}: status "${status}" will not be visible to candidates until published`);
+  }
+  context.statusCounts.set(status, (context.statusCounts.get(status) ?? 0) + 1);
 
   const difficulty = normalizeText(record.difficulty || "medium").toLowerCase();
   if (!validDifficulties.has(difficulty)) {
     throw new Error(`${sourceFile}: difficulty must be easy, medium, or hard`);
+  }
+
+  if (record.batch_number === undefined || record.batch_number === null || record.batch_number === "") {
+    addWarning(context, `${sourceFile}: missing batch_number, defaulting to 1`);
   }
 
   const batchNumber = Number.parseInt(record.batch_number ?? 1, 10);
@@ -177,6 +201,8 @@ async function readQuestionFiles() {
   }
 
   const records = [];
+  const context = createImportContext();
+  const batchPositionMap = new Map();
 
   for (const file of files) {
     const absolutePath = path.join(contentDir, file);
@@ -188,15 +214,118 @@ async function readQuestionFiles() {
     }
 
     parsed.forEach((item, index) => {
-      const validated = validateQuestion(item, `${file}#${index + 1}`);
+      const sourceRef = `${file}#${index + 1}`;
+      const validated = validateQuestion(item, sourceRef, context);
+      const batchPositionKey = buildBatchKey(validated.subject_slug, validated.batch_number);
+
+      if (validated.batch_position !== null) {
+        const positions = batchPositionMap.get(batchPositionKey) ?? new Map();
+        if (positions.has(validated.batch_position)) {
+          throw new Error(
+            `${sourceRef}: duplicate batch_position ${validated.batch_position} for ${validated.subject_slug} batch ${validated.batch_number} (already used by ${positions.get(validated.batch_position)})`,
+          );
+        }
+        positions.set(validated.batch_position, sourceRef);
+        batchPositionMap.set(batchPositionKey, positions);
+      }
+
       records.push({
         ...validated,
         import_key: buildQuestionKey(validated.subject_slug, validated.question_text),
+        source_ref: sourceRef,
       });
     });
   }
 
-  return records;
+  return { records, context };
+}
+
+function printReport({
+  activePack,
+  importedCount,
+  skippedCount,
+  failedCount,
+  allQuestions,
+  subjectById,
+  warnings,
+  statusCounts,
+}) {
+  const batchGroups = new Map();
+
+  for (const question of allQuestions) {
+    const subject = subjectById.get(question.subject_id);
+    if (!subject) continue;
+
+    const groupKey = buildBatchKey(subject.slug, Number(question.batch_number ?? 1));
+    const group = batchGroups.get(groupKey) ?? {
+      subjectName: subject.name,
+      subjectSlug: subject.slug,
+      batchNumber: Number(question.batch_number ?? 1),
+      expectedBatchSize: Number(subject.batch_size ?? 0),
+      count: 0,
+      hasDevelopmentContent: false,
+    };
+
+    group.count += 1;
+    if (String(question.source_note ?? "").toLowerCase().includes(devSeedMarker)) {
+      group.hasDevelopmentContent = true;
+    }
+
+    batchGroups.set(groupKey, group);
+  }
+
+  const moduleGroups = new Map();
+  for (const group of batchGroups.values()) {
+    const moduleSummary = moduleGroups.get(group.subjectSlug) ?? {
+      subjectName: group.subjectName,
+      subjectSlug: group.subjectSlug,
+      totalQuestions: 0,
+    };
+    moduleSummary.totalQuestions += group.count;
+    moduleGroups.set(group.subjectSlug, moduleSummary);
+  }
+
+  console.log(`Active pack: ${activePack.name}`);
+  console.log(`Imported: ${importedCount}`);
+  console.log(`Skipped: ${skippedCount}`);
+  console.log(`Failed: ${failedCount}`);
+  console.log("Question counts by module:");
+  for (const moduleSummary of [...moduleGroups.values()].sort((a, b) => a.subjectName.localeCompare(b.subjectName))) {
+    console.log(`- ${moduleSummary.subjectName} (${moduleSummary.subjectSlug}): ${moduleSummary.totalQuestions}`);
+  }
+  console.log("Question counts by batch:");
+  for (const group of [...batchGroups.values()].sort((a, b) =>
+    a.subjectName.localeCompare(b.subjectName) || a.batchNumber - b.batchNumber
+  )) {
+    const isComplete = group.expectedBatchSize > 0 && group.count >= group.expectedBatchSize;
+    const completenessLabel = group.expectedBatchSize <= 0
+      ? "batch size not configured"
+      : isComplete
+        ? "complete"
+        : group.hasDevelopmentContent
+          ? `undersized for production, allowed in development (${group.count}/${group.expectedBatchSize})`
+          : `undersized (${group.count}/${group.expectedBatchSize})`;
+    console.log(
+      `- ${group.subjectName} Batch ${group.batchNumber}: ${group.count} questions | expected ${group.expectedBatchSize || "n/a"} | ${completenessLabel}`,
+    );
+  }
+
+  const draftCount = statusCounts.get("draft") ?? 0;
+  const reviewCount = statusCounts.get("review") ?? 0;
+  const publishedCount = statusCounts.get("published") ?? 0;
+  console.log(`Status summary: published ${publishedCount}, review ${reviewCount}, draft ${draftCount}`);
+
+  const hasDevelopmentContent = [...batchGroups.values()].some((group) => group.hasDevelopmentContent);
+  if (hasDevelopmentContent) {
+    console.log("Development seed warning: imported content includes development seed questions and is not official exam content.");
+  }
+
+  if (warnings.length > 0) {
+    console.log("Warnings:");
+    for (const warning of warnings) {
+      console.log(`- ${warning}`);
+    }
+  }
 }
 
 async function main() {
@@ -213,7 +342,7 @@ async function main() {
     },
   });
 
-  const questions = await readQuestionFiles();
+  const { records: questions, context } = await readQuestionFiles();
 
   const { data: packs, error: packError } = await supabase
     .from("exam_packs")
@@ -232,7 +361,7 @@ async function main() {
 
   const { data: subjects, error: subjectError } = await supabase
     .from("subjects")
-    .select("id, slug, name")
+    .select("id, slug, name, batch_size")
     .eq("is_active", true);
 
   if (subjectError) throw subjectError;
@@ -358,10 +487,23 @@ async function main() {
     importedCount += result?.length ?? 1;
   }
 
-  console.log(`Active pack: ${activePack.name}`);
-  console.log(`Imported: ${importedCount}`);
-  console.log(`Skipped: ${skippedCount}`);
-  console.log(`Failed: ${failedCount}`);
+  const { data: reportQuestions, error: reportError } = await supabase
+    .from("questions")
+    .select("id, subject_id, batch_number, status, source_note")
+    .eq("exam_pack_id", activePack.id);
+
+  if (reportError) throw reportError;
+
+  printReport({
+    activePack,
+    importedCount,
+    skippedCount,
+    failedCount,
+    allQuestions: reportQuestions ?? [],
+    subjectById: new Map((subjects ?? []).map((subject) => [subject.id, subject])),
+    warnings: context.warnings,
+    statusCounts: context.statusCounts,
+  });
 }
 
 main().catch((error) => {

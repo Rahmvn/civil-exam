@@ -18,6 +18,8 @@ const blankQuestion = {
   id: "",
   exam_pack_id: "",
   subject_id: "",
+  batch_number: 1,
+  batch_position: "",
   service_level: "",
   difficulty: "medium",
   question_text: "",
@@ -54,6 +56,18 @@ function validateQuestion(question) {
     return "Published questions must include an explanation.";
   }
 
+  const batchNumber = Number(question.batch_number);
+  if (!Number.isInteger(batchNumber) || batchNumber < 1) {
+    return "Batch number must be a positive integer.";
+  }
+
+  if (question.batch_position !== "" && question.batch_position !== null) {
+    const batchPosition = Number(question.batch_position);
+    if (!Number.isInteger(batchPosition) || batchPosition < 1) {
+      return "Batch position must be a positive integer when provided.";
+    }
+  }
+
   return "";
 }
 
@@ -68,6 +82,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     async function loadAdmin() {
@@ -106,6 +121,60 @@ export default function Admin() {
     [form.subject_id, subjects],
   );
 
+  const filteredQuestions = useMemo(() => {
+    if (statusFilter === "all") return questions;
+    return questions.filter((question) => question.status === statusFilter);
+  }, [questions, statusFilter]);
+
+  const moduleSummaries = useMemo(() => {
+    const summaryMap = new Map();
+
+    for (const question of questions) {
+      const subjectName = question.subjects?.name ?? "Unknown module";
+      const subjectSlug = question.subjects?.slug ?? "unknown";
+      const current = summaryMap.get(subjectSlug) ?? {
+        subjectName,
+        subjectSlug,
+        totalQuestions: 0,
+      };
+
+      current.totalQuestions += 1;
+      summaryMap.set(subjectSlug, current);
+    }
+
+    return [...summaryMap.values()].sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+  }, [questions]);
+
+  const batchSummaries = useMemo(() => {
+    const summaryMap = new Map();
+
+    for (const question of questions) {
+      const subjectName = question.subjects?.name ?? "Unknown module";
+      const subjectSlug = question.subjects?.slug ?? "unknown";
+      const batchNumber = Number(question.batch_number ?? 1);
+      const key = `${subjectSlug}::${batchNumber}`;
+      const current = summaryMap.get(key) ?? {
+        subjectName,
+        subjectSlug,
+        batchNumber,
+        totalQuestions: 0,
+        draftCount: 0,
+        reviewCount: 0,
+        publishedCount: 0,
+      };
+
+      current.totalQuestions += 1;
+      if (question.status === "draft") current.draftCount += 1;
+      if (question.status === "review") current.reviewCount += 1;
+      if (question.status === "published") current.publishedCount += 1;
+      summaryMap.set(key, current);
+    }
+
+    return [...summaryMap.values()].sort((a, b) =>
+      a.subjectName.localeCompare(b.subjectName) || a.batchNumber - b.batchNumber
+    );
+  }, [questions]);
+
   function updateForm(field, value) {
     setForm((previous) => ({
       ...previous,
@@ -118,6 +187,8 @@ export default function Admin() {
       id: question.id,
       exam_pack_id: pack?.id ?? "",
       subject_id: question.subject_id,
+      batch_number: question.batch_number ?? 1,
+      batch_position: question.batch_position ?? "",
       service_level: question.service_level ?? "",
       difficulty: question.difficulty,
       question_text: question.question_text,
@@ -199,7 +270,7 @@ export default function Admin() {
           <p className="eyebrow">Admin console</p>
           <h1>Question bank management</h1>
           <p>
-            Publish clean module-based questions with clear explanations and helpful references.
+            Publish clean module-based batch questions with clear explanations and helpful references.
           </p>
         </div>
         <div className="admin-counts">
@@ -232,6 +303,25 @@ export default function Admin() {
                   </option>
                 ))}
               </select>
+            </label>
+            <label>
+              Batch number
+              <input
+                min="1"
+                type="number"
+                value={form.batch_number}
+                onChange={(event) => updateForm("batch_number", event.target.value)}
+              />
+            </label>
+            <label>
+              Batch position
+              <input
+                min="1"
+                type="number"
+                value={form.batch_position}
+                onChange={(event) => updateForm("batch_position", event.target.value)}
+                placeholder="Optional"
+              />
             </label>
             <label>
               Service level override
@@ -343,16 +433,32 @@ export default function Admin() {
         </form>
 
         <aside className="admin-question-list">
-          <p className="eyebrow">Latest questions</p>
-          {questions.length === 0 ? (
+          <div className="dashboard-section-head">
+            <div>
+              <p className="eyebrow">Question bank</p>
+              <h2>Latest questions</h2>
+            </div>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">All statuses</option>
+              {QUESTION_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+          {filteredQuestions.length === 0 ? (
             <p>No questions have been entered yet.</p>
           ) : (
-            questions.map((question) => (
+            filteredQuestions.map((question) => (
               <article key={question.id}>
                 <div>
                   <strong>{question.question_text}</strong>
                   <span>
-                    {question.subjects?.name} · {question.service_level ?? "Shared"} · {question.status}
+                    {question.subjects?.name} · Batch {question.batch_number ?? 1}
+                    {question.batch_position ? ` · Position ${question.batch_position}` : ""}
+                    {question.service_level ? ` · ${question.service_level}` : " · Shared"}
+                    {` · ${question.status}`}
                   </span>
                 </div>
                 <button className="ghost-button" type="button" onClick={() => editQuestion(question)}>
@@ -367,9 +473,33 @@ export default function Admin() {
       <section className="two-column-section">
         <div>
           <div className="section-heading">
-            <p className="eyebrow">Audit logs</p>
-            <h2>Recent admin activity</h2>
+            <p className="eyebrow">Batch visibility</p>
+            <h2>Question counts by module and batch</h2>
           </div>
+          <div className="admin-question-list">
+            {moduleSummaries.map((summary) => (
+              <article key={summary.subjectSlug}>
+                <div>
+                  <strong>{summary.subjectName}</strong>
+                  <span>{summary.totalQuestions} questions</span>
+                </div>
+              </article>
+            ))}
+            {batchSummaries.map((summary) => (
+              <article key={`${summary.subjectSlug}-${summary.batchNumber}`}>
+                <div>
+                  <strong>{`${summary.subjectName} · Batch ${summary.batchNumber}`}</strong>
+                  <span>
+                    {`${summary.totalQuestions} total · ${summary.publishedCount} published · ${summary.reviewCount} review · ${summary.draftCount} draft`}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <aside className="side-panel">
+          <p className="eyebrow">Audit logs</p>
           <div className="admin-question-list">
             {auditLogs.length === 0 ? (
               <p>No admin activity has been recorded yet.</p>
@@ -390,13 +520,11 @@ export default function Admin() {
               ))
             )}
           </div>
-        </div>
-
-        <aside className="side-panel">
           <p className="eyebrow">Content rule</p>
           <p>
-            Shared questions are the default pool for all candidates. Use a service level only when
-            you intentionally need a level-specific override.
+            Shared questions are the default pool for all candidates. Use batch numbers and positions
+            to keep progression structured, and only use a service level when you intentionally need
+            an override.
           </p>
         </aside>
       </section>

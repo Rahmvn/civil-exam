@@ -8,9 +8,7 @@ import {
   submitAttempt,
 } from "../lib/appApi";
 import {
-  FREE_QUESTION_LIMIT,
   getAnsweredQuestionCount,
-  getFreeQuestionsRemaining,
 } from "../lib/accessModel";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { clearPracticeBatch, readPracticeBatch } from "../lib/practiceSession";
@@ -47,7 +45,6 @@ export default function Practice() {
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
-  const freeQuestionsRemaining = getFreeQuestionsRemaining(summary);
   const answeredQuestionCount = getAnsweredQuestionCount(summary);
   const batchMeta = questions[0]
     ? {
@@ -278,8 +275,8 @@ export default function Practice() {
             <p className="filter-status">Pass mark: {batchMeta.passMarkPercent}%</p>
             {!summary?.has_paid_access && (
               <>
-                <p className="filter-status">{`${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining`}</p>
-                <p className="filter-status">{answeredQuestionCount} answered so far</p>
+                <p className="filter-status">Free access: Batch 1 of one selected module</p>
+                <p className="filter-status">{answeredQuestionCount > 0 ? `${answeredQuestionCount} answers submitted so far` : "One retry is allowed if the first batch attempt fails"}</p>
               </>
             )}
           </div>

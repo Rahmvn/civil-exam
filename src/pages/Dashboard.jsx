@@ -12,8 +12,6 @@ import {
   startPracticeBatch,
 } from "../lib/appApi";
 import {
-  FREE_QUESTION_LIMIT,
-  getFreeQuestionsRemaining,
   hasReachedFreeLimit,
 } from "../lib/accessModel";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
@@ -200,7 +198,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  const freeQuestionsRemaining = useMemo(() => getFreeQuestionsRemaining(summary), [summary]);
   const firstName = getFirstName(profile?.full_name);
   const progressBySubject = useMemo(
     () => Object.fromEntries(progress.map((item) => [item.subject_id, item])),
@@ -251,11 +248,18 @@ export default function Dashboard() {
       : hasAttempts
         ? "Continue your preparation from where you stopped."
         : "Choose a module to begin your practice.";
+  const freeAccessCopy = hasSelectedFreeModule
+    ? summary?.free_first_attempt_completed
+      ? summary?.free_retry_consumed
+        ? "Free batch used"
+        : "Retry Batch 1 available"
+      : "Batch 1 in selected module"
+    : "Batch 1 of one module";
   const accessCopy = summary?.has_paid_access
     ? formatExpiryDate(summary?.access_expires_at)
       ? `Unlocked until ${formatExpiryDate(summary.access_expires_at)}.`
       : "Full access is active."
-      : `${freeQuestionsRemaining} of ${FREE_QUESTION_LIMIT} free questions remaining.`;
+      : freeAccessCopy;
   const weakAreaItems = reviewQueue.slice(0, 5);
   const readinessSubjects = (subjects.length > 0
     ? subjects.slice(0, 3)
@@ -385,7 +389,7 @@ export default function Dashboard() {
               ? {
                   title: !hasAttempts && firstAvailableSubject
                     ? `Start with ${firstAvailableSubject.name}.`
-                    : "Continue practice.",
+                    : "Continue your batch.",
                   text: "Move forward one batch at a time and review each result clearly.",
                   actionLabel: primaryModuleCta.label,
                   to: primaryModuleCta.to ?? null,
@@ -465,15 +469,16 @@ export default function Dashboard() {
         </section>
 
         {noModuleContent ? (
-          <section className="dashboard-inline-status" aria-label="Free question allowance">
-            <span className="status-label">Free questions</span>
-            <strong>{`${freeQuestionsRemaining}/${FREE_QUESTION_LIMIT}`}</strong>
+          <section className="dashboard-inline-status" aria-label="Free batch access">
+            <span className="status-label">Free access</span>
+            <strong>{freeAccessCopy}</strong>
           </section>
         ) : (
           <section className="dashboard-overview-grid status-grid">
             <article className="stat-card status-tile">
-              <span className="status-label">Free questions</span>
-              <strong>{`${freeQuestionsRemaining}/${FREE_QUESTION_LIMIT}`}</strong>
+              <span className="status-label">Free access</span>
+              <strong>{freeAccessCopy}</strong>
+              <p>One selected module at a time</p>
             </article>
             <article className="stat-card status-tile">
               <span className="status-label">Grade level</span>
@@ -565,7 +570,7 @@ export default function Dashboard() {
                           <div key={subject.id ?? subject.slug} className="module-progress-row">
                             <div className="module-progress-copy">
                               <strong>{subject.name}</strong>
-                              <span>{completedAttempts > 0 ? `${completedAttempts} sessions completed` : "No attempt yet"}</span>
+                              <span>{completedAttempts > 0 ? `${completedAttempts} completed batches` : "No attempt yet"}</span>
                             </div>
                             <div className="module-progress-meter">
                               <span className="progress-bar">
@@ -725,7 +730,9 @@ export default function Dashboard() {
                         <article key={attempt.id}>
                           <div>
                             <strong>{attempt.subjects?.name ?? "Module session"}</strong>
-                            <span>{percent !== null ? `${percent}% on your last run` : "Attempt completed"}</span>
+                            <span>
+                              {`Batch ${attempt.batch_number ?? 1} · ${attempt.passed ? "Passed" : "Retry required"}${percent !== null ? ` · ${percent}%` : ""}`}
+                            </span>
                           </div>
                           <span>{new Date(attempt.started_at).toLocaleDateString()}</span>
                         </article>
