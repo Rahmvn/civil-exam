@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "import:questions": "node scripts/importQuestions.mjs",
+    "content:inspect": "node scripts/content/inspectContent.mjs",
+    "content:validate": "node scripts/content/validateContent.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
