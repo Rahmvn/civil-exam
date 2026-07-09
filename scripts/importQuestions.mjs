@@ -14,6 +14,31 @@ const validStatuses = new Set(["draft", "review", "published"]);
 const validDifficulties = new Set(["easy", "medium", "hard"]);
 const devSeedMarker = "development seed question";
 
+function parseCliArgs(argv = process.argv.slice(2)) {
+  const args = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+
+    if (!token.startsWith("--")) {
+      continue;
+    }
+
+    const key = token.slice(2);
+    const next = argv[index + 1];
+
+    if (!next || next.startsWith("--")) {
+      args[key] = true;
+      continue;
+    }
+
+    args[key] = next;
+    index += 1;
+  }
+
+  return args;
+}
+
 function normalizeSubjectSlug(value) {
   const slug = normalizeText(value);
   return slug === "current-affairs-general-knowledge" ? "current-affairs" : slug;
@@ -92,6 +117,19 @@ function createImportContext() {
 
 function addWarning(context, message) {
   context.warnings.push(message);
+}
+
+function summarizeCounts(items, getKey) {
+  const counts = new Map();
+
+  for (const item of items) {
+    const key = getKey(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((left, right) => String(left.key).localeCompare(String(right.key)));
 }
 
 function questionMatches(existing, next) {
@@ -189,23 +227,37 @@ function validateQuestion(record, sourceFile, context) {
   };
 }
 
-async function readQuestionFiles() {
-  const entries = await fs.readdir(contentDir, { withFileTypes: true });
-  const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
-    .map((entry) => entry.name)
-    .sort();
+async function readQuestionFiles(options = {}) {
+  const selectedFile = options.file ? path.resolve(projectRoot, options.file) : null;
+  let files = [];
 
-  if (files.length === 0) {
-    throw new Error(`No question files found in ${contentDir}`);
+  if (selectedFile) {
+    const stats = await fs.stat(selectedFile).catch(() => null);
+    if (!stats?.isFile()) {
+      throw new Error(`Selected file not found: ${options.file}`);
+    }
+    if (path.extname(selectedFile).toLowerCase() !== ".json") {
+      throw new Error(`Selected file must be a JSON file: ${options.file}`);
+    }
+    files = [selectedFile];
+  } else {
+    const entries = await fs.readdir(contentDir, { withFileTypes: true });
+    files = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+      .map((entry) => path.join(contentDir, entry.name))
+      .sort();
+
+    if (files.length === 0) {
+      throw new Error(`No question files found in ${contentDir}`);
+    }
   }
 
   const records = [];
   const context = createImportContext();
   const batchPositionMap = new Map();
 
-  for (const file of files) {
-    const absolutePath = path.join(contentDir, file);
+  for (const absolutePath of files) {
+    const file = path.basename(absolutePath);
     const raw = await fs.readFile(absolutePath, "utf8");
     const parsed = JSON.parse(raw);
 
@@ -237,7 +289,57 @@ async function readQuestionFiles() {
     });
   }
 
-  return { records, context };
+  return {
+    records,
+    context,
+    filesRead: files.map((file) => path.relative(projectRoot, file)),
+  };
+}
+
+function printDryRunReport({ filesRead, questions, warnings, statusCounts }) {
+  console.log("Dry run: no database writes will be performed.");
+  console.log(`Files selected: ${filesRead.join(", ")}`);
+
+  if (filesRead.some((file) => file.replace(/\\/g, "/").startsWith("contents/import-ready/"))) {
+    console.log(
+      "Warning: This is an import-ready pipeline file. Import as draft first and publish separately after review.",
+    );
+  }
+
+  console.log(`Total questions: ${questions.length}`);
+
+  const subjectCounts = summarizeCounts(questions, (question) => question.subject_slug);
+  console.log("Subject counts:");
+  for (const item of subjectCounts) {
+    console.log(`- ${item.key}: ${item.count}`);
+  }
+
+  const batchCounts = summarizeCounts(
+    questions,
+    (question) => `${question.subject_slug} batch ${question.batch_number}`,
+  );
+  console.log("Batch counts:");
+  for (const item of batchCounts) {
+    console.log(`- ${item.key}: ${item.count}`);
+  }
+
+  console.log("Status counts:");
+  for (const [status, count] of [...statusCounts.entries()].sort((left, right) =>
+    left[0].localeCompare(right[0]),
+  )) {
+    console.log(`- ${status}: ${count}`);
+  }
+
+  console.log(
+    "Subject resolution note: subject existence and active exam pack cannot be confirmed in dry-run mode because no database reads are performed.",
+  );
+
+  if (warnings.length > 0) {
+    console.log("Validation warnings:");
+    for (const warning of warnings) {
+      console.log(`- ${warning}`);
+    }
+  }
 }
 
 function printReport({
@@ -329,8 +431,24 @@ function printReport({
 }
 
 async function main() {
+  const args = parseCliArgs();
+  const isDryRun = Boolean(args["dry-run"] || args.dryRun);
   await loadLocalEnvFile(".env");
   await loadLocalEnvFile(".env.local");
+
+  const { records: questions, context, filesRead } = await readQuestionFiles({
+    file: args.file,
+  });
+
+  if (isDryRun) {
+    printDryRunReport({
+      filesRead,
+      questions,
+      warnings: context.warnings,
+      statusCounts: context.statusCounts,
+    });
+    return;
+  }
 
   const supabaseUrl = getEnv("SUPABASE_URL", ["VITE_SUPABASE_URL"]);
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -342,7 +460,12 @@ async function main() {
     },
   });
 
-  const { records: questions, context } = await readQuestionFiles();
+  if (filesRead.some((file) => file.replace(/\\/g, "/").startsWith("contents/import-ready/"))) {
+    console.log(
+      "Warning: This is an import-ready pipeline file. Import as draft first and publish separately after review.",
+    );
+  }
+  console.log(`Files selected: ${filesRead.join(", ")}`);
 
   const { data: packs, error: packError } = await supabase
     .from("exam_packs")
