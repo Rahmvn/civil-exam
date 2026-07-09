@@ -67,7 +67,7 @@
     "question_text": "Public Service of the Federation is.........................",
     "option_a": "Parastatals of the Government of the Federation.",
     "option_b": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
-    "option_c": "",
+    "option_c": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
     "option_d": "All the Personal Assistants to the Accounting Officers of the Ministries, Departments and Agencies (MDAs).",
     "correct_option": "B",
     "explanation": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended). is correct because it correctly completes the statement in the question.",
@@ -76,8 +76,7 @@
     "status": "draft",
     "needs_review": true,
     "review_notes": [
-      "Duplicate option label B found in source: \"b. All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.\".",
-      "Option C is missing or could not be recovered safely from the source.",
+      "Option C was recovered from a malformed duplicate option label in the raw source: \"b. All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.\".",
       "Matches provided answer key; official/source verification still recommended before publishing."
     ]
   },

@@ -308,7 +308,7 @@
     "option_a": "Chief Cofidential Secretaries of the President, Vice President, Senate President, SPeaker of House of Reps., CJN, SGF,HCSF, and Hon. Ministers",
     "option_b": "Assistant Chief Confidential Secretaries to Perm Sec.s. CEOs and Directors.",
     "option_c": "Principal Secretaries to the General Managers of Extra-Ministerial Offices.",
-    "option_d": "",
+    "option_d": "Chief Confidential Secretaries to Permanent Secretaries, Chief Executives and Directors.",
     "correct_option": "C",
     "explanation": "Principal Secretaries to the General Managers of Extra-Ministerial Offices. is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
     "reference_note": "",
@@ -317,6 +317,7 @@
     "needs_review": true,
     "review_notes": [
       "Option D is missing or could not be recovered safely from the source.",
+      "Option D was editorially added because the raw source supplied only three options; correct answer remains C.",
       "Matches provided answer key; official/source verification still recommended before publishing."
     ]
   },
@@ -349,7 +350,7 @@
     "option_a": "1.5 percent, double",
     "option_b": "3.5 percent, triple",
     "option_c": "2.5 percent, triple",
-    "option_d": "",
+    "option_d": "0.9 percent, Quadruple",
     "correct_option": "A",
     "explanation": "1.5 percent, double is correct because it matches the required time, quantity, or limit being tested.",
     "reference_note": "",
@@ -357,8 +358,7 @@
     "status": "draft",
     "needs_review": true,
     "review_notes": [
-      "Duplicate option label B found in source: \"b. 0.9 percent,               Quadruple\".",
-      "Option D is missing or could not be recovered safely from the source.",
+      "Option D was recovered from a malformed duplicate option label in the raw source: \"b. 0.9 percent, Quadruple\".",
       "Matches provided answer key; official/source verification still recommended before publishing."
     ]
   },

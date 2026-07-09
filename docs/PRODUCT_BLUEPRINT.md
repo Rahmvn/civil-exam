@@ -390,6 +390,7 @@ Rules:
 - Public Service Rules uses 20-question batches.
 - Current Affairs / General Knowledge uses 20-question batches.
 - Batch size is based on the real exam structure.
+- A batch should remain unavailable / Coming Soon until it has enough published questions for the intended batch size, unless there is an explicit temporary development exception.
 - Users attempt one batch at a time.
 - A batch is a fixed group of questions.
 - If the user scores 70% or higher, the batch is passed.
@@ -404,6 +405,13 @@ Rules:
 - Retrying the same batch uses the same questions but shuffled.
 - For free users, the next batch must not unlock until full access is purchased.
 - During development only, the app may allow smaller batches if there are fewer seed questions.
+
+Current content decision:
+
+- Public Financial Management Batch 3 currently has only 20 questions.
+- Expected size for Public Financial Management is 30 questions per batch.
+- More Public Financial Management questions are expected later.
+- Therefore Public Financial Management Batch 3 should remain on hold as Coming Soon and must not be imported or published yet.
 
 The app should eventually track:
 

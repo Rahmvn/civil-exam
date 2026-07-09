@@ -122,6 +122,7 @@ Rules:
 - dry-run first
 - import as `draft` only
 - verify exact draft row counts after import
+- do not remote-import an undersized hold batch that is intentionally marked Coming Soon
 
 ### Stage G - Publish Approval Gate
 
@@ -251,6 +252,12 @@ Expected batch sizes:
 - `public-financial-management`: `30`
 - `public-service-rules`: `20`
 - `current-affairs`: `20`
+
+Undersized hold rule:
+
+- If a batch is intentionally being held until more questions arrive, keep it as `Coming Soon`.
+- Example: `public-financial-management` Batch 3 currently has `20/30` questions and must remain on hold.
+- A structurally clean undersized file is not enough by itself to justify import or publish.
 
 ---
 
