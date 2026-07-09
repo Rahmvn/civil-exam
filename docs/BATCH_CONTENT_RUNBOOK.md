@@ -136,6 +136,18 @@ Rules:
 - archive old dev seed rows instead of deleting them
 - verify candidate-visible count exactly matches the expected batch size
 
+Recommended command:
+
+```bash
+npm run content:publish-batch -- --subject {subject} --batch {n} --source-note provided_client_content_reviewed_draft --archive-dev-seeds --dry-run
+```
+
+Real publish only after approval:
+
+```bash
+npm run content:publish-batch -- --subject {subject} --batch {n} --source-note provided_client_content_reviewed_draft --archive-dev-seeds --confirm
+```
+
 ---
 
 ## 3. Batch Command Patterns
@@ -168,6 +180,18 @@ Importer actual run:
 
 ```bash
 npm run import:questions -- --file "contents/import-ready/{subject}.batch{n}.cleaned.json"
+```
+
+Publish dry-run:
+
+```bash
+npm run content:publish-batch -- --subject {subject} --batch {n} --source-note provided_client_content_reviewed_draft --archive-dev-seeds --dry-run
+```
+
+Publish confirm:
+
+```bash
+npm run content:publish-batch -- --subject {subject} --batch {n} --source-note provided_client_content_reviewed_draft --archive-dev-seeds --confirm
 ```
 
 ---

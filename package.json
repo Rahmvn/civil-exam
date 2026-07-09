@@ -14,6 +14,7 @@
     "content:export-import-ready": "node scripts/content/exportImportReady.mjs",
     "content:verify-answer-key": "node scripts/content/verifyAnswerKey.mjs",
     "content:check-import-ready": "node scripts/content/checkImportReady.mjs",
+    "content:publish-batch": "node scripts/content/publishBatch.mjs",
     "content:batch-checklist": "node scripts/content/nextBatchChecklist.mjs",
     "preview": "vite preview"
   },
