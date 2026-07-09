@@ -54,6 +54,12 @@ Rules:
 - do not grant publish approval here
 - update `review_notes` to reflect answer-key confirmation or mismatch
 
+Recommended command:
+
+```bash
+npm run content:verify-answer-key -- --cleaned "contents/import-ready/{subject}.batch{n}.cleaned.json" --converted "contents/converted/{subject}.review.json"
+```
+
 Result:
 
 - enough confidence for draft import preparation

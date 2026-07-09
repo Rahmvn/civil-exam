@@ -166,3 +166,21 @@ export function findDuplicateNumbers(numbers) {
 
   return [...duplicates].sort((left, right) => left - right);
 }
+
+export function addUniqueNote(existingNotes, nextNote) {
+  const notes = Array.isArray(existingNotes)
+    ? existingNotes.filter((note) => typeof note === "string" && note.trim().length > 0)
+    : [];
+
+  if (!nextNote || !String(nextNote).trim()) {
+    return notes;
+  }
+
+  const normalizedNext = normalizeText(nextNote);
+
+  if (notes.some((note) => normalizeText(note) === normalizedNext)) {
+    return notes;
+  }
+
+  return [...notes, String(nextNote).trim()];
+}
