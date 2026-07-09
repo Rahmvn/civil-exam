@@ -1,0 +1,404 @@
+[
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 81,
+    "batch_number": 5,
+    "batch_position": 1,
+    "question_text": "...............is a reference document in the public service that specifies the duties of each post, method of entry, including qualification requirements and the prerequisites for advancement within and beyond cadres.",
+    "option_a": "Curriculum Vitae (CV)",
+    "option_b": "Confirmation of appointment",
+    "option_c": "Schedule of duties",
+    "option_d": "Scheme of service",
+    "correct_option": "D",
+    "explanation": "Scheme of service is correct because it matches the required time, quantity, or limit being tested.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 82,
+    "batch_number": 5,
+    "batch_position": 2,
+    "question_text": "Suspension is a___________________",
+    "option_a": "a. Transition from old pension scheme to the new pension.",
+    "option_b": "Permanent removal of an officer from the public servicd and he /she shall be placed on a half-salary pending the detaermination of the case.",
+    "option_c": "Removal of an Officer from performing the duties of his office, where a prima facie case of a serious nature has been established against the Officer, during which period he shall earn no salary.",
+    "option_d": "Forgiving arising from the gap in the length of service of an officer.",
+    "correct_option": "C",
+    "explanation": "Removal of an Officer from performing the duties of his office, where a prima facie case of a serious nature has been established against the Officer, during which period he shall earn no salary. is correct because it matches the rule, definition, or term being tested in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 83,
+    "batch_number": 5,
+    "batch_position": 3,
+    "question_text": "_____________is a post provided for under the Personnel emoluments sub-head of the Estimates.",
+    "option_a": "Established post",
+    "option_b": "Duty post of Senior Mid-Wifery of a Government recognised Hospital.",
+    "option_c": "Security post of an office in the Nigerian Army.",
+    "option_d": "UN Permanent post for an expatriate.",
+    "correct_option": "A",
+    "explanation": "Established post is correct because it is the officer, authority, or role described in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 84,
+    "batch_number": 5,
+    "batch_position": 4,
+    "question_text": "Public Service of the Federation is.........................",
+    "option_a": "Parastatals of the Government of the Federation.",
+    "option_b": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+    "option_c": "",
+    "option_d": "All the Personal Assistants to the Accounting Officers of the Ministries, Departments and Agencies (MDAs).",
+    "correct_option": "B",
+    "explanation": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended). is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Duplicate option label B found in source: \"b. All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.\".",
+      "Option C is missing or could not be recovered safely from the source.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 85,
+    "batch_number": 5,
+    "batch_position": 5,
+    "question_text": "The implementation of virtual meetings/engagements in the Public Service is...........",
+    "option_a": "to promote business activities among government workers as a way of earning secondary income.",
+    "option_b": "to ensure that employees are able to respond to work demands remotely.",
+    "option_c": "to combat cyber crimes among public servants in the country.",
+    "option_d": "to generate online revenue to make more funds for various expenditures of government.",
+    "correct_option": "C",
+    "explanation": "to combat cyber crimes among public servants in the country. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 86,
+    "batch_number": 5,
+    "batch_position": 6,
+    "question_text": "The Federal Civil Service Commission has delegated full disciplinary powers against erring Officers on Salary Grade Level (GL).................., to Permanent Secretaries and Heads of Extra-Ministerial Offices",
+    "option_a": "GL 15 and above",
+    "option_b": "GL GL 06 and below",
+    "option_c": "GL 13 and below",
+    "option_d": "GL 10 and below.",
+    "correct_option": "C",
+    "explanation": "GL 13 and below is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 87,
+    "batch_number": 5,
+    "batch_position": 7,
+    "question_text": "The Federal Civil Service Commission has delegated full power of dismissal against erring Officers on Salary Grade Level (GL).................., to Permanent Secretaries and Heads of Extra-Ministerial Offices.",
+    "option_a": "GL 15 and above",
+    "option_b": "GL GL 06 and below",
+    "option_c": "GL 13 and below",
+    "option_d": "GL 07 and above.",
+    "correct_option": "B",
+    "explanation": "GL GL 06 and below is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 88,
+    "batch_number": 5,
+    "batch_position": 8,
+    "question_text": ".....................consists of a series of omissions or incompetence, the cummulative effect of which shows that the Officer is not capable of discharging efficiently the duties of the office he holds.",
+    "option_a": "Dismissal",
+    "option_b": "Interdiction",
+    "option_c": "Suspension",
+    "option_d": "General Inefficiency.",
+    "correct_option": "D",
+    "explanation": "General Inefficiency. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 89,
+    "batch_number": 5,
+    "batch_position": 9,
+    "question_text": "Before the proceedings for the removal of an Officer for general inefficiency may have been instituted, he must have been warned on..........occasions in writing.",
+    "option_a": "Two (2)",
+    "option_b": "Five (5)",
+    "option_c": "Three (3)",
+    "option_d": "Ten (10).",
+    "correct_option": "C",
+    "explanation": "Three (3) is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 90,
+    "batch_number": 5,
+    "batch_position": 10,
+    "question_text": "............is a specific act of wrong-doing or an improper behaviour which is inimical to the image of the service and which ca be investigated and proved.",
+    "option_a": "General Inefficiency",
+    "option_b": "Dismissal",
+    "option_c": "Interdiction",
+    "option_d": "Misconduct.",
+    "correct_option": "D",
+    "explanation": "Misconduct. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 91,
+    "batch_number": 5,
+    "batch_position": 11,
+    "question_text": "............ can lead to termination and retirement.",
+    "option_a": "Office Rumour mongering",
+    "option_b": "Dismissal",
+    "option_c": "Interdiction",
+    "option_d": "Misconduct.",
+    "correct_option": "D",
+    "explanation": "Misconduct. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 92,
+    "batch_number": 5,
+    "batch_position": 12,
+    "question_text": "All disciplinary procedures should not exceed....... in the case of Junior Staff, except where it is a criminal case.",
+    "option_a": "Fifteen (15) working days",
+    "option_b": "Twenty-one (21) working days",
+    "option_c": "Sixty (60) days",
+    "option_d": "Twenty-eight (28) days.",
+    "correct_option": "C",
+    "explanation": "Sixty (60) days is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 93,
+    "batch_number": 5,
+    "batch_position": 13,
+    "question_text": "All disciplinary procedures should not exceed....... in the case of Senior Staff, except where it is a criminal case.",
+    "option_a": "Fifty (50) working days",
+    "option_b": "One hundred and eighty (180) days",
+    "option_c": "Sixty (60) days",
+    "option_d": "Seventy-Two (72) hours.",
+    "correct_option": "B",
+    "explanation": "One hundred and eighty (180) days is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 94,
+    "batch_number": 5,
+    "batch_position": 14,
+    "question_text": "...........is a specific act of very serious wrong-doing and an improper behaviour which is inimical to the image of the service and which ca be investigated and if proven, may lead to dismissal.",
+    "option_a": "General Inefficiency",
+    "option_b": "Dismissal",
+    "option_c": "Interdiction",
+    "option_d": "Serious Misconduct.",
+    "correct_option": "D",
+    "explanation": "Serious Misconduct. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 95,
+    "batch_number": 5,
+    "batch_position": 15,
+    "question_text": "An interdicted Officer may be placed on..............pay pending the determination of his case",
+    "option_a": "full-salary",
+    "option_b": "nil-salary",
+    "option_c": "half-salary",
+    "option_d": "double-salary",
+    "correct_option": "C",
+    "explanation": "half-salary is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 96,
+    "batch_number": 5,
+    "batch_position": 16,
+    "question_text": "The ultimate penalty for serious misconduct is...........",
+    "option_a": "Suspension",
+    "option_b": "general inefficiency",
+    "option_c": "condonation",
+    "option_d": "dismissal.",
+    "correct_option": "D",
+    "explanation": "dismissal. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 97,
+    "batch_number": 5,
+    "batch_position": 17,
+    "question_text": "An Officer in a serious financial embarrassment will be disqualified from............",
+    "option_a": "receiving salaries.",
+    "option_b": "promotion or acting in a higher appointment.",
+    "option_c": "going on statutory annual or causal leave.",
+    "option_d": "attending any training programme.",
+    "correct_option": "C",
+    "explanation": "going on statutory annual or causal leave. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 98,
+    "batch_number": 5,
+    "batch_position": 18,
+    "question_text": "Any Officer seeking elective position must resign.............before the election.",
+    "option_a": "One (1) month",
+    "option_b": "Three (3) months",
+    "option_c": "Six (6) months",
+    "option_d": "Nine (9) months.",
+    "correct_option": "C",
+    "explanation": "Six (6) months is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 99,
+    "batch_number": 5,
+    "batch_position": 19,
+    "question_text": "Generally, serving officers are prohibited from accepting chieftaincy titles until after................",
+    "option_a": "an alimony is paid to the Government",
+    "option_b": "the attainment of the rank of full directorship in the Public Service.",
+    "option_c": "retirement from Service.",
+    "option_d": "abolition of his Office.",
+    "correct_option": "C",
+    "explanation": "retirement from Service. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-service-rules",
+    "source_number": 100,
+    "batch_number": 5,
+    "batch_position": 20,
+    "question_text": "An Officer is in a serious financial embarrassment if the aggregate sum of his unsecured debts and liabilities at any point in time exceed..............",
+    "option_a": "the sum of three times his monthly emoluments.",
+    "option_b": "the sum of his twelve months salary.",
+    "option_c": "the total amount of six months of statutory allowances.",
+    "option_d": "the sum of nine (9) months of his emoluments.",
+    "correct_option": "A",
+    "explanation": "the sum of three times his monthly emoluments. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  }
+]

@@ -1,0 +1,422 @@
+[
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 61,
+    "batch_number": 3,
+    "batch_position": 1,
+    "question_text": "Stores are broadly classified into..................... and.....................",
+    "option_a": "Primary and Secondary Stores",
+    "option_b": "New and obsolete Stores",
+    "option_c": "Allocated and Unallocated Stores.",
+    "option_d": "Crude and Refined Stores.",
+    "correct_option": "C",
+    "explanation": "Allocated and Unallocated Stores. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 62,
+    "batch_number": 3,
+    "batch_position": 2,
+    "question_text": ".....................,....................and....................three further categories of Government Stores",
+    "option_a": "Primary, Secondary, and Tertiary Stores",
+    "option_b": "New, fairly new, and old Stores",
+    "option_c": "Allotted, Unalloted, and Fairly Alloted Stores.",
+    "option_d": "Expendable, Non-Expendable, and Consumable Stores.",
+    "correct_option": "D",
+    "explanation": "Expendable, Non-Expendable, and Consumable Stores. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 63,
+    "batch_number": 3,
+    "batch_position": 3,
+    "question_text": ".......... or...............must not be used in place of local purchase order or job order for the procurement of stores locally.",
+    "option_a": "Allocated or Unallocated working materials",
+    "option_b": "special imprest or cash advance",
+    "option_c": "Expendable or Consumable retired items.",
+    "option_d": "Secondary or tertiary stores",
+    "correct_option": "B",
+    "explanation": "special imprest or cash advance is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 64,
+    "batch_number": 3,
+    "batch_position": 4,
+    "question_text": "A Board of Enquiry may not be necessary due to the following except:",
+    "option_a": "if the Joss is immaterial.",
+    "option_b": "if it is an isolated incident.",
+    "option_c": "if the identity of the officer responsible is indisputable.",
+    "option_d": "if collusion is suspected.",
+    "correct_option": "D",
+    "explanation": "if collusion is suspected. is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 65,
+    "batch_number": 3,
+    "batch_position": 5,
+    "question_text": "The following are conditions for setting up a Board of Inquiry except:",
+    "option_a": "if fraud is probable.",
+    "option_b": "if the identity of the officer responsible is indisputable.",
+    "option_c": "if several officers are involved, and the loss took place over a period of time; and",
+    "option_d": "if the loss is substantial.",
+    "correct_option": "B",
+    "explanation": "if the identity of the officer responsible is indisputable. is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 66,
+    "batch_number": 3,
+    "batch_position": 6,
+    "question_text": "Board of Survey (BoS) should consist of at least...............members while the Chairman of the BoS should not be below Grade Level..................",
+    "option_a": "Three (3), GL. 14",
+    "option_b": "Nine (9), GL. 16",
+    "option_c": "Six (6), GL. 12",
+    "option_d": "Five (5), GL. 07",
+    "correct_option": "A",
+    "explanation": "Three (3), GL. 14 is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 67,
+    "batch_number": 3,
+    "batch_position": 7,
+    "question_text": "A Board of Survey will be required to inspect a minimum of............ of the stock categories, but if a serious discrepancy is found or suspected, then a.............inspection must be conducted.",
+    "option_a": "10 per cent, 90 per cent",
+    "option_b": "40 per cent, 100 per cent",
+    "option_c": "25 per cent, 75 per cent",
+    "option_d": "30 per cent, 70 per cent",
+    "correct_option": "B",
+    "explanation": "40 per cent, 100 per cent is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 68,
+    "batch_number": 3,
+    "batch_position": 8,
+    "question_text": "Any public officer who is alleged to be involved in the inflation of contract would be allowed.......... within which to respond to audit query addressed to him.",
+    "option_a": "30 days",
+    "option_b": "14 days",
+    "option_c": "5 days",
+    "option_d": "7 days.",
+    "correct_option": "C",
+    "explanation": "5 days is correct because it is the officer, authority, or role described in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 69,
+    "batch_number": 3,
+    "batch_position": 9,
+    "question_text": "A query on an unauthorised variation of contract(s) and procurement shall be answered within..........of issue.",
+    "option_a": "30 days",
+    "option_b": "21 days",
+    "option_c": "12 days",
+    "option_d": "14 days.",
+    "correct_option": "B",
+    "explanation": "21 days is correct because it matches the required time, quantity, or limit being tested.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 70,
+    "batch_number": 3,
+    "batch_position": 10,
+    "question_text": "A store-keeper or an officer-in-charge of store is required to answer an audit query on a shortage or loss of stores within..............of issue.",
+    "option_a": "14 days",
+    "option_b": "24 days",
+    "option_c": "10 days",
+    "option_d": "6 days.",
+    "correct_option": "A",
+    "explanation": "14 days is correct because it matches the required time, quantity, or limit being tested.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 71,
+    "batch_number": 3,
+    "batch_position": 11,
+    "question_text": "How many chapters are in the Financial Regulations?",
+    "option_a": "19 chapters",
+    "option_b": "23 chapters",
+    "option_c": "32 chapters",
+    "option_d": "11 chpters",
+    "correct_option": "C",
+    "explanation": "32 chapters is correct because it matches the rule, definition, or term being tested in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 72,
+    "batch_number": 3,
+    "batch_position": 12,
+    "question_text": "Who endorsed the Preface of the 2009 Financial Regulations.",
+    "option_a": "Dr. (Mrs.) Okonjo Iweala, Former Finance Minister of Nigeria.",
+    "option_b": "Former President Goodluck Jonathan",
+    "option_c": "Former President Olusegun Obasanjo",
+    "option_d": "Dr. Mansur Muhtar, Former Finance Minister of Nigeria.",
+    "correct_option": "D",
+    "explanation": "Dr. Mansur Muhtar, Former Finance Minister of Nigeria. is correct because it matches the rule, definition, or term being tested in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 73,
+    "batch_number": 3,
+    "batch_position": 13,
+    "question_text": "Open Treasury Portal of the Federal Government of Nigeris is aimed at......................",
+    "option_a": "ensuring transparency and accountability to the public as well as securing citizens' trust.",
+    "option_b": "Engendering government openness in allowing citizens to elect their preferred candidates.",
+    "option_c": "promoting people's access to intrerest free loans and grants.",
+    "option_d": "enhancing transparency in the distribution of relief materials to victims of insecurity in the country.",
+    "correct_option": "A",
+    "explanation": "ensuring transparency and accountability to the public as well as securing citizens' trust. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 74,
+    "batch_number": 3,
+    "batch_position": 14,
+    "question_text": "...................is a memorandum account umaintained by an officer controlling expenditure for the control of expenditure in a budget year.",
+    "option_a": "Vote Book",
+    "option_b": "Treasury cash Book.",
+    "option_c": "Managment Account Book",
+    "option_d": "Cash Requisition Book",
+    "correct_option": "A",
+    "explanation": "Vote Book is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 75,
+    "batch_number": 3,
+    "batch_position": 15,
+    "question_text": "The Government's Financial Transparency Policy requires that the monthly budget performance report is ready within........of the end of the month.",
+    "option_a": "14 days",
+    "option_b": "24 days",
+    "option_c": "7 days",
+    "option_d": "3 days.",
+    "correct_option": "C",
+    "explanation": "7 days is correct because it matches the required time, quantity, or limit being tested.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 76,
+    "batch_number": 3,
+    "batch_position": 16,
+    "question_text": "The Government's Financial Transparency Policy stipulates that the monthly fiscal accounts are rendered within........of the end of the month.",
+    "option_a": "14 days",
+    "option_b": "24 days",
+    "option_c": "7 days",
+    "option_d": "3 days.",
+    "correct_option": "A",
+    "explanation": "14 days is correct because it matches the required time, quantity, or limit being tested.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 77,
+    "batch_number": 3,
+    "batch_position": 17,
+    "question_text": "...................is an accounting document made or written on a prescbribed form, which contains the full particulars of a transaction in favour of persons (s) or organization to whom sum of money is due.",
+    "option_a": "Auhority-to-incur Expenditure (AIE)",
+    "option_b": "Voucher",
+    "option_c": "Warrant",
+    "option_d": "Financial Regulations.",
+    "correct_option": "D",
+    "explanation": "Financial Regulations. is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 78,
+    "batch_number": 3,
+    "batch_position": 18,
+    "question_text": "The following rules except one must be observed when preparing a payment voucher (PV).",
+    "option_a": "A PV must be legible, readable and clearly written.",
+    "option_b": "Use of a proper treasury form",
+    "option_c": "The use of the right cheque folio",
+    "option_d": "Erasure or alteration of any kind is not allowed.",
+    "correct_option": "C",
+    "explanation": "The use of the right cheque folio is correct because it is the exception or the option that does not fit the rule or list stated in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 79,
+    "batch_number": 3,
+    "batch_position": 19,
+    "question_text": "VOte book is also known as.......................",
+    "option_a": "Departmental Expenditure VOte Allocation Book (DEVAB)",
+    "option_b": "Treasury cash Book.",
+    "option_c": "Managment Account Book",
+    "option_d": "Cash Requisition Book",
+    "correct_option": "A",
+    "explanation": "Departmental Expenditure VOte Allocation Book (DEVAB) is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 80,
+    "batch_number": 3,
+    "batch_position": 20,
+    "question_text": "...................cash loans to officers who are employees of the Government.",
+    "option_a": "Auhority-to-incur Expenditure (AIE)",
+    "option_b": "Voucher",
+    "option_c": "Warrant",
+    "option_d": "Advances",
+    "correct_option": "D",
+    "explanation": "Advances is correct because it correctly completes the statement in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Undersized 20-question batch; hold for review before any publish decision.",
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  }
+]
