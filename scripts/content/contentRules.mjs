@@ -37,3 +37,5 @@ export const ORAL_FORBIDDEN_FIELDS = [
 export const REPORT_DIRECTORIES = {
   reports: "contents/reports",
 };
+
+export const IMPORT_READY_DIRECTORY = "contents/import-ready";

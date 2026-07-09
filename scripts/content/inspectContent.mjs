@@ -124,6 +124,8 @@ ${toBulletList(headings.map((heading) => `${heading.value} (line ${heading.index
 
 ## Estimated Objective Question Counts
 
+- Estimated numbered items are heuristic and should be confirmed by conversion/validation reports.
+
 ${toBulletList(
   objectiveSections.map(
     (section) =>

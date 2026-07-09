@@ -1,4 +1,5 @@
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   OBJECTIVE_REQUIRED_FIELDS,
@@ -11,6 +12,7 @@ import {
 } from "./contentRules.mjs";
 import {
   hasValue,
+  findMissingSequentialNumbers,
   normalizeText,
   parseCliArgs,
   readJsonFile,
@@ -19,7 +21,7 @@ import {
   writeMarkdownReport,
 } from "./contentUtils.mjs";
 
-function detectContentType(items) {
+export function detectContentType(items) {
   const firstItem = items[0] || {};
 
   if (
@@ -33,11 +35,11 @@ function detectContentType(items) {
   return "objective";
 }
 
-function isOverflowItem(item) {
+export function isOverflowItem(item) {
   return item.batch_number == null && item.batch_position == null;
 }
 
-function validateObjective(items) {
+export function validateObjective(items) {
   const errors = [];
   const warnings = [];
   const sourceNumberMap = new Map();
@@ -138,14 +140,7 @@ function validateObjective(items) {
   }
 
   for (const [groupKey, positions] of groupedBatchPositions.entries()) {
-    const sorted = [...positions].sort((left, right) => left - right);
-    const missing = [];
-
-    for (let expected = sorted[0]; expected <= sorted[sorted.length - 1]; expected += 1) {
-      if (!sorted.includes(expected)) {
-        missing.push(expected);
-      }
-    }
+    const missing = findMissingSequentialNumbers(positions);
 
     if (missing.length) {
       warnings.push(`${groupKey}: batch_position gaps detected (${missing.join(", ")}).`);
@@ -167,7 +162,7 @@ function validateObjective(items) {
   };
 }
 
-function validateOral(items) {
+export function validateOral(items) {
   const errors = [];
   const warnings = [];
   const promptMap = new Map();
@@ -277,6 +272,11 @@ ${toBulletList(
 `;
 }
 
+export function validateItems(items) {
+  const type = detectContentType(items);
+  return type === "oral" ? validateOral(items) : validateObjective(items);
+}
+
 async function main() {
   const args = parseCliArgs();
   const sourceFile = args.file;
@@ -323,7 +323,12 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`Validation failed: ${error.message}`);
-  process.exitCode = 1;
-});
+const isDirectRun =
+  process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(`Validation failed: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

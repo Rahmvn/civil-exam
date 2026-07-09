@@ -75,6 +75,11 @@ export async function readJsonFile(filePath) {
   return JSON.parse(raw);
 }
 
+export async function writeJsonFile(filePath, data) {
+  await ensureDirectoryExists(path.dirname(filePath));
+  await fs.writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+}
+
 export function summarizeCounts(items, getKey) {
   const counts = new Map();
 
@@ -123,4 +128,41 @@ export function hasValue(value) {
   }
 
   return true;
+}
+
+export function findMissingSequentialNumbers(numbers) {
+  if (!numbers.length) {
+    return [];
+  }
+
+  const uniqueSorted = [...new Set(numbers)].sort((left, right) => left - right);
+  const missing = [];
+
+  for (
+    let expected = uniqueSorted[0];
+    expected <= uniqueSorted[uniqueSorted.length - 1];
+    expected += 1
+  ) {
+    if (!uniqueSorted.includes(expected)) {
+      missing.push(expected);
+    }
+  }
+
+  return missing;
+}
+
+export function findDuplicateNumbers(numbers) {
+  const seen = new Set();
+  const duplicates = new Set();
+
+  for (const value of numbers) {
+    if (seen.has(value)) {
+      duplicates.add(value);
+      continue;
+    }
+
+    seen.add(value);
+  }
+
+  return [...duplicates].sort((left, right) => left - right);
 }

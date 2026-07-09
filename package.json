@@ -10,6 +10,8 @@
     "import:questions": "node scripts/importQuestions.mjs",
     "content:inspect": "node scripts/content/inspectContent.mjs",
     "content:validate": "node scripts/content/validateContent.mjs",
+    "content:build-batch": "node scripts/content/buildBatch.mjs",
+    "content:export-import-ready": "node scripts/content/exportImportReady.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
