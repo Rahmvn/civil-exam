@@ -12,6 +12,8 @@
     "content:validate": "node scripts/content/validateContent.mjs",
     "content:build-batch": "node scripts/content/buildBatch.mjs",
     "content:export-import-ready": "node scripts/content/exportImportReady.mjs",
+    "content:check-import-ready": "node scripts/content/checkImportReady.mjs",
+    "content:batch-checklist": "node scripts/content/nextBatchChecklist.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
