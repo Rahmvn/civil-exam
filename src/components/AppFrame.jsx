@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import AuthPromptModal from "./AuthPromptModal";
 import { supabase } from "../lib/supabaseClient";
 import { formatServiceLevelLabel } from "../lib/serviceLevel";
 import { useAuth } from "../lib/useAuth";
 
-function appNavClassName({ isActive }) {
+function appNavClassName(isActive) {
   return `authenticated-nav-link ${isActive ? "active" : ""}`;
 }
 
@@ -25,15 +25,19 @@ export function PublicNav({ showBrand = true, sticky = true }) {
 
   return (
     <>
-      <nav className={`top-nav public-top-nav ${sticky ? "" : "public-top-nav-static"} ${showBrand ? "" : "public-top-nav-minimal"}`}>
+      <nav
+        className={`top-nav public-top-nav ${sticky ? "" : "public-top-nav-static"} ${
+          showBrand ? "" : "public-top-nav-minimal"
+        }`}
+      >
         {showBrand ? (
           <Link to="/" className="brand-lockup">
-            <strong>Federal Public Service Exam Practice</strong>
-            <span>Levels 07 to 17 and Permanent Secretary</span>
+            <strong>FPS Exam Practice</strong>
+            <span>Federal public service promotion exam practice</span>
           </Link>
         ) : (
           <Link to="/" className="brand-lockup compact-brand-lockup">
-            <strong>Civil Service Exam Practice</strong>
+            <strong>FPS Exam Practice</strong>
           </Link>
         )}
         <div className="nav-actions">
@@ -42,16 +46,13 @@ export function PublicNav({ showBrand = true, sticky = true }) {
           </button>
         </div>
       </nav>
-      <AuthPromptModal
-        onClose={() => setAuthPromptOpen(false)}
-        open={authPromptOpen}
-      />
+      <AuthPromptModal onClose={() => setAuthPromptOpen(false)} open={authPromptOpen} />
     </>
   );
 }
 
-export function AppFrame({ children }) {
-  const { profile, isAdmin } = useAuth();
+export function AppFrame({ children, showBottomNav = true }) {
+  const { profile, isAdmin, profileComplete } = useAuth();
   const location = useLocation();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
@@ -119,6 +120,11 @@ export function AppFrame({ children }) {
     location.pathname === "/dashboard" && location.hash === "#modules";
   const isDashboardActive =
     location.pathname === "/dashboard" && location.hash !== "#modules";
+  const isPracticeActive = location.pathname.startsWith("/practice");
+  const isReviewActive = location.pathname === "/review";
+  const isAccessActive = location.pathname === "/access";
+  const isAccountActive = location.pathname === "/profile";
+  const practiceTarget = "/dashboard#modules";
 
   function bottomNavClassName(isActive) {
     return `authenticated-bottom-link ${isActive ? "active" : ""}`;
@@ -126,7 +132,9 @@ export function AppFrame({ children }) {
 
   return (
     <>
-      <main className="authenticated-shell">
+      <main
+        className={`authenticated-shell ${showBottomNav ? "has-bottom-nav" : "no-bottom-nav"}`}
+      >
         <div className="authenticated-frame">
           <header className="authenticated-header">
             <div className="authenticated-brand-row">
@@ -141,34 +149,63 @@ export function AppFrame({ children }) {
             </div>
 
             <nav className="authenticated-nav" aria-label="Primary">
-              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/dashboard">
-                Dashboard
-              </NavLink>
-              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/review">
+              <Link
+                className={appNavClassName(isDashboardActive)}
+                onClick={closeAccountMenu}
+                to="/dashboard"
+              >
+                Home
+              </Link>
+              <Link
+                className={appNavClassName(isModulesActive)}
+                onClick={closeAccountMenu}
+                to="/dashboard#modules"
+              >
+                Modules
+              </Link>
+              <Link
+                className={appNavClassName(isPracticeActive)}
+                onClick={closeAccountMenu}
+                to={practiceTarget}
+              >
+                Practice
+              </Link>
+              <Link
+                className={appNavClassName(isReviewActive)}
+                onClick={closeAccountMenu}
+                to="/review"
+              >
                 Review
-              </NavLink>
-              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/access">
-                Access
-              </NavLink>
-              <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/profile">
-                Profile
-              </NavLink>
+              </Link>
+              <Link
+                className={appNavClassName(isAccountActive)}
+                onClick={closeAccountMenu}
+                to="/profile"
+              >
+                Account
+              </Link>
               {isAdmin && (
-                <NavLink className={appNavClassName} onClick={closeAccountMenu} to="/admin">
+                <Link
+                  className={appNavClassName(location.pathname === "/admin")}
+                  onClick={closeAccountMenu}
+                  to="/admin"
+                >
                   Admin
-                </NavLink>
+                </Link>
               )}
             </nav>
 
             <div className="authenticated-actions">
-              {levelBadge && <span className="level-badge authenticated-level-badge">{levelBadge}</span>}
-              <button
-                className="authenticated-signout"
-                onClick={openSignOutConfirm}
-                type="button"
+              <Link
+                className={`authenticated-utility-link ${isAccessActive ? "active" : ""}`}
+                onClick={closeAccountMenu}
+                to="/access"
               >
-                Sign out
-              </button>
+                Access
+              </Link>
+              {levelBadge && (
+                <span className="level-badge authenticated-level-badge">{levelBadge}</span>
+              )}
               <button
                 ref={accountButtonRef}
                 aria-controls="authenticated-account-menu"
@@ -192,15 +229,23 @@ export function AppFrame({ children }) {
             >
               <div className="authenticated-account-summary">
                 <strong>{accountLabel}</strong>
-                {levelBadge && <span>{levelBadge}</span>}
+                <span>{levelBadge || (profileComplete ? "Account ready" : "Complete your account details")}</span>
               </div>
+              <Link
+                className="authenticated-account-link"
+                onClick={closeAccountMenu}
+                role="menuitem"
+                to="/access"
+              >
+                Access
+              </Link>
               <Link
                 className="authenticated-account-link"
                 onClick={closeAccountMenu}
                 role="menuitem"
                 to="/profile"
               >
-                Profile
+                Account
               </Link>
               {isAdmin && (
                 <Link
@@ -233,32 +278,45 @@ export function AppFrame({ children }) {
           </footer>
         </div>
 
-        <nav className="authenticated-bottom-nav" aria-label="Mobile primary">
-          <Link className={bottomNavClassName(isDashboardActive)} onClick={closeAccountMenu} to="/dashboard">
-            Dashboard
-          </Link>
-          <Link
-            className={bottomNavClassName(isModulesActive)}
-            onClick={closeAccountMenu}
-            to="/dashboard#modules"
-          >
-            Modules
-          </Link>
-          <NavLink
-            className={({ isActive }) => bottomNavClassName(isActive)}
-            onClick={closeAccountMenu}
-            to="/review"
-          >
-            Review
-          </NavLink>
-          <NavLink
-            className={({ isActive }) => bottomNavClassName(isActive)}
-            onClick={closeAccountMenu}
-            to="/access"
-          >
-            Access
-          </NavLink>
-        </nav>
+        {showBottomNav && (
+          <nav className="authenticated-bottom-nav" aria-label="Mobile primary">
+            <Link
+              className={bottomNavClassName(isDashboardActive)}
+              onClick={closeAccountMenu}
+              to="/dashboard"
+            >
+              Home
+            </Link>
+            <Link
+              className={bottomNavClassName(isModulesActive)}
+              onClick={closeAccountMenu}
+              to="/dashboard#modules"
+            >
+              Modules
+            </Link>
+            <Link
+              className={bottomNavClassName(isPracticeActive)}
+              onClick={closeAccountMenu}
+              to={practiceTarget}
+            >
+              Practice
+            </Link>
+            <Link
+              className={bottomNavClassName(isReviewActive)}
+              onClick={closeAccountMenu}
+              to="/review"
+            >
+              Review
+            </Link>
+            <Link
+              className={bottomNavClassName(isAccountActive)}
+              onClick={closeAccountMenu}
+              to="/profile"
+            >
+              Account
+            </Link>
+          </nav>
+        )}
       </main>
 
       {showSignOutConfirm && (
@@ -275,7 +333,7 @@ export function AppFrame({ children }) {
             role="dialog"
           >
             <h2 id="signout-confirm-title">Sign out?</h2>
-            <p>You’ll need to sign in again to continue practising.</p>
+            <p>You'll need to sign in again to continue practising.</p>
             <div className="auth-modal-actions signout-confirm-actions">
               <button
                 className="ghost-button"

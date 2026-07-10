@@ -49,13 +49,13 @@ export default function ProfileSetup() {
     <main className="auth-shell">
       <section className="auth-panel wider-panel">
         <div className="setup-brand">
-          <strong>Federal Public Service Exam Practice</strong>
-          <span>Levels 07 to 17 and Permanent Secretary</span>
+          <strong>FPS Exam Practice</strong>
+          <span>Federal public service promotion exam practice</span>
         </div>
-        <p className="eyebrow">Profile setup</p>
-        <h1>Set up your exam identity</h1>
+        <p className="eyebrow">Account setup</p>
+        <h1>Complete your account details</h1>
         <p className="support-copy">
-          Your service level locks the questions and progress on this account.
+          Add the saved details we need before you continue to practice.
         </p>
 
         <form className="stack-form" onSubmit={handleSubmit}>
@@ -93,7 +93,7 @@ export default function ProfileSetup() {
           </div>
 
           <label>
-            Service level
+            Grade level
             <select required value={serviceLevel} onChange={(event) => setServiceLevel(event.target.value)}>
               <option value="">Select level</option>
               {SERVICE_LEVELS.map((level) => (
@@ -105,7 +105,7 @@ export default function ProfileSetup() {
           </label>
 
           <label>
-            Organization
+            Civil service organisation
             <input
               value={organizationName}
               onChange={(event) => setOrganizationName(event.target.value)}
@@ -114,8 +114,7 @@ export default function ProfileSetup() {
           </label>
 
           <div className="lock-note">
-            <strong>Important:</strong> once you continue, the service level on this
-            account is locked. Contact support if it needs correction later.
+            <strong>Important:</strong> your grade level is locked after setup. Contact support later if it needs correction.
           </div>
 
           <button type="submit" disabled={busy}>

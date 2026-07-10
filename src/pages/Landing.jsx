@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PublicNav } from "../components/AppFrame";
 import AuthPromptModal from "../components/AuthPromptModal";
 import { useAuth } from "../lib/useAuth";
 
@@ -7,43 +8,51 @@ const MODULES = [
   {
     title: "Public Financial Management",
     description: "Financial Regulations, approvals, public funds, and accountability.",
-    tags: ["Approvals", "Public funds", "Accountability"],
+    tags: ["Batch practice", "Financial rules", "Accountability"],
   },
   {
     title: "Public Service Rules",
     description: "Conduct, discipline, appointments, and service procedures.",
-    tags: ["Conduct", "Discipline", "Appointments"],
+    tags: ["Conduct", "Appointments", "Service rules"],
   },
   {
     title: "Current Affairs",
     description: "Governance, national issues, history, and general awareness.",
-    tags: ["Governance", "History", "Awareness"],
+    tags: ["Coming soon", "Fact-check hold", "Later release"],
   },
 ];
 
 const STEPS = [
   {
-    title: "Set your details",
-    text: "Create your account, save your grade level, and start practice.",
+    title: "Create your account",
+    text: "Sign up with your full name, email, and password, then complete your saved account details.",
   },
   {
-    title: "Practise",
-    text: "Work through focused question batches.",
+    title: "Start Batch 1",
+    text: "Free users can try Batch 1 of one selected module after confirmation.",
   },
   {
-    title: "Review",
-    text: "See your score, missed questions, and explanations.",
+    title: "Review and continue",
+    text: "See your result, review answers, and unlock full access for all published batches when needed.",
   },
 ];
 
 const ACCESS_TIERS = [
   {
-    title: "Free Account",
-    items: ["Real questions", "Basic review", "Up to 20 free answers"],
+    title: "Free Access",
+    items: [
+      "Batch 1 of one selected module",
+      "One retry if the first attempt fails",
+      "Review your submitted attempt",
+    ],
   },
   {
     title: "Full Access",
-    items: ["All available modules", "Full explanations", "Progress and weak-area review"],
+    items: [
+      "All currently published batches",
+      "Unlimited retries",
+      "Review history and progress tracking",
+    ],
   },
 ];
 
@@ -61,15 +70,19 @@ export default function Landing() {
 
   return (
     <main className="marketing-shell marketing-shell-editorial">
+      <PublicNav />
+
       <section className="landing-hero landing-hero-editorial">
         <div className="hero-grid editorial-hero-grid">
           <div className="hero-copy">
             <div className="landing-brand-lockup">
-              <strong>Civil Service Exam Practice</strong>
-              <span>For GL 07 to GL 17 officers</span>
+              <strong>FPS Exam Practice</strong>
+              <span>Federal public service promotion exam practice</span>
             </div>
-            <h1>Prepare for Your Civil Service Promotion Exam</h1>
-            <p className="hero-summary">Level-focused practice for Nigerian civil servants.</p>
+            <h1>Practise one batch at a time and review with confidence.</h1>
+            <p className="hero-summary">
+              Structured exam practice for Nigerian civil servants preparing for promotion examinations.
+            </p>
             <p className="hero-trust-line">
               Financial Regulations. Public Service Rules. Current Affairs.
             </p>
@@ -81,21 +94,23 @@ export default function Landing() {
           </div>
 
           <aside className="hero-value-card">
-            <p className="panel-label">Practice path</p>
-            <h2>Start correctly</h2>
+            <p className="panel-label">How access works</p>
+            <h2>Clear, batch-based access</h2>
             <div className="hero-value-list">
-              <span>Choose your grade level.</span>
-              <span>Practise the core modules.</span>
-              <span>Review before moving on.</span>
+              <span>Complete your account details once.</span>
+              <span>Try Batch 1 of one selected module for free.</span>
+              <span>Unlock all published batches when you need more.</span>
             </div>
-            <p className="hero-value-note">Permanent Secretary track coming soon.</p>
+            <p className="hero-value-note">
+              Current Affairs and later oral-prep content will appear only when ready.
+            </p>
           </aside>
         </div>
       </section>
 
       <section className="landing-section landing-proof-section">
         <div className="section-heading left-heading">
-          <h2>The three exam modules</h2>
+          <h2>The core modules</h2>
         </div>
         <div className="module-showcase editorial-module-showcase">
           {MODULES.map((module) => (
@@ -134,7 +149,9 @@ export default function Landing() {
       <section className="landing-section access-preview-section">
         <div className="section-heading left-heading">
           <h2>Free access first, full access later</h2>
-          <p className="section-note max-copy">Create your account, practise real questions, then unlock full access when needed.</p>
+          <p className="section-note max-copy">
+            Start with one free Batch 1 path, then unlock all currently published batches when you are ready.
+          </p>
         </div>
         <div className="pricing-grid editorial-access-grid">
           {ACCESS_TIERS.map((tier, index) => (
@@ -155,25 +172,21 @@ export default function Landing() {
 
       <section className="landing-section perm-sec-section">
         <div className="perm-sec-card">
-          <h2>Permanent Secretary track</h2>
+          <h2>Later releases</h2>
           <p>
-            Objective practice, oral preparation, and leadership scenarios for senior public
-            service candidates.
+            Current Affairs remains on hold while content is reviewed. Oral preparation and senior-track content will be added later as a separate section.
           </p>
         </div>
       </section>
 
       <section className="landing-final-cta landing-final-cta-editorial">
-        <h2>Ready to practise with direction?</h2>
-        <p>Start free. Continue when ready.</p>
+        <h2>Ready to start with one clear practice path?</h2>
+        <p>Create your account, begin with Batch 1, and continue with full access when needed.</p>
         <Link className="primary-action" onClick={handlePrimaryClick} to={primaryCta}>
           {primaryLabel}
         </Link>
       </section>
-      <AuthPromptModal
-        onClose={() => setAuthPromptOpen(false)}
-        open={authPromptOpen}
-      />
+      <AuthPromptModal onClose={() => setAuthPromptOpen(false)} open={authPromptOpen} />
     </main>
   );
 }

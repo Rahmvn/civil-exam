@@ -34,7 +34,10 @@ export default function AuthPromptModal({ open, onClose }) {
         >
           x
         </button>
-        <h2 className="auth-prompt-title">Sign in to get started</h2>
+        <h2 className="auth-prompt-title">Sign in to continue</h2>
+        <p className="auth-prompt-copy">
+          Create your account to start Batch 1 of one selected module for free.
+        </p>
         <div className="auth-modal-actions auth-prompt-actions">
           <Link className="primary-action" to="/auth?mode=sign-in">
             Sign in

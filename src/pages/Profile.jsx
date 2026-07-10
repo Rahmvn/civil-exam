@@ -14,11 +14,11 @@ export default function Profile() {
             <p className="eyebrow">Profile</p>
             <h1>{profile?.full_name}</h1>
             <p className="hero-summary">
-              Your saved account details, locked level scope, and practice access all live here.
+              Your saved account details and account-ready exam profile live here.
             </p>
           </div>
           <aside className="readiness-panel">
-            <span className="panel-label">Locked level</span>
+            <span className="panel-label">Saved grade level</span>
             <strong>{serviceLevelLabel || "Not set"}</strong>
             <p>Contact support if it ever needs correction.</p>
           </aside>
@@ -52,8 +52,7 @@ export default function Profile() {
             <p className="eyebrow">Support</p>
             <h2>Need a correction?</h2>
             <p>
-              Service level changes are restricted because they affect your entire question pool,
-              practice history, and review data.
+              Grade level changes are restricted because they affect your saved account profile and reporting records.
             </p>
           </div>
         </section>

@@ -283,7 +283,7 @@ export default function Dashboard() {
 
     if (!profileComplete) {
       return {
-        label: "Set your grade level",
+        label: "Complete your account",
         action: () => openOnboardingForPractice(subject.slug),
       };
     }
@@ -331,7 +331,7 @@ export default function Dashboard() {
 
     if (!profileComplete) {
       return {
-        label: "Set your grade level",
+        label: "Complete your account",
         action: () => openOnboardingForPractice(subject.slug),
       };
     }
@@ -400,7 +400,7 @@ export default function Dashboard() {
   }
 
   const dashboardIntro = !profileComplete
-    ? "Add your grade level before starting Batch 1."
+    ? "Complete your account details before starting Batch 1."
     : noModuleContent
       ? `Your ${serviceLevelLabel ? `${serviceLevelLabel} ` : ""}practice modules are being prepared. Once questions are uploaded, you’ll be able to practise, review weak areas, and track your progress here.`
       : hasAttempts
@@ -412,6 +412,14 @@ export default function Dashboard() {
     : hasSelectedFreeModule
       ? "Free module selected"
       : "Free access available";
+  const dashboardIntroCopy = !profileComplete
+    ? "Complete your account details before starting Batch 1."
+    : noModuleContent
+      ? "Your practice modules are being prepared. Once published questions are ready, you'll be able to practise, review weak areas, and track your progress here."
+      : hasAttempts
+        ? "Continue your current batch or review your latest result."
+        : "Choose a module to begin practice.";
+  void dashboardIntro;
   const accessText = isPaidUser
     ? summary?.access_expires_at
       ? `Active until ${formatDate(summary.access_expires_at)}.`
@@ -461,7 +469,7 @@ export default function Dashboard() {
           <div className="dashboard-welcome-copy">
             <p className="dashboard-welcome-kicker">{firstName ? `Welcome, ${firstName}` : "Welcome"}</p>
             <h1>Dashboard</h1>
-            <p>{dashboardIntro}</p>
+            <p>{dashboardIntroCopy}</p>
             {ctaError && <p className="notice error">{ctaError}</p>}
           </div>
 

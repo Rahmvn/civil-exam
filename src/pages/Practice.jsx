@@ -288,7 +288,7 @@ export default function Practice() {
   }
 
   return (
-    <AppFrame>
+    <AppFrame showBottomNav={false}>
       <section className="practice-page">
         <header className="practice-page-header">
           <div>

@@ -81,7 +81,7 @@ export default function Access() {
   }
 
   return (
-    <AppFrame>
+    <AppFrame showBottomNav={false}>
       <section className="access-page">
         <header className="access-page-header">
           <div>
@@ -89,7 +89,7 @@ export default function Access() {
             <h1>{loading ? "Loading access..." : summary?.has_paid_access ? "Full access active" : "Unlock full access"}</h1>
             <p>
               {summary?.has_paid_access
-                ? "You can continue with all modules, all available batches, review history, and progress tracking."
+                ? "You can continue with all live modules, all currently published batches, review history, and progress tracking."
                 : "Free access covers Batch 1 of one selected module. If the first attempt fails, one retry is allowed on that same batch."}
             </p>
           </div>
@@ -121,10 +121,10 @@ export default function Access() {
 
           <article className="access-detail-card">
             <p className="eyebrow">Full access</p>
-            <h2>All modules and all batches</h2>
+            <h2>All live modules and published batches</h2>
             <ul className="access-list">
-              <li>All available modules.</li>
-              <li>All unlocked batches as content grows.</li>
+              <li>All currently published batches across live modules.</li>
+              <li>Move freely between published batches.</li>
               <li>Unlimited retries and review history.</li>
               <li>Progress tracking across your practice sessions.</li>
             </ul>

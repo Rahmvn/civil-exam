@@ -1,36 +1,36 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap");
 
 :root {
   --font-sans:
-    "Inter", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
+    "Public Sans", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display:
-    "Inter", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
+    "Public Sans", "Segoe UI", "Roboto", "Open Sans", Arial, ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --green-900: #022c22;
-  --green-800: #064e3b;
-  --green-700: #0f766e;
-  --gold: #8a6d1d;
-  --cream: #f8fafc;
+  --green-900: #0c3b2e;
+  --green-800: #0f5b3a;
+  --green-700: #1e8e5a;
+  --gold: #d7a928;
+  --cream: #f7f5f0;
   --surface: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
+  --text: #1c2430;
+  --muted: #5d6776;
+  --border: #dce3e8;
 
   --color-brand: var(--green-800);
   --color-brand-strong: var(--green-900);
-  --color-brand-soft: #ecfdf5;
+  --color-brand-soft: #eaf5ef;
   --color-ink: var(--text);
-  --color-ink-soft: #475569;
+  --color-ink-soft: #4f5a68;
   --color-paper: var(--cream);
-  --color-border-brand: rgba(6, 78, 59, 0.12);
+  --color-border-brand: rgba(15, 91, 58, 0.14);
   --on-dark: #f8fafc;
 
   --color-bg: var(--color-paper);
   --color-surface: var(--surface);
   --color-border: var(--border);
-  --color-border-strong: #cbd5e1;
+  --color-border-strong: #c6d0d8;
   --color-text: var(--color-ink);
   --color-text-soft: var(--color-ink-soft);
   --color-text-muted: var(--muted);
@@ -40,11 +40,11 @@
   --color-primary-soft: var(--color-brand-soft);
   --color-accent: var(--color-brand);
   --color-accent-dark: var(--gold);
-  --color-accent-soft: #f8f5e8;
-  --color-danger: #b45309;
-  --color-danger-soft: #fff7ed;
-  --color-success: #0f766e;
-  --color-success-soft: #f0fdfa;
+  --color-accent-soft: #f7f2df;
+  --color-danger: #c94747;
+  --color-danger-soft: #fdf1f1;
+  --color-success: #1e8e5a;
+  --color-success-soft: #edf8f1;
 
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -52,9 +52,9 @@
   --radius-xl: 24px;
 
   --shadow-xs: 0 1px 2px rgba(16, 21, 29, 0.05);
-  --shadow-sm: 0 6px 18px -12px rgba(15, 23, 42, 0.14);
-  --shadow-md: 0 16px 36px -22px rgba(15, 23, 42, 0.18);
-  --shadow-lg: 0 24px 52px -28px rgba(15, 23, 42, 0.2);
+  --shadow-sm: 0 10px 24px -18px rgba(17, 25, 40, 0.14);
+  --shadow-md: 0 18px 36px -24px rgba(17, 25, 40, 0.18);
+  --shadow-lg: 0 24px 52px -30px rgba(17, 25, 40, 0.2);
 
   font-family: var(--font-sans);
   color: var(--color-text);

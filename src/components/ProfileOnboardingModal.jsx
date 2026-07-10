@@ -57,7 +57,7 @@ export default function ProfileOnboardingModal({ nextPath = "/dashboard", onClos
   return (
     <div className="auth-modal-backdrop" role="presentation" onClick={onClose}>
       <section
-        aria-label="Complete your details to start practice"
+        aria-label="Complete your account details"
         aria-modal="true"
         className="auth-modal-card onboarding-modal-card"
         role="dialog"
@@ -71,8 +71,9 @@ export default function ProfileOnboardingModal({ nextPath = "/dashboard", onClos
         >
           x
         </button>
-        <h2>Complete your details to start practice</h2>
-        <p>Your grade level is saved to your account for identity and reporting.</p>
+        <p className="eyebrow">Account setup</p>
+        <h2>Complete your account details</h2>
+        <p>Add the saved details we need before you continue to practice, review, or payment.</p>
 
         <form className="stack-form onboarding-form" onSubmit={handleSubmit}>
           <div className="form-grid">
@@ -126,13 +127,13 @@ export default function ProfileOnboardingModal({ nextPath = "/dashboard", onClos
           </label>
 
           <div className="lock-note">
-            <strong>Important:</strong> once you continue, the grade level on this account is locked.
+            <strong>Important:</strong> your grade level is locked after setup. Contact support later if it needs correction.
           </div>
 
           {message && <p className="notice error">{message}</p>}
 
           <button type="submit" disabled={busy}>
-            {busy ? "Saving..." : "Save and start practice"}
+            {busy ? "Saving..." : "Save and continue"}
           </button>
         </form>
       </section>
