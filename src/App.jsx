@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./lib/AuthContext";
 import { RequireAdmin, RequireAuth, RequireCompletedProfile } from "./lib/AuthGuards";
@@ -7,6 +7,7 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing";
+import ModuleDetail from "./pages/ModuleDetail";
 import PaymentVerify from "./pages/PaymentVerify";
 import Practice from "./pages/Practice";
 import PracticePreview from "./pages/PracticePreview";
@@ -19,6 +20,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/profile-setup" element={<Navigate to="/dashboard" replace />} />
           <Route path="/practice-preview" element={<PracticePreview />} />
           <Route path="/auth" element={<Auth />} />
           <Route
@@ -26,6 +28,15 @@ export default function App() {
             element={
               <RequireAuth>
                 <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route path="/modules" element={<Navigate to="/dashboard#modules" replace />} />
+          <Route
+            path="/modules/:subjectSlug"
+            element={
+              <RequireAuth>
+                <ModuleDetail />
               </RequireAuth>
             }
           />

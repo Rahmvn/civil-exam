@@ -117,7 +117,8 @@ export function AppFrame({ children, showBottomNav = true }) {
   }
 
   const isModulesActive =
-    location.pathname === "/dashboard" && location.hash === "#modules";
+    (location.pathname === "/dashboard" && location.hash === "#modules") ||
+    location.pathname.startsWith("/modules");
   const isDashboardActive =
     location.pathname === "/dashboard" && location.hash !== "#modules";
   const isPracticeActive = location.pathname.startsWith("/practice");
@@ -142,9 +143,9 @@ export function AppFrame({ children, showBottomNav = true }) {
                 onClick={closeAccountMenu}
                 to="/dashboard"
                 className="brand-lockup authenticated-brand"
+                aria-label="Public Service Exam Practice"
               >
-                <strong>FPS Exam Practice</strong>
-                <span>Federal public service promotion exam practice</span>
+                <strong>Public Service Exam Practice</strong>
               </Link>
             </div>
 
@@ -203,9 +204,6 @@ export function AppFrame({ children, showBottomNav = true }) {
               >
                 Access
               </Link>
-              {levelBadge && (
-                <span className="level-badge authenticated-level-badge">{levelBadge}</span>
-              )}
               <button
                 ref={accountButtonRef}
                 aria-controls="authenticated-account-menu"
@@ -229,7 +227,13 @@ export function AppFrame({ children, showBottomNav = true }) {
             >
               <div className="authenticated-account-summary">
                 <strong>{accountLabel}</strong>
-                <span>{levelBadge || (profileComplete ? "Account ready" : "Complete your account details")}</span>
+                <span>
+                  {levelBadge
+                    ? `Grade level ${levelBadge}`
+                    : profileComplete
+                      ? "Account ready"
+                      : "Complete your account details"}
+                </span>
               </div>
               <Link
                 className="authenticated-account-link"
@@ -271,7 +275,7 @@ export function AppFrame({ children, showBottomNav = true }) {
           <div className="authenticated-content">{children}</div>
 
           <footer className="authenticated-footer">
-            <span>FPS Exam Practice</span>
+            <span>Public Service Exam Practice</span>
             <Link onClick={closeAccountMenu} to="/access">
               Access and payment
             </Link>

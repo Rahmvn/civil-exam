@@ -25,6 +25,7 @@ export function RequireAuth({ children }) {
 export function RequireCompletedProfile({ children }) {
   const { loading, profileComplete, user } = useAuth();
   const location = useLocation();
+  const onboardingTarget = `${location.pathname}${location.search}${location.hash}`;
 
   if (loading) {
     return <main className="state-shell">Preparing your account...</main>;
@@ -41,7 +42,13 @@ export function RequireCompletedProfile({ children }) {
   }
 
   if (!profileComplete) {
-    return <Navigate to="/profile-setup" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+        state={{ from: location, onboardingTarget }}
+      />
+    );
   }
 
   return children;

@@ -1,0 +1,613 @@
+[
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 31,
+    "batch_number": 2,
+    "batch_position": 1,
+    "question_text": ".............. are replenished from time to time during a financial year by the submission of paid vouchers to Sub- Accounting Officers for reimbursement.",
+    "option_a": "Standing Imprests",
+    "option_b": "Non-personal cash Advance",
+    "option_c": "Accrual",
+    "option_d": "Prepayment",
+    "correct_option": "A",
+    "explanation": "Standing imprests are fixed petty-cash amounts that are reimbursed periodically when paid vouchers are submitted for refund. They are designed for recurring minor expenses during the financial year.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 32,
+    "batch_number": 2,
+    "batch_position": 2,
+    "question_text": "The following are conditions for capital development fund virement warrant except:",
+    "option_a": "Fund re-allocation must be only within the same Head of Expenditure in the Capital Estimates.",
+    "option_b": "The re-allocation may be part of the responses to Audit Query from the Auditor-General.",
+    "option_c": "The re-allocation must not exceed the limits the Head of estimates approved by the National Assembly.",
+    "option_d": "The re-allocation must not be intended to give rise to a new project.",
+    "correct_option": "B",
+    "explanation": "A virement warrant is not meant to answer an audit query from the Auditor-General. It is meant for permitted reallocations within approved capital provisions under stated conditions.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Condition wording should be checked against the official virement rule text before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 33,
+    "batch_number": 2,
+    "batch_position": 3,
+    "question_text": "Authority-to-incur Expenditure (AIE) can be categorized into two:",
+    "option_a": "Regular AIE, and Special AIE",
+    "option_b": "Primary AIE, and Secondary AIE",
+    "option_c": "Basic AIE, and Advanced AIE",
+    "option_d": "Main AIE, and Supplementary AIE.",
+    "correct_option": "A",
+    "explanation": "Authority-to-Incur Expenditure is commonly grouped into Regular AIE and Special AIE. The question asks for the two recognised categories.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 34,
+    "batch_number": 2,
+    "batch_position": 4,
+    "question_text": "The recurrent expenditure is funded from the Consolidated Revenue Fund (CRF) while the capital expenditure is funded from....................",
+    "option_a": "Deposit Money Bank (DMB) capital account (DMBCA).",
+    "option_b": "Central Capital Account (CCA).",
+    "option_c": "Transitional Capital Account (TCA)",
+    "option_d": "Commercial Bank Back Capital Account (CBBCA).",
+    "correct_option": "B",
+    "explanation": "Recurrent expenditure is charged to the Consolidated Revenue Fund, while capital expenditure is funded through the Central Capital Account. The question tests the distinction between the two funding channels.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 35,
+    "batch_number": 2,
+    "batch_position": 5,
+    "question_text": "Payment vouchers (PVs) received in the Checking Section should not be held in that Section for more than............",
+    "option_a": "Twenty-Four (24) hours",
+    "option_b": "Seventy-Two (72) hours",
+    "option_c": "Forty-Eight (48) hours",
+    "option_d": "Thirty-Six (36) hours",
+    "correct_option": "C",
+    "explanation": "Payment vouchers in the Checking Section should be processed quickly and not held beyond forty-eight hours. This helps avoid unnecessary delay in payment processing.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 36,
+    "batch_number": 2,
+    "batch_position": 6,
+    "question_text": "A Sub-Accounting Officer may not make payment against a payment voucher (PV) if it is more than..................since the voucher was signed by officer controlling expenditure.",
+    "option_a": "Three (3) months",
+    "option_b": "Nine (9) months",
+    "option_c": "One (1) month",
+    "option_d": "Six (6) months",
+    "correct_option": "A",
+    "explanation": "A payment voucher becomes stale for payment purposes if too much time has passed since it was signed by the officer controlling expenditure. The keyed answer states that the limit is three months.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Staleness period for signed payment vouchers should be confirmed against the controlling financial regulations before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 37,
+    "batch_number": 2,
+    "batch_position": 7,
+    "question_text": ".............involve standard, budgeted revenues and expenditure that are planned for the financial year.",
+    "option_a": "Cost-management accounts",
+    "option_b": "Over-the-line accounts",
+    "option_c": "Cash-based accounts",
+    "option_d": "Above-the-line accounts",
+    "correct_option": "D",
+    "explanation": "Above-the-line accounts cover the normal budgeted revenue and expenditure planned for the year. They relate to standard government operations captured in the estimates.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Above-the-line terminology should be verified against the official public finance usage in the source material."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 38,
+    "batch_number": 2,
+    "batch_position": 8,
+    "question_text": "...............refers to all sums advanced to a public officer to meet expenditure under current estimates, for which vouchers cannot immediately be presented to a Sub- Accounting Officer for payment.",
+    "option_a": "Non-personal cash Advance",
+    "option_b": "Imprest",
+    "option_c": "Accrual",
+    "option_d": "Prepayment",
+    "correct_option": "B",
+    "explanation": "An imprest is an advance issued to meet approved expenditure when immediate supporting vouchers cannot yet be presented. It is later retired when the officer accounts for the spending.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 39,
+    "batch_number": 2,
+    "batch_position": 9,
+    "question_text": "Within..............of the end of every financial year, each self-accounting Ministry/Extra-Ministerial Office is expected to a statutory Return on imprest received and retired to the Office of the Accountant General of the Federation.",
+    "option_a": "Seven (7) days.",
+    "option_b": "Twenty-four (24) days.",
+    "option_c": "Twenty-one (21) days.",
+    "option_d": "Fifteen (15) days.",
+    "correct_option": "C",
+    "explanation": "The keyed answer states that the statutory return on imprests should be submitted within twenty-one days after the end of the financial year. The point being tested is the reporting deadline.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "The imprest return deadline should be checked against the official reporting timetable before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 40,
+    "batch_number": 2,
+    "batch_position": 10,
+    "question_text": "........... is the personal emolument paid to an employee of an organisation, for services rendered at a predetermined rate of pay.",
+    "option_a": "Employee Contribution",
+    "option_b": "Allowance",
+    "option_c": "Take-home",
+    "option_d": "Salary",
+    "correct_option": "D",
+    "explanation": "Salary is the regular personal emolument paid to an employee for services rendered at an agreed rate. It is different from allowances or deductions.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 41,
+    "batch_number": 2,
+    "batch_position": 11,
+    "question_text": "...................are the legal instruments that empower and guide all public officers in carrying out government financial transactions.",
+    "option_a": "Fiscal Documents",
+    "option_b": "Financial Authorities",
+    "option_c": "Revenue Authorities",
+    "option_d": "Monetary Instruments.",
+    "correct_option": "B",
+    "explanation": "Financial authorities are the legal instruments that authorise and regulate government financial transactions. They guide public officers on how public funds should be managed.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 42,
+    "batch_number": 2,
+    "batch_position": 12,
+    "question_text": "Government funds include the following except:",
+    "option_a": "Consolidated Revenue Fund (CRF)",
+    "option_b": "Development Fund",
+    "option_c": "Contingencies Fund",
+    "option_d": "Regulatory Fund",
+    "correct_option": "D",
+    "explanation": "Regulatory Fund is not listed among the recognised government funds in this question. The other options are standard public funds referred to in government finance.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 43,
+    "batch_number": 2,
+    "batch_position": 13,
+    "question_text": "Financial Authorities could be in form of any of the following except:",
+    "option_a": "The 1999 Constitution of the Federal Republic of Nigeria",
+    "option_b": "Finance (Control and Management) Act, 1958",
+    "option_c": "The Annual Appropriation Act",
+    "option_d": "The Local Government Financial Autonomy Act.",
+    "correct_option": "D",
+    "explanation": "The Local Government Financial Autonomy Act is the odd option in this list. The other options are recognised examples of financial authorities in the federal public finance framework.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "The list of recognised financial authorities should be verified against the official source wording before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 44,
+    "batch_number": 2,
+    "batch_position": 14,
+    "question_text": "...........is the Head of the Federal Government Accounting Services and Treasury",
+    "option_a": "Sub-Treasurer of the Federation",
+    "option_b": "Director - Funds Management of the Federal Government",
+    "option_c": "Accountant-General of the Federation",
+    "option_d": "Finance Minister and Co-ordinating Minister of the Economy.",
+    "correct_option": "C",
+    "explanation": "The Accountant-General of the Federation is the head of federal government accounting services and treasury operations. The role carries central responsibility for treasury management.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 45,
+    "batch_number": 2,
+    "batch_position": 15,
+    "question_text": "The Officer who is constitutionally responsible for the audit and report on the public accounts of the Federation is..............",
+    "option_a": "Sub-Treasurer of the Federation",
+    "option_b": "Auditor General for the Federation",
+    "option_c": "Director, Audit monitoring",
+    "option_d": "Finance Minister and Co-ordinating Minister of the Economy.",
+    "correct_option": "B",
+    "explanation": "The Auditor-General for the Federation is constitutionally responsible for auditing and reporting on the public accounts of the Federation. That is the core external audit office named in the question.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 46,
+    "batch_number": 2,
+    "batch_position": 16,
+    "question_text": "..............is responsible for providing adequate accounting systems and controls in the Ministries, Extra-Ministerial Departments and Agencies (MDAs) of Government.",
+    "option_a": "Auditor-General for the Federation",
+    "option_b": "Finance Minister and Co-ordinating Minister of the Economy.",
+    "option_c": "Director - Funds Management of the Federal Government",
+    "option_d": "Accountant-General of the Federation",
+    "correct_option": "D",
+    "explanation": "The Accountant-General of the Federation is responsible for ensuring adequate accounting systems and controls across MDAs. This role supports uniform public sector financial management.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 47,
+    "batch_number": 2,
+    "batch_position": 17,
+    "question_text": "The Auditor-General performs the following statutory functions except:",
+    "option_a": "Financial Audit.",
+    "option_b": "Appropriation Audit",
+    "option_c": "Generic Audit",
+    "option_d": "Value-for-Money Audit.",
+    "correct_option": "C",
+    "explanation": "Generic Audit is not one of the standard statutory audit functions listed for the Auditor-General in this question. The others are recognised audit types in public sector oversight.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Audit-function terminology should be checked against the official statutory wording before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 48,
+    "batch_number": 2,
+    "batch_position": 18,
+    "question_text": "The Officer who is in full control of, and is responsible for human, material and financial resources which are critical inputs in the management of an organization.",
+    "option_a": "Director, Administration and Finance",
+    "option_b": "Honourable Minister",
+    "option_c": "Accounting Officer",
+    "option_d": "Director, Human Resources Management.",
+    "correct_option": "C",
+    "explanation": "An Accounting Officer has overall responsibility for the human, material, and financial resources of the organisation. The question is testing who bears that full management responsibility.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 49,
+    "batch_number": 2,
+    "batch_position": 19,
+    "question_text": "................ is an officer who is entrusted with the receipt, custody and disbursement of public money and who is required to keep one of the recognised Cash books together with such other books of accounts.",
+    "option_a": "Auditor General",
+    "option_b": "Sub-Accounting Officer",
+    "option_c": "Accounting Officer",
+    "option_d": "Director, Human Resources Management.",
+    "correct_option": "B",
+    "explanation": "A Sub-Accounting Officer is entrusted with receiving, keeping, and disbursing public money and must keep recognised cash books and related records. That matches the description in the stem.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 50,
+    "batch_number": 2,
+    "batch_position": 20,
+    "question_text": "The term \"Sub-Accounting Officer\" is applicable to the following officers except:",
+    "option_a": "Director, Finance & Accounts or Head of Accounts",
+    "option_b": "the Sub-Treasurer of the Federation.",
+    "option_c": "Federal Pay Officer, Police Pay Officer, Customs Area Pay Officer and Pensions Pay Officer.",
+    "option_d": "Accountant General of the sub-national Government.",
+    "correct_option": "D",
+    "explanation": "The term Sub-Accounting Officer does not apply to the Accountant General of a sub-national government in this federal context. The other options are roles commonly treated as sub-accounting officers here.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Applicability of the term Sub-Accounting Officer in this option set should be confirmed against the official federal definition."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 51,
+    "batch_number": 2,
+    "batch_position": 21,
+    "question_text": "................. is an officer, other than a Sub- Accounting officer, who is entrusted with an official receipt, licence or ticket booklet for the regular collection of some particular forms of revenue and who is required to keep a cash book.",
+    "option_a": "Revenue Collector",
+    "option_b": "Head of Funds Section",
+    "option_c": "Chairman, Inland Revenue Service",
+    "option_d": "Head of Bursary Section.",
+    "correct_option": "A",
+    "explanation": "A Revenue Collector is the officer entrusted with official receipt or licence books for the regular collection of specific revenues. The role also requires keeping a cash book.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 52,
+    "batch_number": 2,
+    "batch_position": 22,
+    "question_text": "A.............is one in· which the responsibility for the maintenance of the detailed record of expenditure and revenue and the Below-the-line payments and receipts ofthe ministry/extra-ministerial office and other arms of government or unit is delegated to the Accounting Officer.",
+    "option_a": "Self-Accounting Unit.",
+    "option_b": "National Accounting Ministry",
+    "option_c": "Finance Attache in the Nigerian Embassy.",
+    "option_d": "Central Pay Office (CPO).",
+    "correct_option": "A",
+    "explanation": "A Self-Accounting Unit is one where the Accounting Officer is delegated responsibility for detailed expenditure, revenue, and below-the-line records. The question is testing that institutional arrangement.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "The stem has encoding and wording issues that should be cleaned and confirmed before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 53,
+    "batch_number": 2,
+    "batch_position": 23,
+    "question_text": "..................is a managerial control which functions by measuring and evaluating the effectiveness of lnternal Control system in an organisation.",
+    "option_a": "Federal Auditor",
+    "option_b": "Director, Finance and Account",
+    "option_c": "Internal Audit",
+    "option_d": "Accountant General of the Federation",
+    "correct_option": "C",
+    "explanation": "Internal Audit is the managerial control that measures and evaluates the effectiveness of internal control systems. Its purpose is to strengthen accountability and compliance within the organisation.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 54,
+    "batch_number": 2,
+    "batch_position": 24,
+    "question_text": "Checked and passed vouchers received in the........................ must be promptly dealt with and, under no circumstance, must a voucher be held in that Unit for more than forty-eight (48) hours.",
+    "option_a": "Internal Audit Unit",
+    "option_b": "Public Procurement Unit",
+    "option_c": "Finance and Admin. Department",
+    "option_d": "Auditor General's Office",
+    "correct_option": "A",
+    "explanation": "Checked and passed vouchers received in the Internal Audit Unit must be handled promptly and not held beyond forty-eight hours. The question focuses on the unit responsible at that stage.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 55,
+    "batch_number": 2,
+    "batch_position": 25,
+    "question_text": "An officer will be precluded from carrying out the duties of internal audit staff if he has previously been engaged on..................... within the ministry, extra ministerial office and other arms of government.",
+    "option_a": "Procurement Duties",
+    "option_b": "Legalistic Duties",
+    "option_c": "accounting Duties",
+    "option_d": "Administrative Duties",
+    "correct_option": "C",
+    "explanation": "An officer previously engaged on accounting duties should not perform internal audit duties over that same area. This protects the independence of the audit function.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 56,
+    "batch_number": 2,
+    "batch_position": 26,
+    "question_text": "The ranks of Internal Audit staff who are empowered to make use of audit stamps, must not be below............. in Abuja and..........outside Abuja.",
+    "option_a": "GL.15, GL.14",
+    "option_b": "GL.09, GL.08",
+    "option_c": "GL.07, GL.06",
+    "option_d": "GL.12, GL.10",
+    "correct_option": "B",
+    "explanation": "The keyed answer states that audit-stamp use should not be below GL 09 in Abuja and GL 08 outside Abuja. The question is testing the minimum grade-level threshold.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "The grade-level threshold for audit-stamp use should be confirmed against the official circular or regulation before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 57,
+    "batch_number": 2,
+    "batch_position": 27,
+    "question_text": "............... is not transferable from one officer to another.",
+    "option_a": "Account 'Paid\" stamp",
+    "option_b": "stamp duty certificate",
+    "option_c": "company sealed stamp",
+    "option_d": "Internal audit stamp",
+    "correct_option": "D",
+    "explanation": "The internal audit stamp is tied to the authorised audit officer and is not transferable from one officer to another. This preserves accountability for the audit action taken.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 58,
+    "batch_number": 2,
+    "batch_position": 28,
+    "question_text": "An..................is held after the close of business on the last business day of each financial year to examine the cash, bank balances and stamps in an MDA.",
+    "option_a": "Annual Board of Enquiry",
+    "option_b": "Annual Board of Agencies and Parastatals meeting",
+    "option_c": "Annual Board of Survey",
+    "option_d": "Annual Ministerial Tenders Board (MTB) meeting",
+    "correct_option": "C",
+    "explanation": "An Annual Board of Survey is conducted at the close of the financial year to inspect cash, bank balances, and stamps in an MDA. It serves as an end-of-year verification exercise.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 59,
+    "batch_number": 2,
+    "batch_position": 29,
+    "question_text": "It is the responsibility of the Director, Treasury Inspectorate Department of the Office of the Accountant-General of the Federation (OAGF) to convene.............",
+    "option_a": "Annual Board of Enquiry",
+    "option_b": "Annual Board of Agencies and Parastatals meeting",
+    "option_c": "Annual Ministerial Tenders Board (MTB) meeting",
+    "option_d": "Annual Board of Survey",
+    "correct_option": "D",
+    "explanation": "The keyed answer states that the Director, Treasury Inspectorate Department in OAGF convenes the Annual Board of Survey. The item is testing responsibility for that year-end exercise.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "Responsibility for convening the Board of Survey should be verified against the official OAGF procedure before publishing."
+    ]
+  },
+  {
+    "subject_slug": "public-financial-management",
+    "source_number": 60,
+    "batch_number": 2,
+    "batch_position": 30,
+    "question_text": "Members of the Board of Survey are........in number.",
+    "option_a": "Three (3)",
+    "option_b": "Six (6)",
+    "option_c": "Two (2)",
+    "option_d": "Five (5)",
+    "correct_option": "A",
+    "explanation": "The keyed answer states that the Board of Survey consists of three members. The question is testing the prescribed number of members.",
+    "reference_note": "",
+    "source_note": "provided_client_content_reviewed_draft",
+    "status": "draft",
+    "needs_review": true,
+    "review_notes": [
+      "Matches provided answer key; official/source verification still recommended before publishing.",
+      "The prescribed membership size of the Board of Survey should be confirmed against the official rule before publishing."
+    ]
+  }
+]

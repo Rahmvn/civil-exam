@@ -1,4 +1,4 @@
-A. PUBLIC FINANCIAL MANAGEMENT (GRADE LEVEL 07-17) QUESTIONS
+###A. PUBLIC FINANCIAL MANAGEMENT (GRADE LEVEL 07-17) QUESTIONS
 
 1. In 1494, ...................published a treatise on the double-entry system of bookkeeping.
 a. Thomas Aquinas
@@ -577,7 +577,7 @@ PUBLIC FINANCIAL MANAGEMENT (ANSWERS)
 
 
 
-PERMANENT SECRETARIES' QUESTIONS (ORAL)
+###PERMANENT SECRETARIES' QUESTIONS (ORAL)
 
 1. Mention ten (10) financial laws /authorities guiding public sector financial transactions in Nigeria.
 2. Enumerate the six (6) components of IPSAS-accrual general purpose financial statements (GPFS).
@@ -704,7 +704,7 @@ e. Store Receipt voucher (SRV)
 
 
 
-B. PUBLIC SERVICE RULES - GRADE 07-17 (QUESTIONS)
+###B. PUBLIC SERVICE RULES - GRADE 07-17 (QUESTIONS)
 
 
 
