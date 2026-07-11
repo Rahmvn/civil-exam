@@ -110,7 +110,7 @@ export async function getModuleAvailability() {
   }));
 }
 
-export async function getRecentAttempts() {
+export async function getRecentAttempts(limit = 6) {
   return ensureArray(requireData(
     await supabase
       .from("attempts")
@@ -118,7 +118,7 @@ export async function getRecentAttempts() {
         "id, mode, score, total_questions, completed_at, started_at, service_level, batch_number, score_percent, passed, retry_number, subjects(name, slug)",
       )
       .order("started_at", { ascending: false })
-      .limit(6),
+      .limit(limit),
   ));
 }
 

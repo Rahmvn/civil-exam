@@ -51,7 +51,12 @@ export function PublicNav({ showBrand = true, sticky = true }) {
   );
 }
 
-export function AppFrame({ children, showBottomNav = true }) {
+export function AppFrame({
+  children,
+  showBottomNav = true,
+  showHeader = true,
+  showFooter = true,
+}) {
   const { profile, isAdmin, profileComplete } = useAuth();
   const location = useLocation();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -134,89 +139,91 @@ export function AppFrame({ children, showBottomNav = true }) {
   return (
     <>
       <main
-        className={`authenticated-shell ${showBottomNav ? "has-bottom-nav" : "no-bottom-nav"}`}
+        className={`authenticated-shell ${showBottomNav ? "has-bottom-nav" : "no-bottom-nav"} ${showHeader ? "" : "no-header"} ${showFooter ? "" : "no-footer"}`.trim()}
       >
         <div className="authenticated-frame">
-          <header className="authenticated-header">
-            <div className="authenticated-brand-row">
-              <Link
-                onClick={closeAccountMenu}
-                to="/dashboard"
-                className="brand-lockup authenticated-brand"
-                aria-label="Public Service Exam Practice"
-              >
-                <strong>Public Service Exam Practice</strong>
-              </Link>
-            </div>
-
-            <nav className="authenticated-nav" aria-label="Primary">
-              <Link
-                className={appNavClassName(isDashboardActive)}
-                onClick={closeAccountMenu}
-                to="/dashboard"
-              >
-                Home
-              </Link>
-              <Link
-                className={appNavClassName(isModulesActive)}
-                onClick={closeAccountMenu}
-                to="/dashboard#modules"
-              >
-                Modules
-              </Link>
-              <Link
-                className={appNavClassName(isPracticeActive)}
-                onClick={closeAccountMenu}
-                to={practiceTarget}
-              >
-                Practice
-              </Link>
-              <Link
-                className={appNavClassName(isReviewActive)}
-                onClick={closeAccountMenu}
-                to="/review"
-              >
-                Review
-              </Link>
-              <Link
-                className={appNavClassName(isAccountActive)}
-                onClick={closeAccountMenu}
-                to="/profile"
-              >
-                Account
-              </Link>
-              {isAdmin && (
+          {showHeader && (
+            <header className="authenticated-header">
+              <div className="authenticated-brand-row">
                 <Link
-                  className={appNavClassName(location.pathname === "/admin")}
                   onClick={closeAccountMenu}
-                  to="/admin"
+                  to="/dashboard"
+                  className="brand-lockup authenticated-brand"
+                  aria-label="Public Service Exam Practice"
                 >
-                  Admin
+                  <strong>Public Service Exam Practice</strong>
                 </Link>
-              )}
-            </nav>
+              </div>
 
-            <div className="authenticated-actions">
-              <Link
-                className={`authenticated-utility-link ${isAccessActive ? "active" : ""}`}
-                onClick={closeAccountMenu}
-                to="/access"
-              >
-                Access
-              </Link>
-              <button
-                ref={accountButtonRef}
-                aria-controls="authenticated-account-menu"
-                aria-expanded={accountMenuOpen}
-                aria-label={accountMenuOpen ? "Close account menu" : "Open account menu"}
-                className="authenticated-account-toggle"
-                onClick={() => setAccountMenuOpen((value) => !value)}
-                type="button"
-              >
-                <span>{accountInitials}</span>
-              </button>
-            </div>
-          </header>
+              <nav className="authenticated-nav" aria-label="Primary">
+                <Link
+                  className={appNavClassName(isDashboardActive)}
+                  onClick={closeAccountMenu}
+                  to="/dashboard"
+                >
+                  Home
+                </Link>
+                <Link
+                  className={appNavClassName(isModulesActive)}
+                  onClick={closeAccountMenu}
+                  to="/dashboard#modules"
+                >
+                  Modules
+                </Link>
+                <Link
+                  className={appNavClassName(isPracticeActive)}
+                  onClick={closeAccountMenu}
+                  to={practiceTarget}
+                >
+                  Practice
+                </Link>
+                <Link
+                  className={appNavClassName(isReviewActive)}
+                  onClick={closeAccountMenu}
+                  to="/review"
+                >
+                  Review
+                </Link>
+                <Link
+                  className={appNavClassName(isAccountActive)}
+                  onClick={closeAccountMenu}
+                  to="/profile"
+                >
+                  Account
+                </Link>
+                {isAdmin && (
+                  <Link
+                    className={appNavClassName(location.pathname === "/admin")}
+                    onClick={closeAccountMenu}
+                    to="/admin"
+                  >
+                    Admin
+                  </Link>
+                )}
+              </nav>
+
+              <div className="authenticated-actions">
+                <Link
+                  className={`authenticated-utility-link ${isAccessActive ? "active" : ""}`}
+                  onClick={closeAccountMenu}
+                  to="/access"
+                >
+                  Access
+                </Link>
+                <button
+                  ref={accountButtonRef}
+                  aria-controls="authenticated-account-menu"
+                  aria-expanded={accountMenuOpen}
+                  aria-label={accountMenuOpen ? "Close account menu" : "Open account menu"}
+                  className="authenticated-account-toggle"
+                  onClick={() => setAccountMenuOpen((value) => !value)}
+                  type="button"
+                >
+                  <span>{accountInitials}</span>
+                </button>
+              </div>
+            </header>
+          )}
 
           {accountMenuOpen && (
             <div
@@ -274,12 +281,14 @@ export function AppFrame({ children, showBottomNav = true }) {
 
           <div className="authenticated-content">{children}</div>
 
-          <footer className="authenticated-footer">
-            <span>Public Service Exam Practice</span>
-            <Link onClick={closeAccountMenu} to="/access">
-              Access and payment
-            </Link>
-          </footer>
+          {showFooter && (
+            <footer className="authenticated-footer">
+              <span>Public Service Exam Practice</span>
+              <Link onClick={closeAccountMenu} to="/access">
+                Access and payment
+              </Link>
+            </footer>
+          )}
         </div>
 
         {showBottomNav && (

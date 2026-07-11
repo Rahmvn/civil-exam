@@ -16,7 +16,7 @@ export function storePracticeBatch(subjectSlug, questions) {
   );
 }
 
-export function readPracticeBatch(subjectSlug) {
+export function readPracticeSession(subjectSlug) {
   if (!subjectSlug) return null;
 
   const raw = window.sessionStorage.getItem(getSessionKey(subjectSlug));
@@ -24,10 +24,37 @@ export function readPracticeBatch(subjectSlug) {
 
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.questions) ? parsed.questions : null;
+    return Array.isArray(parsed?.questions) ? parsed : null;
   } catch {
     return null;
   }
+}
+
+export function readPracticeBatch(subjectSlug) {
+  return readPracticeSession(subjectSlug)?.questions ?? null;
+}
+
+export function updatePracticeSession(subjectSlug, nextState) {
+  if (!subjectSlug || !nextState || typeof nextState !== "object") return;
+
+  const current = readPracticeSession(subjectSlug) ?? {};
+  const questions = Array.isArray(nextState.questions)
+    ? nextState.questions
+    : Array.isArray(current.questions)
+      ? current.questions
+      : null;
+
+  if (!questions || questions.length === 0) return;
+
+  window.sessionStorage.setItem(
+    getSessionKey(subjectSlug),
+    JSON.stringify({
+      ...current,
+      ...nextState,
+      questions,
+      savedAt: Date.now(),
+    }),
+  );
 }
 
 export function clearPracticeBatch(subjectSlug) {

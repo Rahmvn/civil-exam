@@ -20,18 +20,38 @@ import {
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   FALLBACK_SUBJECTS,
-  buildModuleStatusLine,
   formatAccessDate,
   formatAttemptPercent,
   formatDate,
   formatPercent,
   getFirstName,
-  getModuleShortName,
+  getModuleDisplayName,
   getModuleStatusTone,
+  getProgressionRecommendation,
   getSubjectSlugFromPracticeTarget,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
+
+function getDashboardModuleStatusLine(subjectSlug, liveCount, comingSoonCount) {
+  if (subjectSlug === "current-affairs") {
+    return "Coming soon";
+  }
+
+  if (liveCount > 0 && comingSoonCount > 0) {
+    return `${liveCount} available - ${comingSoonCount} soon`;
+  }
+
+  if (liveCount > 0) {
+    return liveCount === 1 ? "1 available" : `${liveCount} available`;
+  }
+
+  if (comingSoonCount > 0) {
+    return "Coming soon";
+  }
+
+  return "Not available yet";
+}
 
 export default function Dashboard() {
   const { profile, profileComplete } = useAuth();
@@ -64,7 +84,7 @@ export default function Dashboard() {
       { key: "subjects", promise: getSubjects() },
       { key: "progress", promise: getModuleProgress() },
       { key: "batchAccess", promise: getModuleBatchAccess() },
-      { key: "attempts", promise: getRecentAttempts() },
+      { key: "attempts", promise: getRecentAttempts(12) },
       { key: "review", promise: getReviewQueue(6) },
     ];
 
@@ -218,19 +238,6 @@ export default function Dashboard() {
     setShowOnboardingModal(true);
   }
 
-  function getRecommendedBatchRow(subjectSlug) {
-    const rows = batchAccessBySubject[subjectSlug] ?? [];
-
-    if (rows.length === 0) return null;
-
-    return (
-      rows.find((row) => row.is_recommended) ??
-      rows.find((row) => row.can_start) ??
-      rows.find((row) => Number(row.published_question_count ?? 0) > 0) ??
-      rows[0]
-    );
-  }
-
   function getBatchPrimaryAction(subject, row) {
     const batchNumber = Number(row?.batch_number ?? 1);
 
@@ -276,13 +283,53 @@ export default function Dashboard() {
     return { label: `Start Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
   }
 
+  function getRecommendedPrimaryAction(subject, row) {
+    const batchNumber = Number(row?.batch_number ?? 1);
+
+    if (!profileComplete) {
+      return {
+        label: "Complete account",
+        action: () => openOnboardingForPractice(subject.slug),
+      };
+    }
+
+    if (!row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
+      return { label: "Coming soon", disabled: true };
+    }
+
+    if (row.state === "locked_requires_payment" || !row.can_start) {
+      return { label: "Unlock Full Access", to: "/access" };
+    }
+
+    if (!isPaidUser && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
+      return {
+        label: "Start practice",
+        action: () => {
+          setCtaError("");
+          setStartConfirmSubject(subject);
+        },
+      };
+    }
+
+    if (row.state === "completed_failed") {
+      return { label: "Retry", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    }
+
+    if (Number(row.attempt_count ?? 0) > 0) {
+      return { label: "Continue practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    }
+
+    return { label: "Start practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+  }
+
   const moduleCards = subjectsForDisplay.map((subject) => {
       const subjectProgress = progressBySubject[subject.id] ?? null;
       const rows = batchAccessBySubject[subject.slug] ?? [];
       const liveRows = rows.filter((row) => Number(row.published_question_count ?? 0) > 0);
       const comingSoonRows = rows.filter((row) => row.state === "unavailable_not_published");
       const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? null;
-      const recommendedRow = getRecommendedBatchRow(subject.slug);
+      const progression = getProgressionRecommendation(rows, { isPaidUser });
+      const recommendedRow = progression.recommendedRow;
       const latestSubjectAttempt = latestAttemptBySubject.get(subject.slug) ?? null;
       const attemptTotal = rows.reduce((sum, row) => sum + Number(row.attempt_count ?? 0), 0);
       const bestScoreValue = rows.reduce((best, row) => {
@@ -292,7 +339,7 @@ export default function Dashboard() {
       const latestScoreValue = Number(subjectProgress?.last_score_percent ?? 0) || null;
       const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
       const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
-      const statusLine = buildModuleStatusLine(subject.slug, liveRows.length, comingSoonRows.length);
+      const statusLine = getDashboardModuleStatusLine(subject.slug, liveRows.length, comingSoonRows.length);
       const statusTone = getModuleStatusTone(subject.slug, liveRows.length, comingSoonRows.length);
       const isCurrentAffairs = subject.slug === "current-affairs";
       const isSelectedFreeModule = hasSelectedFreeModule && freeModuleSlug === subject.slug;
@@ -330,7 +377,7 @@ export default function Dashboard() {
         primaryAction = { label: "Coming soon", disabled: true };
       } else if (isPaidUser) {
         primaryAction = {
-          label: "View batches",
+          label: "Open module",
           to: `/modules/${subject.slug}`,
         };
       } else if (!hasSelectedFreeModule) {
@@ -344,7 +391,7 @@ export default function Dashboard() {
           };
         } else if (liveRows.length > 0) {
           primaryAction = {
-            label: "View batches",
+            label: "Open module",
             to: `/modules/${subject.slug}`,
           };
         } else {
@@ -360,6 +407,7 @@ export default function Dashboard() {
 
       return {
         subject,
+        displayName: getModuleDisplayName(subject.name),
         rows,
         batchOneRow,
         latestSubjectAttempt,
@@ -368,14 +416,39 @@ export default function Dashboard() {
         progressPercent,
         statusLine,
         statusTone,
+        progression,
         emphasisText,
         supportText,
         primaryAction,
-        selectedModuleName: freeModuleSlug === subject.slug ? subject.name : null,
+        selectedModuleName: freeModuleSlug === subject.slug ? getModuleDisplayName(subject.name) : null,
       };
     });
 
   const selectedModuleCard = moduleCards.find((card) => card.subject.slug === freeModuleSlug) ?? null;
+  const recommendedModuleCard = (() => {
+    if (!isPaidUser) return null;
+
+    const candidates = moduleCards.filter((card) => card.progression?.hasOpenRecommendation);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const retryCandidate = candidates.find((card) => card.progression?.kind === "retry");
+    if (retryCandidate) {
+      return retryCandidate;
+    }
+
+    const withAttempts = [...candidates]
+      .filter((card) => card.latestSubjectAttempt)
+      .sort((left, right) => {
+        const leftDate = new Date(left.latestSubjectAttempt?.completed_at ?? left.latestSubjectAttempt?.started_at ?? 0).getTime();
+        const rightDate = new Date(right.latestSubjectAttempt?.completed_at ?? right.latestSubjectAttempt?.started_at ?? 0).getTime();
+        return rightDate - leftDate;
+      });
+
+    return withAttempts[0] ?? candidates[0];
+  })();
 
   const accessCard = (() => {
     if (!profileComplete) {
@@ -393,8 +466,8 @@ export default function Dashboard() {
     if (isPaidUser) {
       return {
         title: "Full access",
-        body: "Published batches available",
-        detail: summary?.access_expires_at ? `Access through ${formatAccessDate(summary.access_expires_at)}` : null,
+        body: "All published modules are open.",
+        detail: summary?.access_expires_at ? `Access through ${formatAccessDate(summary.access_expires_at)}` : "Choose a module and begin where you want.",
         action: null,
       };
     }
@@ -402,8 +475,8 @@ export default function Dashboard() {
     if (!hasSelectedFreeModule) {
       return {
         title: "Free access",
-        body: "One free Batch 1 available",
-        detail: "Choose a module to begin.",
+        body: "One free module available.",
+        detail: "Choose a module and start with the first batch.",
         action: {
           label: "View modules",
           to: "/dashboard#modules",
@@ -411,14 +484,14 @@ export default function Dashboard() {
       };
     }
 
-    const selectedModuleName = selectedModuleCard?.subject.name ?? "your selected module";
+    const selectedModuleName = selectedModuleCard?.displayName ?? "your selected module";
     const selectedRow = selectedModuleCard?.batchOneRow ?? null;
 
     if (selectedRow?.state === "completed_passed") {
       return {
         title: "Free access",
-        body: "Free Batch 1 complete",
-        detail: `Unlock more batches beyond ${selectedModuleName}.`,
+        body: "Your free batch is complete.",
+        detail: `Unlock full access to continue with ${selectedModuleName} and other published modules.`,
         action: {
           label: "Unlock Full Access",
           to: "/access",
@@ -429,8 +502,8 @@ export default function Dashboard() {
     if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
       return {
         title: "Free access",
-        body: "One retry available",
-        detail: `${selectedModuleName} Batch 1 is ready again.`,
+        body: "One retry is still available.",
+        detail: `${selectedModuleName} is ready when you are.`,
         action: getBatchPrimaryAction(selectedModuleCard.subject, selectedRow),
       };
     }
@@ -438,8 +511,8 @@ export default function Dashboard() {
     if (selectedRow?.state === "completed_failed") {
       return {
         title: "Free access",
-        body: "Free attempts complete",
-        detail: `Unlock more batches beyond ${selectedModuleName}.`,
+        body: "Your free attempts are complete.",
+        detail: `Unlock full access to continue with ${selectedModuleName} and other published modules.`,
         action: {
           label: "Unlock Full Access",
           to: "/access",
@@ -450,8 +523,8 @@ export default function Dashboard() {
     if (selectedRow?.state === "locked_requires_payment") {
       return {
         title: "Free access",
-        body: "Free Batch 1 used",
-        detail: `Unlock access to continue beyond ${selectedModuleName}.`,
+        body: "Your free batch has been used.",
+        detail: `Unlock full access to continue beyond ${selectedModuleName}.`,
         action: {
           label: "Unlock Full Access",
           to: "/access",
@@ -461,8 +534,8 @@ export default function Dashboard() {
 
     return {
       title: "Free access",
-      body: `${selectedModuleName} ready`,
-      detail: "Batch 1 is available now.",
+      body: `${selectedModuleName} is ready.`,
+      detail: "Start with Batch 1 when you are ready.",
       action: selectedModuleCard
         ? getBatchPrimaryAction(selectedModuleCard.subject, selectedRow)
         : {
@@ -478,20 +551,19 @@ export default function Dashboard() {
     }
 
     if (isPaidUser) {
-      return "Continue from your latest progress.";
+      return "Start with the suggested module, or open any published module directly.";
     }
 
     if (!isPaidUser && !hasSelectedFreeModule) {
-      return "Choose one module and start Batch 1 for free.";
+      return "Choose one module and try the first batch for free.";
     }
 
     if (!isPaidUser && hasSelectedFreeModule) {
-      return "Your free batch path is ready below.";
+      return "Your free module is ready below.";
     }
 
     return "";
   })();
-  const heroGreetingLabel = "Welcome";
   const totalAttempts = attempts.length;
   const averageScoreRounded = averageScore !== null ? Math.round(averageScore) : 0;
 
@@ -500,7 +572,7 @@ export default function Dashboard() {
       return {
         label: "Recommended next step",
         title: "Complete your account",
-        body: "Add the details we need before you begin Batch 1 or open protected sections.",
+        body: "Finish setup before you start practice.",
         primaryAction: {
           label: "Complete account",
           action: openOnboardingForDashboard,
@@ -514,7 +586,7 @@ export default function Dashboard() {
       return {
         label: "Recommended next step",
         title: "Explore modules",
-        body: "Published batches will appear here as soon as they are ready.",
+        body: "Published practice will appear here as soon as it is ready.",
         primaryAction: {
           label: "View modules",
           to: "/dashboard#modules",
@@ -527,8 +599,8 @@ export default function Dashboard() {
     if (!isPaidUser && !hasSelectedFreeModule) {
       return {
         label: "Recommended next step",
-        title: "Choose your free module",
-        body: "Public Financial Management and Public Service Rules are the current free entry points when published.",
+        title: "Choose a module",
+        body: "Pick one module and try the first batch for free.",
         primaryAction: {
           label: "Choose free module",
           to: "/dashboard#modules",
@@ -545,24 +617,24 @@ export default function Dashboard() {
       if (selectedRow?.state === "available") {
         return {
           label: "Recommended next step",
-          title: "Start your free batch",
-          body: `Your free module is ${selectedModuleCard.subject.name}. Start when you are ready.`,
-          primaryAction: getBatchPrimaryAction(selectedModuleCard.subject, selectedRow),
+          title: selectedModuleCard.displayName,
+          body: "Start with Batch 1.",
+          primaryAction: getRecommendedPrimaryAction(selectedModuleCard.subject, selectedRow),
           secondaryAction: null,
-          preview: `${getModuleShortName(selectedModuleCard.subject.slug, selectedModuleCard.subject.name)} Batch 1`,
+          preview: null,
         };
     }
 
       if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
         return {
           label: "Recommended next step",
-          title: "Retry your free batch",
-          body: "You have one retry available.",
-          primaryAction: getBatchPrimaryAction(selectedModuleCard.subject, selectedRow),
+          title: selectedModuleCard.displayName,
+          body: "Retry Batch 1.",
+          primaryAction: getRecommendedPrimaryAction(selectedModuleCard.subject, selectedRow),
           secondaryAction: latestSelectedAttempt
             ? { label: "Review latest attempt", to: `/review?attempt=${latestSelectedAttempt.id}` }
             : null,
-          preview: `${getModuleShortName(selectedModuleCard.subject.slug, selectedModuleCard.subject.name)} Batch 1`,
+          preview: null,
         };
       }
 
@@ -575,39 +647,26 @@ export default function Dashboard() {
           secondaryAction: latestSelectedAttempt
             ? { label: "Review latest attempt", to: `/review?attempt=${latestSelectedAttempt.id}` }
             : null,
-          preview: `${getModuleShortName(selectedModuleCard.subject.slug, selectedModuleCard.subject.name)} Batch 1`,
+          preview: null,
         };
       }
     }
 
-    const paidRecommendedModule = moduleCards.find((card) => {
-      const row = getRecommendedBatchRow(card.subject.slug);
-      return Boolean(row?.can_start && Number(row.published_question_count ?? 0) > 0);
-    });
-    const paidRecommendedRow = paidRecommendedModule
-      ? getRecommendedBatchRow(paidRecommendedModule.subject.slug)
-      : null;
+    const paidRecommendedModule = recommendedModuleCard;
+    const paidRecommendedRow = paidRecommendedModule?.progression?.recommendedRow ?? null;
 
     if (isPaidUser && paidRecommendedModule && paidRecommendedRow) {
-      const batchNumber = Number(paidRecommendedRow.batch_number ?? 1);
-      const shortName = getModuleShortName(
-        paidRecommendedModule.subject.slug,
-        paidRecommendedModule.subject.name,
-      );
-
       return {
         label: "Recommended next step",
-        title: paidRecommendedRow.attempt_count > 0
-          ? paidRecommendedModule.subject.name
-          : paidRecommendedModule.subject.name,
-        body: paidRecommendedRow.attempt_count > 0
-          ? "Best next step based on your recent progress."
-          : null,
-        primaryAction: getBatchPrimaryAction(paidRecommendedModule.subject, paidRecommendedRow),
+        title: paidRecommendedModule.displayName,
+        body: paidRecommendedModule.progression?.kind === "retry"
+          ? `Retry Batch ${paidRecommendedRow.batch_number ?? 1}.`
+          : `Continue with Batch ${paidRecommendedRow.batch_number ?? 1}.`,
+        primaryAction: getRecommendedPrimaryAction(paidRecommendedModule.subject, paidRecommendedRow),
         secondaryAction: latestAttempt
           ? { label: "Review latest attempt", to: `/review?attempt=${latestAttempt.id}` }
           : null,
-        preview: `${shortName} Batch ${batchNumber}`,
+        preview: null,
       };
     }
 
@@ -615,7 +674,7 @@ export default function Dashboard() {
       return {
         label: "Recommended next step",
         title: "Review latest attempt",
-        body: "Open your most recent submitted batch and decide what to do next from there.",
+        body: "Review it, then decide whether to retry or move forward.",
         primaryAction: { label: "Review latest attempt", to: `/review?attempt=${latestAttempt.id}` },
         secondaryAction: {
           label: "View modules",
@@ -625,13 +684,13 @@ export default function Dashboard() {
       };
     }
 
-    return {
-      label: "Recommended next step",
-      title: "Explore modules",
-      body: "Open the module list to start with any currently published batch you can access.",
-      primaryAction: { label: "View modules", to: "/dashboard#modules" },
-      secondaryAction: null,
-      preview: null,
+      return {
+        label: "Recommended next step",
+        title: "Explore modules",
+        body: "Open a module and begin practice from there.",
+        primaryAction: { label: "View modules", to: "/dashboard#modules" },
+        secondaryAction: null,
+        preview: null,
     };
   })();
 
@@ -655,19 +714,19 @@ export default function Dashboard() {
     if (!isPaidUser && !hasSelectedFreeModule) {
       return {
         title: "Choose your free module",
-        meta: "Start Batch 1 in one module for free.",
+        meta: "Pick one module and start practice there.",
         action: recommendedAction.primaryAction,
       };
     }
 
     if (!isPaidUser && selectedModuleCard) {
       const selectedRow = selectedModuleCard.batchOneRow ?? null;
-      const selectedTitle = selectedModuleCard.subject.name;
+      const selectedTitle = selectedModuleCard.displayName;
 
       if (selectedRow?.state === "available") {
         return {
           title: selectedTitle,
-          meta: "Free entry batch available now.",
+          meta: "Start with Batch 1.",
           action: recommendedAction.primaryAction,
         };
       }
@@ -675,7 +734,7 @@ export default function Dashboard() {
       if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
         return {
           title: selectedTitle,
-          meta: "One retry is available.",
+          meta: "Retry Batch 1.",
           action: recommendedAction.primaryAction,
         };
       }
@@ -683,28 +742,21 @@ export default function Dashboard() {
       if (selectedRow?.state === "completed_passed" || selectedRow?.state === "completed_failed") {
         return {
           title: "Unlock Full Access",
-          meta: `${selectedModuleCard.subject.name} Batch 1 is complete.`,
+          meta: `${selectedModuleCard.displayName} Batch 1 is complete.`,
           action: recommendedAction.primaryAction,
         };
       }
     }
 
-    const paidRecommendedModule = moduleCards.find((card) => {
-      const row = getRecommendedBatchRow(card.subject.slug);
-      return Boolean(row?.can_start && Number(row.published_question_count ?? 0) > 0);
-    });
-    const paidRecommendedRow = paidRecommendedModule
-      ? getRecommendedBatchRow(paidRecommendedModule.subject.slug)
-      : null;
+    const paidRecommendedModule = recommendedModuleCard;
+    const paidRecommendedRow = paidRecommendedModule?.progression?.recommendedRow ?? null;
 
     if (isPaidUser && paidRecommendedModule && paidRecommendedRow) {
-      const bestScore = paidRecommendedRow.best_score ?? paidRecommendedRow.last_score ?? null;
-
       return {
-        title: paidRecommendedModule.subject.name,
-        meta: bestScore !== null && bestScore !== undefined
-          ? `Best score: ${bestScore}%`
-          : "Ready to continue.",
+        title: paidRecommendedModule.displayName,
+        meta: paidRecommendedModule.progression?.kind === "retry"
+          ? `Retry Batch ${paidRecommendedRow.batch_number ?? 1}.`
+          : `Continue with Batch ${paidRecommendedRow.batch_number ?? 1}.`,
         action: recommendedAction.primaryAction,
       };
     }
@@ -752,7 +804,13 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return <main className="state-shell">Loading your dashboard...</main>;
+    return (
+      <main className="state-shell">
+        <section className="state-card page-loading-card">
+          <p>Loading your dashboard...</p>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -762,8 +820,7 @@ export default function Dashboard() {
           <section className="dashboard-hero-copy dashboard-hero-copy-compact">
             <div className="dashboard-welcome-panel">
               <div className="dashboard-welcome-copy dashboard-welcome-copy-intro">
-                {firstName ? <p className="dashboard-welcome-kicker">{heroGreetingLabel}</p> : null}
-                <h1>{firstName || "Welcome"}</h1>
+                <h1>{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
                 <div className="dashboard-welcome-meta dashboard-welcome-meta-under">
                   <span className={`dashboard-access-chip ${isPaidUser ? "is-full" : "is-free"}`}>
                     {accessCard.title}
@@ -777,7 +834,7 @@ export default function Dashboard() {
                   <ScoreRing
                     value={averageScoreRounded}
                     label="Average score"
-                    sublabel={totalAttempts > 0 ? `${totalAttempts} attempt${totalAttempts === 1 ? "" : "s"}` : "No attempts yet"}
+                    sublabel={totalAttempts > 0 ? `Based on last ${totalAttempts} attempt${totalAttempts === 1 ? "" : "s"}` : "No attempts yet"}
                     className="dashboard-hero-ring"
                   />
                 </div>
@@ -794,10 +851,11 @@ export default function Dashboard() {
           <aside className="dashboard-summary-stack dashboard-summary-stack-compact">
             <article className="dashboard-summary-card dashboard-next-card dashboard-next-card-v4">
               <div className="dashboard-next-header">
-                <span className="dashboard-recommended-pill">Recommended</span>
+                <span className="dashboard-recommended-pill">Start here</span>
               </div>
               <div className="dashboard-next-body">
                 <h2>{recommendedSummary.title}</h2>
+                {recommendedSummary.meta ? <p>{recommendedSummary.meta}</p> : null}
               </div>
               <div className="dashboard-action-row dashboard-action-row-compact">
                 <DashboardActionButton action={recommendedSummary.action} />
@@ -810,7 +868,7 @@ export default function Dashboard() {
         <section className="dashboard-section-block" id="modules">
           <div className="dashboard-section-heading">
             <div className="dashboard-section-heading-copy">
-              <p className="dashboard-section-kicker">Study areas</p>
+              <p className="dashboard-section-kicker">Practice modules</p>
               <h2>Modules</h2>
             </div>
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}
@@ -819,10 +877,13 @@ export default function Dashboard() {
           <div className="dashboard-module-grid-v3">
             {moduleCards.map((card) => {
               return (
-                <article className="module-card-v3" key={card.subject.id}>
+                <article
+                  className={`module-card-v3 ${recommendedModuleCard?.subject.slug === card.subject.slug ? "is-recommended" : ""}`}
+                  key={card.subject.id}
+                >
                   <div className="module-card-v3-head">
                     <div className="module-card-v3-copy">
-                      <h3>{card.subject.name}</h3>
+                      <h3>{card.displayName}</h3>
                       <p className="module-card-description">{card.subject.description}</p>
                     </div>
                   </div>
@@ -877,7 +938,7 @@ export default function Dashboard() {
                   return (
                     <article className="recent-attempt-row" key={attempt.id}>
                       <div className="recent-attempt-copy">
-                        <strong>{`${attempt.subjects?.name ?? "Module"} - Batch ${attempt.batch_number ?? 1}`}</strong>
+                        <strong>{`${getModuleDisplayName(attempt.subjects?.name) ?? "Module"} - Batch ${attempt.batch_number ?? 1}`}</strong>
                         <p>
                           {[
                             attemptScore ?? "Score unavailable",
@@ -897,7 +958,7 @@ export default function Dashboard() {
 
             <div className="dashboard-review-handoff">
               {previewAttempts.length > 0 && (
-                <Link className="text-link dashboard-inline-link" to={latestAttempt ? `/review?attempt=${latestAttempt.id}` : "/review"}>
+                <Link className="text-link dashboard-inline-link" to="/review">
                   View all reviews
                 </Link>
               )}

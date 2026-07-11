@@ -12,6 +12,7 @@ import PaymentVerify from "./pages/PaymentVerify";
 import Practice from "./pages/Practice";
 import PracticePreview from "./pages/PracticePreview";
 import Profile from "./pages/Profile";
+import Result from "./pages/Result";
 import Review from "./pages/Review";
 
 export default function App() {
@@ -46,6 +47,14 @@ export default function App() {
               <RequireAuth>
                 <Practice />
               </RequireAuth>
+            }
+          />
+          <Route
+            path="/result"
+            element={
+              <RequireCompletedProfile>
+                <Result />
+              </RequireCompletedProfile>
             }
           />
           <Route

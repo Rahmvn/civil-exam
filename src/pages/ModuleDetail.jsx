@@ -5,6 +5,7 @@ import {
   AnimatedProgressBar,
   DashboardActionButton,
   FreeBatchConfirmationModal,
+  SkipAheadConfirmationModal,
 } from "../components/DashboardUi";
 import ProfileOnboardingModal from "../components/ProfileOnboardingModal";
 import {
@@ -18,15 +19,36 @@ import {
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   FALLBACK_SUBJECTS,
-  buildModuleStatusLine,
-  formatDate,
   formatPercent,
+  getBatchProgressionGuidance,
   getBatchStatusConfig,
   getLockReason,
+  getModuleDisplayName,
   getModuleStatusTone,
+  getProgressionRecommendation,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
+
+function getModulePageStatusLine(subjectSlug, liveCount, comingSoonCount) {
+  if (subjectSlug === "current-affairs") {
+    return "Coming soon";
+  }
+
+  if (liveCount > 0 && comingSoonCount > 0) {
+    return `${liveCount} available - ${comingSoonCount} soon`;
+  }
+
+  if (liveCount > 0) {
+    return liveCount === 1 ? "1 available" : `${liveCount} available`;
+  }
+
+  if (comingSoonCount > 0) {
+    return "Coming soon";
+  }
+
+  return "Not available yet";
+}
 
 export default function ModuleDetail() {
   const { profileComplete } = useAuth();
@@ -45,6 +67,7 @@ export default function ModuleDetail() {
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [startConfirmSubject, setStartConfirmSubject] = useState(null);
   const [startingBatch, setStartingBatch] = useState(false);
+  const [skipAheadConfirm, setSkipAheadConfirm] = useState(null);
 
   const loadModuleData = useCallback(async ({ showLoading = true } = {}) => {
     if (!subjectSlug) return;
@@ -108,7 +131,9 @@ export default function ModuleDetail() {
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
   const isPaidUser = Boolean(summary?.has_paid_access);
-  const selectedModuleName = subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "";
+  const selectedModuleName = getModuleDisplayName(
+    subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
+  );
   const liveRows = rows.filter((row) => Number(row.published_question_count ?? 0) > 0);
   const comingSoonRows = rows.filter((row) => row.state === "unavailable_not_published");
   const progressBySubject = useMemo(
@@ -131,40 +156,20 @@ export default function ModuleDetail() {
 
     return map;
   }, [attempts, subjectSlug]);
-  const latestSubjectAttempt = useMemo(
-    () => attempts.find((attempt) => attempt?.subjects?.slug === subjectSlug) ?? null,
-    [attempts, subjectSlug],
+  const progression = useMemo(
+    () => getProgressionRecommendation(rows, { isPaidUser }),
+    [isPaidUser, rows],
   );
 
   const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
   const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
-  const statusLine = subject ? buildModuleStatusLine(subject.slug, liveRows.length, comingSoonRows.length) : "";
+  const statusLine = subject ? getModulePageStatusLine(subject.slug, liveRows.length, comingSoonRows.length) : "";
   const statusTone = subject ? getModuleStatusTone(subject.slug, liveRows.length, comingSoonRows.length) : "muted";
   const bestScoreValue = rows.reduce((best, row) => {
     const value = Number(row.best_score ?? 0);
     return value > best ? value : best;
   }, 0);
   const latestScoreValue = Number(subjectProgress?.last_score_percent ?? 0) || null;
-  const isSelectedFreeModule = hasSelectedFreeModule && freeModuleSlug === subjectSlug;
-  const moduleSummaryLine = (() => {
-    if (!profileComplete) {
-      return "Complete your account to start practice.";
-    }
-
-    if (isPaidUser) {
-      return "All published batches in this module are available.";
-    }
-
-    if (!hasSelectedFreeModule) {
-      return "Choose one module and start Batch 1 for free.";
-    }
-
-    if (isSelectedFreeModule) {
-      return "Your selected free module is shown below.";
-    }
-
-    return "Unlock full access to start this module.";
-  })();
 
   let emphasisText = "Not attempted yet";
   if (bestScoreValue > 0) {
@@ -175,15 +180,6 @@ export default function ModuleDetail() {
     emphasisText = `${passedCount} of ${liveRows.length} published batches passed`;
   } else if (subjectSlug === "current-affairs") {
     emphasisText = "Fact-check hold";
-  }
-
-  let supportText = null;
-  if (!isPaidUser && isSelectedFreeModule) {
-    supportText = "Selected free module";
-  } else if (!isPaidUser && hasSelectedFreeModule && liveRows.length > 0) {
-    supportText = "Full access required";
-  } else if (latestSubjectAttempt) {
-    supportText = `Last attempt ${formatDate(latestSubjectAttempt.completed_at ?? latestSubjectAttempt.started_at)}`;
   }
 
   function openOnboarding() {
@@ -221,17 +217,81 @@ export default function ModuleDetail() {
     }
 
     if (row.state === "completed_failed") {
+      if (isPaidUser) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+
+        if (guidance.isSkipAhead) {
+          return {
+            label: `Retry Batch ${batchNumber}`,
+            action: () => {
+              setSkipAheadConfirm({
+                batchNumber,
+                recommendedBatchNumber: progression.recommendedBatchNumber,
+              });
+            },
+          };
+        }
+      }
+
       return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
     }
 
     if (row.state === "completed_passed") {
-      return isPaidUser
-        ? { label: `Retry Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` }
-        : { label: "Unlock Full Access", to: "/access" };
+      if (isPaidUser) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+
+        if (guidance.isSkipAhead) {
+          return {
+            label: `Retry Batch ${batchNumber}`,
+            action: () => {
+              setSkipAheadConfirm({
+                batchNumber,
+                recommendedBatchNumber: progression.recommendedBatchNumber,
+              });
+            },
+          };
+        }
+
+        return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+      }
+
+      return { label: "Unlock Full Access", to: "/access" };
     }
 
     if (Number(row.attempt_count ?? 0) > 0) {
+      if (isPaidUser) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+
+        if (guidance.isSkipAhead) {
+          return {
+            label: `Continue Batch ${batchNumber}`,
+            action: () => {
+              setSkipAheadConfirm({
+                batchNumber,
+                recommendedBatchNumber: progression.recommendedBatchNumber,
+              });
+            },
+          };
+        }
+      }
+
       return { label: `Continue Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+    }
+
+    if (isPaidUser) {
+      const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+
+      if (guidance.isSkipAhead) {
+        return {
+          label: `Start Batch ${batchNumber}`,
+          action: () => {
+            setSkipAheadConfirm({
+              batchNumber,
+              recommendedBatchNumber: progression.recommendedBatchNumber,
+            });
+          },
+        };
+      }
     }
 
     return { label: `Start Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
@@ -282,7 +342,9 @@ export default function ModuleDetail() {
     return (
       <AppFrame>
         <section className="dashboard-section-block">
-          <article className="dashboard-panel-card">Loading module...</article>
+          <article className="state-card page-loading-card">
+            <p>Loading module...</p>
+          </article>
         </section>
       </AppFrame>
     );
@@ -312,28 +374,16 @@ export default function ModuleDetail() {
     <AppFrame>
       <section className="dashboard-hub dashboard-hub-compact module-detail-page">
         <section className="dashboard-section-block">
-          <div className="dashboard-section-heading module-detail-heading">
-            <div className="dashboard-section-heading-copy">
-              <p className="dashboard-section-kicker">Module</p>
-              <h1 className="module-detail-title">{subject.name}</h1>
-            </div>
-            <Link className="text-link" to="/dashboard#modules">
-              Back to modules
-            </Link>
-          </div>
-
           <article className="dashboard-panel-card module-detail-hero">
-            <div className="module-card-v3-head">
-              <p className="module-card-description">{subject.description}</p>
+            <div className="module-detail-copy">
+              <h1 className="module-detail-title">{getModuleDisplayName(subject.name)}</h1>
+              <p className="module-card-description module-detail-description">{subject.description}</p>
             </div>
 
             <div className="module-card-status-row">
               <span className={`module-status-pill is-${statusTone}`}>{statusLine}</span>
               <span className="module-status-copy">{emphasisText}</span>
-              {supportText && <span className="module-status-copy">{supportText}</span>}
             </div>
-
-            <p className="module-detail-summary">{moduleSummaryLine}</p>
 
             {progressPercent > 0 && (
               <div className="module-inline-progress module-inline-progress-plain">
@@ -348,20 +398,14 @@ export default function ModuleDetail() {
         </section>
 
         <section className="dashboard-section-block">
-          <div className="dashboard-section-heading">
-            <div className="dashboard-section-heading-copy">
-              <p className="dashboard-section-kicker">Published batches</p>
-              <h2>Batches</h2>
-            </div>
-          </div>
-
           <article className="dashboard-panel-card module-detail-batches-card">
             <div className="module-preview-panel module-preview-panel-detail">
               {rowsToShow.map((row) => {
                 const status = getBatchStatusConfig(row, isPaidUser);
                 const primaryAction = getBatchPrimaryAction(row);
                 const secondaryAction = getBatchSecondaryAction(row);
-                const supportCopy = getLockReason(row, selectedModuleName);
+                const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+                const supportCopy = guidance.note || getLockReason(row, selectedModuleName);
                 const metaBits = [];
                 const attemptCount = Number(row.attempt_count ?? 0);
                 const showStatusBadge =
@@ -383,10 +427,16 @@ export default function ModuleDetail() {
                 }
 
                 return (
-                  <article className="module-preview-row" key={`${subject.slug}-${row.batch_number ?? 1}`}>
+                  <article
+                    className={`module-preview-row ${guidance.isRecommended ? "is-recommended" : ""} ${guidance.isSkipAhead ? "is-skip-ahead" : ""}`}
+                    key={`${subject.slug}-${row.batch_number ?? 1}`}
+                  >
                     <div className="module-preview-copy">
                       <div className="module-preview-top">
                         <strong>{`Batch ${row.batch_number ?? 1}`}</strong>
+                        {guidance.isRecommended && (
+                          <span className="batch-status-badge is-recommended">Recommended</span>
+                        )}
                         {showStatusBadge && (
                           <span className={`batch-status-badge is-${status.tone}`}>{status.label}</span>
                         )}
@@ -397,7 +447,9 @@ export default function ModuleDetail() {
                       {metaBits.length > 0 && (
                         <p className="module-preview-meta">{metaBits.join(" - ")}</p>
                       )}
-                      {supportCopy && <p className="module-preview-note">{supportCopy}</p>}
+                      {supportCopy && (
+                        <p className={`module-preview-note ${guidance.note ? "is-guidance" : ""}`}>{supportCopy}</p>
+                      )}
                     </div>
 
                     <div className="module-preview-actions">
@@ -430,6 +482,21 @@ export default function ModuleDetail() {
         onCancel={() => setStartConfirmSubject(null)}
         onConfirm={() => void confirmStartFreeBatch()}
         subject={startConfirmSubject}
+      />
+      <SkipAheadConfirmationModal
+        batchNumber={skipAheadConfirm?.batchNumber}
+        recommendedBatchNumber={skipAheadConfirm?.recommendedBatchNumber}
+        onClose={() => setSkipAheadConfirm(null)}
+        onContinue={() => {
+          if (!skipAheadConfirm?.batchNumber) return;
+          navigate(`/practice/${subjectSlug}?batch=${skipAheadConfirm.batchNumber}`);
+          setSkipAheadConfirm(null);
+        }}
+        onGoRecommended={() => {
+          if (!skipAheadConfirm?.recommendedBatchNumber) return;
+          navigate(`/practice/${subjectSlug}?batch=${skipAheadConfirm.recommendedBatchNumber}`);
+          setSkipAheadConfirm(null);
+        }}
       />
     </AppFrame>
   );

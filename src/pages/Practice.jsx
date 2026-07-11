@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import {
@@ -8,7 +8,12 @@ import {
   submitAttempt,
 } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
-import { clearPracticeBatch, readPracticeBatch } from "../lib/practiceSession";
+import {
+  clearPracticeBatch,
+  readPracticeSession,
+  updatePracticeSession,
+} from "../lib/practiceSession";
+import { getModuleDisplayName } from "../lib/moduleDisplay";
 import { useAuth } from "../lib/useAuth";
 
 const EXAM_DURATION_MINUTES = 30;
@@ -19,6 +24,107 @@ function formatTime(totalSeconds) {
     .padStart(2, "0");
   const seconds = (totalSeconds % 60).toString().padStart(2, "0");
   return `${minutes}:${seconds}`;
+}
+
+function PracticeQuestionMapModal({
+  answers,
+  currentIndex,
+  flagged,
+  onClose,
+  onSelectQuestion,
+  questions,
+}) {
+  if (!questions.length) return null;
+
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby="practice-question-map-title"
+        aria-modal="true"
+        className="auth-modal-card practice-map-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <div className="practice-map-modal-head">
+          <h2 id="practice-question-map-title">Question Map</h2>
+        </div>
+
+        <div className="practice-map-legend">
+          <span><i className="is-answered" />Answered</span>
+          <span><i className="is-unanswered" />Unanswered</span>
+          <span><i className="is-marked" />Marked</span>
+        </div>
+
+        <div className="practice-map-grid">
+          {questions.map((question, index) => {
+            const isAnswered = Boolean(answers[question.id]);
+            const isMarked = flagged.includes(question.id);
+            const isCurrent = index === currentIndex;
+
+            return (
+              <button
+                key={question.id}
+                className={`question-dot ${isAnswered ? "answered" : ""} ${isMarked ? "flagged" : ""} ${isCurrent ? "active" : ""}`.trim()}
+                onClick={() => onSelectQuestion(index)}
+                type="button"
+              >
+                {index + 1}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="auth-modal-actions practice-map-actions">
+          <button className="ghost-button" onClick={onClose} type="button">
+            Close
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PracticeSubmitConfirmModal({
+  answeredCount,
+  onCancel,
+  onConfirm,
+  questionsCount,
+  submitting,
+}) {
+  if (!questionsCount) return null;
+
+  const unansweredCount = Math.max(questionsCount - answeredCount, 0);
+
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={submitting ? undefined : onCancel}>
+      <section
+        aria-labelledby="practice-submit-confirm-title"
+        aria-modal="true"
+        className="auth-modal-card practice-submit-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <div className="practice-submit-illustration" aria-hidden="true">
+          <span />
+        </div>
+        <h2 id="practice-submit-confirm-title">Submit Test?</h2>
+        <p>{`You have answered ${answeredCount} out of ${questionsCount} questions.`}</p>
+        {unansweredCount > 0 && (
+          <p className="practice-submit-secondary-copy">
+            {`${unansweredCount} question${unansweredCount === 1 ? "" : "s"} still unanswered.`}
+          </p>
+        )}
+        <div className="auth-modal-actions practice-submit-actions">
+          <button className="primary-action" disabled={submitting || answeredCount === 0} onClick={onConfirm} type="button">
+            {submitting ? "Submitting..." : "Submit Test"}
+          </button>
+          <button className="ghost-button" disabled={submitting} onClick={onCancel} type="button">
+            Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export default function Practice() {
@@ -39,7 +145,9 @@ export default function Practice() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [emptyMessage, setEmptyMessage] = useState("");
-  const bootstrapReadyRef = useRef(false);
+  const [questionMapOpen, setQuestionMapOpen] = useState(false);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [deadlineAt, setDeadlineAt] = useState(null);
 
   const currentQuestion = questions[currentIndex];
   const requestedBatchNumber = Number(searchParams.get("batch") ?? location.state?.batchNumber ?? 0) || null;
@@ -64,100 +172,88 @@ export default function Practice() {
 
   useEffect(() => {
     let active = true;
-    bootstrapReadyRef.current = false;
 
-    async function bootstrap() {
-      try {
-        const [nextSummary, nextSubjects] = await Promise.all([
-          getCandidateSummary(),
-          getSubjects(),
-        ]);
-        const nextSubject = nextSubjects.find((item) => item.slug === subjectSlug) ?? null;
-
-        if (!active) return;
-        setSummary(nextSummary);
-        setSubject(nextSubject);
-      } catch (loadError) {
-        if (!active || isExpectedAbortError(loadError)) return;
-        logAppError("Practice bootstrap", loadError);
-        setError(
-          friendlyErrorMessage(loadError, "We could not prepare this module. Please try again."),
-        );
-      } finally {
-        if (active) {
-          bootstrapReadyRef.current = true;
-          setLoading(false);
-        }
-      }
-    }
-
-    void bootstrap();
-
-    return () => {
-      active = false;
-    };
-  }, [subjectSlug]);
-
-  useEffect(() => {
-    if (!subject || !bootstrapReadyRef.current) return undefined;
-    let active = true;
-
-    async function loadBatch() {
+    async function loadPracticePage() {
       setLoading(true);
       setError("");
       setEmptyMessage("");
+      setQuestions([]);
       setAnswers({});
       setTimeSpent({});
       setFlagged([]);
       setCurrentIndex(0);
       setRemainingSeconds(EXAM_DURATION_MINUTES * 60);
-
-      const storedBatch = readPracticeBatch(subject.slug);
-      const storedBatchNumber = Number(storedBatch?.[0]?.batch_number ?? 0) || null;
-
-      if (
-        storedBatch?.length > 0 &&
-        (!requestedBatchNumber || storedBatchNumber === requestedBatchNumber)
-      ) {
-        if (!active) return;
-        setQuestions(storedBatch);
-        setLoading(false);
-        return;
-      }
-
-      if (summary && !summary.has_paid_access && !summary.free_module_subject_slug) {
-        if (!active) return;
-        setQuestions([]);
-        setEmptyMessage("Start your free batch from the dashboard to continue.");
-        setLoading(false);
-        return;
-      }
+      setQuestionMapOpen(false);
+      setSubmitConfirmOpen(false);
+      setDeadlineAt(null);
 
       try {
+        const [nextSummary, nextSubjects] = await Promise.all([
+          getCandidateSummary(),
+          getSubjects(),
+        ]);
+
+        if (!active) return;
+
+        const nextSubject = nextSubjects.find((item) => item.slug === subjectSlug) ?? null;
+        setSummary(nextSummary);
+        setSubject(nextSubject);
+
+        if (!nextSubject) {
+          return;
+        }
+
+        const storedSession = readPracticeSession(nextSubject.slug);
+        const storedBatch = storedSession?.questions ?? null;
+        const storedBatchNumber = Number(storedBatch?.[0]?.batch_number ?? 0) || null;
+
+        if (
+          storedBatch?.length > 0 &&
+          (!requestedBatchNumber || storedBatchNumber === requestedBatchNumber)
+        ) {
+          setQuestions(storedBatch);
+          setAnswers(storedSession?.answers && typeof storedSession.answers === "object" ? storedSession.answers : {});
+          setTimeSpent(storedSession?.timeSpent && typeof storedSession.timeSpent === "object" ? storedSession.timeSpent : {});
+          setFlagged(Array.isArray(storedSession?.flagged) ? storedSession.flagged : []);
+          setCurrentIndex(
+            Number.isInteger(storedSession?.currentIndex)
+              ? Math.max(0, Math.min(storedSession.currentIndex, storedBatch.length - 1))
+              : 0,
+          );
+          setDeadlineAt(
+            Number.isFinite(Number(storedSession?.deadlineAt))
+              ? Number(storedSession.deadlineAt)
+              : Date.now() + EXAM_DURATION_MINUTES * 60 * 1000,
+          );
+          return;
+        }
+
+        if (!nextSummary.has_paid_access && !nextSummary.free_module_subject_slug) {
+          setEmptyMessage("Start your free batch from the dashboard to continue.");
+          return;
+        }
+
         const nextQuestions = await getPracticeQuestions({
-          subjectId: subject.id,
+          subjectId: nextSubject.id,
           batchNumber: requestedBatchNumber,
           limit: undefined,
         });
 
+        if (!active) return;
+
         if (nextQuestions.length === 0) {
-          if (!active) return;
-          setQuestions([]);
           setEmptyMessage("Questions for this module are not available yet.");
           return;
         }
 
-        if (!active) return;
         setQuestions(nextQuestions);
+        setDeadlineAt(Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
-        logAppError(`Practice questions:${subject.slug}`, loadError);
+        logAppError(`Practice load:${subjectSlug}`, loadError);
         setQuestions([]);
-        setEmptyMessage(
-          friendlyErrorMessage(
-            loadError,
-            "We could not load this batch right now. Start again from the dashboard.",
-          ),
+        setError(
+          friendlyErrorMessage(loadError, "We could not prepare this batch right now. Please try again."),
         );
       } finally {
         if (active) {
@@ -166,29 +262,42 @@ export default function Practice() {
       }
     }
 
-    void loadBatch();
+    void loadPracticePage();
 
     return () => {
       active = false;
     };
-  }, [location.key, requestedBatchNumber, subject, summary]);
+  }, [location.key, requestedBatchNumber, subjectSlug]);
+
+  useEffect(() => {
+    if (!subject?.slug || questions.length === 0 || !deadlineAt) return;
+
+    updatePracticeSession(subject.slug, {
+      questions,
+      answers,
+      timeSpent,
+      flagged,
+      currentIndex,
+      deadlineAt,
+    });
+  }, [answers, currentIndex, deadlineAt, flagged, questions, subject?.slug, timeSpent]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
 
     setSubmitting(true);
+    setSubmitConfirmOpen(false);
     setError("");
 
     try {
       const submittedAnswers = questions
         .map((question) => ({
           question_id: question.id,
-          selected_option: answers[question.id] ?? "",
+          selected_option: answers[question.id] ?? null,
           time_spent_seconds: timeSpent[question.id] ?? 0,
           display_order: question.display_order ?? 0,
           batch_number: question.batch_number ?? batchMeta.batchNumber,
-        }))
-        .filter((item) => item.selected_option);
+        }));
 
       const nextResult = await submitAttempt({
         mode: "timed_mock",
@@ -199,7 +308,7 @@ export default function Practice() {
 
       clearPracticeBatch(subject.slug);
       setSummary(await getCandidateSummary());
-      navigate(`/review?attempt=${nextResult.attempt_id}`, {
+      navigate(`/result?attempt=${nextResult.attempt_id}`, {
         state: {
           result: nextResult,
           subject: {
@@ -221,17 +330,32 @@ export default function Practice() {
   }, [answers, batchMeta.batchNumber, batchMeta.passMarkPercent, navigate, questions, subject, submitting, timeSpent]);
 
   useEffect(() => {
-    if (questions.length === 0 || submitting) return undefined;
+    if (questions.length === 0 || submitting || !deadlineAt) return undefined;
+
+    const syncRemaining = () => {
+      const nextRemaining = Math.max(0, Math.ceil((deadlineAt - Date.now()) / 1000));
+      setRemainingSeconds(nextRemaining);
+      return nextRemaining;
+    };
+
+    const initialRemaining = syncRemaining();
+    if (initialRemaining <= 0) {
+      const submitTimeoutId = window.setTimeout(() => {
+        void submitCurrentSession();
+      }, 0);
+
+      return () => window.clearTimeout(submitTimeoutId);
+    }
 
     const timerId = window.setInterval(() => {
-      setRemainingSeconds((previous) => {
-        if (previous <= 1) {
-          window.clearInterval(timerId);
+      const nextRemaining = syncRemaining();
+      if (nextRemaining <= 0) {
+        window.clearInterval(timerId);
+        window.setTimeout(() => {
           void submitCurrentSession();
-          return 0;
-        }
-        return previous - 1;
-      });
+        }, 0);
+        return;
+      }
 
       setTimeSpent((previous) => {
         if (!currentQuestion) return previous;
@@ -243,7 +367,7 @@ export default function Practice() {
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [currentQuestion, questions.length, submitting, submitCurrentSession]);
+  }, [currentQuestion, deadlineAt, questions.length, submitting, submitCurrentSession]);
 
   const progressPercent = useMemo(() => {
     if (questions.length === 0) return 0;
@@ -269,6 +393,11 @@ export default function Practice() {
     );
   }
 
+  function openSubmitConfirm() {
+    if (submitting || questions.length === 0 || answeredCount === 0) return;
+    setSubmitConfirmOpen(true);
+  }
+
   if (!loading && !subject) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -283,57 +412,20 @@ export default function Practice() {
     );
   }
 
-  if (loading && questions.length === 0) {
-    return <main className="state-shell">Loading your batch...</main>;
+  if (loading) {
+    return (
+      <main className="state-shell">
+        <section className="state-card page-loading-card">
+          <p>Loading your batch...</p>
+        </section>
+      </main>
+    );
   }
 
   return (
-    <AppFrame showBottomNav={false}>
-      <section className="practice-page">
-        <header className="practice-page-header">
-          <div>
-            <p className="eyebrow">Practice</p>
-            <h1>{subject?.name ?? "Module practice"}</h1>
-            <p>
-              {`Batch ${batchMeta.batchNumber} · Question ${questions.length > 0 ? currentIndex + 1 : 0} of ${questions.length}`}
-            </p>
-          </div>
-          <div className="practice-page-actions">
-            <Link className="secondary-action" to="/dashboard#modules">
-              Back to modules
-            </Link>
-            <div className={`practice-timer ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
-              <span>Time left</span>
-              <strong>{formatTime(remainingSeconds)}</strong>
-            </div>
-          </div>
-        </header>
-
-        <section className="practice-session-banner">
-          <div>
-            <span>Batch</span>
-            <strong>{batchMeta.batchNumber}</strong>
-          </div>
-          <div>
-            <span>Questions</span>
-            <strong>{questions.length}</strong>
-          </div>
-          <div>
-            <span>Pass mark</span>
-            <strong>{batchMeta.passMarkPercent}%</strong>
-          </div>
-          <div>
-            <span>Access</span>
-            <strong>{summary?.has_paid_access ? "Full access" : batchMeta.isFreeAttempt ? "Free batch" : "Practice"}</strong>
-          </div>
-        </section>
-
-        {questions.length > 0 && batchMeta.batchSize > 0 && questions.length < batchMeta.batchSize && (
-          <section className="practice-note">
-            Showing available practice questions for this module.
-          </section>
-        )}
-
+    <AppFrame showBottomNav={false} showFooter={false} showHeader={false}>
+      <section className="practice-page practice-page-focused">
+        <span className="practice-sr-only">{`Time left ${formatTime(remainingSeconds)}`}</span>
         {error && <section className="state-card inline-state">{error}</section>}
 
         {questions.length === 0 ? (
@@ -358,109 +450,176 @@ export default function Practice() {
             </div>
           </section>
         ) : (
-          <section className="practice-session-layout">
-            <aside className="practice-session-sidebar">
-              <div className="practice-sidebar-block">
-                <p className="eyebrow">Progress</p>
-                <h2>{answeredCount} answered</h2>
-                <p>{questions.length - answeredCount} still open.</p>
-                <div className="progress-track">
-                  <span style={{ width: `${progressPercent}%` }} />
-                </div>
-              </div>
+          <>
+            <header className="practice-module-context">
+              <h1 title={getModuleDisplayName(subject?.name)}>{getModuleDisplayName(subject?.name)}</h1>
+            </header>
+            <section className="practice-desktop-layout">
+              <div className="practice-session-shell">
+                <header className="practice-exam-strip">
+                  <div className="practice-exam-strip-top">
+                    <div className="practice-exam-progress-copy">
+                      <p>{`Question ${currentIndex + 1} of ${questions.length}`}</p>
+                    </div>
+                    <div className={`practice-timer practice-timer-compact ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
+                      <strong>{formatTime(remainingSeconds)}</strong>
+                    </div>
+                  </div>
+                  <div className="practice-progress-track" aria-hidden="true">
+                    <span style={{ width: `${progressPercent}%` }} />
+                  </div>
+                </header>
 
-              <div className="practice-sidebar-block">
-                <p className="eyebrow">Question map</p>
-                <div className="question-map">
-                  {questions.map((question, index) => {
-                    const isActive = index === currentIndex;
-                    const isAnswered = Boolean(answers[question.id]);
-                    const isFlagged = flagged.includes(question.id);
+                <section className="practice-question-stage">
+                  <article className="practice-question-card practice-question-card-focused">
+                    <h2>{currentQuestion?.question_text}</h2>
 
-                    return (
+                    <div className="options-list practice-options-list">
+                      {["A", "B", "C", "D"].map((option) => {
+                        const selected = answers[currentQuestion.id] === option;
+
+                        return (
+                          <button
+                            key={option}
+                            className={`option-card practice-option-card ${selected ? "selected" : ""}`}
+                            onClick={() => selectAnswer(option)}
+                            type="button"
+                          >
+                            <span className="practice-option-badge">
+                              <span className="practice-option-radio" aria-hidden="true" />
+                              <strong>{option}</strong>
+                            </span>
+                            <span>{currentQuestion[`option_${option.toLowerCase()}`]}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </article>
+
+                  <div className="practice-utility-row practice-utility-row-single">
+                    <button className="ghost-button practice-utility-button" onClick={() => setQuestionMapOpen(true)} type="button">
+                      Question Map
+                    </button>
+                    <button
+                      className={`practice-flag-button ${flagged.includes(currentQuestion.id) ? "is-active" : ""}`}
+                      aria-label={flagged.includes(currentQuestion.id) ? "Remove review flag" : "Mark for review"}
+                      onClick={toggleFlag}
+                      title={flagged.includes(currentQuestion.id) ? "Flagged for review" : "Mark for review"}
+                      type="button"
+                    >
+                      <span className="practice-flag-icon" aria-hidden="true" />
+                      <span className="practice-sr-only">
+                        {flagged.includes(currentQuestion.id) ? "Flagged" : "Flag"}
+                      </span>
+                    </button>
+                  </div>
+
+                  <footer className="practice-bottom-bar">
+                    <button
+                      className="ghost-button practice-nav-button"
+                      disabled={currentIndex === 0}
+                      onClick={() => setCurrentIndex((value) => value - 1)}
+                      type="button"
+                    >
+                      Previous
+                    </button>
+                    {currentIndex === questions.length - 1 ? (
                       <button
-                        key={question.id}
-                        className={`question-dot ${isActive ? "active" : ""} ${isAnswered ? "answered" : ""} ${isFlagged ? "flagged" : ""}`}
-                        onClick={() => setCurrentIndex(index)}
+                        className="practice-nav-button"
+                        disabled={submitting || answeredCount === 0}
+                        onClick={openSubmitConfirm}
                         type="button"
                       >
-                        {index + 1}
+                        {submitting ? "Submitting..." : "Submit Test"}
                       </button>
-                    );
-                  })}
-                </div>
+                    ) : (
+                      <button
+                        className="practice-nav-button"
+                        onClick={() => setCurrentIndex((value) => value + 1)}
+                        type="button"
+                      >
+                        Next
+                      </button>
+                    )}
+                  </footer>
+                </section>
               </div>
 
-              <button
-                className="submit-button"
-                disabled={submitting || answeredCount === 0}
-                onClick={() => void submitCurrentSession()}
-                type="button"
-              >
-                {submitting ? "Submitting..." : "Submit batch"}
-              </button>
-            </aside>
+              <aside className="practice-desktop-sidebar">
+                <section className="practice-desktop-panel practice-desktop-panel-session">
+                  <div className="practice-desktop-session-top">
+                    <div className="practice-desktop-session-copy">
+                      <span className="practice-desktop-label">Session</span>
+                      <strong className={`practice-desktop-timer ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
+                        {formatTime(remainingSeconds)}
+                      </strong>
+                    </div>
+                    <div className="practice-desktop-session-stats">
+                      <span>{`${answeredCount}/${questions.length} answered`}</span>
+                      {flagged.length > 0 && <span>{`${flagged.length} flagged`}</span>}
+                    </div>
+                  </div>
 
-            <section className="practice-question-card">
-              <div className="practice-question-meta">
-                <span>{subject?.name}</span>
-                <span>{`Batch ${batchMeta.batchNumber}`}</span>
-                <span>{`Question ${currentIndex + 1} of ${questions.length}`}</span>
-              </div>
+                  <div className="practice-desktop-panel-head">
+                    <span className="practice-desktop-label">Question map</span>
+                    <span className="practice-desktop-meta">{`${questions.length - answeredCount} open`}</span>
+                  </div>
+                  <div className="practice-map-grid practice-map-grid-desktop">
+                    {questions.map((question, index) => {
+                      const isAnswered = Boolean(answers[question.id]);
+                      const isMarked = flagged.includes(question.id);
+                      const isCurrent = index === currentIndex;
 
-              <h2>{currentQuestion?.question_text}</h2>
-
-              <div className="options-list">
-                {["A", "B", "C", "D"].map((option) => {
-                  const selected = answers[currentQuestion.id] === option;
-
-                  return (
-                    <button
-                      key={option}
-                      className={`option-card ${selected ? "selected" : ""}`}
-                      onClick={() => selectAnswer(option)}
-                      type="button"
-                    >
-                      <span className="radio">{option}</span>
-                      <span>{currentQuestion[`option_${option.toLowerCase()}`]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <footer className="practice-question-actions">
-                <button className="ghost-button" onClick={toggleFlag} type="button">
-                  {flagged.includes(currentQuestion.id) ? "Remove flag" : "Flag for review"}
-                </button>
-                <div className="practice-question-nav">
+                      return (
+                        <button
+                          key={question.id}
+                          className={`question-dot ${isAnswered ? "answered" : ""} ${isMarked ? "flagged" : ""} ${isCurrent ? "active" : ""}`.trim()}
+                          onClick={() => setCurrentIndex(index)}
+                          type="button"
+                        >
+                          {index + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <button
-                    className="ghost-button"
-                    disabled={currentIndex === 0}
-                    onClick={() => setCurrentIndex((value) => value - 1)}
+                    className={`practice-flag-button practice-flag-button-desktop ${flagged.includes(currentQuestion.id) ? "is-active" : ""}`}
+                    aria-label={flagged.includes(currentQuestion.id) ? "Remove review flag" : "Mark for review"}
+                    onClick={toggleFlag}
+                    title={flagged.includes(currentQuestion.id) ? "Flagged for review" : "Mark for review"}
                     type="button"
                   >
-                    Previous
+                    <span className="practice-flag-icon" aria-hidden="true" />
+                    <span>{flagged.includes(currentQuestion.id) ? "Flagged" : "Mark for review"}</span>
                   </button>
-                  {currentIndex === questions.length - 1 ? (
-                    <button
-                      disabled={submitting || answeredCount === 0}
-                      onClick={() => void submitCurrentSession()}
-                      type="button"
-                    >
-                      {submitting ? "Submitting..." : "Submit"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setCurrentIndex((value) => value + 1)}
-                      type="button"
-                    >
-                      Next
-                    </button>
-                  )}
-                </div>
-              </footer>
+                </section>
+              </aside>
             </section>
-          </section>
+
+            {questionMapOpen && (
+              <PracticeQuestionMapModal
+                answers={answers}
+                currentIndex={currentIndex}
+                flagged={flagged}
+                onClose={() => setQuestionMapOpen(false)}
+                onSelectQuestion={(index) => {
+                  setCurrentIndex(index);
+                  setQuestionMapOpen(false);
+                }}
+                questions={questions}
+              />
+            )}
+
+            {submitConfirmOpen && (
+              <PracticeSubmitConfirmModal
+                answeredCount={answeredCount}
+                onCancel={() => setSubmitConfirmOpen(false)}
+                onConfirm={() => void submitCurrentSession()}
+                questionsCount={questions.length}
+                submitting={submitting}
+              />
+            )}
+          </>
         )}
       </section>
     </AppFrame>

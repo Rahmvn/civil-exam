@@ -32,7 +32,7 @@ export const EXAM_MODULES = [
     id: null,
     slug: "current-affairs",
     name: "Current Affairs",
-    description: "Nigeria-focused governance, history, national issues, and general knowledge.",
+    description: "Governance, history, national issues, and general knowledge.",
     sort_order: 3,
   },
 ];

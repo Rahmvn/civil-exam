@@ -80,13 +80,25 @@ export default function Access() {
     }
   }
 
+  if (loading) {
+    return (
+      <AppFrame showBottomNav={false}>
+        <section className="access-page">
+          <article className="state-card page-loading-card">
+            <p>Loading access...</p>
+          </article>
+        </section>
+      </AppFrame>
+    );
+  }
+
   return (
     <AppFrame showBottomNav={false}>
       <section className="access-page">
         <header className="access-page-header">
           <div>
             <p className="eyebrow">Access</p>
-            <h1>{loading ? "Loading access..." : summary?.has_paid_access ? "Full access active" : "Unlock full access"}</h1>
+            <h1>{summary?.has_paid_access ? "Full access active" : "Unlock full access"}</h1>
             <p>
               {summary?.has_paid_access
                 ? "You can continue with all live modules, all currently published batches, review history, and progress tracking."

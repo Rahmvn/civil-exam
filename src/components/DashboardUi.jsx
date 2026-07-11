@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { getModuleDisplayName } from "../lib/moduleDisplay";
 
 export function ScoreRing({ value = 0, label, sublabel, className = "" }) {
   const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
@@ -156,7 +157,7 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
         <p className="eyebrow">Free access</p>
         <h2 id="free-batch-modal-title">Start your free batch?</h2>
         <p>
-          This will lock your free access to {subject.name}. You&apos;ll be able to practise Batch 1 for free, and you&apos;ll get one retry only if the first attempt fails.
+          This will lock your free access to {getModuleDisplayName(subject.name)}. You&apos;ll be able to practise Batch 1 for free, and you&apos;ll get one retry only if the first attempt fails.
         </p>
         <div className="auth-modal-actions">
           <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
@@ -164,6 +165,38 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
           </button>
           <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
             Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function SkipAheadConfirmationModal({
+  batchNumber,
+  recommendedBatchNumber,
+  onClose,
+  onContinue,
+  onGoRecommended,
+}) {
+  if (!batchNumber || !recommendedBatchNumber) return null;
+
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby="skip-ahead-modal-title"
+        aria-modal="true"
+        className="auth-modal-card dashboard-confirmation-modal"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="skip-ahead-modal-title">{`Batch ${recommendedBatchNumber} is recommended first.`}</h2>
+        <div className="auth-modal-actions">
+          <button className="primary-action" onClick={onContinue} type="button">
+            Continue anyway
+          </button>
+          <button className="ghost-button" onClick={onGoRecommended} type="button">
+            {`Go to Batch ${recommendedBatchNumber}`}
           </button>
         </div>
       </section>
