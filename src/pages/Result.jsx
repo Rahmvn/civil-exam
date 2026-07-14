@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
-import { getAttemptReview } from "../lib/appApi";
+import { LoadingState } from "../components/LoadingState";
+import { AnimatedProgressBar } from "../components/DashboardUi";
+import { getAttemptReview, getModuleBatchAccess } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
-import { getModuleDisplayName } from "../lib/moduleDisplay";
+import {
+  getModuleDisplayName,
+  getProgressionRecommendation,
+  isPublishedBatchRow,
+} from "../lib/moduleDisplay";
+import { withReturnTo } from "../lib/navigation";
 
 function getResultSummary(rows, navigationState) {
   const first = rows[0] ?? null;
@@ -48,7 +55,15 @@ function getResultSummary(rows, navigationState) {
 function ResultMark({ passed }) {
   return (
     <div className={`result-mark ${passed ? "is-pass" : "is-retry"}`} aria-hidden="true">
-      <span>{passed ? "✓" : "×"}</span>
+      <span />
+    </div>
+  );
+}
+
+function ResultConfetti() {
+  return (
+    <div className="result-confetti" aria-hidden="true">
+      {Array.from({ length: 12 }, (_, index) => <i key={index} />)}
     </div>
   );
 }
@@ -58,6 +73,7 @@ export default function Result() {
   const [searchParams] = useSearchParams();
   const attemptId = searchParams.get("attempt") ?? location.state?.result?.attempt_id ?? null;
   const [rows, setRows] = useState([]);
+  const [moduleRows, setModuleRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -72,9 +88,26 @@ export default function Result() {
       }
 
       try {
-        const nextRows = await getAttemptReview(attemptId);
+        const [reviewResult] = await Promise.allSettled([getAttemptReview(attemptId)]);
+
         if (!active) return;
-        setRows(Array.isArray(nextRows) ? nextRows : []);
+
+        if (reviewResult.status === "rejected") throw reviewResult.reason;
+
+        const nextRows = Array.isArray(reviewResult.value) ? reviewResult.value : [];
+        setRows(nextRows);
+
+        const subjectSlug = nextRows[0]?.subject_slug ?? location.state?.subject?.slug ?? null;
+        if (subjectSlug) {
+          try {
+            const nextModuleRows = await getModuleBatchAccess(subjectSlug);
+            if (active) setModuleRows(Array.isArray(nextModuleRows) ? nextModuleRows : []);
+          } catch (progressError) {
+            if (!isExpectedAbortError(progressError)) {
+              logAppError("Result module progress", progressError);
+            }
+          }
+        }
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
         logAppError("Result load", loadError);
@@ -88,21 +121,32 @@ export default function Result() {
     return () => {
       active = false;
     };
-  }, [attemptId]);
+  }, [attemptId, location.state]);
 
   const summary = useMemo(
     () => getResultSummary(rows, location.state),
     [location.state, rows],
   );
 
+  const moduleProgress = useMemo(() => {
+    const publishedRows = moduleRows.filter(isPublishedBatchRow);
+    const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
+    const hasModuleAccess = moduleRows.some((row) => Boolean(row?.is_paid));
+    const progression = getProgressionRecommendation(moduleRows, { isPaidUser: hasModuleAccess });
+
+    return {
+      completedCount,
+      publishedCount: publishedRows.length,
+      percent: publishedRows.length > 0 ? Math.round((completedCount / publishedRows.length) * 100) : 0,
+      recommendedRow: progression.hasOpenRecommendation ? progression.recommendedRow : null,
+      hasModuleAccess,
+    };
+  }, [moduleRows]);
+
   if (loading) {
     return (
       <AppFrame showBottomNav={false} showFooter={false}>
-        <section className="result-page">
-          <article className="state-card page-loading-card">
-            <p>Preparing your result...</p>
-          </article>
-        </section>
+        <LoadingState />
       </AppFrame>
     );
   }
@@ -121,25 +165,48 @@ export default function Result() {
     );
   }
 
-  const reviewPath = `/review?attempt=${summary.attemptId}`;
+  const resultPath = `/result?attempt=${summary.attemptId}`;
+  const reviewPath = withReturnTo(`/review?attempt=${summary.attemptId}`, resultPath);
   const retryPath = summary.subjectSlug
     ? `/practice/${summary.subjectSlug}?batch=${summary.batchNumber}`
     : "/dashboard";
-  const nextBatchPath = summary.subjectSlug && summary.nextBatchNumber
-    ? `/practice/${summary.subjectSlug}?batch=${summary.nextBatchNumber}`
+  const recommendedBatchNumber = Number(moduleProgress.recommendedRow?.batch_number ?? summary.nextBatchNumber ?? 0) || null;
+  const nextPracticePath = summary.subjectSlug && recommendedBatchNumber
+    ? `/practice/${summary.subjectSlug}?batch=${recommendedBatchNumber}`
     : null;
-  const showNextBatch = summary.passed && summary.nextAction === "next_batch" && nextBatchPath;
+  const unlockPath = summary.subjectSlug
+    ? `/access?module=${encodeURIComponent(summary.subjectSlug)}`
+    : "/access";
+  const isFreeCompletion = summary.passed && summary.nextAction === "unlock_module";
+  const isModuleComplete = summary.passed && moduleProgress.hasModuleAccess && (
+    (moduleProgress.publishedCount > 0 && moduleProgress.completedCount === moduleProgress.publishedCount)
+    || (moduleProgress.publishedCount === 0 && summary.nextAction === "module_complete")
+  );
   const showRetry = !summary.passed && summary.canRetry;
+  const passedPrimaryAction = (() => {
+    if (isFreeCompletion) return { label: "Unlock module", to: unlockPath };
+    if (isModuleComplete) return { label: "Back to modules", to: "/dashboard#modules" };
+    if (nextPracticePath) return { label: "Continue practice", to: nextPracticePath };
+    return { label: "Back to modules", to: "/dashboard#modules" };
+  })();
 
   return (
     <AppFrame showBottomNav={false} showFooter={false}>
       <section className={`result-page ${summary.passed ? "is-pass" : "is-retry"}`}>
         <article className="dashboard-panel-card result-card">
+          {summary.passed && <ResultConfetti />}
           <ResultMark passed={summary.passed} />
 
           <div className="result-heading">
             <p>{summary.subjectName}</p>
-            <h1>{summary.passed ? "You passed" : "Keep going"}</h1>
+            <h1>{isModuleComplete ? "Module completed" : summary.passed ? "You passed" : "Keep going"}</h1>
+            <span>
+              {isModuleComplete
+                ? "Excellent work. You completed every published practice set in this module."
+                : summary.passed
+                  ? "Strong work. You are ready to keep moving."
+                  : "Review what you missed, then try again with focus."}
+            </span>
           </div>
 
           <div className="result-score-panel">
@@ -154,18 +221,37 @@ export default function Result() {
             <article><strong>{summary.unansweredCount}</strong><span>Unanswered</span></article>
           </div>
 
+          {summary.passed && moduleProgress.publishedCount > 0 && (
+            <div className="result-module-progress">
+              <div>
+                <span>Module progress</span>
+                <strong>{`${moduleProgress.completedCount} of ${moduleProgress.publishedCount} completed`}</strong>
+              </div>
+              <AnimatedProgressBar value={moduleProgress.percent} />
+            </div>
+          )}
+
           <div className="result-actions">
-            <Link className="primary-action" state={{ returnTo: `/result?attempt=${summary.attemptId}` }} to={reviewPath}>
-              Review answers
-            </Link>
-            {showNextBatch ? (
-              <Link className="result-secondary-action" to={nextBatchPath}>
-                {`Start Batch ${summary.nextBatchNumber}`}
-              </Link>
-            ) : showRetry ? (
-              <Link className="result-secondary-action" to={retryPath}>Retry</Link>
+            {summary.passed ? (
+              <>
+                <Link className="primary-action" to={passedPrimaryAction.to}>{passedPrimaryAction.label}</Link>
+                <Link className="result-secondary-action" to={reviewPath}>
+                  Review answers
+                </Link>
+              </>
             ) : (
-              <Link className="result-secondary-action" to="/dashboard">Back to dashboard</Link>
+              <>
+                <Link className="primary-action" to={reviewPath}>
+                  Review answers
+                </Link>
+                {showRetry ? (
+                  <Link className="result-secondary-action" to={retryPath}>Retry</Link>
+                ) : summary.nextAction === "unlock_module" ? (
+                  <Link className="result-secondary-action" to={unlockPath}>Unlock module</Link>
+                ) : (
+                  <Link className="result-secondary-action" to="/dashboard">Back to dashboard</Link>
+                )}
+              </>
             )}
           </div>
         </article>

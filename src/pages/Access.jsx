@@ -1,38 +1,238 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
-import { getCandidateSummary, initializePayment } from "../lib/appApi";
+import { LoadingState } from "../components/LoadingState";
+import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
+import {
+  getModuleAccessCatalog,
+  getPaymentRecords,
+  initializePayment,
+} from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { getModuleDisplayName } from "../lib/moduleDisplay";
+import { useAuth } from "../lib/useAuth";
 
-function formatNaira(kobo) {
+function formatMoney(kobo, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
-    currency: "NGN",
+    currency: currency || "NGN",
     maximumFractionDigits: 0,
   }).format((kobo ?? 0) / 100);
 }
 
+function formatReceiptMoney(kobo, currency = "NGN") {
+  const amount = new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format((kobo ?? 0) / 100);
+  return `${currency || "NGN"} ${amount}`;
+}
+
 function formatDate(value) {
-  if (!value) return "";
+  if (!value) return "Not available";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString();
+  if (Number.isNaN(date.getTime())) return "Not available";
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function paymentStatusLabel(status) {
+  if (status === "pending") return "Pending";
+  if (status === "failed") return "Failed";
+  if (status === "expired") return "Expired";
+  return "Payment record";
+}
+
+function getPaymentAccessName(payment) {
+  if (payment.subject_name) return getModuleDisplayName(payment.subject_name);
+  if (payment.is_legacy_full_access) return "Legacy full access";
+  return "Module access";
+}
+
+function ReceiptModal({ payment, profile, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+  const reference = payment.paystack_reference || "Not available";
+  const accessName = getPaymentAccessName(payment);
+  const paymentDate = formatDate(payment.paid_at || payment.created_at);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  async function copyReference() {
+    if (!payment.paystack_reference) return;
+    await navigator.clipboard?.writeText(payment.paystack_reference);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function downloadReceipt() {
+    setDownloading(true);
+    setDownloadError("");
+
+    try {
+      const { jsPDF } = await import("jspdf");
+      const document = new jsPDF({ format: "a4", unit: "mm" });
+      const pageWidth = document.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+      const labelWidth = 48;
+      const receiptRows = [
+        ["Paid by", profile?.full_name || "Account holder"],
+        ["Email", profile?.email || "Not available"],
+        ["Module access", accessName],
+        ["Payment date", paymentDate],
+        ["Access through", formatDate(payment.expires_at)],
+        ["Payment reference", reference],
+      ];
+
+      document.setProperties({
+        title: `Payment receipt ${reference}`,
+        subject: "Verified module payment receipt",
+        author: BRAND_NAME,
+      });
+      document.setFillColor(15, 91, 58);
+      document.rect(0, 0, pageWidth, 7, "F");
+      document.setTextColor(15, 91, 58);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(12);
+      document.text(BRAND_NAME.toUpperCase(), margin, 23);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8.5);
+      document.setTextColor(93, 103, 118);
+      document.text(BRAND_DESCRIPTOR, margin, 28.5);
+      document.setTextColor(28, 36, 48);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(24);
+      document.text("Payment receipt", margin, 41);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(9);
+      document.setTextColor(93, 103, 118);
+      document.text(`Receipt reference: ${reference}`, margin, 49);
+      document.setFillColor(234, 245, 239);
+      document.roundedRect(margin, 56, contentWidth, 27, 3, 3, "F");
+      document.setTextColor(15, 91, 58);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(10);
+      document.text("PAYMENT VERIFIED", margin + 7, 67);
+      document.setTextColor(28, 36, 48);
+      document.setFontSize(17);
+      document.text(formatReceiptMoney(payment.amount_kobo, payment.currency), margin + 7, 76);
+
+      let y = 98;
+      receiptRows.forEach(([label, value]) => {
+        const valueLines = document.splitTextToSize(String(value), contentWidth - labelWidth - 5);
+        const rowHeight = Math.max(13, (valueLines.length * 5) + 7);
+        document.setDrawColor(220, 227, 232);
+        document.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+        document.setFont("helvetica", "normal");
+        document.setFontSize(9);
+        document.setTextColor(93, 103, 118);
+        document.text(label, margin, y + 7);
+        document.setFont("helvetica", "bold");
+        document.setTextColor(28, 36, 48);
+        document.text(valueLines, margin + labelWidth, y + 7);
+        y += rowHeight;
+      });
+
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8.5);
+      document.setTextColor(93, 103, 118);
+      const note = "This receipt confirms a payment verified through Paystack. Keep the payment reference for support or verification.";
+      document.text(document.splitTextToSize(note, contentWidth), margin, y + 16);
+      const safeReference = reference.replace(/[^a-zA-Z0-9_-]/g, "-");
+      document.save(`promotionsure-receipt-${safeReference}.pdf`);
+    } catch (error) {
+      logAppError("Receipt download", error);
+      setDownloadError("We could not download the receipt. You can still print it.");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="access-receipt-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby="payment-receipt-title"
+        aria-modal="true"
+        className="access-receipt-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <header className="access-receipt-header">
+          <div>
+            <span>{BRAND_NAME}</span>
+            <small>{BRAND_DESCRIPTOR}</small>
+            <h2 id="payment-receipt-title">Payment receipt</h2>
+          </div>
+          <button aria-label="Close receipt" onClick={onClose} type="button">Close</button>
+        </header>
+
+        <div className="access-receipt-paid-mark">
+          <div>
+            <strong>Payment verified</strong>
+            <p>{formatMoney(payment.amount_kobo, payment.currency)}</p>
+          </div>
+        </div>
+
+        <dl className="access-receipt-details">
+          <div><dt>Paid by</dt><dd>{profile?.full_name || "Account holder"}</dd></div>
+          <div><dt>Email</dt><dd>{profile?.email || "Not available"}</dd></div>
+          <div><dt>Module access</dt><dd>{accessName}</dd></div>
+          <div><dt>Payment date</dt><dd>{paymentDate}</dd></div>
+          <div><dt>Access through</dt><dd>{formatDate(payment.expires_at)}</dd></div>
+          <div><dt>Reference</dt><dd className="access-receipt-reference">{reference}</dd></div>
+        </dl>
+
+        <div className="access-receipt-actions">
+          <button className="ghost-button" disabled={!payment.paystack_reference} onClick={() => void copyReference()} type="button">
+            {copied ? "Reference copied" : "Copy reference"}
+          </button>
+          <button className="ghost-button" onClick={() => window.print()} type="button">Print</button>
+          <button disabled={downloading} onClick={() => void downloadReceipt()} type="button">
+            {downloading ? "Preparing PDF..." : "Download receipt"}
+          </button>
+        </div>
+        {downloadError && <p className="action-error access-receipt-error" role="alert">{downloadError}</p>}
+      </section>
+    </div>
+  );
 }
 
 export default function Access() {
-  const [summary, setSummary] = useState(null);
+  const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const requestedModule = searchParams.get("module");
+  const [moduleAccess, setModuleAccess] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
-  const [error, setError] = useState("");
+  const [payingModule, setPayingModule] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
     async function loadAccess() {
       try {
-        setSummary(await getCandidateSummary());
+        const [accessRows, paymentRows] = await Promise.all([
+          getModuleAccessCatalog(),
+          getPaymentRecords(),
+        ]);
+        setModuleAccess(accessRows);
+        setPayments(paymentRows);
       } catch (loadError) {
         logAppError("Access load", loadError);
-        setError(
-          friendlyErrorMessage(loadError, "We could not load your access details. Please try again."),
-        );
+        setLoadError(friendlyErrorMessage(loadError, "We could not load your access details. Please try again."));
       } finally {
         setLoading(false);
       }
@@ -41,115 +241,170 @@ export default function Access() {
     void loadAccess();
   }, []);
 
-  const accessStatus = useMemo(() => {
-    if (!summary) return "";
-
-    if (summary.has_paid_access) {
-      return summary.access_expires_at
-        ? `Full access is active until ${formatDate(summary.access_expires_at)}.`
-        : "Full access is active.";
-    }
-
-    if (summary.free_module_subject_slug) {
-      return "Your free module has been selected. Batch 1 is available, with one retry if the first attempt fails.";
-    }
-
-    return "You can start Batch 1 of one selected module for free.";
-  }, [summary]);
-
-  async function startPayment() {
-    setPaying(true);
-    setError("");
+  async function startPayment(subjectSlug) {
+    if (payingModule) return;
+    setPayingModule(subjectSlug);
+    setPaymentError(null);
 
     try {
-      const payment = await initializePayment();
-
+      const payment = await initializePayment(subjectSlug);
       if (payment.already_paid) {
         window.location.reload();
         return;
       }
-
-      window.location.href = payment.authorization_url;
-    } catch (paymentError) {
-      logAppError("Access payment start", paymentError);
-      setError(
-        friendlyErrorMessage(paymentError, "We could not start payment right now. Please try again."),
-      );
+      window.location.assign(payment.authorization_url);
+    } catch (paymentRequestError) {
+      logAppError("Access payment start", paymentRequestError);
+      setPaymentError({
+        subjectSlug,
+        message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
+      });
     } finally {
-      setPaying(false);
+      setPayingModule("");
     }
   }
 
   if (loading) {
     return (
       <AppFrame showBottomNav={false}>
-        <section className="access-page">
-          <article className="state-card page-loading-card">
-            <p>Loading access...</p>
+        <LoadingState />
+      </AppFrame>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppFrame showBottomNav={false}>
+        <section className="access-page access-page-v2">
+          <article className="state-card">
+            <h1>Access details unavailable</h1>
+            <p>{loadError}</p>
+            <div className="hero-actions">
+              <button onClick={() => window.location.reload()} type="button">Try again</button>
+              <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
+            </div>
           </article>
         </section>
       </AppFrame>
     );
   }
 
+  const selectedModule = requestedModule
+    ? moduleAccess.find((module) => module.subject_slug === requestedModule) ?? null
+    : null;
+  const modulesToShow = selectedModule
+    ? [selectedModule]
+    : moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
+  const isFocused = Boolean(selectedModule);
+
   return (
     <AppFrame showBottomNav={false}>
-      <section className="access-page">
-        <header className="access-page-header">
-          <div>
-            <p className="eyebrow">Access</p>
-            <h1>{summary?.has_paid_access ? "Full access active" : "Unlock full access"}</h1>
-            <p>
-              {summary?.has_paid_access
-                ? "You can continue with all live modules, all currently published batches, review history, and progress tracking."
-                : "Free access covers Batch 1 of one selected module. If the first attempt fails, one retry is allowed on that same batch."}
-            </p>
-          </div>
-          <aside className="access-status-card">
-            <span>Status</span>
-            <strong>{summary?.has_paid_access ? "Full access" : "Free access"}</strong>
-            <p>{summary ? accessStatus : "Your access details will appear here once they are available."}</p>
-            {!summary?.has_paid_access && (
-              <button disabled={paying || loading || !summary} onClick={startPayment} type="button">
-                {paying ? "Redirecting..." : `Unlock full access for ${formatNaira(summary?.price_kobo ?? 250000)}`}
-              </button>
-            )}
-          </aside>
+      <section className="access-page access-page-v2">
+        <header className={`access-page-intro ${isFocused ? "is-focused" : ""}`}>
+          <span>Module access</span>
+          <h1>
+            {selectedModule
+              ? getModuleDisplayName(selectedModule.subject_name)
+              : "Choose a module"}
+          </h1>
+          <p>
+            {selectedModule
+              ? selectedModule.has_module_access
+                ? `Access is active through ${formatDate(selectedModule.access_expires_at)}.`
+                : "Unlock every published practice set in this module."
+              : "Pay only for the modules you want to practise."}
+          </p>
         </header>
 
-        {error && <p className="notice error">{error}</p>}
+        <section className={`access-module-catalog ${isFocused ? "is-focused" : ""}`} aria-label={isFocused ? "Selected module" : "Available modules"}>
 
-        <section className="access-grid">
-          <article className="access-detail-card">
-            <p className="eyebrow">Free access</p>
-            <h2>Batch 1 of one selected module</h2>
-            <ul className="access-list">
-              <li>Start Batch 1 of one module for free.</li>
-              <li>Review your result after submission.</li>
-              <li>If the first attempt fails, retry that same batch once.</li>
-              <li>Batch 2 and other modules require full access.</li>
-            </ul>
-          </article>
+          <div className="access-module-list">
+            {modulesToShow.map((module) => {
+              const displayName = getModuleDisplayName(module.subject_name);
+              const isPaying = payingModule === module.subject_slug;
 
-          <article className="access-detail-card">
-            <p className="eyebrow">Full access</p>
-            <h2>All live modules and published batches</h2>
-            <ul className="access-list">
-              <li>All currently published batches across live modules.</li>
-              <li>Move freely between published batches.</li>
-              <li>Unlimited retries and review history.</li>
-              <li>Progress tracking across your practice sessions.</li>
-            </ul>
-          </article>
+              return (
+                <article
+                  className={`access-module-row ${module.has_module_access ? "is-unlocked" : ""} ${isFocused ? "is-focused" : ""}`.trim()}
+                  key={module.subject_id}
+                >
+                  <div className="access-module-copy">
+                    <div className="access-module-title-line">
+                      {!isFocused && <h2>{displayName}</h2>}
+                      {module.has_module_access && <span className="access-module-state">Unlocked</span>}
+                    </div>
+                    {module.has_module_access ? (
+                      !isFocused && <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
+                    ) : module.can_purchase ? (
+                      isFocused && <p>Includes all published practice sets, answer review, and retries.</p>
+                    ) : (
+                      <p>Practice is coming soon.</p>
+                    )}
+                  </div>
+
+                  <div className="access-module-action">
+                    {module.has_module_access ? (
+                      <Link className="secondary-action" to={`/practice/${module.subject_slug}`}>Continue practice</Link>
+                    ) : module.can_purchase ? (
+                      <>
+                        <div className="access-module-price">
+                          <span>Module price</span>
+                          <strong>{formatMoney(module.price_kobo, module.currency)}</strong>
+                        </div>
+                        <button aria-busy={isPaying} disabled={isPaying} onClick={() => void startPayment(module.subject_slug)} type="button">
+                          {isPaying ? "Connecting to Paystack..." : "Continue to payment"}
+                        </button>
+                        {isFocused && <small>Secure payment by Paystack</small>}
+                      </>
+                    ) : (
+                      <span className="access-module-coming-soon">Not available yet</span>
+                    )}
+                    {paymentError?.subjectSlug === module.subject_slug && (
+                      <p className="access-module-error" role="alert">{paymentError.message}</p>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {isFocused && (
+            <Link className="access-change-module" to="/access">Choose a different module</Link>
+          )}
         </section>
 
-        <section className="access-support-note">
-          <p className="eyebrow">Payment support</p>
-          <p>
-            If payment does not reflect immediately, keep your payment reference and return here after verification.
-          </p>
-        </section>
+        {payments.length > 0 && (
+          <details className="access-payment-section">
+            <summary>
+              <span>Payment history</span>
+              <small>{payments.length}</small>
+            </summary>
+            <div className="access-payment-list">
+              {payments.map((payment) => (
+                <article className={`access-payment-row ${payment.status === "active" ? "is-verified" : ""}`} key={payment.id}>
+                  <div className="access-payment-main">
+                    <strong>{getPaymentAccessName(payment)}</strong>
+                    <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                  </div>
+                  {payment.status !== "active" && (
+                    <span className={`access-payment-status is-${payment.status}`}>{paymentStatusLabel(payment.status)}</span>
+                  )}
+                  <code>{payment.paystack_reference || "Reference unavailable"}</code>
+                  {payment.status === "active" ? (
+                    <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
+                  ) : payment.status === "pending" && payment.paystack_reference ? (
+                    <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>Check payment</Link>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          </details>
+        )}
       </section>
+
+      {selectedReceipt && (
+        <ReceiptModal payment={selectedReceipt} profile={profile} onClose={() => setSelectedReceipt(null)} />
+      )}
     </AppFrame>
   );
 }

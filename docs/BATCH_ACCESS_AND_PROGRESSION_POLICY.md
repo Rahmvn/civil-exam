@@ -1,47 +1,70 @@
-# Batch Access And Progression Policy
+# Practice Set Access And Progression Policy
 
-## Purpose
+## Presentation Rule
 
-This document defines the access rules for module batches in FPS Exam Practice.
+The database continues to use `batch` and `batch_number`. The interface uses `Practice set N` only when an individual set must be identified. Normal navigation remains module-first.
 
-The backend is the source of truth for:
+## Access Scope
 
-- who can start a batch
-- which batch card state should be shown
-- what next action should appear after submission
+Access is module-specific, not account-wide.
 
-The frontend should display those states and messages, not invent access rules locally.
+- Modules are shared nationally and are not filtered by organization.
+- Users choose modules for themselves; the product does not recommend subjects.
+- A module purchase unlocks only the selected module in the active exam edition.
+- A user may purchase any available module, including one they have not tried for free.
+- A user may own multiple modules independently.
+- An unlocked module includes every practice set published for it during the entitlement period.
+- Existing legacy pack-wide entitlements remain valid for every module until their original expiry.
 
-## Core Policy
+## Free Practice
 
-### Free users
+1. A new user may choose exactly one module for free practice.
+2. The choice is fixed only after explicit confirmation and practice start.
+3. Only Practice Set 1 of the chosen module is free.
+4. If the first attempt fails, one free retry is available.
+5. Passing the free set ends the free allowance and returns `unlock_module`.
+6. Completing the free retry ends the free allowance and returns `unlock_module`.
+7. The selected free module does not restrict which modules the user may purchase.
+8. Purchasing another module does not remove or expand the original free allowance.
 
-1. A free user may start `Batch 1` of exactly one module.
-2. The free module is locked only after explicit confirmation of `Start free batch`.
-3. Visiting a route or opening a page must not silently lock the free module.
-4. A free user may retry the same free `Batch 1` once if the first attempt fails.
-5. If the free user passes `Batch 1`, the next action is `unlock_full_access`.
-6. If the free user fails the retry, the next action is `unlock_full_access`.
-7. A free user cannot start:
-   - another module once a free module is selected
-   - `Batch 2+`
-   - draft, archived, or unpublished batches
+## Unlocked Module
 
-### Paid users
+Within an unlocked module:
 
-1. A paid user may start any published batch in any active module.
-2. Paid access is limited by published content only.
-3. Progress affects recommendations, not access.
-4. A paid user may:
-   - retry any published batch
-   - jump to any published batch
-   - review past attempts
-5. A failed earlier batch should generate a retry recommendation, not a hard block.
-6. Draft, archived, and unpublished batches must never be startable.
+- every published practice set is startable
+- retries are unrestricted
+- progress recommends the nearest sensible practice set
+- users may deliberately choose another published set
+- unpublished sets remain unavailable
+- completing one module never causes the product to recommend another module
 
-## Batch Card States
+## Progression
 
-Supported states:
+Progression guidance applies only within a module.
+
+1. Recommend a valid failed set for retry when appropriate.
+2. Otherwise recommend the earliest published set not yet passed.
+3. Ignore unpublished gaps.
+4. Passing a later set does not mark an earlier set complete.
+5. A module is complete only when every currently published set has been passed.
+6. After module completion, return to the module catalogue without recommending a subject.
+
+## Backend Source Of Truth
+
+Authorization must be decided by the backend using the active exam pack and requested subject.
+
+Primary functions:
+
+- `has_active_module_entitlement(pack_id, subject_id)`
+- `get_batch_access_state(subject_slug, batch_number)`
+- `get_module_batch_access(subject_slug?)`
+- `resolve_practice_batch_context(...)`
+- `start_practice_batch(subject_slug, batch_number?)`
+- `submit_attempt(...)`
+
+The existing `is_paid` and `has_paid_access` response fields are transitional compatibility names. In practice-set responses, `is_paid` means the requested module is unlocked. Frontend code must not use an account-wide paid flag to authorize a module.
+
+## Access States
 
 - `available`
 - `completed_passed`
@@ -49,144 +72,65 @@ Supported states:
 - `locked_requires_payment`
 - `unavailable_not_published`
 
-Reason codes:
+Important reason codes:
 
-- `ok`
-- `paid_access`
-- `free_batch_available`
-- `free_retry_available`
-- `free_batch_passed_requires_payment`
-- `free_retry_used_requires_payment`
-- `free_different_module_requires_payment`
-- `free_next_batch_requires_payment`
+- `paid_access`: the requested module is unlocked
+- `free_batch_available`: the user may select this module for free
+- `free_retry_available`: the selected free set may be retried once
+- `free_batch_passed_requires_payment`: unlock this module to continue
+- `free_retry_used_requires_payment`: unlock this module to continue
+- `free_different_module_requires_payment`: the free choice belongs to another module
+- `free_next_batch_requires_payment`: later sets require this module to be unlocked
 - `not_published`
 - `no_questions`
 - `unauthenticated`
 
-## Button Behavior
+## Result Actions
 
-### Available
+Free practice:
 
-- `Start Batch N`
-- `Continue Batch N`
+- first failed attempt => `retry_free_batch`
+- passed attempt => `unlock_module`
+- failed retry => `unlock_module`
 
-### Completed passed
+Unlocked module:
 
-- Paid user:
-  - `Review`
-  - continue via recommended next batch where published
-- Free user:
-  - `Unlock full access`
+- passed with another unfinished published set => `next_batch`
+- passed with every published set complete => `module_complete`
+- failed with another published set => `retry_or_next`
+- failed without another published set => `review_only`
 
-### Completed failed
+## Review Policy
 
-- Free user:
-  - `Retry Batch 1` only while retry is still available
-- Paid user:
-  - `Retry Batch N`
-  - optionally continue to another published batch
+Users retain access to their own submitted attempt reviews regardless of current module entitlement. Starting or retrying a practice set still requires current authorization.
 
-### Locked requires payment
+## Payment Policy
 
-- `Unlock full access`
+- Prices are read from server-managed `module_offerings`.
+- The browser never supplies a trusted amount or currency.
+- A `payment_orders` row is created before Paystack initialization.
+- Verification must match reference, user, module, amount, currency and metadata.
+- Successful verification atomically creates one `module_entitlements` grant.
+- Callback verification and Paystack webhooks are idempotent.
+- Receipts identify the purchased module.
 
-### Unavailable not published
+## UI Language
 
-- `Coming soon`
+Free practice is an optional trial, not a prerequisite for payment. Before a
+free module is selected, every purchasable module must expose both `Try free`
+and `Unlock module`. After the free choice is assigned, its card may show
+`Continue practice` or `Retry practice` alongside `Unlock module`; other locked
+modules remain directly purchasable.
 
-## Result Next Actions
+Use:
 
-### Free
+- `Free practice available`
+- `Try free`
+- `Unlock module`
+- `Unlocked`
+- `Module access`
+- `Practice set N`
 
-- pass free batch 1 => `unlock_full_access`
-- fail first free attempt => `retry_free_batch`
-- fail second free attempt => `unlock_full_access`
-
-### Paid
-
-- passed and a later published batch exists => `next_batch`
-- passed and no later published batch exists => `module_complete`
-- failed and a later published batch exists => `retry_or_next`
-- failed and no later published batch exists => `review_only`
-
-## Backend Responsibility
-
-Backend/RPC functions must decide:
-
-- if a batch is startable
-- if a batch is published
-- if payment is required
-- if a retry is allowed
-- which next action applies
-- which batch is recommended next
-
-This is currently implemented through:
-
-- `get_batch_access_state(subject_slug, batch_number)`
-- `get_module_batch_access(subject_slug?)`
-- `start_practice_batch(subject_slug, batch_number?)`
-- `get_practice_questions(subject_id, limit?, batch_number?)`
-- `submit_attempt(mode, subject_id, answers, batch_number?)`
-- `get_attempt_review(attempt_id?)`
-
-## Frontend Responsibility
-
-Frontend should:
-
-- ask backend for batch states
-- render friendly labels/messages
-- show confirmation before locking a free module
-- pass explicit batch numbers when starting, retrying, or continuing practice
-
-Frontend should not:
-
-- decide paid/free access from local heuristics alone
-- silently lock a free module
-- expose raw RPC/database errors directly to users
-
-## Edge Cases
-
-### No questions published
-
-- state: `unavailable_not_published`
-- message: `This batch is not available yet.`
-
-### Draft batch only
-
-- draft questions do not make a batch candidate-visible
-- state remains `unavailable_not_published`
-
-### Archived batch only
-
-- archived questions do not make a batch candidate-visible
-
-### Paid user failed previous batch
-
-- retry is recommended
-- access to other published batches remains allowed
-
-### Free user trying another module
-
-- state: `locked_requires_payment`
-- reason: `free_different_module_requires_payment`
-
-### Free user refreshing before confirming free module
-
-- direct practice load must not lock the module
-- backend returns a guarded start-from-dashboard message instead
-
-### Existing users with legacy free state
-
-- existing `selected_for_free_access`, `free_first_attempt_completed`, and `free_retry_consumed` remain authoritative
-- no destructive reset should happen automatically
-
-### Gapped published batches
-
-- later published batches may still be accessible to paid users
-- recommendation should prefer the next sensible published batch
-- missing intermediate batches should not be silently treated as passed
-
-### Undersized hold batch
-
-- an undersized draft or hold batch should not be treated as published access
-- if it is published intentionally for development, access can still work, but the product should treat it as a content decision, not an access exception
+Do not use `Full access` for new module purchases. Do not imply that purchasing
+one module unlocks another or that a user must complete free practice before
+paying.

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document defines the visual direction for FPS Exam Practice using the attached reference image as inspiration only.
+This document defines the visual direction for PromotionSure using the attached reference image as inspiration only.
 
 This is not a screen implementation document.
 
@@ -649,6 +649,19 @@ Graphical visuals are allowed where they make progress easier to understand.
 - Result score: ring fill or number count-up
 - Review filters: soft crossfade
 - Payment verification: calm progress state, not spinning overload
+
+## Shared loading behavior
+
+- Use the shared thin green activity rail for initial app and page loading.
+- Do not use skeleton screens or rotating page spinners.
+- Keep one generic `Loading...` label instead of changing the message between auth, route, and page requests.
+- Delay the visual briefly so fast requests do not flash a loading state.
+- Keep the authenticated app shell stable while a protected page loads.
+- Wait for a page's critical requests before showing its content; do not reveal cards in fragments.
+- Keep existing content visible during background refreshes.
+- Use task-specific button text such as `Starting...` or `Submitting...` without adding a second loader style.
+- Payment verification may name its current task because it is a distinct transaction state.
+- Respect reduced-motion preferences by showing a static rail.
 
 # 15. What To Avoid
 

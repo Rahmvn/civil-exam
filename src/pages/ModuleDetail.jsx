@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
+import { LoadingState } from "../components/LoadingState";
 import {
   AnimatedProgressBar,
   DashboardActionButton,
   FreeBatchConfirmationModal,
   SkipAheadConfirmationModal,
 } from "../components/DashboardUi";
-import ProfileOnboardingModal from "../components/ProfileOnboardingModal";
 import {
   getCandidateSummary,
   getModuleBatchAccess,
-  getModuleProgress,
   getRecentAttempts,
   getSubjects,
   startPracticeBatch,
@@ -19,52 +18,25 @@ import {
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   FALLBACK_SUBJECTS,
-  formatPercent,
   getBatchProgressionGuidance,
-  getBatchStatusConfig,
   getLockReason,
   getModuleDisplayName,
-  getModuleStatusTone,
   getProgressionRecommendation,
+  isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
-import { useAuth } from "../lib/useAuth";
-
-function getModulePageStatusLine(subjectSlug, liveCount, comingSoonCount) {
-  if (subjectSlug === "current-affairs") {
-    return "Coming soon";
-  }
-
-  if (liveCount > 0 && comingSoonCount > 0) {
-    return `${liveCount} available - ${comingSoonCount} soon`;
-  }
-
-  if (liveCount > 0) {
-    return liveCount === 1 ? "1 available" : `${liveCount} available`;
-  }
-
-  if (comingSoonCount > 0) {
-    return "Coming soon";
-  }
-
-  return "Not available yet";
-}
 
 export default function ModuleDetail() {
-  const { profileComplete } = useAuth();
   const { subjectSlug = "" } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
-  const [progress, setProgress] = useState([]);
   const [rows, setRows] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [moduleNotice, setModuleNotice] = useState("");
   const [ctaError, setCtaError] = useState("");
-  const [onboardingTarget, setOnboardingTarget] = useState(null);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [startConfirmSubject, setStartConfirmSubject] = useState(null);
   const [startingBatch, setStartingBatch] = useState(false);
   const [skipAheadConfirm, setSkipAheadConfirm] = useState(null);
@@ -83,7 +55,6 @@ export default function ModuleDetail() {
     const requests = [
       { key: "summary", promise: getCandidateSummary() },
       { key: "subjects", promise: getSubjects() },
-      { key: "progress", promise: getModuleProgress() },
       { key: "batchAccess", promise: getModuleBatchAccess(subjectSlug) },
       { key: "attempts", promise: getRecentAttempts() },
     ];
@@ -104,14 +75,13 @@ export default function ModuleDetail() {
       } else if (!isExpectedAbortError(result.reason)) {
         logAppError(`Module detail load ${key}`, result.reason);
         if (key === "batchAccess") {
-          setModuleNotice("We could not load this module's batches right now.");
+          setModuleNotice("We could not load this module's practice sets right now.");
         }
       }
     });
 
     setSummary(next.summary ?? null);
     setSubjects(Array.isArray(next.subjects) && next.subjects.length > 0 ? next.subjects : FALLBACK_SUBJECTS);
-    setProgress(Array.isArray(next.progress) ? next.progress : []);
     setRows(Array.isArray(next.batchAccess) ? next.batchAccess : []);
     setAttempts(Array.isArray(next.attempts) ? next.attempts : []);
     setLoading(false);
@@ -130,17 +100,11 @@ export default function ModuleDetail() {
   const subject = subjectsForDisplay.find((item) => item.slug === subjectSlug) ?? null;
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
-  const isPaidUser = Boolean(summary?.has_paid_access);
+  const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
   const selectedModuleName = getModuleDisplayName(
     subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
-  const liveRows = rows.filter((row) => Number(row.published_question_count ?? 0) > 0);
-  const comingSoonRows = rows.filter((row) => row.state === "unavailable_not_published");
-  const progressBySubject = useMemo(
-    () => Object.fromEntries(progress.map((item) => [item.subject_id, item])),
-    [progress],
-  );
-  const subjectProgress = subject ? progressBySubject[subject.id] ?? null : null;
+  const liveRows = rows.filter(isPublishedBatchRow);
   const latestAttemptByBatch = useMemo(() => {
     const map = new Map();
 
@@ -157,57 +121,27 @@ export default function ModuleDetail() {
     return map;
   }, [attempts, subjectSlug]);
   const progression = useMemo(
-    () => getProgressionRecommendation(rows, { isPaidUser }),
-    [isPaidUser, rows],
+    () => getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess }),
+    [hasModuleAccess, rows],
   );
 
   const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
   const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
-  const statusLine = subject ? getModulePageStatusLine(subject.slug, liveRows.length, comingSoonRows.length) : "";
-  const statusTone = subject ? getModuleStatusTone(subject.slug, liveRows.length, comingSoonRows.length) : "muted";
-  const bestScoreValue = rows.reduce((best, row) => {
-    const value = Number(row.best_score ?? 0);
-    return value > best ? value : best;
-  }, 0);
-  const latestScoreValue = Number(subjectProgress?.last_score_percent ?? 0) || null;
-
-  let emphasisText = "Not attempted yet";
-  if (bestScoreValue > 0) {
-    emphasisText = `Best score ${formatPercent(bestScoreValue)}`;
-  } else if (latestScoreValue !== null) {
-    emphasisText = `Latest score ${formatPercent(latestScoreValue)}`;
-  } else if (liveRows.length > 0 && passedCount > 0) {
-    emphasisText = `${passedCount} of ${liveRows.length} published batches passed`;
-  } else if (subjectSlug === "current-affairs") {
-    emphasisText = "Fact-check hold";
-  }
-
-  function openOnboarding() {
-    setOnboardingTarget(`/modules/${subjectSlug}`);
-    setShowOnboardingModal(true);
-  }
 
   function getBatchPrimaryAction(row) {
     const batchNumber = Number(row?.batch_number ?? 1);
-
-    if (!profileComplete) {
-      return {
-        label: "Complete account",
-        action: openOnboarding,
-      };
-    }
 
     if (!row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
       return { label: "Coming soon", disabled: true };
     }
 
     if (row.state === "locked_requires_payment" || !row.can_start) {
-      return { label: "Unlock Full Access", to: "/access" };
+      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subjectSlug)}` };
     }
 
-    if (!isPaidUser && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
+    if (!hasModuleAccess && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
       return {
-        label: "Start free batch",
+        label: "Start practice",
         action: () => {
           if (!subject) return;
           setCtaError("");
@@ -217,12 +151,12 @@ export default function ModuleDetail() {
     }
 
     if (row.state === "completed_failed") {
-      if (isPaidUser) {
-        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+      if (hasModuleAccess) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
 
         if (guidance.isSkipAhead) {
           return {
-            label: `Retry Batch ${batchNumber}`,
+            label: "Retry",
             action: () => {
               setSkipAheadConfirm({
                 batchNumber,
@@ -233,16 +167,16 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+      return { label: "Retry", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
     }
 
     if (row.state === "completed_passed") {
-      if (isPaidUser) {
-        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+      if (hasModuleAccess) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
 
         if (guidance.isSkipAhead) {
           return {
-            label: `Retry Batch ${batchNumber}`,
+            label: "Practice again",
             action: () => {
               setSkipAheadConfirm({
                 batchNumber,
@@ -252,19 +186,19 @@ export default function ModuleDetail() {
           };
         }
 
-        return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+        return { label: "Practice again", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
       }
 
-      return { label: "Unlock Full Access", to: "/access" };
+      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subjectSlug)}` };
     }
 
     if (Number(row.attempt_count ?? 0) > 0) {
-      if (isPaidUser) {
-        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+      if (hasModuleAccess) {
+        const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
 
         if (guidance.isSkipAhead) {
           return {
-            label: `Continue Batch ${batchNumber}`,
+            label: "Continue",
             action: () => {
               setSkipAheadConfirm({
                 batchNumber,
@@ -275,15 +209,15 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: `Continue Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+      return { label: "Continue", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
     }
 
-    if (isPaidUser) {
-      const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+    if (hasModuleAccess) {
+      const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
 
       if (guidance.isSkipAhead) {
         return {
-          label: `Start Batch ${batchNumber}`,
+          label: "Start",
           action: () => {
             setSkipAheadConfirm({
               batchNumber,
@@ -294,7 +228,7 @@ export default function ModuleDetail() {
       }
     }
 
-    return { label: `Start Batch ${batchNumber}`, to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+    return { label: "Start", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
   }
 
   function getBatchSecondaryAction(row) {
@@ -325,27 +259,18 @@ export default function ModuleDetail() {
         state: { batchStarted: true },
       });
     } catch (error) {
-      logAppError(`Module detail start batch:${startConfirmSubject.slug}`, error);
-      setCtaError(friendlyErrorMessage(error, "We could not start this batch right now."));
+      logAppError(`Module detail start practice:${startConfirmSubject.slug}`, error);
+      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
       setStartConfirmSubject(null);
     } finally {
       setStartingBatch(false);
     }
   }
 
-  function closeOnboardingModal() {
-    setShowOnboardingModal(false);
-    setOnboardingTarget(null);
-  }
-
   if (loading) {
     return (
       <AppFrame>
-        <section className="dashboard-section-block">
-          <article className="state-card page-loading-card">
-            <p>Loading module...</p>
-          </article>
-        </section>
+        <LoadingState />
       </AppFrame>
     );
   }
@@ -374,25 +299,23 @@ export default function ModuleDetail() {
     <AppFrame>
       <section className="dashboard-hub dashboard-hub-compact module-detail-page">
         <section className="dashboard-section-block">
-          <article className="dashboard-panel-card module-detail-hero">
+          <article className="dashboard-panel-card module-detail-hero module-chooser-hero">
             <div className="module-detail-copy">
-              <h1 className="module-detail-title">{getModuleDisplayName(subject.name)}</h1>
-              <p className="module-card-description module-detail-description">{subject.description}</p>
+              <p className="dashboard-section-kicker">{getModuleDisplayName(subject.name)}</p>
+              <h1 className="module-detail-title">Choose a practice set</h1>
             </div>
 
-            <div className="module-card-status-row">
-              <span className={`module-status-pill is-${statusTone}`}>{statusLine}</span>
-              <span className="module-status-copy">{emphasisText}</span>
-            </div>
-
-            {progressPercent > 0 && (
-              <div className="module-inline-progress module-inline-progress-plain">
-                <span className="module-inline-progress-label">{`${progressPercent}% complete`}</span>
+            {liveRows.length > 0 && (
+              <div className="module-progress-summary module-progress-summary-detail">
+                <div className="module-progress-summary-copy">
+                  <span>Module progress</span>
+                  <strong>{`${passedCount} of ${liveRows.length} practice sets completed`}</strong>
+                </div>
                 <AnimatedProgressBar value={progressPercent} />
               </div>
             )}
 
-            {ctaError && <p className="notice error">{ctaError}</p>}
+            {ctaError && <p className="action-error" role="alert">{ctaError}</p>}
             {moduleNotice && <p className="support-copy">{moduleNotice}</p>}
           </article>
         </section>
@@ -401,52 +324,46 @@ export default function ModuleDetail() {
           <article className="dashboard-panel-card module-detail-batches-card">
             <div className="module-preview-panel module-preview-panel-detail">
               {rowsToShow.map((row) => {
-                const status = getBatchStatusConfig(row, isPaidUser);
                 const primaryAction = getBatchPrimaryAction(row);
                 const secondaryAction = getBatchSecondaryAction(row);
-                const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser });
+                const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
                 const supportCopy = guidance.note || getLockReason(row, selectedModuleName);
-                const metaBits = [];
                 const attemptCount = Number(row.attempt_count ?? 0);
-                const showStatusBadge =
-                  status.label !== "Available" &&
-                  !(status.label === "Not Published" && row.state !== "unavailable_not_published");
-                const showNotAttemptedTag =
-                  status.label === "Available" &&
-                  attemptCount === 0 &&
-                  row.state !== "unavailable_not_published";
+                let stateLabel = null;
+                let stateTone = "muted";
 
-                if (attemptCount > 0) {
-                  metaBits.push(`${attemptCount} attempt${attemptCount === 1 ? "" : "s"}`);
+                if (guidance.isRecommended) {
+                  stateLabel = "Next for you";
+                  stateTone = "recommended";
+                } else if (row.state === "completed_passed") {
+                  stateLabel = "Completed";
+                  stateTone = "passed";
+                } else if (row.state === "completed_failed") {
+                  stateLabel = "Retry";
+                  stateTone = "failed";
+                } else if (row.state === "unavailable_not_published") {
+                  stateLabel = "Coming soon";
+                  stateTone = "soon";
+                } else if (row.state === "locked_requires_payment" || !row.can_start) {
+                  stateLabel = "Locked";
+                  stateTone = "locked";
                 }
 
-                if (row.last_score !== null && row.last_score !== undefined && attemptCount > 0) {
-                  metaBits.push(`Last score ${row.last_score}%`);
-                } else if (row.best_score !== null && row.best_score !== undefined && attemptCount > 0) {
-                  metaBits.push(`Score ${row.best_score}%`);
-                }
+                const scoreCopy = attemptCount > 0 && row.last_score !== null && row.last_score !== undefined
+                  ? `Last score ${row.last_score}%`
+                  : null;
 
                 return (
                   <article
-                    className={`module-preview-row ${guidance.isRecommended ? "is-recommended" : ""} ${guidance.isSkipAhead ? "is-skip-ahead" : ""}`}
+                    className={`module-preview-row practice-set-row ${guidance.isRecommended ? "is-recommended" : ""} ${guidance.isSkipAhead ? "is-skip-ahead" : ""}`}
                     key={`${subject.slug}-${row.batch_number ?? 1}`}
                   >
                     <div className="module-preview-copy">
                       <div className="module-preview-top">
-                        <strong>{`Batch ${row.batch_number ?? 1}`}</strong>
-                        {guidance.isRecommended && (
-                          <span className="batch-status-badge is-recommended">Recommended</span>
-                        )}
-                        {showStatusBadge && (
-                          <span className={`batch-status-badge is-${status.tone}`}>{status.label}</span>
-                        )}
-                        {showNotAttemptedTag && (
-                          <span className="batch-status-badge is-muted">Not attempted</span>
-                        )}
+                        <strong>{`Practice set ${row.batch_number ?? 1}`}</strong>
+                        {stateLabel && <span className={`batch-status-badge is-${stateTone}`}>{stateLabel}</span>}
                       </div>
-                      {metaBits.length > 0 && (
-                        <p className="module-preview-meta">{metaBits.join(" - ")}</p>
-                      )}
+                      {scoreCopy && <p className="module-preview-meta">{scoreCopy}</p>}
                       {supportCopy && (
                         <p className={`module-preview-note ${guidance.note ? "is-guidance" : ""}`}>{supportCopy}</p>
                       )}
@@ -463,19 +380,6 @@ export default function ModuleDetail() {
           </article>
         </section>
       </section>
-
-      {showOnboardingModal && (
-        <ProfileOnboardingModal
-          key={subjectSlug}
-          nextPath={onboardingTarget ?? `/modules/${subjectSlug}`}
-          onClose={closeOnboardingModal}
-          onComplete={async () => {
-            await loadModuleData({ showLoading: false });
-            setShowOnboardingModal(false);
-            setOnboardingTarget(null);
-          }}
-        />
-      )}
 
       <FreeBatchConfirmationModal
         loading={startingBatch}

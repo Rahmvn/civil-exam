@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import AuthPromptModal from "./AuthPromptModal";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { BrandLogo } from "./BrandLogo";
+import { BRAND_NAME } from "../lib/brand";
 import { supabase } from "../lib/supabaseClient";
-import { formatServiceLevelLabel } from "../lib/serviceLevel";
 import { useAuth } from "../lib/useAuth";
 
 function appNavClassName(isActive) {
@@ -10,44 +10,21 @@ function appNavClassName(isActive) {
 }
 
 export function PublicNav({ showBrand = true, sticky = true }) {
-  const { user } = useAuth();
-  const navCtaLabel = user ? "Open dashboard" : "Get started";
-  const [authPromptOpen, setAuthPromptOpen] = useState(false);
-
-  function handlePrimaryClick() {
-    if (user) {
-      window.location.href = "/dashboard";
-      return;
-    }
-
-    setAuthPromptOpen(true);
-  }
-
   return (
-    <>
-      <nav
-        className={`top-nav public-top-nav ${sticky ? "" : "public-top-nav-static"} ${
-          showBrand ? "" : "public-top-nav-minimal"
-        }`}
+    <nav
+      className={`top-nav public-top-nav ${sticky ? "" : "public-top-nav-static"} ${showBrand ? "" : "public-top-nav-minimal"}`}
+    >
+      <Link
+        aria-label={BRAND_NAME}
+        to="/"
+        className={`brand-lockup ${showBrand ? "" : "compact-brand-lockup"}`}
       >
-        {showBrand ? (
-          <Link to="/" className="brand-lockup">
-            <strong>FPS Exam Practice</strong>
-            <span>Federal public service promotion exam practice</span>
-          </Link>
-        ) : (
-          <Link to="/" className="brand-lockup compact-brand-lockup">
-            <strong>FPS Exam Practice</strong>
-          </Link>
-        )}
-        <div className="nav-actions">
-          <button className="ghost-button" onClick={handlePrimaryClick} type="button">
-            {navCtaLabel}
-          </button>
-        </div>
-      </nav>
-      <AuthPromptModal onClose={() => setAuthPromptOpen(false)} open={authPromptOpen} />
-    </>
+        <BrandLogo />
+      </Link>
+      <div className="nav-actions">
+        <Link className="landing-nav-signin" to="/auth?mode=sign-in">Sign in</Link>
+      </div>
+    </nav>
   );
 }
 
@@ -57,13 +34,15 @@ export function AppFrame({
   showHeader = true,
   showFooter = true,
 }) {
-  const { profile, isAdmin, profileComplete } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const [signOutBusy, setSignOutBusy] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const accountMenuRef = useRef(null);
   const accountButtonRef = useRef(null);
-  const levelBadge = formatServiceLevelLabel(profile?.service_level);
   const accountLabel = profile?.full_name?.trim() || "Your account";
   const accountInitials = useMemo(() => {
     const parts = accountLabel
@@ -112,13 +91,25 @@ export function AppFrame({
 
   function openSignOutConfirm() {
     closeAccountMenu();
+    setSignOutError("");
     setShowSignOutConfirm(true);
   }
 
   async function signOut() {
-    setShowSignOutConfirm(false);
-    closeAccountMenu();
-    await supabase.auth.signOut();
+    setSignOutBusy(true);
+    setSignOutError("");
+
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setShowSignOutConfirm(false);
+      closeAccountMenu();
+      navigate("/", { replace: true });
+    } catch {
+      setSignOutError("We could not sign you out. Please check your connection and try again.");
+    } finally {
+      setSignOutBusy(false);
+    }
   }
 
   const isModulesActive =
@@ -130,7 +121,7 @@ export function AppFrame({
   const isReviewActive = location.pathname === "/review";
   const isAccessActive = location.pathname === "/access";
   const isAccountActive = location.pathname === "/profile";
-  const practiceTarget = "/dashboard#modules";
+  const practiceTarget = "/practice";
 
   function bottomNavClassName(isActive) {
     return `authenticated-bottom-link ${isActive ? "active" : ""}`;
@@ -149,9 +140,9 @@ export function AppFrame({
                   onClick={closeAccountMenu}
                   to="/dashboard"
                   className="brand-lockup authenticated-brand"
-                  aria-label="Public Service Exam Practice"
+                  aria-label={BRAND_NAME}
                 >
-                  <strong>Public Service Exam Practice</strong>
+                  <BrandLogo />
                 </Link>
               </div>
 
@@ -234,13 +225,7 @@ export function AppFrame({
             >
               <div className="authenticated-account-summary">
                 <strong>{accountLabel}</strong>
-                <span>
-                  {levelBadge
-                    ? `Grade level ${levelBadge}`
-                    : profileComplete
-                      ? "Account ready"
-                      : "Complete your account details"}
-                </span>
+                <span>{profile?.email || "Signed-in account"}</span>
               </div>
               <Link
                 className="authenticated-account-link"
@@ -283,7 +268,7 @@ export function AppFrame({
 
           {showFooter && (
             <footer className="authenticated-footer">
-              <span>Public Service Exam Practice</span>
+              <span>{BRAND_NAME}</span>
               <Link onClick={closeAccountMenu} to="/access">
                 Access and payment
               </Link>
@@ -336,7 +321,7 @@ export function AppFrame({
         <div
           className="auth-modal-backdrop"
           role="presentation"
-          onClick={() => setShowSignOutConfirm(false)}
+          onClick={signOutBusy ? undefined : () => setShowSignOutConfirm(false)}
         >
           <section
             aria-labelledby="signout-confirm-title"
@@ -347,16 +332,18 @@ export function AppFrame({
           >
             <h2 id="signout-confirm-title">Sign out?</h2>
             <p>You'll need to sign in again to continue practising.</p>
+            {signOutError && <p className="action-error" role="alert">{signOutError}</p>}
             <div className="auth-modal-actions signout-confirm-actions">
               <button
                 className="ghost-button"
+                disabled={signOutBusy}
                 onClick={() => setShowSignOutConfirm(false)}
                 type="button"
               >
                 Cancel
               </button>
-              <button className="primary-action" onClick={() => void signOut()} type="button">
-                Sign out
+              <button className="primary-action" disabled={signOutBusy} onClick={() => void signOut()} type="button">
+                {signOutBusy ? "Signing out..." : "Sign out"}
               </button>
             </div>
           </section>

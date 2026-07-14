@@ -44,8 +44,8 @@ export async function getAuthedUser(request: Request) {
   return data.user;
 }
 
-// The currently active exam pack. Not hardcoded to any single exam slug —
-// mirrors the public.get_active_pack() SQL function so server and DB agree
+// The currently active exam pack. This is not hardcoded to one exam slug;
+// it mirrors public.get_active_pack() so server and database agree
 // on which pack is "active" when multiple packs exist.
 export async function getActivePack(adminClient: ReturnType<typeof getAdminClient>) {
   const { data, error } = await adminClient
@@ -62,6 +62,148 @@ export async function getActivePack(adminClient: ReturnType<typeof getAdminClien
   }
 
   return data;
+}
+
+export async function getModuleOffering(
+  adminClient: ReturnType<typeof getAdminClient>,
+  packId: string,
+  subjectSlug: string,
+) {
+  const { data: subject, error: subjectError } = await adminClient
+    .from("subjects")
+    .select("id, name, slug")
+    .eq("slug", subjectSlug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (subjectError || !subject) {
+    throw new Error("This module is not available");
+  }
+
+  const { count, error: questionError } = await adminClient
+    .from("questions")
+    .select("id", { count: "exact", head: true })
+    .eq("exam_pack_id", packId)
+    .eq("subject_id", subject.id)
+    .eq("status", "published");
+
+  if (questionError || !count) {
+    throw new Error("This module is not available for purchase yet");
+  }
+
+  const { data: offering, error: offeringError } = await adminClient
+    .from("module_offerings")
+    .select("id, exam_pack_id, subject_id, price_kobo, currency")
+    .eq("exam_pack_id", packId)
+    .eq("subject_id", subject.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (offeringError || !offering) {
+    throw new Error("This module is not available for purchase yet");
+  }
+
+  return { offering, subject };
+}
+
+export async function getActiveModuleAccess(
+  adminClient: ReturnType<typeof getAdminClient>,
+  userId: string,
+  packId: string,
+  subjectId: string,
+) {
+  const now = new Date().toISOString();
+  const [legacyResult, moduleResult] = await Promise.all([
+    adminClient
+      .from("entitlements")
+      .select("id, expires_at")
+      .eq("user_id", userId)
+      .eq("exam_pack_id", packId)
+      .eq("status", "active")
+      .gt("expires_at", now)
+      .maybeSingle(),
+    adminClient
+      .from("module_entitlements")
+      .select("id, expires_at")
+      .eq("user_id", userId)
+      .eq("exam_pack_id", packId)
+      .eq("subject_id", subjectId)
+      .eq("status", "active")
+      .gt("expires_at", now)
+      .maybeSingle(),
+  ]);
+
+  if (legacyResult.error) throw legacyResult.error;
+  if (moduleResult.error) throw moduleResult.error;
+
+  return moduleResult.data ?? legacyResult.data ?? null;
+}
+
+export async function getModulePaymentOrder(reference: string) {
+  const adminClient = getAdminClient();
+  const { data, error } = await adminClient
+    .from("payment_orders")
+    .select("id, user_id, exam_pack_id, subject_id, provider_reference, status, amount_kobo, currency")
+    .eq("provider_reference", reference)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export function validateModulePayment(
+  order: Record<string, unknown>,
+  paymentData: Record<string, unknown>,
+) {
+  if (Number(paymentData.amount) !== Number(order.amount_kobo)) {
+    throw new Error("The verified payment amount does not match this module order");
+  }
+
+  const paidCurrency = String(paymentData.currency ?? "").toUpperCase();
+  const orderCurrency = String(order.currency ?? "").toUpperCase();
+
+  if (!paidCurrency || paidCurrency !== orderCurrency) {
+    throw new Error("The verified payment currency does not match this module order");
+  }
+
+  const metadata = paymentData.metadata as Record<string, unknown> | undefined;
+  if (
+    metadata?.payment_order_id !== order.id
+    || metadata?.user_id !== order.user_id
+    || metadata?.subject_id !== order.subject_id
+  ) {
+    throw new Error("The verified payment does not match this module order");
+  }
+}
+
+export async function validateLegacyPayment(paymentData: Record<string, unknown>) {
+  const adminClient = getAdminClient();
+  const pack = await getActivePack(adminClient);
+  const metadata = paymentData.metadata as Record<string, unknown> | undefined;
+
+  if (
+    metadata?.exam_pack_id !== pack.id
+    || Number(paymentData.amount) !== Number(pack.price_kobo)
+    || String(paymentData.currency ?? "").toUpperCase() !== String(pack.currency).toUpperCase()
+  ) {
+    throw new Error("This legacy payment does not match the active access offer");
+  }
+}
+
+export async function activateModulePurchase(
+  reference: string,
+  paymentData: Record<string, unknown>,
+) {
+  const adminClient = getAdminClient();
+  const { data, error } = await adminClient.rpc("activate_module_purchase", {
+    requested_reference: reference,
+    payment_payload: paymentData,
+  });
+
+  if (error) throw error;
+  const result = data?.[0];
+  if (!result) throw new Error("Module access could not be activated");
+  return result;
 }
 
 export async function activateEntitlement(

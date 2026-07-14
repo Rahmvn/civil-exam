@@ -1,0 +1,70 @@
+import { defineConfig, devices } from "@playwright/test";
+
+const isLocalRun = process.env.E2E_LOCAL_SUPABASE === "true";
+const supabaseUrl = process.env.E2E_SUPABASE_URL ?? "";
+
+if (!isLocalRun || !["127.0.0.1", "localhost"].includes(new URL(supabaseUrl).hostname)) {
+  throw new Error("Use `npm run test:e2e` so Playwright is isolated to local Supabase.");
+}
+
+const baseURL = "http://127.0.0.1:4173";
+
+export default defineConfig({
+  testDir: "./tests/e2e",
+  outputDir: ".playwright-results",
+  globalSetup: "./tests/e2e/global-setup.js",
+  fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 2 : 1,
+  reporter: [["list"], ["html", { open: "never" }]],
+  use: {
+    baseURL,
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
+    video: "retain-on-failure",
+  },
+  webServer: {
+    command: "npm run dev -- --host 127.0.0.1 --port 4173",
+    env: {
+      VITE_E2E: "true",
+      VITE_SUPABASE_URL: process.env.E2E_SUPABASE_URL,
+      VITE_SUPABASE_ANON_KEY: process.env.E2E_SUPABASE_PUBLIC_KEY,
+    },
+    reuseExistingServer: false,
+    timeout: 120_000,
+    url: baseURL,
+  },
+  projects: [
+    { name: "setup-paid", testMatch: /paid\.setup\.js/ },
+    { name: "setup-free", testMatch: /free\.setup\.js/ },
+    {
+      name: "public-desktop",
+      testMatch: /public\.spec\.js/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "public-mobile",
+      testMatch: /public\.spec\.js/,
+      use: { ...devices["Pixel 5"] },
+    },
+    {
+      name: "paid-desktop",
+      dependencies: ["setup-paid"],
+      testMatch: /paid\.spec\.js/,
+      use: { ...devices["Desktop Chrome"], storageState: ".playwright-auth/paid.json" },
+    },
+    {
+      name: "paid-mobile",
+      dependencies: ["setup-paid"],
+      testMatch: /paid-mobile\.spec\.js/,
+      use: { ...devices["Pixel 5"], storageState: ".playwright-auth/paid.json" },
+    },
+    {
+      name: "free-mobile",
+      dependencies: ["setup-free"],
+      testMatch: /free-mobile\.spec\.js/,
+      use: { ...devices["Pixel 5"], storageState: ".playwright-auth/free.json" },
+    },
+  ],
+});

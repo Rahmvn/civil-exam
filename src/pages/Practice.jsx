@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Link, Navigate, useBlocker, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
+import { LoadingState } from "../components/LoadingState";
 import {
   getCandidateSummary,
   getPracticeQuestions,
@@ -9,14 +10,17 @@ import {
 } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
+  clearActivePractice,
   clearPracticeBatch,
-  readPracticeSession,
-  updatePracticeSession,
+  consumePracticeBatch,
+  markActivePractice,
+  preparePracticeQuestions,
+  readActivePractice,
 } from "../lib/practiceSession";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
-import { useAuth } from "../lib/useAuth";
 
 const EXAM_DURATION_MINUTES = 30;
+const OPTION_KEYS = ["A", "B", "C", "D"];
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -127,13 +131,49 @@ function PracticeSubmitConfirmModal({
   );
 }
 
+function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={onCancel}>
+      <section
+        aria-labelledby="practice-exit-confirm-title"
+        aria-modal="true"
+        className="auth-modal-card practice-exit-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <p className="eyebrow">Active practice</p>
+        <h2 id="practice-exit-confirm-title">Exit this practice?</h2>
+        <p>Your answers will be cleared. Opening this practice set again will start it from the beginning.</p>
+        <div className="auth-modal-actions">
+          <button className="primary-action" onClick={onCancel} type="button">Continue practice</button>
+          <button className="ghost-button practice-confirm-exit" disabled={busy} onClick={onConfirm} type="button">
+            {busy ? "Submitting..." : "Exit practice"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PracticeRestartNotice({ onLeave, onRestart }) {
+  return (
+    <section className="practice-restart-card" aria-labelledby="practice-restart-title">
+      <p className="eyebrow">Practice restarted</p>
+      <h1 id="practice-restart-title">Your previous answers were not submitted.</h1>
+      <p>Reloading ends an active practice. Start again when you are ready and the timer will begin from the start.</p>
+      <div className="practice-restart-actions">
+        <button className="primary-action" onClick={onRestart} type="button">Start again</button>
+        <button className="ghost-button" onClick={onLeave} type="button">Back to modules</button>
+      </div>
+    </section>
+  );
+}
+
 export default function Practice() {
-  const { profileComplete } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { subjectSlug } = useParams();
   const [searchParams] = useSearchParams();
-  const [summary, setSummary] = useState(null);
   const [subject, setSubject] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -147,9 +187,20 @@ export default function Practice() {
   const [emptyMessage, setEmptyMessage] = useState("");
   const [questionMapOpen, setQuestionMapOpen] = useState(false);
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState(null);
+  const [restartPending, setRestartPending] = useState(() => Boolean(readActivePractice(subjectSlug)));
+  const allowExitRef = useRef(false);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ left: 0, top: 0, behavior: "instant" });
+  }, [subjectSlug]);
 
   const currentQuestion = questions[currentIndex];
+  const currentOptionOrder = Array.isArray(currentQuestion?.option_order)
+    ? currentQuestion.option_order
+    : OPTION_KEYS;
+  const isCurrentFlagged = Boolean(currentQuestion && flagged.includes(currentQuestion.id));
   const requestedBatchNumber = Number(searchParams.get("batch") ?? location.state?.batchNumber ?? 0) || null;
   const answeredCount = Object.keys(answers).length;
   const batchMeta = questions[0]
@@ -167,8 +218,15 @@ export default function Practice() {
       };
   const requiresAccess =
     error.includes("Unlock full access") ||
+    error.includes("Unlock this module") ||
     error.includes("Batch 2 requires full access") ||
-    emptyMessage.includes("Unlock full access");
+    emptyMessage.includes("Unlock full access") ||
+    emptyMessage.includes("Unlock this module");
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => (
+    questions.length > 0
+    && !allowExitRef.current
+    && `${currentLocation.pathname}${currentLocation.search}` !== `${nextLocation.pathname}${nextLocation.search}`
+  ));
 
   useEffect(() => {
     let active = true;
@@ -185,7 +243,9 @@ export default function Practice() {
       setRemainingSeconds(EXAM_DURATION_MINUTES * 60);
       setQuestionMapOpen(false);
       setSubmitConfirmOpen(false);
+      setExitConfirmOpen(false);
       setDeadlineAt(null);
+      allowExitRef.current = false;
 
       try {
         const [nextSummary, nextSubjects] = await Promise.all([
@@ -196,40 +256,33 @@ export default function Practice() {
         if (!active) return;
 
         const nextSubject = nextSubjects.find((item) => item.slug === subjectSlug) ?? null;
-        setSummary(nextSummary);
         setSubject(nextSubject);
 
         if (!nextSubject) {
           return;
         }
 
-        const storedSession = readPracticeSession(nextSubject.slug);
-        const storedBatch = storedSession?.questions ?? null;
-        const storedBatchNumber = Number(storedBatch?.[0]?.batch_number ?? 0) || null;
+        if (restartPending) {
+          setLoading(false);
+          return;
+        }
+
+        const launchedBatch = consumePracticeBatch(nextSubject.slug);
+        const launchedBatchNumber = Number(launchedBatch?.[0]?.batch_number ?? 0) || null;
 
         if (
-          storedBatch?.length > 0 &&
-          (!requestedBatchNumber || storedBatchNumber === requestedBatchNumber)
+          launchedBatch?.length > 0 &&
+          (!requestedBatchNumber || launchedBatchNumber === requestedBatchNumber)
         ) {
-          setQuestions(storedBatch);
-          setAnswers(storedSession?.answers && typeof storedSession.answers === "object" ? storedSession.answers : {});
-          setTimeSpent(storedSession?.timeSpent && typeof storedSession.timeSpent === "object" ? storedSession.timeSpent : {});
-          setFlagged(Array.isArray(storedSession?.flagged) ? storedSession.flagged : []);
-          setCurrentIndex(
-            Number.isInteger(storedSession?.currentIndex)
-              ? Math.max(0, Math.min(storedSession.currentIndex, storedBatch.length - 1))
-              : 0,
-          );
-          setDeadlineAt(
-            Number.isFinite(Number(storedSession?.deadlineAt))
-              ? Number(storedSession.deadlineAt)
-              : Date.now() + EXAM_DURATION_MINUTES * 60 * 1000,
-          );
+          const preparedQuestions = preparePracticeQuestions(launchedBatch, launchedBatchNumber);
+          setQuestions(preparedQuestions);
+          markActivePractice(nextSubject.slug, { batch_number: launchedBatchNumber });
+          setDeadlineAt(Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
           return;
         }
 
         if (!nextSummary.has_paid_access && !nextSummary.free_module_subject_slug) {
-          setEmptyMessage("Start your free batch from the dashboard to continue.");
+          setEmptyMessage("Start your free practice from the dashboard to continue.");
           return;
         }
 
@@ -246,14 +299,16 @@ export default function Practice() {
           return;
         }
 
-        setQuestions(nextQuestions);
+        const activeBatchNumber = requestedBatchNumber ?? nextQuestions[0]?.batch_number;
+        setQuestions(preparePracticeQuestions(nextQuestions, activeBatchNumber));
+        markActivePractice(nextSubject.slug, { batch_number: activeBatchNumber });
         setDeadlineAt(Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
         logAppError(`Practice load:${subjectSlug}`, loadError);
         setQuestions([]);
         setError(
-          friendlyErrorMessage(loadError, "We could not prepare this batch right now. Please try again."),
+          friendlyErrorMessage(loadError, "We could not prepare this practice set right now. Please try again."),
         );
       } finally {
         if (active) {
@@ -267,20 +322,7 @@ export default function Practice() {
     return () => {
       active = false;
     };
-  }, [location.key, requestedBatchNumber, subjectSlug]);
-
-  useEffect(() => {
-    if (!subject?.slug || questions.length === 0 || !deadlineAt) return;
-
-    updatePracticeSession(subject.slug, {
-      questions,
-      answers,
-      timeSpent,
-      flagged,
-      currentIndex,
-      deadlineAt,
-    });
-  }, [answers, currentIndex, deadlineAt, flagged, questions, subject?.slug, timeSpent]);
+  }, [requestedBatchNumber, restartPending, subjectSlug]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -296,6 +338,7 @@ export default function Practice() {
           selected_option: answers[question.id] ?? null,
           time_spent_seconds: timeSpent[question.id] ?? 0,
           display_order: question.display_order ?? 0,
+          option_order: Array.isArray(question.option_order) ? question.option_order : OPTION_KEYS,
           batch_number: question.batch_number ?? batchMeta.batchNumber,
         }));
 
@@ -307,7 +350,8 @@ export default function Practice() {
       });
 
       clearPracticeBatch(subject.slug);
-      setSummary(await getCandidateSummary());
+      clearActivePractice(subject.slug);
+      allowExitRef.current = true;
       navigate(`/result?attempt=${nextResult.attempt_id}`, {
         state: {
           result: nextResult,
@@ -322,7 +366,7 @@ export default function Practice() {
     } catch (submitError) {
       logAppError(`Practice submit:${subject?.slug ?? "unknown"}`, submitError);
       setError(
-        friendlyErrorMessage(submitError, "We could not submit this batch. Please try again."),
+        friendlyErrorMessage(submitError, "We could not submit this practice set. Please try again."),
       );
     } finally {
       setSubmitting(false);
@@ -369,6 +413,32 @@ export default function Practice() {
     return () => window.clearInterval(timerId);
   }, [currentQuestion, deadlineAt, questions.length, submitting, submitCurrentSession]);
 
+  const hasActiveSession = questions.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveSession) return undefined;
+
+    const handleBeforeUnload = (event) => {
+      if (allowExitRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasActiveSession]);
+
+  useEffect(() => {
+    const handlePageShow = (event) => {
+      if (!event.persisted || questions.length === 0) return;
+      allowExitRef.current = true;
+      window.location.reload();
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, [questions.length]);
+
   const progressPercent = useMemo(() => {
     if (questions.length === 0) return 0;
     return (answeredCount / questions.length) * 100;
@@ -398,61 +468,91 @@ export default function Practice() {
     setSubmitConfirmOpen(true);
   }
 
+  function requestExit() {
+    if (!hasActiveSession || submitting) return;
+    setQuestionMapOpen(false);
+    setSubmitConfirmOpen(false);
+    setExitConfirmOpen(true);
+  }
+
+  function confirmExit() {
+    if (submitting) return;
+    allowExitRef.current = true;
+    if (subject?.slug) {
+      clearPracticeBatch(subject.slug);
+      clearActivePractice(subject.slug);
+    }
+    setExitConfirmOpen(false);
+    if (blocker.state === "blocked") {
+      blocker.proceed();
+      return;
+    }
+    navigate("/dashboard#modules", { replace: true });
+  }
+
+  function cancelExit() {
+    if (blocker.state === "blocked") blocker.reset();
+    setExitConfirmOpen(false);
+  }
+
+  function restartPractice() {
+    clearActivePractice(subjectSlug);
+    setRestartPending(false);
+  }
+
+  function leaveRestartNotice() {
+    clearPracticeBatch(subjectSlug);
+    clearActivePractice(subjectSlug);
+    allowExitRef.current = true;
+    navigate("/dashboard#modules", { replace: true });
+  }
+
   if (!loading && !subject) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (!profileComplete) {
-    return (
-      <Navigate
-        to="/dashboard"
-        replace
-        state={{ onboardingTarget: `/practice/${subjectSlug}` }}
-      />
-    );
-  }
-
   if (loading) {
-    return (
-      <main className="state-shell">
-        <section className="state-card page-loading-card">
-          <p>Loading your batch...</p>
-        </section>
-      </main>
-    );
+    return <LoadingState fullPage />;
   }
 
   return (
     <AppFrame showBottomNav={false} showFooter={false} showHeader={false}>
       <section className="practice-page practice-page-focused">
         <span className="practice-sr-only">{`Time left ${formatTime(remainingSeconds)}`}</span>
-        {error && <section className="state-card inline-state">{error}</section>}
+        {error && <p className="action-error practice-action-error" role="alert">{error}</p>}
 
-        {questions.length === 0 ? (
+        {restartPending ? (
+          <PracticeRestartNotice onLeave={leaveRestartNotice} onRestart={restartPractice} />
+        ) : questions.length === 0 ? (
           <section className="empty-panel">
             <h2>{emptyMessage || "Questions for this module are not available yet."}</h2>
             <p>
-              {emptyMessage.includes("Confirm your free batch start")
-                ? "Return to the dashboard and confirm your free batch before entering this module."
+              {emptyMessage.includes("Confirm your free practice start")
+                ? "Return to the dashboard and confirm your free practice before entering this module."
                 : emptyMessage.includes("Choose a module")
                   ? "Return to the dashboard and choose a module to continue."
-                  : "If this batch has not been started yet, return to the dashboard and begin from the module list."}
+                  : "Return to the dashboard and begin again from the module list."}
             </p>
             <div className="hero-actions">
               <Link className="secondary-action" to="/dashboard#modules">
                 Back to dashboard
               </Link>
-              {requiresAccess && !summary?.has_paid_access && (
-                <Link className="primary-action" to="/access">
-                  Unlock full access
+              {requiresAccess && (
+                <Link className="primary-action" to={`/access?module=${encodeURIComponent(subjectSlug)}`}>
+                  Unlock module
                 </Link>
               )}
             </div>
           </section>
         ) : (
           <>
-            <header className="practice-module-context">
+            <header className="practice-exam-header">
+              <button className="practice-exit-button" disabled={submitting} onClick={requestExit} type="button">Exit</button>
               <h1 title={getModuleDisplayName(subject?.name)}>{getModuleDisplayName(subject?.name)}</h1>
+              <div className={`practice-header-timer ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
+                <span>Time left</span>
+                <strong>{formatTime(remainingSeconds)}</strong>
+              </div>
             </header>
             <section className="practice-desktop-layout">
               <div className="practice-session-shell">
@@ -460,9 +560,6 @@ export default function Practice() {
                   <div className="practice-exam-strip-top">
                     <div className="practice-exam-progress-copy">
                       <p>{`Question ${currentIndex + 1} of ${questions.length}`}</p>
-                    </div>
-                    <div className={`practice-timer practice-timer-compact ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
-                      <strong>{formatTime(remainingSeconds)}</strong>
                     </div>
                   </div>
                   <div className="practice-progress-track" aria-hidden="true">
@@ -475,46 +572,29 @@ export default function Practice() {
                     <h2>{currentQuestion?.question_text}</h2>
 
                     <div className="options-list practice-options-list">
-                      {["A", "B", "C", "D"].map((option) => {
-                        const selected = answers[currentQuestion.id] === option;
+                      {currentOptionOrder.map((canonicalOption, optionIndex) => {
+                        const displayOption = OPTION_KEYS[optionIndex];
+                        const selected = answers[currentQuestion.id] === canonicalOption;
 
                         return (
                           <button
-                            key={option}
+                            key={canonicalOption}
+                            aria-pressed={selected}
                             className={`option-card practice-option-card ${selected ? "selected" : ""}`}
-                            onClick={() => selectAnswer(option)}
+                            onClick={() => selectAnswer(canonicalOption)}
                             type="button"
                           >
                             <span className="practice-option-badge">
                               <span className="practice-option-radio" aria-hidden="true" />
-                              <strong>{option}</strong>
+                              <strong>{displayOption}</strong>
                             </span>
-                            <span>{currentQuestion[`option_${option.toLowerCase()}`]}</span>
+                            <span>{currentQuestion[`option_${canonicalOption.toLowerCase()}`]}</span>
                           </button>
                         );
                       })}
                     </div>
-                  </article>
 
-                  <div className="practice-utility-row practice-utility-row-single">
-                    <button className="ghost-button practice-utility-button" onClick={() => setQuestionMapOpen(true)} type="button">
-                      Question Map
-                    </button>
-                    <button
-                      className={`practice-flag-button ${flagged.includes(currentQuestion.id) ? "is-active" : ""}`}
-                      aria-label={flagged.includes(currentQuestion.id) ? "Remove review flag" : "Mark for review"}
-                      onClick={toggleFlag}
-                      title={flagged.includes(currentQuestion.id) ? "Flagged for review" : "Mark for review"}
-                      type="button"
-                    >
-                      <span className="practice-flag-icon" aria-hidden="true" />
-                      <span className="practice-sr-only">
-                        {flagged.includes(currentQuestion.id) ? "Flagged" : "Flag"}
-                      </span>
-                    </button>
-                  </div>
-
-                  <footer className="practice-bottom-bar">
+                    <footer className="practice-bottom-bar">
                     <button
                       className="ghost-button practice-nav-button"
                       disabled={currentIndex === 0}
@@ -541,19 +621,31 @@ export default function Practice() {
                         Next
                       </button>
                     )}
-                  </footer>
+                    </footer>
+                  </article>
+
+                  <div className="practice-utility-row practice-utility-row-single">
+                    <button className="ghost-button practice-utility-button" onClick={() => setQuestionMapOpen(true)} type="button">
+                      Question Map
+                    </button>
+                    <button
+                      className={`practice-flag-button ${isCurrentFlagged ? "is-active" : ""}`}
+                      aria-label={isCurrentFlagged ? "Remove review flag" : "Mark for review"}
+                      onClick={toggleFlag}
+                      title={isCurrentFlagged ? "Flagged for review" : "Mark for review"}
+                      type="button"
+                    >
+                      <span className="practice-flag-icon" aria-hidden="true" />
+                      <span className="practice-flag-label">{isCurrentFlagged ? "Flagged" : "Flag"}</span>
+                    </button>
+                  </div>
                 </section>
               </div>
 
               <aside className="practice-desktop-sidebar">
                 <section className="practice-desktop-panel practice-desktop-panel-session">
                   <div className="practice-desktop-session-top">
-                    <div className="practice-desktop-session-copy">
-                      <span className="practice-desktop-label">Session</span>
-                      <strong className={`practice-desktop-timer ${remainingSeconds <= 300 ? "is-warning" : ""}`}>
-                        {formatTime(remainingSeconds)}
-                      </strong>
-                    </div>
+                    <span className="practice-desktop-label">Progress</span>
                     <div className="practice-desktop-session-stats">
                       <span>{`${answeredCount}/${questions.length} answered`}</span>
                       {flagged.length > 0 && <span>{`${flagged.length} flagged`}</span>}
@@ -583,14 +675,14 @@ export default function Practice() {
                     })}
                   </div>
                   <button
-                    className={`practice-flag-button practice-flag-button-desktop ${flagged.includes(currentQuestion.id) ? "is-active" : ""}`}
-                    aria-label={flagged.includes(currentQuestion.id) ? "Remove review flag" : "Mark for review"}
+                    className={`practice-flag-button practice-flag-button-desktop ${isCurrentFlagged ? "is-active" : ""}`}
+                    aria-label={isCurrentFlagged ? "Remove review flag" : "Mark for review"}
                     onClick={toggleFlag}
-                    title={flagged.includes(currentQuestion.id) ? "Flagged for review" : "Mark for review"}
+                    title={isCurrentFlagged ? "Flagged for review" : "Mark for review"}
                     type="button"
                   >
                     <span className="practice-flag-icon" aria-hidden="true" />
-                    <span>{flagged.includes(currentQuestion.id) ? "Flagged" : "Mark for review"}</span>
+                    <span>{isCurrentFlagged ? "Flagged" : "Mark for review"}</span>
                   </button>
                 </section>
               </aside>
@@ -617,6 +709,14 @@ export default function Practice() {
                 onConfirm={() => void submitCurrentSession()}
                 questionsCount={questions.length}
                 submitting={submitting}
+              />
+            )}
+
+            {(exitConfirmOpen || blocker.state === "blocked") && (
+              <PracticeExitConfirmModal
+                busy={submitting}
+                onCancel={cancelExit}
+                onConfirm={confirmExit}
               />
             )}
           </>

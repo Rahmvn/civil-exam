@@ -1,5 +1,12 @@
 import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
-import { activateEntitlement, getAuthedUser } from "../_shared/paystack.ts";
+import {
+  activateEntitlement,
+  activateModulePurchase,
+  getAuthedUser,
+  getModulePaymentOrder,
+  validateLegacyPayment,
+  validateModulePayment,
+} from "../_shared/paystack.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -19,9 +26,7 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: "Payment reference is required" }, 400);
     }
 
-    try {
-      console.log("Verifying Paystack payment", { reference });
-    } catch (e) { }
+    console.log("Verifying Paystack payment", { reference });
 
     const paystackResponse = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
@@ -33,17 +38,17 @@ Deno.serve(async (request) => {
     );
     const payload = await paystackResponse.json();
 
-    try {
-      console.log("Paystack verify response", { ok: paystackResponse.ok, status: paystackResponse.status, dataStatus: payload?.data?.status ?? null });
-    } catch (e) { }
+    console.log("Paystack verify response", {
+      ok: paystackResponse.ok,
+      status: paystackResponse.status,
+      dataStatus: payload?.data?.status ?? null,
+    });
 
     if (!paystackResponse.ok || !payload.status || payload.data.status !== "success") {
       return jsonResponse({ error: "Payment has not been completed" }, 400);
     }
 
-    // The payment's metadata.user_id (set at initialization) must match the
-    // caller, so a user cannot activate an entitlement from someone else's
-    // transaction reference.
+    const order = await getModulePaymentOrder(reference);
     const paidUserId = payload.data?.metadata?.user_id;
 
     if (paidUserId !== user.id) {
@@ -53,13 +58,37 @@ Deno.serve(async (request) => {
       );
     }
 
+    if (order) {
+      if (order.user_id !== user.id) {
+        return jsonResponse(
+          { error: "This payment reference does not belong to your account" },
+          403,
+        );
+      }
+
+      validateModulePayment(order, payload.data);
+      const entitlement = await activateModulePurchase(reference, payload.data);
+
+      return jsonResponse({
+        status: "active",
+        expires_at: entitlement.expires_at,
+        subject_name: entitlement.subject_name,
+        subject_slug: entitlement.subject_slug,
+      });
+    }
+
+    // Preserve verification for transactions initialized immediately before
+    // the module-specific payment release.
+    await validateLegacyPayment(payload.data);
     const entitlement = await activateEntitlement(reference, payload.data);
 
     return jsonResponse({
       status: "active",
       expires_at: entitlement.expires_at,
+      legacy_full_access: true,
     });
   } catch (error) {
-    return jsonResponse({ error: error.message ?? "Payment verification failed" }, 400);
+    const message = error instanceof Error ? error.message : "Payment verification failed";
+    return jsonResponse({ error: message }, 400);
   }
 });

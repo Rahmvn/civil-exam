@@ -1,85 +1,116 @@
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ensureMyProfile, getProfile } from "./appApi";
+import { clearReadRequests } from "./requestPolicy";
 import { supabase } from "./supabaseClient";
 
 const AuthContext = createContext(null);
 
-function isProfileComplete(profile) {
-  return Boolean(
-    profile?.phone_number &&
-      profile?.state_code &&
-      profile?.service_level &&
-      profile?.organization_name &&
-      profile?.onboarding_completed_at,
-  );
+async function loadProfile(userId) {
+  let nextProfile = await getProfile(userId);
+
+  if (!nextProfile) {
+    nextProfile = await ensureMyProfile();
+  }
+
+  return nextProfile;
 }
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const mountedRef = useRef(true);
+  const authReadyRef = useRef(false);
+  const currentUserIdRef = useRef(null);
+  const profileRequestRef = useRef(0);
 
-  async function refreshProfile(userId) {
+  const refreshProfile = useCallback(async (userId) => {
     if (!userId) {
+      profileRequestRef.current += 1;
       setProfile(null);
+      setProfileLoading(false);
       return null;
     }
 
+    const requestId = profileRequestRef.current + 1;
+    profileRequestRef.current = requestId;
+    setProfileLoading(true);
+
     try {
-      let nextProfile = await getProfile(userId);
-
-      if (!nextProfile) {
-        nextProfile = await ensureMyProfile();
-      }
-
+      const nextProfile = await loadProfile(userId);
+      if (!mountedRef.current || profileRequestRef.current !== requestId) return nextProfile;
       setProfile(nextProfile);
       return nextProfile;
     } catch {
-      setProfile(null);
+      if (mountedRef.current && profileRequestRef.current === requestId) setProfile(null);
       return null;
+    } finally {
+      if (mountedRef.current && profileRequestRef.current === requestId) setProfileLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
+    mountedRef.current = true;
+    let subscribed = true;
 
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
+    async function hydrateUserProfile(userId, { blocking }) {
+      await refreshProfile(userId);
+      if (!subscribed || !mountedRef.current) return;
 
-      if (!isMounted) return;
-
-      setSession(data.session);
-
-      if (data.session?.user) {
-        await refreshProfile(data.session.user.id);
-      } else {
-        setProfile(null);
+      if (blocking) {
+        authReadyRef.current = true;
+        setLoading(false);
       }
-
-      setLoading(false);
     }
-
-    loadSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!subscribed) return;
+
+      const nextUserId = nextSession?.user?.id ?? null;
+      const previousUserId = currentUserIdRef.current;
+      const isFirstSession = !authReadyRef.current;
+      const userChanged = previousUserId !== nextUserId;
+
+      if (userChanged) clearReadRequests();
+
+      currentUserIdRef.current = nextUserId;
       setSession(nextSession);
 
-      if (nextSession?.user) {
-        await refreshProfile(nextSession.user.id);
-      } else {
+      if (!nextUserId) {
+        profileRequestRef.current += 1;
         setProfile(null);
+        setProfileLoading(false);
+        authReadyRef.current = true;
+        setLoading(false);
+        return;
       }
 
-      setLoading(false);
+      if (isFirstSession || userChanged) {
+        setLoading(true);
+        setProfile(null);
+        window.setTimeout(() => {
+          if (subscribed) void hydrateUserProfile(nextUserId, { blocking: true });
+        }, 0);
+        return;
+      }
+
+      // Token refreshes update the session silently; they must not blank the app.
+      if (event === "USER_UPDATED") {
+        window.setTimeout(() => {
+          if (subscribed) void hydrateUserProfile(nextUserId, { blocking: false });
+        }, 0);
+      }
     });
 
     return () => {
-      isMounted = false;
+      subscribed = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshProfile]);
 
   const value = useMemo(
     () => ({
@@ -87,11 +118,11 @@ export function AuthProvider({ children }) {
       user: session?.user ?? null,
       profile,
       loading,
+      profileLoading,
       isAdmin: profile?.role === "admin",
-      profileComplete: isProfileComplete(profile),
       refreshProfile,
     }),
-    [loading, profile, session],
+    [loading, profile, profileLoading, refreshProfile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+playwright-report
+test-results
+.playwright-results
+.playwright-auth
 
 # Environment files (secrets) - commit .env.example instead
 .env

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
-import { getAttemptReview, getRecentAttempts, getReviewQueue } from "../lib/appApi";
+import { LoadingState } from "../components/LoadingState";
+import { getAttemptReview, getQueueAttemptMatches, getRecentAttempts, getReviewQueue } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
+import { getSafeReturnTo } from "../lib/navigation";
 
 const HISTORY_FILTERS = [
   { value: "passed", label: "Passed" },
@@ -42,6 +44,17 @@ function getQuestionState(row) {
 function getAnswerText(row, optionKey) {
   if (!optionKey) return "";
   return row?.[`option_${String(optionKey).toLowerCase()}`] ?? "";
+}
+
+function getDisplayedOptionLabel(row, optionKey) {
+  if (!optionKey) return "";
+
+  const optionOrder = Array.isArray(row?.option_order)
+    ? row.option_order.map((value) => String(value).toUpperCase())
+    : ["A", "B", "C", "D"];
+  const displayIndex = optionOrder.indexOf(String(optionKey).toUpperCase());
+
+  return displayIndex >= 0 ? ["A", "B", "C", "D"][displayIndex] : String(optionKey).toUpperCase();
 }
 
 function getAttemptCounts(rows, totalQuestions = 0) {
@@ -516,7 +529,7 @@ function ReviewHistoryView({
 
   return (
     <>
-      {historyNotice && <section className="state-card inline-state">{historyNotice}</section>}
+      {historyNotice && <p className="inline-notice" role="status">{historyNotice}</p>}
       <section className="dashboard-panel-card review-history-overview">
         <div className="review-history-overview-intro">
           <p>Based on your last 12 attempts</p>
@@ -734,6 +747,8 @@ function ReviewDetailView({
 
   const answerText = getAnswerText(row, row.selected_option);
   const correctText = getAnswerText(row, row.correct_option);
+  const answerLabel = getDisplayedOptionLabel(row, row.selected_option);
+  const correctLabel = getDisplayedOptionLabel(row, row.correct_option);
   const state = getQuestionState(row);
   const stateLabel = state === "correct" ? "Correct" : state === "unanswered" ? "Unanswered" : "Wrong";
 
@@ -759,7 +774,7 @@ function ReviewDetailView({
           <span>Your answer</span>
           <p>
             {row.selected_option
-              ? `${row.selected_option}. ${answerText || "Answer text unavailable."}`
+              ? `${answerLabel}. ${answerText || "Answer text unavailable."}`
               : "Not answered"}
           </p>
         </div>
@@ -768,7 +783,7 @@ function ReviewDetailView({
           <span>Correct answer</span>
           <p>
             {row.correct_option
-              ? `${row.correct_option}. ${correctText || "Answer text unavailable."}`
+              ? `${correctLabel}. ${correctText || "Answer text unavailable."}`
               : "Answer key unavailable."}
           </p>
         </div>
@@ -820,6 +835,10 @@ export default function Review() {
   const [searchParams] = useSearchParams();
   const attemptId = searchParams.get("attempt");
   const targetQuestionId = searchParams.get("question");
+  const detailReturnTo = getSafeReturnTo(
+    searchParams.get("returnTo") || location.state?.returnTo,
+    "/review",
+  );
   const queueQuestionIds = useMemo(
     () =>
       (searchParams.get("queue") ?? "")
@@ -864,36 +883,16 @@ export default function Review() {
 
         if (!active) return;
 
+        const nextAttempts = attemptsResult.status === "fulfilled" && Array.isArray(attemptsResult.value)
+          ? attemptsResult.value
+          : [];
+        const nextQueue = queueResult.status === "fulfilled" && Array.isArray(queueResult.value)
+          ? queueResult.value
+          : [];
+
         if (attemptsResult.status === "fulfilled") {
-          const nextAttempts = Array.isArray(attemptsResult.value) ? attemptsResult.value : [];
           setAttemptsNotice("");
-
-          const detailResults = await Promise.allSettled(
-            nextAttempts.map((attempt) => getAttemptReview(attempt.id)),
-          );
-
-          if (!active) return;
-
-          const nextAttemptReviewMap = {};
-          setAttemptSummaries(
-            nextAttempts.map((attempt, index) => {
-              const result = detailResults[index];
-
-              if (result?.status === "fulfilled") {
-                const rows = Array.isArray(result.value) ? result.value : [];
-                nextAttemptReviewMap[attempt.id] = rows;
-                return buildHistoryAttemptSummary(attempt, rows);
-              }
-
-              if (result?.status === "rejected" && !isExpectedAbortError(result.reason)) {
-                logAppError(`Review history detail:${attempt.id}`, result.reason);
-              }
-
-              nextAttemptReviewMap[attempt.id] = [];
-              return buildHistoryAttemptSummary(attempt, []);
-            }).filter(Boolean),
-          );
-          setAttemptReviewMap(nextAttemptReviewMap);
+          setAttemptSummaries(nextAttempts.map((attempt) => buildHistoryAttemptSummary(attempt)).filter(Boolean));
         } else if (!isExpectedAbortError(attemptsResult.reason)) {
           logAppError("Review history attempts", attemptsResult.reason);
           setAttemptSummaries([]);
@@ -907,12 +906,35 @@ export default function Review() {
         }
 
         if (queueResult.status === "fulfilled") {
-          setReviewQueue(Array.isArray(queueResult.value) ? queueResult.value : []);
+          setReviewQueue(nextQueue);
           setQueueNotice("");
         } else if (!isExpectedAbortError(queueResult.reason)) {
           logAppError("Review queue", queueResult.reason);
           setReviewQueue([]);
           setQueueNotice("The revisit queue is not available right now.");
+        }
+
+        if (nextAttempts.length > 0 && nextQueue.length > 0) {
+          try {
+            const matches = await getQueueAttemptMatches(nextQueue.map((item) => item.question_id));
+            if (!active) return;
+
+            const matchingAttempt = nextAttempts.find((attempt) =>
+              matches.some((match) => String(match.attempt_id) === String(attempt.id)),
+            );
+
+            if (matchingAttempt) {
+              const rows = await getAttemptReview(matchingAttempt.id);
+              if (!active) return;
+              setAttemptReviewMap({
+                [matchingAttempt.id]: Array.isArray(rows) ? rows : [],
+              });
+            }
+          } catch (queueMatchError) {
+            if (!isExpectedAbortError(queueMatchError)) {
+              logAppError("Review queue attempt match", queueMatchError);
+            }
+          }
         }
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
@@ -1007,26 +1029,20 @@ export default function Review() {
 
   if (loading) {
     return (
-      <AppFrame showBottomNav={!attemptId} showFooter={!attemptId}>
-        <section className="review-page review-page-v2">
-          <section className="dashboard-section-block">
-            <article className="state-card page-loading-card">
-              <p>{attemptId ? "Loading your review..." : "Loading your review history..."}</p>
-            </article>
-          </section>
-        </section>
+      <AppFrame showBottomNav={!attemptId} showFooter={!attemptId} showHeader={!attemptId}>
+        <LoadingState />
       </AppFrame>
     );
   }
 
   return (
-    <AppFrame showBottomNav={!attemptId} showFooter={!attemptId}>
+    <AppFrame showBottomNav={!attemptId} showFooter={!attemptId} showHeader={!attemptId}>
       <section className="review-page review-page-v2">
         {attemptId ? (
           <ReviewDetailView
             error={error}
             key={`${attemptId}-${queueQuestionIds.join("-")}-${targetQuestionId ?? "first"}`}
-            onBack={() => navigate(location.state?.returnTo ?? "/review")}
+            onBack={() => navigate(detailReturnTo)}
             queueScoped={queueScoped}
             rows={baseReviewRows}
             targetQuestionId={targetQuestionId}

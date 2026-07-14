@@ -1,5 +1,5 @@
 {
-  "name": "civil-exam-app",
+  "name": "promotionsure",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test:db": "supabase test db",
+    "test:e2e": "node scripts/test/runPlaywright.mjs",
+    "test:e2e:headed": "node scripts/test/runPlaywright.mjs --headed",
+    "test:regression": "npm run test:db && npm run test:e2e",
     "import:questions": "node scripts/importQuestions.mjs",
     "content:inspect": "node scripts/content/inspectContent.mjs",
     "content:validate": "node scripts/content/validateContent.mjs",
@@ -20,13 +24,16 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
+    "jspdf": "^4.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.18.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

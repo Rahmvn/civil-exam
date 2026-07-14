@@ -1,8 +1,30 @@
 # Dashboard UI Flow
 
+> **Current access model:** Dashboard module states are independent. A module may be the selected free practice, unlocked, locked, completed or coming soon. The dashboard must never infer or recommend which subject a user should purchase.
+
+## Module-First Direction
+
+This direction supersedes earlier dashboard wireflows that placed a separate recommended-batch card above the module list.
+
+- The dashboard's primary decision is the module, not the batch.
+- Modules appear immediately after a compact welcome and access state.
+- Each module owns its next-action recommendation and opens the recommended practice directly.
+- The normal path does not expose a list of batches.
+- Paid users may use `Choose another practice set` to open the manual selector.
+- User-facing detailed labels use `Practice set N`; backend fields and policies continue using `batch_number`.
+- Module progress is `published practice sets passed / currently published practice sets`.
+- Coming-soon and unpublished sets do not affect completion percentage.
+- Free practice is an optional trial. New users see `Try free` and `Unlock module` together on each purchasable module.
+- Do not show an empty score ring, empty attempt history or zero-value module progress before the user has generated that information.
+- Detailed performance analysis belongs in Review. The dashboard may show a compact recent average only after attempts exist.
+
+Normal paid-user flow:
+
+`Dashboard -> Start/Continue module practice -> Result -> Continue practice`
+
 ## Scope
 
-This document defines the dashboard UI flow for FPS Exam Practice before the next dashboard redesign pass.
+This document defines the dashboard UI flow for PromotionSure before the next dashboard redesign pass.
 
 This is a planning document only.
 

@@ -1,5 +1,7 @@
 # App Information Architecture
 
+> **Current access model:** Access is purchased per module. The free allowance is Practice Set 1 of one explicitly selected module, with one retry after a failed first attempt. Older references below to pack-wide `full access` are superseded by [Practice Set Access And Progression Policy](./BATCH_ACCESS_AND_PROGRESSION_POLICY.md).
+
 ## 1. Purpose
 
 This document defines the information architecture for the Federal Public Service Promotion Exam app as it exists today and as it should be clarified before future screen-by-screen UI redesign.
@@ -18,7 +20,7 @@ It should help the team redesign each authenticated and public screen without ch
 
 ## 2. Product Context
 
-FPS Exam Practice is a structured exam-practice product for Nigerian civil servants preparing for promotion examinations.
+PromotionSure is a structured exam-practice product for Nigerian civil servants preparing for promotion examinations.
 
 The app is not a general learning platform and not a content marketplace.
 
@@ -110,6 +112,14 @@ Tone should be:
 - not desperate
 - not marketing-heavy
 - not playful
+
+### 4.5 Profile data is not a gate
+
+- Sign-up asks only for the information needed to create an account.
+- Phone, state, and organisation are optional Account details.
+- Grade level is not requested while no active feature uses it.
+- Missing profile details must not block practice, review, results, access, or payment.
+- Question and access rules must never be inferred from grade level.
 
 ## 5. User Types And Experience Model
 
@@ -267,7 +277,7 @@ Dashboard behavior:
 
 Practice behavior:
 
-- selected module Batch 1 reload should work
+- selected module Practice set 1 reload should return safely to the restart state
 
 Result/review behavior:
 
@@ -916,11 +926,11 @@ Should appear:
 
 Should not overwhelm paid users or no-content states.
 
-### 7.10 Resume / Retry / Review actions
+### 7.10 Continue / Retry / Review actions
 
 Dashboard should support:
 
-- resume active/recommended batch
+- continue to the recommended practice set after a submitted attempt
 - retry failed batch
 - review completed attempt
 
@@ -1208,6 +1218,21 @@ If no eligible batch context exists:
 - direct user back to dashboard/modules
 
 ### Product decisions for practice
+
+Session continuity:
+
+- an active practice is not resumable after confirmed exit or page unload
+- answers, flags, question order, current position, and timer are temporary until submission
+- confirmed exit does not create an attempt
+- a confirmed reload opens a restart state; it does not silently begin a new timer
+- the fresh session is created only when the user chooses to start again
+- app switching without unloading keeps the page alive and the deadline continues
+
+Ordering:
+
+- Practice set 1 preserves authored question and option order
+- Practice set 2 onward shuffles both once per new session
+- submitted attempts persist question display order and option display order for accurate review
 
 Timer now or later:
 

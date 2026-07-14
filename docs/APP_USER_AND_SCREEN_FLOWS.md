@@ -1,8 +1,10 @@
 # App User And Screen Flows
 
+> **Current access model:** Users choose their own modules. One selected module's first practice set is free, with one retry after a failed first attempt; payment unlocks only the selected module. Older pack-wide `full access` flows below are superseded by [Practice Set Access And Progression Policy](./BATCH_ACCESS_AND_PROGRESSION_POLICY.md).
+
 ## Scope
 
-This document defines the user flow, screen flow, and screen-state requirements for the Federal Public Service Promotion Exam Practice app.
+This document defines the user flow, screen flow, and screen-state requirements for PromotionSure, a public service promotion exam practice app.
 
 This is a planning document only.
 
@@ -55,6 +57,9 @@ This document is intended to be detailed enough that we can redesign and impleme
 
 ## Current Implementation Notes
 
+- Authentication uses progressive disclosure: sign-up collects name and email first, then the password.
+- Profile details are optional and editable from Account. They never block practice, review, results, access, or payment.
+- Grade level is not collected because no current product behavior uses it.
 - The app already has routes for landing, auth, dashboard, practice, review, access, payment verification, profile, and admin.
 - The current app does not yet have a dedicated Result screen. Result summary and answer review are currently merged into `Review.jsx`.
 - The current app does not yet have a dedicated Review History page. `/review` currently behaves like "latest attempt review" rather than a true attempt index.
@@ -70,7 +75,6 @@ This document is intended to be detailed enough that we can redesign and impleme
 Logged out visitor
 -> Landing / Auth entry
 -> Sign up or Login
--> Profile setup
 -> Dashboard
 -> Choose module / Start free batch / Unlock full access
 -> Practice
@@ -103,7 +107,7 @@ User taps unavailable module / batch
 ## Access-control summary
 
 - Auth decides whether the user can enter authenticated space.
-- Profile completion decides whether the user can move from dashboard into practice, review, or access.
+- Optional profile details do not participate in access control.
 - Backend access RPCs decide whether a batch is available, locked, retryable, published, or coming soon.
 - Payment verification decides when full access becomes active.
 - Review ownership checks decide whether an attempt can be opened.
@@ -127,15 +131,15 @@ User taps unavailable module / batch
 ### Direct-route behavior
 
 - Direct `/dashboard` visit redirects to sign-in with "Please sign in to continue."
-- Direct `/practice/:subjectSlug` visit redirects to sign-in with intended route in state.
-- Direct `/review` visit redirects to sign-in with intended route in state.
-- Direct `/access` visit redirects to sign-in with intended route in state.
+- Direct `/practice/:subjectSlug` visit redirects to sign-in with the full intended route in `returnTo`.
+- Direct `/review` visit redirects to sign-in with the full intended route in `returnTo`.
+- Direct `/access` visit redirects to sign-in with the full intended route in `returnTo`.
 - Direct `/payment/verify` visit redirects to sign-in if the session is missing.
 
 ### Redirect behavior after login
 
 - If auth started from a protected route, the app should return the user to that target.
-- Recommended behavior for redesign: preserve full path plus query plus hash, not just pathname.
+- Preserve full path plus query plus hash in a sanitized, refresh-safe `returnTo` parameter.
 - If auth started voluntarily, default redirect is dashboard.
 
 ## B. New authenticated user with incomplete profile
@@ -381,18 +385,19 @@ Each screen below lists the required product behavior for redesign. "Current" in
 
 ## 1. Landing / Auth Entry
 
-- Status: Current landing exists, dedicated auth-entry split is planned.
+- Status: Implemented as a concise module-first public service page.
 - Purpose: Explain product and move visitors into account creation or sign-in.
 - Entry points: Root route, public nav, post-sign-out.
-- Exit points: Signup, Login, Dashboard if already authenticated.
-- Primary CTA: `Continue with Email`
-- Secondary CTA: `Login`
+- Exit points: Signup or Login. Authenticated root visits redirect to Dashboard.
+- Primary CTA: `Start free practice`
+- Secondary CTA: `Sign in`
 - Data needed: Auth session only.
 - Backend/RPC calls: None required.
-- Free-user behavior: Explains free Batch 1 of one selected module.
-- Paid-user behavior: `Open Dashboard` if already signed in.
-- Mobile layout priority: Product purpose, main CTA, trust line.
-- Error/empty states: None beyond auth-modal fallback.
+- Free-user behavior: Explains one selected module and its first practice set without leading with batch terminology.
+- Paid-user behavior: Existing authenticated users bypass the landing page.
+- Mobile layout priority: Product purpose, main CTA, reassurance, and compact module availability.
+- Error/empty states: None. Authentication links route directly without an intermediate modal.
+- Edition context: Identify the current preparation content as the `2026 edition` once, near module availability, and note quietly that later-year editions will follow.
 
 ## 2. Login
 
@@ -414,12 +419,12 @@ Each screen below lists the required product behavior for redesign. "Current" in
 - Status: Current, combined in `Auth.jsx`.
 - Purpose: Create new account.
 - Entry points: Landing, login switch link.
-- Exit points: Dashboard then onboarding.
+- Exit points: Dashboard or the originally requested protected route.
 - Primary CTA: `Create Account`
 - Secondary CTA: `Login`
 - Data needed: Full name, email, password.
 - Backend/RPC calls: `supabase.auth.signUp`, optional immediate sign-in if needed
-- Free-user behavior: Lands in free-access onboarding path.
+- Free-user behavior: Lands in the module-first Dashboard experience.
 - Paid-user behavior: Not distinct yet until entitlement exists.
 - Mobile layout priority: Short form, no extra fields.
 - Error/empty states: Duplicate email, weak password, network failure.
@@ -761,15 +766,15 @@ Each screen below lists the required product behavior for redesign. "Current" in
 ### Required content
 
 - App name
-- Short value proposition
-- `Continue with Email`
-- `Login` link for existing users
+- `Sign in` and `Create account` modes
+- `Continue with Google`
+- Email and password fallback
 - Minimal official design tone
 
 ### Recommended copy direction
 
 - Headline: Prepare for your federal public service promotion exam with focused practice.
-- Support copy: Practice module batches, review answers, and track real progress.
+- Support copy: Choose a module, complete focused practice, review answers, and keep improving.
 - Avoid grade-level-as-access copy.
 
 ## Signup screen
@@ -779,11 +784,12 @@ Each screen below lists the required product behavior for redesign. "Current" in
 - Full name
 - Email
 - Password
-- Confirm password later if the team wants extra safety, but not required by current app
+- No confirm-password field
 
 ### Actions
 
 - Create Account button
+- Continue with Google button
 - Login link
 
 ### Error states
@@ -803,7 +809,8 @@ Each screen below lists the required product behavior for redesign. "Current" in
 ### Actions
 
 - Login button
-- Forgot Password if implemented later
+- Continue with Google button
+- Forgot Password remains deferred until the recovery flow is implemented end to end
 - Create Account link
 
 ### Error states
@@ -812,46 +819,30 @@ Each screen below lists the required product behavior for redesign. "Current" in
 - Unconfirmed email if Supabase requires it
 - Network failure
 
+## Hybrid authentication behavior
+
+- Google OAuth and email/password are the supported interface paths.
+- Google OAuth returns through `/auth/callback` and preserves the sanitized `returnTo` destination.
+- A new user continues to the requested protected destination or Dashboard without a profile-completion gate.
+- Existing users return to the requested protected page.
+- Email confirmation, resend, and password recovery are intentionally deferred during active development.
+- Email/password fields support browser autofill, password managers, paste, and password visibility.
+
 ## Profile setup screen
 
-### Field policy recommendation
+### Field policy
 
-Required now:
+- Signup collects only the full name needed to identify the account.
+- Phone number, state, and civil service organisation are optional and may be added later from Account.
+- Optional details never control questions, modules, free practice, or purchased access.
+- Once supplied, candidate-facing UI displays these values as read-only account records.
+- Missing optional fields may still be added without reopening values already supplied.
+- Grade level is not collected or used by the candidate flow.
 
-- Full name if missing
-- Grade level
-- Phone number
+### Legacy route behavior
 
-Optional now:
-
-- Organization or ministry field as one generic text field
-- State
-
-Later:
-
-- Role/title
-- Department split
-- Additional phone
-
-### Reason for recommended reduction
-
-- The current app requires phone, state, grade level, and organization before practice.
-- For future conversion and lower friction, only truly necessary identity fields should block first practice.
-- Grade level may still be required now because the current auth completeness check expects it.
-- Organization and state are useful but do not appear essential for immediate content access.
-
-### Completion behavior
-
-- Save profile
-- Mark onboarding complete
-- Refresh profile in auth context
-- Return user to intended destination
-
-### Validation messages
-
-- Please enter your phone number.
-- Please select your grade level.
-- Please complete the required fields before starting practice.
+- `/profile-setup` redirects safely to `/profile`.
+- It does not force the optional-details form open or block access to the product.
 
 ### Keep it minimal
 
@@ -999,7 +990,7 @@ Show:
 - `Review`: open review history filtered to that batch or latest attempt for that batch
 - `Unlock Full Access`: open access page
 - `Coming Soon`: disabled or open calm info state
-- `Continue`: resume recommended or in-progress session context if session still exists
+- `Continue`: open the recommended practice set; it does not resume an interrupted unsubmitted sitting
 
 ### Module-specific content map
 
@@ -1039,6 +1030,12 @@ Show:
 - Users can jump between questions.
 - Unanswered questions are tracked.
 - Submit should require confirmation.
+- Active practice is intentionally non-resumable after a confirmed exit, reload, or closed tab.
+- Leaving an active practice must show an exit warning where the browser permits it.
+- Confirmed exit clears temporary answers, flags, order, position, and timer without recording an attempt.
+- Switching apps without unloading the page does not exit; the absolute timer continues.
+- Practice set 1 keeps authored question and option order.
+- Practice set 2 onward shuffles questions and options once per new session.
 - Direct URL access must still pass backend access checks.
 - Locked access should show a friendly UI state, never raw RPC error text.
 
@@ -1049,7 +1046,7 @@ Show:
 3. App resolves module and batch context.
 4. App requests batch questions from backend using explicit batch number where available.
 5. User answers questions in any order.
-6. Local session stores temporary state for the in-progress browser session.
+6. The mounted Practice screen holds temporary answers, flags, shuffled order, and timer state in memory only.
 7. User opens question map to jump around.
 8. User submits after confirmation.
 9. Backend stores permanent attempt and returns result summary plus next action.
@@ -1089,6 +1086,15 @@ Show:
 - Redirect to sign-in
 - Preserve intended return target if safe
 - In-progress local answers may be lost unless later autosave is added
+
+## What happens on exit
+
+- The visible Exit action opens a confirmation immediately.
+- Browser back and unload navigation are guarded where browser APIs permit it.
+- Cancelling keeps the current session unchanged.
+- Confirming clears the session and returns to Modules.
+- Reopening starts from question 1 with a fresh timer and, for Practice set 2 onward, a fresh shuffle.
+- No attempt or failure is written until submission succeeds.
 
 # 8. Question Map Flow
 
@@ -1455,8 +1461,10 @@ Show:
 
 ## Edit-profile recommendation
 
-- Allow profile edits later for non-critical fields.
-- Grade level may remain support-managed if the team wants it locked.
+- Treat profile identity and supplied optional details as account records, not general settings.
+- Full name and email are read-only on the Account page.
+- Phone, state, and organisation may be added when missing, but supplied values are not editable in the candidate UI.
+- Corrections to supplied values should be handled through support or an administrative workflow.
 - The UI copy should not say grade level affects question access.
 
 ## Sign out confirmation behavior
@@ -1483,14 +1491,20 @@ Show:
 
 - `Home` opens Dashboard.
 - `Modules` opens dashboard modules anchor or a dedicated modules page later.
-- `Practice` should open the recommended practice destination, not an active in-progress screen by force.
+- `Practice` opens `/practice`, a recommendation launcher that requires an explicit start action.
 - `Review` opens Review History.
 - `Account` opens Profile/Account.
 
 ## Practice-tab recommendation
 
-- If the user has a recommended next batch, `Practice` opens that recommendation.
-- If not, `Practice` opens Modules.
+- `/practice` is a focused Practice Hub, not an automatic timed-session trigger, catalog, or duplicate Dashboard.
+- The hub gives equal prominence to every module the user can currently practise. It must not infer a preferred subject from recent activity or database order.
+- Each usable module shows only its name, completion percentage, and the appropriate Start, Continue, Retry, or Practice Again action. Practice-set numbering stays out of this normal path.
+- Purchased modules may include a quiet `Choose practice set` route to module detail. This is a secondary manual path, not the default journey.
+- If the user has not selected a free module and owns no modules, the hub asks them to choose a module. Every published module offers both `Try free` and `Unlock module`, so free practice is optional rather than a payment prerequisite.
+- Modules that are published but not available to the user appear in a compact `More modules` list with an `Unlock module` action. They do not show progress, descriptions, or practice-set counts.
+- Coming-soon modules do not appear in the Practice Hub. The Modules area remains the catalog and future-availability surface.
+- Free-module selection still requires explicit confirmation, and all existing free and paid access rules remain backend-owned.
 - During an active practice session, bottom nav should be hidden to prevent accidental exits.
 
 ## Screen-level nav rules
@@ -1707,9 +1721,11 @@ Show:
 
 ## User refreshes during practice
 
-- Preserve temporary question set and answers locally if possible.
-- If only question set is cached, reload gracefully and keep access checks intact.
-- A refresh must not create a permanent attempt.
+- The browser should warn before reloading where browser APIs permit it.
+- If the user confirms the reload, discard temporary answers, flags, position, order, and timer.
+- Show a neutral restart state before loading a fresh set; the new timer begins only after `Start again`.
+- Re-run normal access checks and generate a new session when practice restarts.
+- A refresh must never submit or create a permanent attempt.
 
 ## User opens practice URL directly
 
@@ -1793,7 +1809,6 @@ Show:
 - Likely files affected:
   - `src/pages/Landing.jsx`
   - `src/pages/Auth.jsx`
-  - `src/components/AuthPromptModal.jsx`
   - `src/components/ProfileOnboardingModal.jsx`
   - `src/lib/AuthGuards.jsx`
   - `src/lib/AuthContext.jsx`
@@ -1978,8 +1993,7 @@ Show:
 
 # 21. Open Product Decisions
 
-- Should the Practice tab open the recommended batch or the Modules page when there is no active attempt?
-  - Recommendation: open recommended batch when one exists, otherwise Modules.
+- Practice-tab routing is resolved: open the focused Practice Hub, preserve recent-module continuity, never start a timed practice session automatically, and show module choice when no genuine continuity exists.
 - Should bottom nav show during active practice?
   - Recommendation: no.
 - Should users be allowed to submit with unanswered questions?
@@ -2051,9 +2065,8 @@ Landing
 
 ## Contradictions and cleanup notes identified during planning
 
-- Current landing page still uses older free-access language such as `Up to 20 free answers`; this conflicts with the batch-based free-access model.
-- Current landing and profile copy still imply grade-level-scoped practice in places; current product policy says grade level must not control question access.
-- Current profile page says service level affects question pool and review data; current product policy says grade level is identity/reporting data, not a content filter.
+- Resolved: the landing page now uses module-first practice language and direct authentication routes.
+- Resolved: profile and landing copy no longer imply grade-level-scoped practice.
 - Current review page combines Result and Review Detail into one screen; planned flows require a clearer separation.
 - Current app has no dedicated Review History page yet, even though the product should support review from multiple entry points.
 - Current auth redirect preserves pathname only; future redesign should preserve query and hash for precise return flows.

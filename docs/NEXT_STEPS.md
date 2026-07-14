@@ -1,8 +1,8 @@
-# Next Steps — FPS Exam Practice
+# Next Steps — PromotionSure
 
 ## 1. Purpose of This Document
 
-This document defines the next major steps for FPS Exam Practice after completing the batch progression system, authenticated flow wiring, content/admin maturity, and first authenticated UI/UX pass.
+This document defines the next major steps for PromotionSure after completing the batch progression system, authenticated flow wiring, content/admin maturity, and first authenticated UI/UX pass.
 
 The goal is to avoid random development and keep the project moving toward a real usable exam-preparation product.
 

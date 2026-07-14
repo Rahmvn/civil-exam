@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines a reusable content pipeline subsystem for FPS Exam Practice.
+This document defines a reusable content pipeline subsystem for PromotionSure.
 
 The goal is to stop relying on one-off manual cleanup every time a new exam-content file arrives.
 

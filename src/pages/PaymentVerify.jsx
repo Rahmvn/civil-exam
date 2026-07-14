@@ -1,45 +1,86 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { verifyPayment } from "../lib/appApi";
+import { friendlyErrorMessage, logAppError } from "../lib/errors";
 
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState("Checking your payment...");
-  const [verified, setVerified] = useState(false);
   const reference = searchParams.get("reference") ?? searchParams.get("trxref");
+  const [verificationRun, setVerificationRun] = useState(0);
+  const [state, setState] = useState(reference ? "checking" : "missing");
+  const [moduleSlug, setModuleSlug] = useState("");
+  const [message, setMessage] = useState(
+    reference ? "We are confirming your payment with Paystack." : "No payment reference was found in this return link.",
+  );
 
   useEffect(() => {
+    if (!reference) return undefined;
+    let active = true;
+
     async function verify() {
-      if (!reference) {
-        setStatus("No payment reference was found in the return link.");
-        return;
-      }
+      setState("checking");
+      setMessage("We are confirming your payment with Paystack.");
 
       try {
-        await verifyPayment(reference);
-        setVerified(true);
-        setStatus("Payment confirmed. Full access is now active on your account.");
+        const result = await verifyPayment(reference);
+        if (!active) return;
+        setState("success");
+        setModuleSlug(result?.subject_slug ?? "");
+        setMessage(result?.subject_name
+          ? `${result.subject_name} is now unlocked.`
+          : "Your access is now active.");
       } catch (error) {
+        if (!active) return;
         logAppError("Payment verification", error);
-        setStatus(
-          friendlyErrorMessage(error, "We could not confirm payment yet. Please try again shortly."),
-        );
+        setState("unconfirmed");
+        setMessage(friendlyErrorMessage(error, "Your payment has not been confirmed yet. You can check again shortly."));
       }
     }
 
     void verify();
-  }, [reference]);
+    return () => {
+      active = false;
+    };
+  }, [reference, verificationRun]);
+
+  const heading = state === "success"
+    ? "Access unlocked"
+    : state === "missing"
+      ? "Payment reference missing"
+      : state === "unconfirmed"
+        ? "Payment not confirmed yet"
+        : "Checking your payment";
 
   return (
-    <main className="state-shell">
-      <section className="state-card">
-        <p className="eyebrow">Payment check</p>
-        <h1>{verified ? "Access unlocked" : "Verifying payment"}</h1>
-        <p>{status}</p>
-        <Link className="primary-action" to={verified ? "/dashboard" : "/access"}>
-          {verified ? "Go to dashboard" : "Return to access"}
-        </Link>
+    <main className="state-shell payment-verification-page">
+      <section className={`state-card payment-verification-card is-${state}`}>
+        <div className="payment-verification-mark" aria-hidden="true" />
+        <h1>{heading}</h1>
+        <p>{message}</p>
+        {reference && (
+          <div className="payment-verification-reference">
+            <span>Payment reference</span>
+            <code>{reference}</code>
+          </div>
+        )}
+
+        <div className="payment-verification-actions">
+          {state === "success" ? (
+            <>
+              <Link className="primary-action" to={moduleSlug ? `/practice/${moduleSlug}` : "/dashboard#modules"}>Continue practice</Link>
+              <Link className="secondary-action" to="/access">View access</Link>
+            </>
+          ) : state === "unconfirmed" ? (
+            <>
+              <button className="primary-action" onClick={() => setVerificationRun((value) => value + 1)} type="button">Check again</button>
+              <Link className="secondary-action" to="/access">Return to access</Link>
+            </>
+          ) : state === "missing" ? (
+            <Link className="primary-action" to="/access">Return to access</Link>
+          ) : (
+            <button className="primary-action" disabled type="button">Checking...</button>
+          )}
+        </div>
       </section>
     </main>
   );

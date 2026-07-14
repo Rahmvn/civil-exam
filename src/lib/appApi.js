@@ -1,5 +1,6 @@
 import { supabase } from "./supabaseClient";
 import { EXAM_MODULES, NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
+import { readWithPolicy } from "./requestPolicy";
 
 export const DIFFICULTIES = ["easy", "medium", "hard"];
 export const QUESTION_STATUSES = ["draft", "review", "published"];
@@ -19,7 +20,7 @@ function requireData({ data, error }) {
 export { NIGERIA_STATES, SERVICE_LEVELS };
 
 export async function getProfile(userId) {
-  return requireData(
+  return readWithPolicy(`profile:${userId}`, async () => requireData(
     await supabase
       .from("profiles")
       .select(
@@ -27,11 +28,13 @@ export async function getProfile(userId) {
       )
       .eq("id", userId)
       .maybeSingle(),
-  );
+  ));
 }
 
 export async function ensureMyProfile() {
-  const row = requireData(await supabase.rpc("ensure_my_profile"));
+  const row = await readWithPolicy("profile:ensure-mine", async () =>
+    requireData(await supabase.rpc("ensure_my_profile")),
+  );
   return row ?? null;
 }
 
@@ -69,24 +72,48 @@ export async function updateProfile(userId, updates) {
 }
 
 export async function getCandidateSummary() {
-  const rows = requireData(await supabase.rpc("get_candidate_summary"));
+  const rows = await readWithPolicy("candidate-summary", async () =>
+    requireData(await supabase.rpc("get_candidate_summary")),
+  );
   return rows?.[0] ?? null;
 }
 
+export async function getPaymentRecords(limit = 10) {
+  return readWithPolicy(`payment-records:${limit}`, async () => {
+    const rows = ensureArray(requireData(
+      await supabase.rpc("get_payment_history", { requested_limit: limit }),
+    ));
+
+    return rows.map((row) => ({
+      ...row,
+      paystack_reference: row.provider_reference,
+      expires_at: row.access_expires_at,
+    }));
+  });
+}
+
+export async function getModuleAccessCatalog() {
+  return readWithPolicy("module-access-catalog", async () => ensureArray(requireData(
+    await supabase.rpc("get_module_access_catalog"),
+  )));
+}
+
 export async function getSubjects() {
-  const rows = requireData(
+  const rows = await readWithPolicy("subjects", async () => requireData(
     await supabase
       .from("subjects")
       .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
-  );
+  ));
 
   return ensureArray(rows).length > 0 ? rows : EXAM_MODULES;
 }
 
 export async function getModuleProgress() {
-  return ensureArray(requireData(await supabase.rpc("get_module_progress")));
+  return readWithPolicy("module-progress", async () =>
+    ensureArray(requireData(await supabase.rpc("get_module_progress"))),
+  );
 }
 
 export async function getModuleBatchAccess(subjectSlug = null) {
@@ -96,7 +123,9 @@ export async function getModuleBatchAccess(subjectSlug = null) {
     payload.requested_subject_slug = subjectSlug;
   }
 
-  return ensureArray(requireData(await supabase.rpc("get_module_batch_access", payload)));
+  return readWithPolicy(`module-batch-access:${subjectSlug ?? "all"}`, async () =>
+    ensureArray(requireData(await supabase.rpc("get_module_batch_access", payload))),
+  );
 }
 
 export async function getModuleAvailability() {
@@ -111,7 +140,7 @@ export async function getModuleAvailability() {
 }
 
 export async function getRecentAttempts(limit = 6) {
-  return ensureArray(requireData(
+  return readWithPolicy(`recent-attempts:${limit}`, async () => ensureArray(requireData(
     await supabase
       .from("attempts")
       .select(
@@ -119,19 +148,35 @@ export async function getRecentAttempts(limit = 6) {
       )
       .order("started_at", { ascending: false })
       .limit(limit),
-  ));
+  )));
 }
 
 export async function getReviewQueue(limit = 12) {
-  return ensureArray(requireData(await supabase.rpc("get_review_queue", { requested_limit: limit })));
+  return readWithPolicy(`review-queue:${limit}`, async () =>
+    ensureArray(requireData(await supabase.rpc("get_review_queue", { requested_limit: limit }))),
+  );
+}
+
+export async function getQueueAttemptMatches(questionIds = []) {
+  const normalizedIds = [...new Set(questionIds.map(String).filter(Boolean))].sort();
+  if (normalizedIds.length === 0) return [];
+
+  return readWithPolicy(`queue-attempt-matches:${normalizedIds.join(",")}`, async () => ensureArray(requireData(
+    await supabase
+      .from("attempt_answers")
+      .select("attempt_id, question_id, answered_at")
+      .in("question_id", normalizedIds)
+      .order("answered_at", { ascending: false })
+      .limit(100),
+  )));
 }
 
 export async function getAttemptReview(attemptId = null) {
-  return ensureArray(requireData(
+  return readWithPolicy(`attempt-review:${attemptId ?? "latest"}`, async () => ensureArray(requireData(
     await supabase.rpc("get_attempt_review", {
       requested_attempt_id: attemptId,
     }),
-  ));
+  )));
 }
 
 export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber = null }) {
@@ -149,7 +194,10 @@ export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber 
     payload.requested_batch_number = batchNumber;
   }
 
-  return ensureArray(requireData(await supabase.rpc("get_practice_questions", payload)));
+  return readWithPolicy(
+    `practice-questions:${subjectId}:${batchNumber ?? "next"}:${limit ?? "all"}`,
+    async () => ensureArray(requireData(await supabase.rpc("get_practice_questions", payload))),
+  );
 }
 
 export async function startPracticeBatch(subjectSlug, batchNumber = null) {
@@ -184,9 +232,9 @@ export async function submitAttempt({ mode, subjectId, answers, batchNumber = nu
   return rows?.[0] ?? null;
 }
 
-export async function initializePayment() {
+export async function initializePayment(subjectSlug) {
   const { data, error } = await supabase.functions.invoke("initialize-paystack-payment", {
-    body: {},
+    body: { subject_slug: subjectSlug },
   });
 
   if (error) throw error;
@@ -207,12 +255,14 @@ export async function verifyPayment(reference) {
 }
 
 export async function getAdminQuestionCounts() {
-  const rows = requireData(await supabase.rpc("get_admin_question_counts"));
+  const rows = await readWithPolicy("admin-question-counts", async () =>
+    requireData(await supabase.rpc("get_admin_question_counts")),
+  );
   return rows?.[0] ?? { draft_count: 0, review_count: 0, published_count: 0 };
 }
 
 export async function getAdminQuestions() {
-  return requireData(
+  return readWithPolicy("admin-questions", async () => requireData(
     await supabase
       .from("questions")
       .select(
@@ -223,7 +273,7 @@ export async function getAdminQuestions() {
       .order("batch_position", { ascending: true, nullsFirst: false })
       .order("updated_at", { ascending: false })
       .limit(200),
-  );
+  ));
 }
 
 export async function saveQuestion(question, userId) {
@@ -261,7 +311,7 @@ export async function saveQuestion(question, userId) {
 }
 
 export async function getAdminAuditLogs() {
-  return requireData(
+  return readWithPolicy("admin-audit-logs", async () => requireData(
     await supabase
       .from("admin_audit_logs")
       .select(
@@ -269,11 +319,11 @@ export async function getAdminAuditLogs() {
       )
       .order("created_at", { ascending: false })
       .limit(50),
-  );
+  ));
 }
 
 export async function getActivePack() {
-  const rows = requireData(
+  const rows = await readWithPolicy("active-exam-pack", async () => requireData(
     await supabase
       .from("exam_packs")
       .select("id, name, price_kobo, currency, active_until")
@@ -281,7 +331,7 @@ export async function getActivePack() {
       .order("active_from", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1),
-  );
+  ));
 
   return rows?.[0] ?? null;
 }

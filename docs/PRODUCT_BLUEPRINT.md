@@ -1,10 +1,12 @@
-# FPS Exam Practice - Product Blueprint
+# PromotionSure - Product Blueprint
+
+> **Current commercial model:** PromotionSure sells access per module, not one flat all-module package. Users may buy any module they want. The free allowance remains the first practice set of one selected module, with one retry after a failed first attempt. See [Practice Set Access And Progression Policy](./BATCH_ACCESS_AND_PROGRESSION_POLICY.md).
 
 ## 1. Product Summary
 
-FPS Exam Practice is a civil service promotion exam practice platform.
+PromotionSure is a civil service promotion exam practice platform.
 
-The app helps civil servants prepare for promotion examinations by practising structured questions grouped by exam modules. Users can sign up, complete their profile, practise available modules, review their performance, and unlock full access through Paystack payment.
+The app helps civil servants prepare for promotion examinations by practising structured questions grouped by exam modules. Users can sign up, practise available modules, review their performance, and unlock full access through Paystack payment.
 
 This is not a school quiz app, not a flashy SaaS dashboard, and not a general learning marketplace. It should feel official, calm, simple, trustworthy, and exam-focused.
 
@@ -18,11 +20,15 @@ Everything in the app should serve that purpose.
 
 ## 2. Product Name
 
-Working product name:
+Product name:
 
-**FPS Exam Practice**
+**PromotionSure**
 
-FPS may stand for Federal Public Service depending on final branding. The app should avoid overexplaining the name in UI until the final brand direction is confirmed.
+Product descriptor:
+
+**Public Service Promotion Exam Practice**
+
+`PromotionSure` fully replaces the previous working name. Use the product name alone in compact app chrome. Use the descriptor only where a new visitor or a formal document needs immediate context, such as the landing page, authentication, metadata, or payment receipts. Do not introduce alternate taglines or repeat the descriptor throughout signed-in screens.
 
 Tone:
 
@@ -83,15 +89,16 @@ The user profile may contain:
 
 - Full name
 - Email
-- Phone number
-- Grade level
-- Department or organization if needed later
+- Phone number, optionally
+- State, optionally
+- Department or organization, optionally
 - Other relevant exam identity fields
 
 Important:
 
-- Grade level is stored for identity, reporting, and possible future filtering.
-- Grade level must not currently block question access.
+- Optional profile information is managed from Account and is not part of registration.
+- Grade level should not be collected until a defined reporting or personalization feature needs it.
+- Profile information must not block question access.
 
 ### 4.3 Exam Pack
 
@@ -251,7 +258,7 @@ The following flows are considered working and must not be broken casually:
 
 ### 5.1 Authentication
 
-Users can sign in and sign up.
+Users can sign in and sign up with email/password. The interface also supports Google OAuth through `/auth/callback`; the Google provider must be enabled in Supabase before that path works end to end.
 
 ### 5.2 Profile / Onboarding
 
@@ -597,7 +604,10 @@ Practice page should:
 - Use published questions only.
 - Respect access and free-limit rules.
 - Allow small dev batches.
-- Save answers locally during the session.
+- Keep answers in memory only while the active practice screen remains open.
+- Warn before leaving; confirmed exit discards the unsubmitted session and restarts the set next time.
+- After a confirmed reload, show a restart state before creating the fresh session or starting its timer.
+- Shuffle question and option order for Practice set 2 onward while preserving the displayed order in review.
 - Allow the user to move between questions.
 - Submit the attempt safely.
 - Show the current batch number where batch progression is active.
@@ -853,7 +863,7 @@ Admin page should not distract from the main user product.
 
 ## 16. Landing Page Specification
 
-The landing page is for unauthenticated users.
+The landing page is for unauthenticated users. Authenticated users opening the root route go directly to Dashboard.
 
 Purpose:
 
@@ -876,6 +886,15 @@ Suggested sections:
 - FAQ
 - CTA
 
+Implementation direction:
+
+- Use a concise product-led service page rather than a splash page or long-form sales page.
+- Lead with modules and the practice journey, not internal batch policy.
+- Route `Start free practice` directly to signup and `Sign in` directly to login.
+- Do not insert an authentication-choice modal between the CTA and Auth.
+- Do not expose internal release notes, content holds, or unsupported performance claims.
+- Show `2026 edition` once beside module availability and state briefly that later-year editions will be added.
+
 Tone:
 
 - Direct
@@ -885,13 +904,13 @@ Tone:
 
 Example hero copy:
 
-> Prepare for your civil service promotion exam with focused practice questions.
+> Prepare with focused practice, one module at a time.
 >
-> Practise key modules, review your answers, and track your progress before the exam.
+> Choose a module, complete realistic practice, review your answers, and keep improving.
 
 CTA:
 
-**Start practising**
+**Start free practice**
 
 ---
 
@@ -928,7 +947,7 @@ Mobile nav must be compact.
 
 Header:
 
-`FPS Exam Practice      GL 13      Menu`
+`PromotionSure      GL 13      Menu`
 
 or similar.
 
@@ -1346,7 +1365,7 @@ Landing page and final marketing polish should come after the internal app flow 
 
 ## 25. Final Product Direction
 
-FPS Exam Practice should become a simple, trustworthy, paid exam-preparation tool for civil servants.
+PromotionSure should become a simple, trustworthy, paid exam-preparation tool for civil servants.
 
 The strongest version of the app is not the one with the most features.
 

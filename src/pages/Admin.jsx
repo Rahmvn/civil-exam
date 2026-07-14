@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LoadingState } from "../components/LoadingState";
 import {
   DIFFICULTIES,
   QUESTION_STATUSES,
@@ -253,7 +254,7 @@ export default function Admin() {
   }
 
   if (loading) {
-    return <main className="state-shell">Loading admin console...</main>;
+    return <LoadingState fullPage />;
   }
 
   return (

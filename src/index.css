@@ -94,7 +94,7 @@ a {
 .primary-action:hover,
 .secondary-action:hover,
 .nav-chip:hover,
-button:not(.link-button):not(.ghost-button):not(:disabled):hover {
+button:not(.link-button):not(.ghost-button):not(.auth-mode-option):not(.auth-password-toggle):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(:disabled):hover {
   transform: translateY(-1px);
 }
 

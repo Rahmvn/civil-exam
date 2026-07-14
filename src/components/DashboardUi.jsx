@@ -154,17 +154,17 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="eyebrow">Free access</p>
-        <h2 id="free-batch-modal-title">Start your free batch?</h2>
+        <p className="eyebrow">Free practice</p>
+        <h2 id="free-batch-modal-title">{`Use your free practice for ${getModuleDisplayName(subject.name)}?`}</h2>
         <p>
-          This will lock your free access to {getModuleDisplayName(subject.name)}. You&apos;ll be able to practise Batch 1 for free, and you&apos;ll get one retry only if the first attempt fails.
+          You can complete Practice Set 1, with one retry if your first attempt does not pass.
         </p>
         <div className="auth-modal-actions">
           <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
-            {loading ? "Starting..." : "Start free batch"}
+            {loading ? "Starting..." : "Use free practice"}
           </button>
           <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
-            Cancel
+            Not now
           </button>
         </div>
       </section>
@@ -190,13 +190,13 @@ export function SkipAheadConfirmationModal({
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="skip-ahead-modal-title">{`Batch ${recommendedBatchNumber} is recommended first.`}</h2>
+        <h2 id="skip-ahead-modal-title">{`Practice set ${recommendedBatchNumber} is recommended first.`}</h2>
         <div className="auth-modal-actions">
           <button className="primary-action" onClick={onContinue} type="button">
             Continue anyway
           </button>
           <button className="ghost-button" onClick={onGoRecommended} type="button">
-            {`Go to Batch ${recommendedBatchNumber}`}
+            {`Go to practice set ${recommendedBatchNumber}`}
           </button>
         </div>
       </section>

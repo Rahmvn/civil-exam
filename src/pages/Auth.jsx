@@ -1,163 +1,256 @@
 import { useState } from "react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
-import { PublicNav } from "../components/AppFrame";
+import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { BrandLogo } from "../components/BrandLogo";
+import { LoadingState } from "../components/LoadingState";
+import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { buildLocationPath, getSafeReturnTo } from "../lib/navigation";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/useAuth";
 
-function buildRedirectPath(locationLike) {
-  if (!locationLike?.pathname) return "/dashboard";
-  return `${locationLike.pathname}${locationLike.search ?? ""}${locationLike.hash ?? ""}`;
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" className="auth-google-mark" viewBox="0 0 18 18">
+      <path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.614Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.332A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.963 10.706A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.706V4.962H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.038l3.007-2.332Z" />
+      <path fill="#EA4335" d="M9 3.58c1.322 0 2.508.454 3.441 1.346l2.581-2.581C13.464.892 11.426 0 9 0A9 9 0 0 0 .956 4.962l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z" />
+    </svg>
+  );
+}
+
+function getAuthMessage(error, mode) {
+  const message = String(error?.message ?? "").toLowerCase();
+  if (message.includes("invalid login credentials")) return "Email or password is incorrect.";
+  if (message.includes("password") && (message.includes("weak") || message.includes("characters"))) {
+    return "Use a password with at least 8 characters.";
+  }
+  if (message.includes("provider") || message.includes("oauth")) {
+    return "Google sign-in is not available right now. Continue with email instead.";
+  }
+  return friendlyErrorMessage(
+    error,
+    mode === "sign-up"
+      ? "We could not create your account. Check the details and try again."
+      : "We could not sign you in. Please try again.",
+  );
 }
 
 export default function Auth() {
-  const { user } = useAuth();
+  const { loading, user } = useAuth();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [signUpStep, setSignUpStep] = useState(1);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const redirectTo = buildRedirectPath(location.state?.from);
+  const [busyMethod, setBusyMethod] = useState("");
+  const stateReturnTo = location.state?.from ? buildLocationPath(location.state.from) : null;
+  const redirectTo = getSafeReturnTo(searchParams.get("returnTo") || stateReturnTo, "/dashboard");
   const authNotice = location.state?.authMessage ?? "";
+
+  if (loading) {
+    return <LoadingState fullPage />;
+  }
 
   if (user) {
     return <Navigate to={redirectTo} replace />;
   }
 
   function switchMode(nextMode) {
-    setSearchParams({ mode: nextMode });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("mode", nextMode);
+    setSearchParams(nextParams);
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setSignUpStep(1);
+    setMessage("");
+  }
+
+  async function continueWithGoogle() {
+    setBusyMethod("google");
+    setMessage("");
+
+    try {
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("returnTo", redirectTo);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: callbackUrl.toString() },
+      });
+      if (error) throw error;
+    } catch (error) {
+      logAppError("Google auth", error);
+      setMessage(getAuthMessage(error, mode));
+      setBusyMethod("");
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setBusy(true);
+
+    if (mode === "sign-up" && signUpStep === 1) {
+      setMessage("");
+      setSignUpStep(2);
+      return;
+    }
+
+    if (mode === "sign-up" && password !== confirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    setBusyMethod("email");
     setMessage("");
 
     try {
       if (mode === "sign-up") {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
+          options: { data: { full_name: fullName.trim() } },
         });
-
         if (error) throw error;
-
-        if (data.session) {
-          setMessage("Account created. Redirecting to your dashboard.");
-        } else {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (signInError) {
-            setMessage("Check your email to confirm your account, then sign in.");
-          } else {
-            setMessage("Account created. Redirecting to your dashboard.");
-          }
+        if (!data.session) {
+          switchMode("sign-in");
+          setMessage("Account created. Sign in with your email and password to continue.");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
       }
     } catch (error) {
       logAppError("Auth submit", error);
-      setMessage(friendlyErrorMessage(error, "We could not complete that action. Please try again."));
+      setMessage(getAuthMessage(error, mode));
     } finally {
-      setBusy(false);
+      setBusyMethod("");
     }
   }
 
+  const isBusy = Boolean(busyMethod);
+  const isSignUpDetailsStep = mode === "sign-up" && signUpStep === 1;
+  const isSignUpPasswordStep = mode === "sign-up" && signUpStep === 2;
+
+  function updateField(setter, value) {
+    setter(value);
+    if (message) setMessage("");
+  }
+
   return (
-    <main className="marketing-shell">
-      <PublicNav sticky={false} />
+    <main className="auth-page-v2">
+      <Link
+        aria-label={`${BRAND_NAME} ${BRAND_DESCRIPTOR}`}
+        className="auth-page-brand"
+        to="/"
+      >
+        <BrandLogo showDescriptor />
+      </Link>
 
-      <section className="auth-shell auth-shell-phase-one">
-        <section className="auth-layout">
-          <section className="auth-panel auth-panel-phase-one">
-            <div className="auth-copy-stack">
-              <p className="eyebrow">{mode === "sign-up" ? "Create account" : "Sign in"}</p>
-              <h1>{mode === "sign-up" ? "Start with one clear practice path." : "Welcome back."}</h1>
-              <p className="auth-lead-copy">
-                {mode === "sign-up"
-                  ? "Create your account, complete your saved details, and start Batch 1 of one selected module for free."
-                  : "Sign in to continue your batches, review your results, and manage your access."}
-              </p>
-            </div>
+      <section className="auth-card-v2">
+        <div className="auth-mode-switch" aria-label="Authentication mode">
+          <button className={`auth-mode-option ${mode === "sign-in" ? "is-active" : ""}`} onClick={() => switchMode("sign-in")} type="button">Sign in</button>
+          <button className={`auth-mode-option ${mode === "sign-up" ? "is-active" : ""}`} onClick={() => switchMode("sign-up")} type="button">Create account</button>
+        </div>
 
-            {authNotice && <p className="notice">{authNotice}</p>}
+        <header className="auth-card-heading">
+          <h1>{mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
+          <p>{mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
+        </header>
 
-            <form className="stack-form auth-form auth-form-phase-one" onSubmit={handleSubmit}>
+        {authNotice && <p className="auth-inline-notice">{authNotice}</p>}
+
+        {!isSignUpPasswordStep && (
+          <>
+            <button className="auth-google-button" disabled={isBusy} onClick={() => void continueWithGoogle()} type="button">
+              <GoogleMark />
+              <span>{busyMethod === "google" ? "Connecting..." : "Continue with Google"}</span>
+            </button>
+
+            <div className="auth-divider"><span>or continue with email</span></div>
+          </>
+        )}
+
+        <form className="auth-form-v2" onSubmit={handleSubmit}>
+          {isSignUpPasswordStep ? (
+            <>
+              <label>
+                <span>Password</span>
+                <div className="auth-password-field">
+                  <input
+                    autoComplete="new-password"
+                    disabled={isBusy}
+                    minLength={8}
+                    name="password"
+                    onChange={(event) => updateField(setPassword, event.target.value)}
+                    placeholder="Create a password"
+                    required
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                  />
+                  <button className="auth-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <small>Use 8 or more characters.</small>
+              </label>
+              <label>
+                <span>Confirm password</span>
+                <input
+                  autoComplete="new-password"
+                  disabled={isBusy}
+                  minLength={8}
+                  name="confirm-password"
+                  onChange={(event) => updateField(setConfirmPassword, event.target.value)}
+                  placeholder="Enter your password again"
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                />
+              </label>
+            </>
+          ) : (
+            <>
               {mode === "sign-up" && (
                 <label>
-                  Full name
-                  <input
-                    required
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                    placeholder="Your full name"
-                  />
+                  <span>Full name</span>
+                  <input autoComplete="name" disabled={isBusy} name="name" onChange={(event) => updateField(setFullName, event.target.value)} placeholder="Your full name" required value={fullName} />
                 </label>
               )}
               <label>
-                Email
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                />
+                <span>Email address</span>
+                <input autoCapitalize="none" autoComplete="email" disabled={isBusy} inputMode="email" name="email" onChange={(event) => updateField(setEmail, event.target.value)} placeholder="you@example.com" required type="email" value={email} />
               </label>
-              <label>
-                Password
-                <input
-                  required
-                  minLength={6}
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="At least 6 characters"
-                />
-              </label>
-              <button type="submit" disabled={busy}>
-                {busy ? "Please wait..." : mode === "sign-up" ? "Create account" : "Sign in"}
-              </button>
-            </form>
+              {mode === "sign-in" && (
+                <label>
+                  <span>Password</span>
+                  <div className="auth-password-field">
+                    <input autoComplete="current-password" disabled={isBusy} minLength={6} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Your password" required type={showPassword ? "text" : "password"} value={password} />
+                    <button className="auth-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button>
+                  </div>
+                </label>
+              )}
+            </>
+          )}
 
-            {message && <p className="notice">{message}</p>}
+          {message && <p className="auth-form-message" role="alert">{message}</p>}
 
-            <p className="auth-switch-copy">
-              {mode === "sign-up" ? "Already have an account?" : "Don't have an account?"}{" "}
-              <button
-                className="link-button"
-                type="button"
-                onClick={() => switchMode(mode === "sign-up" ? "sign-in" : "sign-up")}
-              >
-                {mode === "sign-up" ? "Sign in" : "Create account"}
-              </button>
-            </p>
-          </section>
-
-          <aside className="auth-side-panel">
-            <p className="eyebrow">Before you continue</p>
-            <h2>{mode === "sign-up" ? "What happens next" : "What you can do here"}</h2>
-            <div className="auth-side-list">
-              <span>Batch 1 of one selected module is available for free.</span>
-              <span>Full access unlocks all currently published batches.</span>
-              <span>Grade level is saved to your account for profile and reporting.</span>
+          {isSignUpPasswordStep ? (
+            <div className="auth-step-actions">
+              <button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button>
+              <button className="auth-email-submit" disabled={isBusy} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button>
             </div>
-          </aside>
-        </section>
+          ) : (
+            <button className="auth-email-submit" disabled={isBusy} type="submit">
+              {busyMethod === "email" ? "Signing in..." : mode === "sign-up" ? "Next" : "Sign in"}
+            </button>
+          )}
+        </form>
+
       </section>
     </main>
   );

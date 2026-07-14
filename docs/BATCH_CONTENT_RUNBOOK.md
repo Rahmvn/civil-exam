@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This runbook defines the standard repeatable workflow for future content batches in FPS Exam Practice.
+This runbook defines the standard repeatable workflow for future content batches in PromotionSure.
 
 Public Financial Management Batch 1 proved that the full lifecycle works:
 

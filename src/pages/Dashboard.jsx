@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
+import { LoadingState } from "../components/LoadingState";
 import {
   AnimatedProgressBar,
   DashboardActionButton,
   FreeBatchConfirmationModal,
   ScoreRing,
 } from "../components/DashboardUi";
-import ProfileOnboardingModal from "../components/ProfileOnboardingModal";
 import {
   getCandidateSummary,
   getModuleBatchAccess,
-  getModuleProgress,
   getRecentAttempts,
   getReviewQueue,
   getSubjects,
@@ -20,47 +19,24 @@ import {
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   FALLBACK_SUBJECTS,
-  formatAccessDate,
   formatAttemptPercent,
   formatDate,
   formatPercent,
   getFirstName,
   getModuleDisplayName,
-  getModuleStatusTone,
   getProgressionRecommendation,
-  getSubjectSlugFromPracticeTarget,
+  isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { useAuth } from "../lib/useAuth";
 
-function getDashboardModuleStatusLine(subjectSlug, liveCount, comingSoonCount) {
-  if (subjectSlug === "current-affairs") {
-    return "Coming soon";
-  }
-
-  if (liveCount > 0 && comingSoonCount > 0) {
-    return `${liveCount} available - ${comingSoonCount} soon`;
-  }
-
-  if (liveCount > 0) {
-    return liveCount === 1 ? "1 available" : `${liveCount} available`;
-  }
-
-  if (comingSoonCount > 0) {
-    return "Coming soon";
-  }
-
-  return "Not available yet";
-}
-
 export default function Dashboard() {
-  const { profile, profileComplete } = useAuth();
+  const { profile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
-  const [progress, setProgress] = useState([]);
   const [moduleBatchAccess, setModuleBatchAccess] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
@@ -68,26 +44,20 @@ export default function Dashboard() {
   const [subjectsNotice, setSubjectsNotice] = useState("");
   const [attemptsNotice, setAttemptsNotice] = useState("");
   const [reviewNotice, setReviewNotice] = useState("");
-  const [onboardingTarget, setOnboardingTarget] = useState(null);
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [startConfirmSubject, setStartConfirmSubject] = useState(null);
   const [startingBatch, setStartingBatch] = useState(false);
   const [ctaError, setCtaError] = useState("");
 
   const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
-    if (showLoading && mountedRef.current) {
-      setLoading(true);
-    }
+    if (showLoading && mountedRef.current) setLoading(true);
 
     const requests = [
       { key: "summary", promise: getCandidateSummary() },
       { key: "subjects", promise: getSubjects() },
-      { key: "progress", promise: getModuleProgress() },
       { key: "batchAccess", promise: getModuleBatchAccess() },
       { key: "attempts", promise: getRecentAttempts(12) },
       { key: "review", promise: getReviewQueue(6) },
     ];
-
     const results = await Promise.allSettled(requests.map((item) => item.promise));
 
     if (!mountedRef.current) return;
@@ -101,12 +71,7 @@ export default function Dashboard() {
           setSubjects(Array.isArray(result.value) ? result.value : []);
           setSubjectsNotice("");
         }
-        if (request.key === "progress") {
-          setProgress(Array.isArray(result.value) ? result.value : []);
-        }
-        if (request.key === "batchAccess") {
-          setModuleBatchAccess(Array.isArray(result.value) ? result.value : []);
-        }
+        if (request.key === "batchAccess") setModuleBatchAccess(Array.isArray(result.value) ? result.value : []);
         if (request.key === "attempts") {
           setAttempts(Array.isArray(result.value) ? result.value : []);
           setAttemptsNotice("");
@@ -127,7 +92,6 @@ export default function Dashboard() {
         setSubjects([]);
         setSubjectsNotice("Modules are not available right now.");
       }
-      if (request.key === "progress") setProgress([]);
       if (request.key === "batchAccess") setModuleBatchAccess([]);
       if (request.key === "attempts") {
         setAttempts([]);
@@ -139,26 +103,18 @@ export default function Dashboard() {
       }
     });
 
-    if (mountedRef.current) {
-      setLoading(false);
-    }
+    if (mountedRef.current) setLoading(false);
   }, []);
 
   useEffect(() => {
     mountedRef.current = true;
     void loadDashboardData();
-
     return () => {
       mountedRef.current = false;
     };
   }, [loadDashboardData]);
 
-  const firstName = getFirstName(profile?.full_name);
   const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
-  const progressBySubject = useMemo(
-    () => Object.fromEntries(progress.map((item) => [item.subject_id, item])),
-    [progress],
-  );
   const batchAccessBySubject = useMemo(() => {
     const grouped = {};
 
@@ -174,91 +130,51 @@ export default function Dashboard() {
 
     return grouped;
   }, [moduleBatchAccess]);
-  const latestAttemptBySubject = useMemo(() => {
-    const map = new Map();
-
-    attempts.forEach((attempt) => {
-      const slug = attempt?.subjects?.slug;
-      if (!slug) return;
-
-      if (!map.has(slug)) {
-        map.set(slug, attempt);
-      }
-    });
-
-    return map;
-  }, [attempts]);
 
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
-  const isPaidUser = Boolean(summary?.has_paid_access);
-  const hasAvailableContent = moduleBatchAccess.some((row) => Number(row.published_question_count ?? 0) > 0);
-  const latestAttempt = attempts[0] ?? null;
+  const unlockedModuleCount = useMemo(() => new Set(
+    moduleBatchAccess
+      .filter((row) => row?.is_paid)
+      .map((row) => row.subject_slug)
+      .filter(Boolean),
+  ).size, [moduleBatchAccess]);
+  const firstName = getFirstName(profile?.full_name);
   const averageScore = attempts.length > 0
     ? Math.round(
-        attempts.reduce((sum, attempt) => sum + Number(attempt.score_percent ?? formatAttemptPercent(attempt) ?? 0), 0)
-        / attempts.length,
+        attempts.reduce(
+          (sum, attempt) => sum + Number(attempt.score_percent ?? formatAttemptPercent(attempt) ?? 0),
+          0,
+        ) / attempts.length,
       )
-    : null;
-  const reviewQueueCount = reviewQueue.length;
+    : 0;
   const previewAttempts = attempts.slice(0, 2);
-  const pendingTarget = location.state?.onboardingTarget ?? null;
-  const activeOnboardingSubjectSlug = getSubjectSlugFromPracticeTarget(onboardingTarget ?? pendingTarget);
-  const onboardingModalOpen = showOnboardingModal || Boolean(pendingTarget);
-  const onboardingNextPath =
-    onboardingTarget === "/access" || pendingTarget === "/access"
-      ? "/access"
-      : "/dashboard#modules";
-
-  useEffect(() => {
-    if (!pendingTarget) return;
-    navigate("/dashboard", { replace: true, state: null });
-  }, [navigate, pendingTarget]);
-
+  const reviewQueueCount = reviewQueue.length;
   useEffect(() => {
     if (loading || location.hash !== "#modules") return;
-
     const target = document.getElementById("modules");
     if (!target) return;
-
-    const frameId = window.requestAnimationFrame(() => {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
+    const frameId = window.requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
     return () => window.cancelAnimationFrame(frameId);
   }, [loading, location.hash]);
 
-  function openOnboardingForPractice(subjectSlug) {
-    setOnboardingTarget(subjectSlug ? `/practice/${subjectSlug}` : "/dashboard#modules");
-    setShowOnboardingModal(true);
-  }
+  function buildModuleAction(subject, rows, progression, completedCount, publishedCount, hasModuleAccess) {
+    const recommendedRow = progression.recommendedRow;
+    const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? recommendedRow;
+    const targetRow = !hasModuleAccess ? batchOneRow : recommendedRow;
+    const batchNumber = Number(targetRow?.batch_number ?? 1);
 
-  function openOnboardingForDashboard() {
-    setOnboardingTarget("/dashboard#modules");
-    setShowOnboardingModal(true);
-  }
-
-  function getBatchPrimaryAction(subject, row) {
-    const batchNumber = Number(row?.batch_number ?? 1);
-
-    if (!profileComplete) {
-      return {
-        label: "Complete account",
-        action: () => openOnboardingForPractice(subject.slug),
-      };
-    }
-
-    if (!row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
+    if (publishedCount === 0 || !targetRow) {
       return { label: "Coming soon", disabled: true };
     }
 
-    if (row.state === "locked_requires_payment" || !row.can_start) {
-      return { label: "Unlock Full Access", to: "/access" };
+    if (hasModuleAccess && completedCount === publishedCount) {
+      return { label: "Practice again", to: `/modules/${subject.slug}` };
     }
 
-    if (!isPaidUser && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
+    if (!hasModuleAccess && !hasSelectedFreeModule && targetRow.reason_code === "free_batch_available") {
       return {
-        label: "Start free batch",
+        label: "Try free",
         action: () => {
           setCtaError("");
           setStartConfirmSubject(subject);
@@ -266,519 +182,92 @@ export default function Dashboard() {
       };
     }
 
-    if (row.state === "completed_failed") {
-      return { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    if (targetRow.state === "locked_requires_payment" || !targetRow.can_start) {
+      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` };
     }
 
-    if (row.state === "completed_passed") {
-      return isPaidUser
-        ? { label: `Retry Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` }
-        : { label: "Unlock Full Access", to: "/access" };
+    if (targetRow.state === "completed_failed") {
+      return { label: "Retry practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
     }
 
-    if (Number(row.attempt_count ?? 0) > 0) {
-      return { label: `Continue Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    if (!hasModuleAccess && targetRow.state === "completed_passed") {
+      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` };
     }
 
-    return { label: `Start Batch ${batchNumber}`, to: `/practice/${subject.slug}?batch=${batchNumber}` };
-  }
-
-  function getRecommendedPrimaryAction(subject, row) {
-    const batchNumber = Number(row?.batch_number ?? 1);
-
-    if (!profileComplete) {
-      return {
-        label: "Complete account",
-        action: () => openOnboardingForPractice(subject.slug),
-      };
-    }
-
-    if (!row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
-      return { label: "Coming soon", disabled: true };
-    }
-
-    if (row.state === "locked_requires_payment" || !row.can_start) {
-      return { label: "Unlock Full Access", to: "/access" };
-    }
-
-    if (!isPaidUser && !hasSelectedFreeModule && batchNumber === 1 && row.reason_code === "free_batch_available") {
-      return {
-        label: "Start practice",
-        action: () => {
-          setCtaError("");
-          setStartConfirmSubject(subject);
-        },
-      };
-    }
-
-    if (row.state === "completed_failed") {
-      return { label: "Retry", to: `/practice/${subject.slug}?batch=${batchNumber}` };
-    }
-
-    if (Number(row.attempt_count ?? 0) > 0) {
+    if (Number(targetRow.attempt_count ?? 0) > 0) {
       return { label: "Continue practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
     }
 
-    return { label: "Start practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+    return {
+      label: subject.slug === freeModuleSlug ? "Continue practice" : "Start practice",
+      to: `/practice/${subject.slug}?batch=${batchNumber}`,
+    };
   }
 
   const moduleCards = subjectsForDisplay.map((subject) => {
-      const subjectProgress = progressBySubject[subject.id] ?? null;
-      const rows = batchAccessBySubject[subject.slug] ?? [];
-      const liveRows = rows.filter((row) => Number(row.published_question_count ?? 0) > 0);
-      const comingSoonRows = rows.filter((row) => row.state === "unavailable_not_published");
-      const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? null;
-      const progression = getProgressionRecommendation(rows, { isPaidUser });
-      const recommendedRow = progression.recommendedRow;
-      const latestSubjectAttempt = latestAttemptBySubject.get(subject.slug) ?? null;
-      const attemptTotal = rows.reduce((sum, row) => sum + Number(row.attempt_count ?? 0), 0);
-      const bestScoreValue = rows.reduce((best, row) => {
-        const value = Number(row.best_score ?? 0);
-        return value > best ? value : best;
-      }, 0);
-      const latestScoreValue = Number(subjectProgress?.last_score_percent ?? 0) || null;
-      const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
-      const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
-      const statusLine = getDashboardModuleStatusLine(subject.slug, liveRows.length, comingSoonRows.length);
-      const statusTone = getModuleStatusTone(subject.slug, liveRows.length, comingSoonRows.length);
-      const isCurrentAffairs = subject.slug === "current-affairs";
-      const isSelectedFreeModule = hasSelectedFreeModule && freeModuleSlug === subject.slug;
-
-      let emphasisText = "Not attempted yet";
-
-      if (bestScoreValue > 0) {
-        emphasisText = `Best score ${formatPercent(bestScoreValue)}`;
-      } else if (latestScoreValue !== null) {
-        emphasisText = `Latest score ${formatPercent(latestScoreValue)}`;
-      } else if (liveRows.length > 0 && passedCount > 0) {
-        emphasisText = `${passedCount} of ${liveRows.length} live batches passed`;
-      } else if (isCurrentAffairs) {
-        emphasisText = "Fact-check hold";
-      }
-
-      let supportText = null;
-
-      if (!isPaidUser && isSelectedFreeModule) {
-        supportText = "Selected free module";
-      } else if (!isPaidUser && hasSelectedFreeModule && liveRows.length > 0) {
-        supportText = "Full access required";
-      } else if (latestSubjectAttempt) {
-        supportText = `Last attempt ${formatDate(latestSubjectAttempt.completed_at ?? latestSubjectAttempt.started_at)}`;
-      }
-
-      let primaryAction;
-
-      if (!profileComplete) {
-        primaryAction = {
-          label: "Complete account",
-          action: openOnboardingForDashboard,
-        };
-      } else if (isCurrentAffairs || (rows.length === 0 && subject.slug !== "public-service-rules" && subject.slug !== "public-financial-management")) {
-        primaryAction = { label: "Coming soon", disabled: true };
-      } else if (isPaidUser) {
-        primaryAction = {
-          label: "Open module",
-          to: `/modules/${subject.slug}`,
-        };
-      } else if (!hasSelectedFreeModule) {
-        if (batchOneRow?.reason_code === "free_batch_available") {
-          primaryAction = {
-            label: "Choose this module",
-            action: () => {
-              setCtaError("");
-              setStartConfirmSubject(subject);
-            },
-          };
-        } else if (liveRows.length > 0) {
-          primaryAction = {
-            label: "Open module",
-            to: `/modules/${subject.slug}`,
-          };
-        } else {
-          primaryAction = { label: "Coming soon", disabled: true };
-        }
-      } else if (isSelectedFreeModule) {
-        primaryAction = getBatchPrimaryAction(subject, batchOneRow ?? recommendedRow);
-      } else if (liveRows.length > 0) {
-        primaryAction = { label: "Unlock Full Access", to: "/access" };
-      } else {
-        primaryAction = { label: "Coming soon", disabled: true };
-      }
-
-      return {
-        subject,
-        displayName: getModuleDisplayName(subject.name),
-        rows,
-        batchOneRow,
-        latestSubjectAttempt,
-        attemptTotal,
-        bestScoreValue: bestScoreValue > 0 ? bestScoreValue : null,
-        progressPercent,
-        statusLine,
-        statusTone,
-        progression,
-        emphasisText,
-        supportText,
-        primaryAction,
-        selectedModuleName: freeModuleSlug === subject.slug ? getModuleDisplayName(subject.name) : null,
-      };
-    });
-
-  const selectedModuleCard = moduleCards.find((card) => card.subject.slug === freeModuleSlug) ?? null;
-  const recommendedModuleCard = (() => {
-    if (!isPaidUser) return null;
-
-    const candidates = moduleCards.filter((card) => card.progression?.hasOpenRecommendation);
-
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    const retryCandidate = candidates.find((card) => card.progression?.kind === "retry");
-    if (retryCandidate) {
-      return retryCandidate;
-    }
-
-    const withAttempts = [...candidates]
-      .filter((card) => card.latestSubjectAttempt)
-      .sort((left, right) => {
-        const leftDate = new Date(left.latestSubjectAttempt?.completed_at ?? left.latestSubjectAttempt?.started_at ?? 0).getTime();
-        const rightDate = new Date(right.latestSubjectAttempt?.completed_at ?? right.latestSubjectAttempt?.started_at ?? 0).getTime();
-        return rightDate - leftDate;
-      });
-
-    return withAttempts[0] ?? candidates[0];
-  })();
-
-  const accessCard = (() => {
-    if (!profileComplete) {
-      return {
-        title: isPaidUser ? "Full access" : "Free access",
-        body: "Complete your account",
-        detail: null,
-        action: {
-          label: "Complete account",
-          action: openOnboardingForDashboard,
-        },
-      };
-    }
-
-    if (isPaidUser) {
-      return {
-        title: "Full access",
-        body: "All published modules are open.",
-        detail: summary?.access_expires_at ? `Access through ${formatAccessDate(summary.access_expires_at)}` : "Choose a module and begin where you want.",
-        action: null,
-      };
-    }
-
-    if (!hasSelectedFreeModule) {
-      return {
-        title: "Free access",
-        body: "One free module available.",
-        detail: "Choose a module and start with the first batch.",
-        action: {
-          label: "View modules",
-          to: "/dashboard#modules",
-        },
-      };
-    }
-
-    const selectedModuleName = selectedModuleCard?.displayName ?? "your selected module";
-    const selectedRow = selectedModuleCard?.batchOneRow ?? null;
-
-    if (selectedRow?.state === "completed_passed") {
-      return {
-        title: "Free access",
-        body: "Your free batch is complete.",
-        detail: `Unlock full access to continue with ${selectedModuleName} and other published modules.`,
-        action: {
-          label: "Unlock Full Access",
-          to: "/access",
-        },
-      };
-    }
-
-    if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
-      return {
-        title: "Free access",
-        body: "One retry is still available.",
-        detail: `${selectedModuleName} is ready when you are.`,
-        action: getBatchPrimaryAction(selectedModuleCard.subject, selectedRow),
-      };
-    }
-
-    if (selectedRow?.state === "completed_failed") {
-      return {
-        title: "Free access",
-        body: "Your free attempts are complete.",
-        detail: `Unlock full access to continue with ${selectedModuleName} and other published modules.`,
-        action: {
-          label: "Unlock Full Access",
-          to: "/access",
-        },
-      };
-    }
-
-    if (selectedRow?.state === "locked_requires_payment") {
-      return {
-        title: "Free access",
-        body: "Your free batch has been used.",
-        detail: `Unlock full access to continue beyond ${selectedModuleName}.`,
-        action: {
-          label: "Unlock Full Access",
-          to: "/access",
-        },
-      };
-    }
+    const rows = batchAccessBySubject[subject.slug] ?? [];
+    const publishedRows = rows.filter(isPublishedBatchRow);
+    const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? null;
+    const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
+    const hasModuleActivity = hasModuleAccess || publishedRows.some((row) =>
+      Number(row?.attempt_count ?? 0) > 0
+      || row?.state === "completed_passed"
+      || row?.state === "completed_failed"
+    );
+    const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
+    const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
+    const progressPercent = publishedRows.length > 0
+      ? Math.round((completedCount / publishedRows.length) * 100)
+      : 0;
+    const isComingSoon = subject.slug === "current-affairs" || publishedRows.length === 0;
+    const primaryAction = isComingSoon
+      ? { label: "Coming soon", disabled: true }
+      : buildModuleAction(subject, rows, progression, completedCount, publishedRows.length, hasModuleAccess);
+    const secondaryAction = hasModuleAccess && publishedRows.length > 0 && completedCount < publishedRows.length
+      ? { label: "Choose another practice set", to: `/modules/${subject.slug}` }
+      : !hasModuleAccess && primaryAction.label !== "Unlock module" && !isComingSoon
+        ? { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` }
+        : null;
 
     return {
-      title: "Free access",
-      body: `${selectedModuleName} is ready.`,
-      detail: "Start with Batch 1 when you are ready.",
-      action: selectedModuleCard
-        ? getBatchPrimaryAction(selectedModuleCard.subject, selectedRow)
-        : {
-            label: "View modules",
-            to: "/dashboard#modules",
-          },
+      subject,
+      displayName: getModuleDisplayName(subject.name),
+      completedCount,
+      publishedCount: publishedRows.length,
+      progressPercent,
+      isComingSoon,
+      isComplete: publishedRows.length > 0 && completedCount === publishedRows.length,
+      hasModuleAccess,
+      showProgress: hasModuleActivity,
+      freePracticeComplete: Boolean(
+        batchOneRow?.state === "completed_passed"
+        || (batchOneRow?.state === "completed_failed" && !batchOneRow?.can_start)
+        || batchOneRow?.reason_code === "free_retry_used_requires_payment"
+        || batchOneRow?.reason_code === "free_batch_passed_requires_payment"
+      ),
+      primaryAction,
+      secondaryAction,
     };
+  });
+
+  const accessCopy = (() => {
+    if (unlockedModuleCount > 0) {
+      return `${unlockedModuleCount} module${unlockedModuleCount === 1 ? "" : "s"} unlocked.`;
+    }
+    if (!hasSelectedFreeModule) return "Begin free or unlock any module.";
+
+    const selectedCard = moduleCards.find((card) => card.subject.slug === freeModuleSlug);
+    if (selectedCard?.freePracticeComplete) return "Your free practice is complete.";
+    return `${selectedCard?.displayName ?? "One module"} selected for free practice.`;
   })();
-
-  const heroStatusLine = (() => {
-    if (!profileComplete) {
-      return "Complete your account to start practice.";
-    }
-
-    if (isPaidUser) {
-      return "Start with the suggested module, or open any published module directly.";
-    }
-
-    if (!isPaidUser && !hasSelectedFreeModule) {
-      return "Choose one module and try the first batch for free.";
-    }
-
-    if (!isPaidUser && hasSelectedFreeModule) {
-      return "Your free module is ready below.";
-    }
-
-    return "";
-  })();
-  const totalAttempts = attempts.length;
-  const averageScoreRounded = averageScore !== null ? Math.round(averageScore) : 0;
-
-  const recommendedAction = (() => {
-    if (!profileComplete) {
-      return {
-        label: "Recommended next step",
-        title: "Complete your account",
-        body: "Finish setup before you start practice.",
-        primaryAction: {
-          label: "Complete account",
-          action: openOnboardingForDashboard,
-        },
-        secondaryAction: null,
-        preview: null,
-      };
-    }
-
-    if (!hasAvailableContent) {
-      return {
-        label: "Recommended next step",
-        title: "Explore modules",
-        body: "Published practice will appear here as soon as it is ready.",
-        primaryAction: {
-          label: "View modules",
-          to: "/dashboard#modules",
-        },
-        secondaryAction: null,
-        preview: null,
-      };
-    }
-
-    if (!isPaidUser && !hasSelectedFreeModule) {
-      return {
-        label: "Recommended next step",
-        title: "Choose a module",
-        body: "Pick one module and try the first batch for free.",
-        primaryAction: {
-          label: "Choose free module",
-          to: "/dashboard#modules",
-        },
-        secondaryAction: null,
-        preview: null,
-      };
-    }
-
-    if (!isPaidUser && selectedModuleCard) {
-      const selectedRow = selectedModuleCard.batchOneRow ?? null;
-      const latestSelectedAttempt = selectedModuleCard.latestSubjectAttempt ?? null;
-
-      if (selectedRow?.state === "available") {
-        return {
-          label: "Recommended next step",
-          title: selectedModuleCard.displayName,
-          body: "Start with Batch 1.",
-          primaryAction: getRecommendedPrimaryAction(selectedModuleCard.subject, selectedRow),
-          secondaryAction: null,
-          preview: null,
-        };
-    }
-
-      if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
-        return {
-          label: "Recommended next step",
-          title: selectedModuleCard.displayName,
-          body: "Retry Batch 1.",
-          primaryAction: getRecommendedPrimaryAction(selectedModuleCard.subject, selectedRow),
-          secondaryAction: latestSelectedAttempt
-            ? { label: "Review latest attempt", to: `/review?attempt=${latestSelectedAttempt.id}` }
-            : null,
-          preview: null,
-        };
-      }
-
-      if (selectedRow?.state === "completed_passed" || selectedRow?.state === "completed_failed") {
-        return {
-          label: "Recommended next step",
-          title: "Unlock Full Access",
-          body: "Your free path is complete. Unlock to continue.",
-          primaryAction: { label: "Unlock Full Access", to: "/access" },
-          secondaryAction: latestSelectedAttempt
-            ? { label: "Review latest attempt", to: `/review?attempt=${latestSelectedAttempt.id}` }
-            : null,
-          preview: null,
-        };
-      }
-    }
-
-    const paidRecommendedModule = recommendedModuleCard;
-    const paidRecommendedRow = paidRecommendedModule?.progression?.recommendedRow ?? null;
-
-    if (isPaidUser && paidRecommendedModule && paidRecommendedRow) {
-      return {
-        label: "Recommended next step",
-        title: paidRecommendedModule.displayName,
-        body: paidRecommendedModule.progression?.kind === "retry"
-          ? `Retry Batch ${paidRecommendedRow.batch_number ?? 1}.`
-          : `Continue with Batch ${paidRecommendedRow.batch_number ?? 1}.`,
-        primaryAction: getRecommendedPrimaryAction(paidRecommendedModule.subject, paidRecommendedRow),
-        secondaryAction: latestAttempt
-          ? { label: "Review latest attempt", to: `/review?attempt=${latestAttempt.id}` }
-          : null,
-        preview: null,
-      };
-    }
-
-    if (latestAttempt) {
-      return {
-        label: "Recommended next step",
-        title: "Review latest attempt",
-        body: "Review it, then decide whether to retry or move forward.",
-        primaryAction: { label: "Review latest attempt", to: `/review?attempt=${latestAttempt.id}` },
-        secondaryAction: {
-          label: "View modules",
-          to: "/dashboard#modules",
-        },
-        preview: null,
-      };
-    }
-
-      return {
-        label: "Recommended next step",
-        title: "Explore modules",
-        body: "Open a module and begin practice from there.",
-        primaryAction: { label: "View modules", to: "/dashboard#modules" },
-        secondaryAction: null,
-        preview: null,
-    };
-  })();
-
-  const recommendedSummary = (() => {
-    if (!profileComplete) {
-      return {
-        title: "Complete your account",
-        meta: "Required before you can start practice.",
-        action: recommendedAction.primaryAction,
-      };
-    }
-
-    if (!hasAvailableContent) {
-      return {
-        title: "Modules coming soon",
-        meta: "Published batches will appear here when ready.",
-        action: recommendedAction.primaryAction,
-      };
-    }
-
-    if (!isPaidUser && !hasSelectedFreeModule) {
-      return {
-        title: "Choose your free module",
-        meta: "Pick one module and start practice there.",
-        action: recommendedAction.primaryAction,
-      };
-    }
-
-    if (!isPaidUser && selectedModuleCard) {
-      const selectedRow = selectedModuleCard.batchOneRow ?? null;
-      const selectedTitle = selectedModuleCard.displayName;
-
-      if (selectedRow?.state === "available") {
-        return {
-          title: selectedTitle,
-          meta: "Start with Batch 1.",
-          action: recommendedAction.primaryAction,
-        };
-      }
-
-      if (selectedRow?.state === "completed_failed" && selectedRow.reason_code === "free_retry_available") {
-        return {
-          title: selectedTitle,
-          meta: "Retry Batch 1.",
-          action: recommendedAction.primaryAction,
-        };
-      }
-
-      if (selectedRow?.state === "completed_passed" || selectedRow?.state === "completed_failed") {
-        return {
-          title: "Unlock Full Access",
-          meta: `${selectedModuleCard.displayName} Batch 1 is complete.`,
-          action: recommendedAction.primaryAction,
-        };
-      }
-    }
-
-    const paidRecommendedModule = recommendedModuleCard;
-    const paidRecommendedRow = paidRecommendedModule?.progression?.recommendedRow ?? null;
-
-    if (isPaidUser && paidRecommendedModule && paidRecommendedRow) {
-      return {
-        title: paidRecommendedModule.displayName,
-        meta: paidRecommendedModule.progression?.kind === "retry"
-          ? `Retry Batch ${paidRecommendedRow.batch_number ?? 1}.`
-          : `Continue with Batch ${paidRecommendedRow.batch_number ?? 1}.`,
-        action: recommendedAction.primaryAction,
-      };
-    }
-
-    if (latestAttempt) {
-      return {
-        title: "Review latest attempt",
-        meta: "Open your most recent submitted batch.",
-        action: recommendedAction.primaryAction,
-      };
-    }
-
-    return {
-      title: recommendedAction.title,
-      meta: recommendedAction.body ?? "",
-      action: recommendedAction.primaryAction,
-    };
-  })();
+  const moduleChoiceCopy = !hasSelectedFreeModule
+    ? "Try one module free, or unlock any module now."
+    : unlockedModuleCount > 0
+      ? "Continue practising or unlock another module."
+      : "Continue your free module or unlock any module.";
 
   async function confirmStartFreeBatch() {
     if (!startConfirmSubject) return;
-
     setStartingBatch(true);
     setCtaError("");
 
@@ -786,170 +275,118 @@ export default function Dashboard() {
       const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
       storePracticeBatch(startConfirmSubject.slug, batch);
       setStartConfirmSubject(null);
-      navigate(`/practice/${startConfirmSubject.slug}?batch=1`, {
-        state: { batchStarted: true },
-      });
+      navigate(`/practice/${startConfirmSubject.slug}?batch=1`, { state: { batchStarted: true } });
     } catch (error) {
-      logAppError(`Dashboard start batch:${startConfirmSubject.slug}`, error);
-      setCtaError(friendlyErrorMessage(error, "We could not start this batch right now."));
+      logAppError(`Dashboard start practice:${startConfirmSubject.slug}`, error);
+      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
       setStartConfirmSubject(null);
     } finally {
       setStartingBatch(false);
     }
   }
 
-  function closeOnboardingModal() {
-    setShowOnboardingModal(false);
-    setOnboardingTarget(null);
-  }
-
   if (loading) {
     return (
-      <main className="state-shell">
-        <section className="state-card page-loading-card">
-          <p>Loading your dashboard...</p>
-        </section>
-      </main>
+      <AppFrame>
+        <LoadingState />
+      </AppFrame>
     );
   }
 
   return (
     <AppFrame>
-      <section className="dashboard-hub dashboard-hub-compact">
-        <section className="dashboard-hero-grid dashboard-hero-grid-compact">
-          <section className="dashboard-hero-copy dashboard-hero-copy-compact">
-            <div className="dashboard-welcome-panel">
-              <div className="dashboard-welcome-copy dashboard-welcome-copy-intro">
-                <h1>{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
-                <div className="dashboard-welcome-meta dashboard-welcome-meta-under">
-                  <span className={`dashboard-access-chip ${isPaidUser ? "is-full" : "is-free"}`}>
-                    {accessCard.title}
-                  </span>
-                </div>
-                {heroStatusLine ? <p className="dashboard-welcome-status">{heroStatusLine}</p> : null}
-              </div>
-
-              <div className="dashboard-hero-summary-panel">
-                <div className="dashboard-hero-summary-metric">
-                  <ScoreRing
-                    value={averageScoreRounded}
-                    label="Average score"
-                    sublabel={totalAttempts > 0 ? `Based on last ${totalAttempts} attempt${totalAttempts === 1 ? "" : "s"}` : "No attempts yet"}
-                    className="dashboard-hero-ring"
-                  />
-                </div>
-
-                <div className="dashboard-hero-summary-copy">
-                  <p className="dashboard-hero-summary-title">{accessCard.body}</p>
-                  {accessCard.detail ? <p className="dashboard-hero-summary-detail">{accessCard.detail}</p> : null}
-                </div>
-              </div>
+      <section className="dashboard-hub dashboard-hub-compact dashboard-module-first">
+        <section className={`dashboard-welcome-panel dashboard-welcome-panel-compact ${attempts.length === 0 ? "without-score" : ""}`.trim()}>
+          <div className="dashboard-welcome-copy dashboard-welcome-copy-intro">
+            <h1>{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
+            <div className="dashboard-welcome-access-line">
+              <span className={`dashboard-access-chip ${unlockedModuleCount > 0 ? "is-full" : "is-free"}`}>
+                {unlockedModuleCount > 0 ? "Module access" : "Free practice available"}
+              </span>
+              <p>{accessCopy}</p>
             </div>
-            {ctaError && <p className="notice error">{ctaError}</p>}
-          </section>
-
-          <aside className="dashboard-summary-stack dashboard-summary-stack-compact">
-            <article className="dashboard-summary-card dashboard-next-card dashboard-next-card-v4">
-              <div className="dashboard-next-header">
-                <span className="dashboard-recommended-pill">Start here</span>
-              </div>
-              <div className="dashboard-next-body">
-                <h2>{recommendedSummary.title}</h2>
-                {recommendedSummary.meta ? <p>{recommendedSummary.meta}</p> : null}
-              </div>
-              <div className="dashboard-action-row dashboard-action-row-compact">
-                <DashboardActionButton action={recommendedSummary.action} />
-                <DashboardActionButton action={recommendedAction.secondaryAction} className="ghost-button dashboard-soft-button" />
-              </div>
-            </article>
-          </aside>
+          </div>
+          {attempts.length > 0 && (
+            <ScoreRing
+              className="dashboard-welcome-score"
+              label="Average score"
+              sublabel={`Based on last ${attempts.length} attempt${attempts.length === 1 ? "" : "s"}`}
+              value={averageScore}
+            />
+          )}
         </section>
+
+        {ctaError && <p className="action-error" role="alert">{ctaError}</p>}
 
         <section className="dashboard-section-block" id="modules">
           <div className="dashboard-section-heading">
             <div className="dashboard-section-heading-copy">
-              <p className="dashboard-section-kicker">Practice modules</p>
               <h2>Modules</h2>
+              <p className="dashboard-module-choice-copy">{moduleChoiceCopy}</p>
             </div>
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}
           </div>
 
           <div className="dashboard-module-grid-v3">
-            {moduleCards.map((card) => {
-              return (
-                <article
-                  className={`module-card-v3 ${recommendedModuleCard?.subject.slug === card.subject.slug ? "is-recommended" : ""}`}
-                  key={card.subject.id}
-                >
-                  <div className="module-card-v3-head">
-                    <div className="module-card-v3-copy">
-                      <h3>{card.displayName}</h3>
-                      <p className="module-card-description">{card.subject.description}</p>
-                    </div>
-                  </div>
+            {moduleCards.map((card) => (
+              <article className={`module-card-v3 module-card-progressive ${card.hasModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
+                <div className="module-card-v3-head">
+                  <h3>{card.displayName}</h3>
+                  {card.hasModuleAccess && !card.isComplete && (
+                    <span className="module-access-state">Unlocked</span>
+                  )}
+                </div>
 
-                  <div className="module-card-status-row">
-                    <span className={`module-status-pill is-${card.statusTone}`}>{card.statusLine}</span>
-                    <span className="module-status-copy">{card.emphasisText}</span>
-                    {card.supportText && <span className="module-status-copy">{card.supportText}</span>}
-                  </div>
-
-                  {card.progressPercent > 0 && (
-                    <div className="module-inline-progress module-inline-progress-plain">
-                      <span className="module-inline-progress-label">
-                        {`${card.progressPercent}% complete`}
-                      </span>
+                <div className={`module-card-progressive-body ${card.showProgress ? "has-progress" : ""}`.trim()}>
+                  {card.isComingSoon ? (
+                    <p className="module-card-availability">Practice for this module is coming soon.</p>
+                  ) : card.showProgress ? (
+                    <div className="module-progress-summary">
+                      <div className="module-progress-summary-copy">
+                        <span>{card.isComplete ? "Completed" : "Module progress"}</span>
+                        <strong>{`${card.completedCount} of ${card.publishedCount} practice sets completed`}</strong>
+                      </div>
                       <AnimatedProgressBar value={card.progressPercent} />
                     </div>
-                  )}
+                  ) : null}
 
-                  <div className="module-card-actions module-card-actions-compact">
-                    <DashboardActionButton action={card.primaryAction} className="dashboard-module-toggle" />
+                  <div className="module-card-actions module-card-actions-progressive">
+                    <DashboardActionButton action={card.primaryAction} />
+                    <DashboardActionButton
+                      action={card.secondaryAction}
+                      className={card.hasModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action"}
+                    />
                   </div>
-                </article>
-              );
-            })}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="dashboard-section-block">
+        {(previewAttempts.length > 0 || attemptsNotice) && <section className="dashboard-section-block">
           <div className="dashboard-section-heading">
-            <div className="dashboard-section-heading-copy">
-              <p className="dashboard-section-kicker">Submitted tests</p>
-              <h2>Recent attempts</h2>
-            </div>
+            <div className="dashboard-section-heading-copy"><h2>Recent attempts</h2></div>
           </div>
 
           <article className="dashboard-panel-card recent-attempts-card">
             {attemptsNotice ? (
               <p className="support-copy">{attemptsNotice}</p>
-            ) : previewAttempts.length === 0 ? (
-              <div className="dashboard-empty-card">
-                <p>Submit a practice batch to see your review history.</p>
-                <Link className="secondary-action" to="/dashboard#modules">
-                  View modules
-                </Link>
-              </div>
             ) : (
               <div className="recent-attempts-list">
                 {previewAttempts.map((attempt) => {
                   const attemptScore = formatPercent(attempt.score_percent ?? formatAttemptPercent(attempt));
-
                   return (
                     <article className="recent-attempt-row" key={attempt.id}>
                       <div className="recent-attempt-copy">
-                        <strong>{`${getModuleDisplayName(attempt.subjects?.name) ?? "Module"} - Batch ${attempt.batch_number ?? 1}`}</strong>
-                        <p>
-                          {[
-                            attemptScore ?? "Score unavailable",
-                            attempt.passed ? "Passed" : "Failed",
-                            formatDate(attempt.completed_at ?? attempt.started_at),
-                          ].join(" - ")}
-                        </p>
+                        <strong>{getModuleDisplayName(attempt.subjects?.name) ?? "Module"}</strong>
+                        <p>{[
+                          `Practice set ${attempt.batch_number ?? 1}`,
+                          attemptScore ?? "Score unavailable",
+                          attempt.passed ? "Passed" : "Not passed",
+                          formatDate(attempt.completed_at ?? attempt.started_at),
+                        ].join(" - ")}</p>
                       </div>
-                      <Link className="ghost-button" to={`/review?attempt=${attempt.id}`}>
-                        Review
-                      </Link>
+                      <Link className="ghost-button" to={`/review?attempt=${attempt.id}`}>Review</Link>
                     </article>
                   );
                 })}
@@ -957,32 +394,13 @@ export default function Dashboard() {
             )}
 
             <div className="dashboard-review-handoff">
-              {previewAttempts.length > 0 && (
-                <Link className="text-link dashboard-inline-link" to="/review">
-                  View all reviews
-                </Link>
-              )}
-              {!reviewNotice && reviewQueueCount > 0 && (
-                <p>{`${reviewQueueCount} review item${reviewQueueCount === 1 ? "" : "s"} waiting in Review.`}</p>
-              )}
+              {previewAttempts.length > 0 && <Link className="text-link dashboard-inline-link" to="/review">View all reviews</Link>}
+              {!reviewNotice && reviewQueueCount > 0 && <p>{`${reviewQueueCount} review item${reviewQueueCount === 1 ? "" : "s"} waiting in Review.`}</p>}
               {reviewNotice && <p>{reviewNotice}</p>}
             </div>
           </article>
-        </section>
+        </section>}
       </section>
-
-      {onboardingModalOpen && (
-        <ProfileOnboardingModal
-          key={activeOnboardingSubjectSlug ?? "dashboard-onboarding"}
-          nextPath={onboardingNextPath}
-          onClose={closeOnboardingModal}
-          onComplete={async () => {
-            await loadDashboardData({ showLoading: false });
-            setShowOnboardingModal(false);
-            setOnboardingTarget(null);
-          }}
-        />
-      )}
 
       <FreeBatchConfirmationModal
         loading={startingBatch}

@@ -122,17 +122,17 @@ export function getLockReason(row, selectedModuleName) {
 
   switch (row.reason_code) {
     case "free_next_batch_requires_payment":
-      return "Later batches require full access.";
+      return "Unlock this module to continue.";
     case "free_different_module_requires_payment":
-      return `Your free batch is already locked to ${selectedModuleName || "another module"}.`;
+      return `Your free practice is already set to ${selectedModuleName || "another module"}.`;
     case "free_batch_passed_requires_payment":
-      return "You passed the free batch. Unlock full access to continue.";
+      return "You passed the free practice set. Unlock this module to continue.";
     case "free_retry_used_requires_payment":
-      return "Your free attempts are complete. Unlock full access to continue.";
+      return "Your free attempts are complete. Unlock this module to continue.";
     case "not_published":
-      return "This batch is not available yet.";
+      return "This practice set is not available yet.";
     case "no_questions":
-      return "Questions for this batch are still being prepared.";
+      return "Questions for this practice set are still being prepared.";
     default:
       return "";
   }
@@ -239,6 +239,43 @@ export function getProgressionRecommendation(rows, { isPaidUser = false } = {}) 
   };
 }
 
+export function getPracticeModuleRecommendation(modules, attempts = []) {
+  const availableModules = (modules ?? []).filter(
+    (module) => !module?.isComingSoon && Number(module?.publishedCount ?? 0) > 0,
+  );
+  const modulesBySlug = new Map(
+    availableModules.map((module) => [module?.subject?.slug, module]),
+  );
+  const recentModules = [];
+  const seenSlugs = new Set();
+
+  (attempts ?? []).forEach((attempt) => {
+    const slug = attempt?.subjects?.slug;
+    const module = modulesBySlug.get(slug);
+
+    if (!module || seenSlugs.has(slug)) return;
+    seenSlugs.add(slug);
+    recentModules.push(module);
+  });
+
+  const mostRecentModule = recentModules[0] ?? null;
+  const recommendedModule =
+    recentModules.find((module) => !module.isComplete) ??
+    availableModules.find((module) => !module.isComplete) ??
+    mostRecentModule ??
+    availableModules[0] ??
+    null;
+
+  return {
+    recommendedModule,
+    mostRecentModule,
+    allComplete:
+      availableModules.length > 0 && availableModules.every((module) => module.isComplete),
+    availableCount: availableModules.length,
+    completedCount: availableModules.filter((module) => module.isComplete).length,
+  };
+}
+
 export function getBatchProgressionGuidance(row, progression, { isPaidUser = false } = {}) {
   const batchNumber = Number(row?.batch_number ?? 0);
   const recommendedBatchNumber = Number(progression?.recommendedBatchNumber ?? 0);
@@ -271,7 +308,7 @@ export function getBatchProgressionGuidance(row, progression, { isPaidUser = fal
     kind,
     isRecommended,
     isSkipAhead,
-    note: isSkipAhead ? `Batch ${recommendedBatchNumber} is recommended first.` : "",
+    note: isSkipAhead ? `Practice set ${recommendedBatchNumber} is recommended first.` : "",
   };
 }
 
@@ -282,5 +319,5 @@ export function buildRecommendedBatchLabel(progression) {
     return "";
   }
 
-  return `Recommended: Batch ${batchNumber}`;
+  return `Recommended: Practice set ${batchNumber}`;
 }
