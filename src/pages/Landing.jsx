@@ -67,14 +67,14 @@ function PracticeExperiencePreview() {
 }
 
 export default function Landing() {
-  const { loading, user } = useAuth();
+  const { isAdmin, loading, user } = useAuth();
 
   if (loading) {
     return <LoadingState fullPage />;
   }
 
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />;
   }
 
   return (

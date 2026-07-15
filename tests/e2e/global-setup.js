@@ -78,8 +78,31 @@ async function resetCandidateData(client, user) {
       organization_name: testDetails?.organizationName ?? null,
       phone_number: testDetails?.phoneNumber ?? null,
       state_code: testDetails?.stateCode ?? null,
+      role: "candidate",
     }).eq("id", user.id),
     `Refresh profile for ${user.email}`,
+  );
+}
+
+async function clearAdminContentFixtures(client) {
+  const modules = requireResult(
+    await client.from("subjects").select("id").like("slug", "e2e-%"),
+    "Find stale admin content fixtures",
+  );
+  const moduleIds = modules.map((module) => module.id);
+  if (moduleIds.length === 0) return;
+
+  requireResult(
+    await client.from("questions").delete().in("subject_id", moduleIds),
+    "Clear admin fixture questions",
+  );
+  requireResult(
+    await client.from("practice_sets").delete().in("subject_id", moduleIds),
+    "Clear admin fixture practice sets",
+  );
+  requireResult(
+    await client.from("subjects").delete().in("id", moduleIds),
+    "Clear admin fixture modules",
   );
 }
 
@@ -138,6 +161,8 @@ export default async function globalSetup() {
     realtime: { transport: WebSocket },
   });
 
+  await clearAdminContentFixtures(client);
+
   const packs = requireResult(
     await client.from("exam_packs").select("id").eq("is_active", true).order("active_from", { ascending: false }).limit(1),
     "Load active exam pack",
@@ -149,11 +174,27 @@ export default async function globalSetup() {
     "Load test modules",
   );
 
+  const adminUser = await findOrCreateUser(client, TEST_USERS.admin);
   const paidUser = await findOrCreateUser(client, TEST_USERS.paid);
   const freeUser = await findOrCreateUser(client, TEST_USERS.free);
+  requireResult(
+    await client.from("profiles").update({
+      full_name: adminUser.user_metadata.full_name,
+      role: "admin",
+    }).eq("id", adminUser.id),
+    "Configure local admin account",
+  );
   await resetCandidateData(client, paidUser);
   await resetCandidateData(client, freeUser);
   await seedPracticeContent(client, packs[0].id, subjects);
+
+  requireResult(
+    await client.from("subjects").update({
+      lifecycle_status: "active",
+      is_active: true,
+    }).in("id", subjects.map((subject) => subject.id)),
+    "Activate published test modules",
+  );
 
   requireResult(
     await client.from("module_offerings").upsert(

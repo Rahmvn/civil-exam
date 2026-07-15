@@ -37,7 +37,7 @@ function getAuthMessage(error, mode) {
 }
 
 export default function Auth() {
-  const { loading, user } = useAuth();
+  const { isAdmin, loading, user } = useAuth();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const mode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
@@ -58,7 +58,7 @@ export default function Auth() {
   }
 
   if (user) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={isAdmin ? "/admin" : redirectTo} replace />;
   }
 
   function switchMode(nextMode) {

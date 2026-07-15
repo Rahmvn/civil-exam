@@ -36,8 +36,21 @@ export default defineConfig({
     url: baseURL,
   },
   projects: [
+    { name: "setup-admin", testMatch: /admin\.setup\.js/ },
     { name: "setup-paid", testMatch: /paid\.setup\.js/ },
     { name: "setup-free", testMatch: /free\.setup\.js/ },
+    {
+      name: "admin-desktop",
+      dependencies: ["setup-admin"],
+      testMatch: /admin\.spec\.js/,
+      use: { ...devices["Desktop Chrome"], storageState: ".playwright-auth/admin.json" },
+    },
+    {
+      name: "admin-mobile",
+      dependencies: ["setup-admin"],
+      testMatch: /admin\.spec\.js/,
+      use: { ...devices["Pixel 5"], storageState: ".playwright-auth/admin.json" },
+    },
     {
       name: "public-desktop",
       testMatch: /public\.spec\.js/,

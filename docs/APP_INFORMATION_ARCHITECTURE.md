@@ -2,6 +2,8 @@
 
 > **Current access model:** Access is purchased per module. The free allowance is Practice Set 1 of one explicitly selected module, with one retry after a failed first attempt. Older references below to pack-wide `full access` are superseded by [Practice Set Access And Progression Policy](./BATCH_ACCESS_AND_PROGRESSION_POLICY.md).
 
+> **Admin architecture:** The protected module and question publishing workflow is defined in [Admin Content Management](./ADMIN_CONTENT_MANAGEMENT.md).
+
 ## 1. Purpose
 
 This document defines the information architecture for the Federal Public Service Promotion Exam app as it exists today and as it should be clarified before future screen-by-screen UI redesign.

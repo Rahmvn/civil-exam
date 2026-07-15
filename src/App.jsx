@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./lib/AuthContext";
-import { RequireAdmin, RequireAuth } from "./lib/AuthGuards";
+import { RequireAdmin, RequireCandidate } from "./lib/AuthGuards";
 import Access from "./pages/Access";
 import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
@@ -33,49 +33,65 @@ const router = createBrowserRouter([
     errorElement: <RouteState isError />,
     children: [
       { path: "/", element: <Landing /> },
-      { path: "/profile-setup", element: <RequireAuth><ProfileSetup /></RequireAuth> },
+      { path: "/profile-setup", element: <RequireCandidate><ProfileSetup /></RequireCandidate> },
       { path: "/practice-preview", element: <PracticePreview /> },
       { path: "/auth", element: <Auth /> },
       { path: "/auth/callback", element: <AuthCallback /> },
       {
         path: "/dashboard",
-        element: <RequireAuth><Dashboard /></RequireAuth>,
+        element: <RequireCandidate><Dashboard /></RequireCandidate>,
       },
-      { path: "/modules", element: <Navigate to="/dashboard#modules" replace /> },
+      { path: "/modules", element: <RequireCandidate><Navigate to="/dashboard#modules" replace /></RequireCandidate> },
       {
         path: "/modules/:subjectSlug",
-        element: <RequireAuth><ModuleDetail /></RequireAuth>,
+        element: <RequireCandidate><ModuleDetail /></RequireCandidate>,
       },
       {
         path: "/practice",
-        element: <RequireAuth><PracticeStart /></RequireAuth>,
+        element: <RequireCandidate><PracticeStart /></RequireCandidate>,
       },
       {
         path: "/practice/:subjectSlug",
-        element: <RequireAuth><Practice /></RequireAuth>,
+        element: <RequireCandidate><Practice /></RequireCandidate>,
       },
       {
         path: "/result",
-        element: <RequireAuth><Result /></RequireAuth>,
+        element: <RequireCandidate><Result /></RequireCandidate>,
       },
       {
         path: "/review",
-        element: <RequireAuth><Review /></RequireAuth>,
+        element: <RequireCandidate><Review /></RequireCandidate>,
       },
       {
         path: "/profile",
-        element: <RequireAuth><Profile /></RequireAuth>,
+        element: <RequireCandidate><Profile /></RequireCandidate>,
       },
       {
         path: "/access",
-        element: <RequireAuth><Access /></RequireAuth>,
+        element: <RequireCandidate><Access /></RequireCandidate>,
       },
       {
         path: "/payment/verify",
-        element: <RequireAuth><PaymentVerify /></RequireAuth>,
+        element: <RequireCandidate><PaymentVerify /></RequireCandidate>,
       },
       {
         path: "/admin",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/activity",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/guide",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/modules/:moduleId",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/modules/:moduleId/sets/:setId",
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
       { path: "*", element: <RouteState /> },

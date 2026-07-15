@@ -4,7 +4,7 @@ import { getSafeReturnTo, withReturnTo } from "../lib/navigation";
 import { useAuth } from "../lib/useAuth";
 
 export default function AuthCallback() {
-  const { loading, user } = useAuth();
+  const { isAdmin, loading, user } = useAuth();
   const [searchParams] = useSearchParams();
   const returnTo = getSafeReturnTo(searchParams.get("returnTo"), "/dashboard");
   const providerError = searchParams.get("error_description") || searchParams.get("error");
@@ -14,7 +14,7 @@ export default function AuthCallback() {
   }
 
   if (user) {
-    return <Navigate to={returnTo} replace />;
+    return <Navigate to={isAdmin ? "/admin" : returnTo} replace />;
   }
 
   return (

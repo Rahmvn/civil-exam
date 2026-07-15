@@ -2,6 +2,8 @@
 
 > **Current commercial model:** PromotionSure sells access per module, not one flat all-module package. Users may buy any module they want. The free allowance remains the first practice set of one selected module, with one retry after a failed first attempt. See [Practice Set Access And Progression Policy](./BATCH_ACCESS_AND_PROGRESSION_POLICY.md).
 
+> **Content operations:** Modules, practice sets, questions, publishing, revisions, and safe archival are defined in [Admin Content Management](./ADMIN_CONTENT_MANAGEMENT.md).
+
 ## 1. Product Summary
 
 PromotionSure is a civil service promotion exam practice platform.

@@ -25,6 +25,32 @@ export function RequireAuth({ children }) {
   return children;
 }
 
+export function RequireCandidate({ children }) {
+  const { isAdmin, loading, user } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoadingState fullPage />;
+  }
+
+  if (!user) {
+    const returnTo = buildLocationPath(location);
+    return (
+      <Navigate
+        to={withReturnTo("/auth?mode=sign-in", returnTo)}
+        replace
+        state={{ authMessage: "Please sign in to continue.", from: location }}
+      />
+    );
+  }
+
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+}
+
 export function RequireAdmin({ children }) {
   const { isAdmin, loading, user } = useAuth();
 

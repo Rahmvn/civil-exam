@@ -1,534 +1,1463 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
+import { AdminGuideView } from "../components/admin/AdminGuideView";
+import { AdminImportPanel } from "../components/admin/AdminImportPanel";
+import { AdminModuleForm } from "../components/admin/AdminModuleForm";
+import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
+import { BrandLogo } from "../components/BrandLogo";
 import { LoadingState } from "../components/LoadingState";
+import "../styles/admin.css";
 import {
-  DIFFICULTIES,
-  QUESTION_STATUSES,
-  SERVICE_LEVELS,
-  getActivePack,
+  archiveAdminQuestion,
+  createAdminModule,
+  createAdminPracticeSet,
+  createAdminQuestionRevision,
+  deleteDraftAdminQuestion,
+  deleteEmptyAdminModule,
+  deleteEmptyAdminPracticeSet,
   getAdminAuditLogs,
-  getAdminQuestionCounts,
+  getAdminContentModules,
+  getAdminPracticeSets,
+  getAdminPracticeSetValidation,
   getAdminQuestions,
-  getSubjects,
-  saveQuestion,
+  importAdminQuestions,
+  publishAdminQuestionRevision,
+  saveAdminQuestion,
+  transitionAdminPracticeSet,
+  updateAdminModule,
+  updateAdminPracticeSet,
+  updateAdminQuestionRevision,
 } from "../lib/appApi";
+import { formatAdminCurrency } from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
-import { useAuth } from "../lib/useAuth";
+import { supabase } from "../lib/supabaseClient";
 
-const blankQuestion = {
-  id: "",
-  exam_pack_id: "",
-  subject_id: "",
-  batch_number: 1,
-  batch_position: "",
-  service_level: "",
-  difficulty: "medium",
-  question_text: "",
-  option_a: "",
-  option_b: "",
-  option_c: "",
-  option_d: "",
-  correct_option: "A",
-  explanation: "",
-  reference_note: "",
-  source_note: "",
-  status: "draft",
+const STATUS_LABELS = {
+  active: "Active",
+  archived: "Archived",
+  coming_soon: "Coming soon",
+  draft: "Draft",
+  published: "Published",
+  retired: "Retired",
+  review: "In review",
 };
 
-function validateQuestion(question) {
-  const requiredFields = [
-    "exam_pack_id",
-    "subject_id",
-    "question_text",
-    "option_a",
-    "option_b",
-    "option_c",
-    "option_d",
-    "correct_option",
+const COUNT_FORMATTER = new Intl.NumberFormat("en-NG");
+
+function statusLabel(status) {
+  return STATUS_LABELS[status] ?? status;
+}
+
+function formatCount(value) {
+  return COUNT_FORMATTER.format(Number(value ?? 0));
+}
+
+function adminErrorMessage(error, fallback) {
+  const rawMessage = String(error?.message ?? error?.details ?? "").trim();
+
+  if (rawMessage.includes("Only an unused draft or review question can be permanently deleted")) {
+    return "This question has candidate history. Apply the latest database update so it can be archived safely instead.";
+  }
+
+  // Business-rule exceptions are deliberately written for administrators.
+  if (error?.code === "P0001" && rawMessage) return rawMessage;
+  return friendlyErrorMessage(error, fallback);
+}
+
+function StatusBadge({ status }) {
+  return <span className={`admin-status admin-status-${status}`}>{statusLabel(status)}</span>;
+}
+
+function AdminChromeIcon({ name }) {
+  const paths = {
+    content: (
+      <>
+        <rect x="5" y="4" width="14" height="16" rx="2" />
+        <path d="M8 8h8" />
+        <path d="M8 12h8" />
+        <path d="M8 16h5" />
+      </>
+    ),
+    activity: (
+      <>
+        <path d="M5 17h14" />
+        <path d="M7 14V9" />
+        <path d="M12 14V6" />
+        <path d="M17 14v-3" />
+      </>
+    ),
+    guide: (
+      <>
+        <path d="M7 5.5A2.5 2.5 0 0 1 9.5 3H19v16h-9.5A2.5 2.5 0 0 0 7 21" />
+        <path d="M7 5.5A2.5 2.5 0 0 0 4.5 3H3v16h1.5A2.5 2.5 0 0 1 7 21" />
+        <path d="M10 7h6" />
+        <path d="M10 11h6" />
+      </>
+    ),
+  };
+
+  return (
+    <span className={`admin-icon admin-icon-${name}`} aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {paths[name]}
+      </svg>
+    </span>
+  );
+}
+
+function AdminSummaryStrip({ items }) {
+  return (
+    <section className="admin-summary-strip" aria-label="Summary">
+      {items.map((item) => (
+        <article className={`admin-summary-item${item.tone ? ` is-${item.tone}` : ""}`} key={item.label}>
+          <span className="admin-summary-item-label">{item.label}</span>
+          <strong className="admin-summary-item-value">{item.value}</strong>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function AdminRail({ currentView, navigate }) {
+  return (
+    <aside className="admin-rail" aria-label="Admin sections">
+      <div className="admin-rail-brand">
+        <BrandLogo />
+      </div>
+
+      <nav className="admin-rail-nav">
+        <button
+          className={`admin-rail-link${currentView === "modules" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin")}
+        >
+          <AdminChromeIcon name="content" />
+          <strong>Content</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "activity" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/activity")}
+        >
+          <AdminChromeIcon name="activity" />
+          <strong>Activity</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "guide" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/guide")}
+        >
+          <AdminChromeIcon name="guide" />
+          <strong>Guide</strong>
+        </button>
+      </nav>
+    </aside>
+  );
+}
+
+function AdminFeedback({ feedback, onDismiss }) {
+  if (!feedback?.message) return null;
+
+  return (
+    <div className={`admin-feedback is-${feedback.tone ?? "info"}`} role={feedback.tone === "error" ? "alert" : "status"}>
+      <span>{feedback.message}</span>
+      <button className="link-button" type="button" onClick={onDismiss}>Dismiss</button>
+    </div>
+  );
+}
+
+function ModuleCatalogue({ modules, onCreate, onManage, onQueryChange, query }) {
+  const [filter, setFilter] = useState("all");
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleModules = modules.filter((module) => {
+    const matchesQuery = !normalizedQuery || module.subject_name.toLowerCase().includes(normalizedQuery);
+    const needsAttention = module.lifecycle_status === "draft"
+      || (module.lifecycle_status === "active" && Number(module.published_set_count) === 0);
+    const matchesFilter = filter === "all"
+      || (filter === "attention" && needsAttention)
+      || (filter === "live" && module.lifecycle_status === "active")
+      || module.lifecycle_status === filter;
+    return matchesQuery && matchesFilter;
+  });
+
+  const counts = {
+    all: modules.length,
+    attention: modules.filter((module) => module.lifecycle_status === "draft"
+      || (module.lifecycle_status === "active" && Number(module.published_set_count) === 0)).length,
+    draft: modules.filter((module) => module.lifecycle_status === "draft").length,
+    live: modules.filter((module) => module.lifecycle_status === "active").length,
+    retired: modules.filter((module) => module.lifecycle_status === "retired").length,
+  };
+
+  return (
+    <>
+      <section className="admin-page-heading">
+        <div>
+          <h1>Content</h1>
+          <p>Manage modules and the practice sets candidates can use.</p>
+        </div>
+        <button type="button" onClick={onCreate}>Create module</button>
+      </section>
+
+      <div className="admin-filter-tabs" aria-label="Filter modules">
+        {[
+          ["all", "All"],
+          ["attention", "Needs attention"],
+          ["draft", "Draft"],
+          ["live", "Live"],
+          ["retired", "Retired"],
+        ].map(([value, label]) => (
+          <button
+            className={`admin-filter-button${filter === value ? " is-active" : ""}`}
+            key={value}
+            type="button"
+            onClick={() => setFilter(value)}
+          >
+            {label} <span>{counts[value]}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="admin-list-toolbar">
+        <label className="admin-inline-search">
+          <span className="sr-only">Search modules</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder="Search modules..."
+          />
+        </label>
+        <select value={filter} onChange={(event) => setFilter(event.target.value)} aria-label="Module status filter">
+          <option value="all">Status: All</option>
+          <option value="live">Status: Active</option>
+          <option value="draft">Status: Draft</option>
+          <option value="attention">Status: Needs attention</option>
+          <option value="retired">Status: Retired</option>
+        </select>
+        <span>{visibleModules.length} modules</span>
+      </div>
+
+      {visibleModules.length === 0 ? (
+        <section className="admin-empty-state">
+          <h2>No matching modules</h2>
+          <p>Try another search or create a new module.</p>
+        </section>
+      ) : (
+        <section className="admin-module-table" aria-label="Modules">
+          <div className="admin-module-table-head" aria-hidden="true">
+            <span>Module</span>
+            <span>Status</span>
+            <span>Practice sets</span>
+            <span>Sales</span>
+            <span>Price</span>
+            <span />
+          </div>
+          {visibleModules.map((module) => (
+            <article className="admin-module-row" key={module.subject_id}>
+              <div className="admin-module-row-name">
+                <strong>{module.subject_name}</strong>
+              </div>
+              <div className="admin-module-row-status"><StatusBadge status={module.lifecycle_status} /></div>
+              <span className="admin-module-metric admin-module-metric-sets">
+                {module.published_set_count} published<span className="admin-secondary-count"> / {module.practice_set_count} total</span>
+              </span>
+              <span className="admin-module-metric admin-module-metric-sales">
+                {module.available_for_purchase ? "On sale" : "Not on sale"}
+              </span>
+              <span className="admin-module-metric admin-module-metric-price">
+                {module.price_kobo ? formatAdminCurrency(module.price_kobo, module.currency) : "Not set"}
+              </span>
+              <button className="admin-row-more" type="button" onClick={() => onManage(module.subject_id)} aria-label={`Open ${module.subject_name}`}>
+                <span aria-hidden="true">...</span>
+              </button>
+            </article>
+          ))}
+        </section>
+      )}
+    </>
+  );
+}
+
+function ModuleWorkspace({
+  module,
+  practiceSets,
+  query,
+  loading,
+  onBack,
+  onCreateSet,
+  onDelete,
+  onEdit,
+  onOpenSet,
+}) {
+  const [showSetCreator, setShowSetCreator] = useState(false);
+  const [expectedCount, setExpectedCount] = useState(module.batch_size ?? 30);
+  const isUnused = Number(module.question_count) === 0
+    && Number(module.attempt_count) === 0
+    && Number(module.payment_count) === 0;
+  const summaryItems = [
+    { label: "Sets", value: formatCount(module.practice_set_count) },
+    { label: "Published sets", value: formatCount(module.published_set_count) },
+    { label: "Total attempts", value: formatCount(module.attempt_count) },
+    { label: "Current access", value: formatCount(module.active_entitlement_count) },
+  ];
+  const normalizedQuery = query.trim().toLowerCase();
+  const visiblePracticeSets = practiceSets.filter((practiceSet) => {
+    if (!normalizedQuery) return true;
+    return `practice set ${practiceSet.set_number}`.toLowerCase().includes(normalizedQuery);
+  });
+
+  return (
+    <>
+      <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+        <button className="admin-breadcrumb-button" type="button" onClick={onBack}>Content</button>
+        <span aria-hidden="true">/</span>
+        <span>{module.subject_name}</span>
+      </nav>
+
+      <section className="admin-module-overview">
+        <div>
+          <div className="admin-inline-status">
+            <StatusBadge status={module.lifecycle_status} />
+            <span>{module.available_for_purchase ? "On sale" : "Not on sale"}</span>
+          </div>
+          <h1>{module.subject_name}</h1>
+          <p>{formatAdminCurrency(module.price_kobo, module.currency)} per module</p>
+        </div>
+        <div className="admin-overview-actions">
+          <button type="button" onClick={() => setShowSetCreator(true)}>Add practice set</button>
+          <button className="ghost-button" type="button" onClick={() => onEdit(module)}>Settings</button>
+        </div>
+      </section>
+
+      <AdminSummaryStrip items={summaryItems} />
+
+      {showSetCreator && (
+        <form
+          className="admin-inline-creator"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onCreateSet(expectedCount, () => setShowSetCreator(false));
+          }}
+        >
+          <div>
+            <h2>Add practice set</h2>
+            <p>The next number is assigned automatically.</p>
+          </div>
+          <label>
+            Questions required
+            <input
+              min="1"
+              max="200"
+              required
+              type="number"
+              value={expectedCount}
+              onChange={(event) => setExpectedCount(event.target.value)}
+            />
+          </label>
+          <div className="admin-inline-actions">
+            <button className="ghost-button" type="button" onClick={() => setShowSetCreator(false)}>Cancel</button>
+            <button type="submit" disabled={loading}>{loading ? "Adding..." : "Add draft set"}</button>
+          </div>
+        </form>
+      )}
+
+      <section className="admin-section-heading">
+        <div>
+          <h2>Practice sets</h2>
+          <p>Open a set to manage its questions and publication status.</p>
+        </div>
+      </section>
+
+      {loading ? (
+        <LoadingState />
+      ) : visiblePracticeSets.length === 0 ? (
+        <section className="admin-empty-state">
+          <h2>No matching practice sets</h2>
+          <p>{practiceSets.length === 0 ? "Use the create action above, then add questions individually or import them." : "Try another search."}</p>
+        </section>
+      ) : (
+        <section className="admin-set-list">
+          {visiblePracticeSets.map((practiceSet) => {
+            const questionCount = Number(practiceSet.active_question_count ?? 0);
+            const expected = Number(practiceSet.expected_question_count ?? 0);
+            const percentage = expected > 0 ? Math.min(100, Math.round((questionCount / expected) * 100)) : 0;
+
+            return (
+              <article key={practiceSet.practice_set_id}>
+                <div className="admin-set-number"><span>Set</span><strong>{practiceSet.set_number}</strong></div>
+                <div className="admin-set-main">
+                  <div className="admin-set-title-row">
+                    <div>
+                      <strong>Practice set {practiceSet.set_number}</strong>
+                      <StatusBadge status={practiceSet.status} />
+                    </div>
+                    <span className={questionCount !== expected ? "needs-attention" : ""}>
+                      {questionCount} of {expected} questions
+                    </span>
+                  </div>
+                  <div className="admin-progress-track" aria-label={`${percentage}% complete`}>
+                    <span style={{ width: `${percentage}%` }} />
+                  </div>
+                  {questionCount !== expected && <small>{expected - questionCount > 0 ? `${expected - questionCount} more needed` : `${questionCount - expected} over the set limit`}</small>}
+                </div>
+                <button className="admin-row-open" type="button" onClick={() => onOpenSet(practiceSet.practice_set_id)}>
+                  Open <span aria-hidden="true">&gt;</span>
+                </button>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
+      <details className="admin-usage-disclosure">
+        <summary>Usage and lifecycle detail</summary>
+        <dl>
+          <div><dt>Total attempts</dt><dd>{module.attempt_count}</dd></div>
+          <div><dt>Current access</dt><dd>{module.active_entitlement_count}</dd></div>
+          <div><dt>Published sets</dt><dd>{module.published_set_count}</dd></div>
+        </dl>
+      </details>
+
+      {isUnused && (
+        <section className="admin-danger-zone">
+          <div>
+            <h2>Unused module</h2>
+            <p>This empty module can be permanently deleted.</p>
+          </div>
+          <button className="admin-danger-button" type="button" onClick={onDelete}>Delete unused module</button>
+        </section>
+      )}
+    </>
+  );
+}
+
+function QuestionPreview({ question, onClose }) {
+  if (!question) return null;
+
+  return (
+    <div className="admin-dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="admin-question-preview" role="dialog" aria-modal="true" aria-labelledby="question-preview-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="admin-editor-heading">
+          <div>
+            <span className="admin-form-step">Candidate preview</span>
+            <h2 id="question-preview-title">Question {question.batch_position}</h2>
+          </div>
+          <button className="link-button" type="button" onClick={onClose}>Close</button>
+        </div>
+        <p className="admin-preview-question">{question.question_text}</p>
+        <div className="admin-preview-options">
+          {["A", "B", "C", "D"].map((option) => (
+            <div className={question.correct_option === option ? "is-answer" : ""} key={option}>
+              <span>{option}</span>
+              <p>{question[`option_${option.toLowerCase()}`]}</p>
+              {question.correct_option === option && <strong>Correct answer</strong>}
+            </div>
+          ))}
+        </div>
+        {question.explanation && (
+          <div className="admin-preview-explanation"><strong>Explanation</strong><p>{question.explanation}</p></div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function PracticeSetWorkspace({
+  module,
+  practiceSet,
+  questions,
+  onQueryChange,
+  query,
+  validation,
+  loading,
+  working,
+  onArchiveQuestion,
+  onBack,
+  onDeleteQuestion,
+  onDeleteSet,
+  onImport,
+  onPublishCorrection,
+  onSaveExpectedCount,
+  onSaveQuestion,
+  onTransition,
+}) {
+  const [editor, setEditor] = useState(null);
+  const [showImporter, setShowImporter] = useState(false);
+  const [previewQuestion, setPreviewQuestion] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("current");
+  const [visibleLimit, setVisibleLimit] = useState(30);
+  const [expectedCount, setExpectedCount] = useState(practiceSet.expected_question_count);
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleQuestions = questions.filter((question) => {
+    const statusMatches = statusFilter === "all"
+      || (statusFilter === "current" && question.status !== "archived")
+      || question.status === statusFilter;
+    const queryMatches = !normalizedQuery || question.question_text.toLowerCase().includes(normalizedQuery);
+    return statusMatches && queryMatches;
+  });
+  const activeQuestions = questions.filter((question) => question.status !== "archived");
+  const shownQuestions = visibleQuestions.slice(0, visibleLimit);
+  const noQuestionsYet = questions.length === 0;
+  const isEmptyDraft = practiceSet.status === "draft" && noQuestionsYet;
+  const nextPosition = activeQuestions.reduce(
+    (highest, question) => Math.max(highest, Number(question.batch_position ?? 0)),
+    0,
+  ) + 1;
+  const canEditSet = ["draft", "review"].includes(practiceSet.status);
+  const readinessLoading = loading || !validation;
+  const readinessReady = Boolean(validation?.ready);
+  const readinessErrors = validation?.errors ?? [];
+  const shouldShowReadinessPanel = readinessLoading
+    || readinessErrors.length > 0
+    || ["review", "published", "archived"].includes(practiceSet.status);
+  const stageGuide = {
+    draft: {
+      label: "Draft set",
+      note: "Add or revise questions before sending the set to review.",
+    },
+    review: {
+      label: "In review",
+      note: "Check readiness errors and publish only when the set is complete.",
+    },
+    published: {
+      label: "Published set",
+      note: "Live content is available to candidates. Use corrections for updates.",
+    },
+    archived: {
+      label: "Archived set",
+      note: "Unavailable for new attempts but still preserved for history.",
+    },
+  }[practiceSet.status] ?? {
+    label: statusLabel(practiceSet.status),
+    note: "Manage this practice set from the current workspace.",
+  };
+  const summaryItems = [
+    { label: "Questions", value: formatCount(practiceSet.active_question_count) },
+    { label: "Target", value: formatCount(practiceSet.expected_question_count) },
+    {
+      label: "Readiness",
+      value: readinessLoading ? "Checking" : readinessReady ? "Ready" : "Blocked",
+      tone: readinessLoading ? undefined : readinessReady ? "success" : "attention",
+    },
   ];
 
-  const missingField = requiredFields.find((field) => !String(question[field] ?? "").trim());
-
-  if (missingField) {
-    return "Question, subject, options A-D, and the correct answer are required.";
-  }
-
-  if (question.status === "published" && !question.explanation.trim()) {
-    return "Published questions must include an explanation.";
-  }
-
-  const batchNumber = Number(question.batch_number);
-  if (!Number.isInteger(batchNumber) || batchNumber < 1) {
-    return "Batch number must be a positive integer.";
-  }
-
-  if (question.batch_position !== "" && question.batch_position !== null) {
-    const batchPosition = Number(question.batch_position);
-    if (!Number.isInteger(batchPosition) || batchPosition < 1) {
-      return "Batch position must be a positive integer when provided.";
+  function editQuestion(question) {
+    if (question.status === "published") {
+      setEditor({ mode: "correction", question });
+    } else if (question.supersedes_question_id) {
+      setEditor({ mode: "correction", question });
+    } else {
+      setEditor({ mode: "question", question });
     }
   }
 
-  return "";
+  if (editor) {
+    const editorTitle = editor.mode === "correction"
+      ? "Question correction"
+      : editor.question
+        ? `Question ${editor.question.batch_position}`
+        : "New question";
+
+    return (
+      <>
+        <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+          <button className="admin-breadcrumb-button" type="button" onClick={onBack}>{module.subject_name}</button>
+          <span aria-hidden="true">/</span>
+          <button className="admin-breadcrumb-button" type="button" onClick={() => setEditor(null)}>Practice set {practiceSet.set_number}</button>
+          <span aria-hidden="true">/</span>
+          <span>{editorTitle}</span>
+        </nav>
+        <section className="admin-editor-workspace">
+          <AdminQuestionForm
+            key={`${editor.mode}:${editor.question?.id ?? "new"}:${nextPosition}`}
+            question={editor.question}
+            mode={editor.mode}
+            nextPosition={nextPosition}
+            practiceSetId={practiceSet.practice_set_id}
+            saving={working}
+            onCancel={() => setEditor(null)}
+            onSubmit={(question) => onSaveQuestion(editor.mode, question, () => setEditor(null))}
+          />
+        </section>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <nav className="admin-breadcrumbs" aria-label="Breadcrumb">
+        <button className="admin-breadcrumb-button" type="button" onClick={onBack}>{module.subject_name}</button>
+        <span aria-hidden="true">/</span>
+        <span>Practice set {practiceSet.set_number}</span>
+      </nav>
+
+      <section className="admin-set-overview">
+        <div>
+          <div className="admin-inline-status">
+            <StatusBadge status={practiceSet.status} />
+            <span>{practiceSet.active_question_count} of {practiceSet.expected_question_count} questions</span>
+          </div>
+          <h1>Practice set {practiceSet.set_number}</h1>
+          <p>{stageGuide.note}</p>
+        </div>
+        <div className="admin-set-actions">
+          {canEditSet && (
+            <>
+              <button type="button" onClick={() => setShowImporter(true)}>Upload questions</button>
+              <button className="ghost-button" type="button" onClick={() => setEditor({ mode: "question", question: null })}>Add one question</button>
+            </>
+          )}
+          {isEmptyDraft && (
+            <button className="admin-danger-link" type="button" onClick={onDeleteSet}>Delete empty set</button>
+          )}
+          {practiceSet.status === "draft" && (
+            <button className="ghost-button" disabled={!validation?.ready || working} type="button" onClick={() => onTransition("review")}>Send for review</button>
+          )}
+          {practiceSet.status === "review" && (
+            <>
+              <button className="ghost-button" disabled={working} type="button" onClick={() => onTransition("draft")}>Return to draft</button>
+              <button disabled={!validation?.ready || working} type="button" onClick={() => onTransition("published")}>Publish set</button>
+            </>
+          )}
+          {practiceSet.status === "published" && (
+            <button className="admin-danger-outline" disabled={working} type="button" onClick={() => onTransition("archived")}>Archive set</button>
+          )}
+        </div>
+      </section>
+
+      <AdminSummaryStrip items={summaryItems} />
+
+      {shouldShowReadinessPanel && (
+        <section className={`admin-readiness${readinessLoading ? " is-pending" : readinessReady ? " is-ready" : " is-blocked"}`}>
+          <div className="admin-readiness-copy">
+            <strong>{readinessLoading ? "Checking readiness" : readinessReady ? "Ready for the next step" : "Needs attention"}</strong>
+            <p className="admin-readiness-hint">
+              {practiceSet.status === "draft" && "Draft sets should pass every readiness check before review."}
+              {practiceSet.status === "review" && "Review sets should be complete and verified before publication."}
+              {practiceSet.status === "published" && "Published sets should use correction revisions instead of direct edits."}
+              {practiceSet.status === "archived" && "Archived sets remain historical records and are not open for new attempts."}
+            </p>
+          </div>
+          <div className="admin-readiness-details">
+            {readinessLoading ? (
+              <p>Loading the latest question count and content checks.</p>
+            ) : readinessErrors.length > 0 ? (
+              <ul>{readinessErrors.map((error) => <li key={error}>{error}</li>)}</ul>
+            ) : (
+              <p>Question count and content checks have passed.</p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {canEditSet && (
+        <details className="admin-set-tools">
+          <summary>Question target</summary>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSaveExpectedCount(expectedCount);
+            }}
+          >
+            <label>
+              Expected questions
+              <input
+                min="1"
+                max="200"
+                required
+                type="number"
+                value={expectedCount}
+                onChange={(event) => setExpectedCount(event.target.value)}
+              />
+            </label>
+            <button className="ghost-button" type="submit" disabled={working || Number(expectedCount) === Number(practiceSet.expected_question_count)}>
+              Save
+            </button>
+          </form>
+        </details>
+      )}
+
+      {!noQuestionsYet && (
+        <section className="admin-question-bank">
+          <div className="admin-question-bank-head">
+            <div>
+              <h2>Questions</h2>
+              <p>{`${Math.min(shownQuestions.length, visibleQuestions.length)} of ${visibleQuestions.length} shown`}</p>
+            </div>
+            {questions.length > 0 && (
+              <div className="admin-question-filters">
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => onQueryChange(event.target.value)}
+                  placeholder="Search questions..."
+                />
+                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                  <option value="current">Current questions</option>
+                  <option value="all">All records</option>
+                  <option value="draft">Draft</option>
+                  <option value="review">In review</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <LoadingState />
+          ) : visibleQuestions.length === 0 ? (
+            <div className="admin-question-empty">
+              <h3>No matching questions</h3>
+              <p>Change the search or status filter.</p>
+            </div>
+          ) : (
+            <div className="admin-question-rows">
+              {shownQuestions.map((question) => (
+                <article className={question.supersedes_question_id ? "is-revision" : ""} key={question.id}>
+                  <div className="admin-question-position">{question.batch_position}</div>
+                  <div className="admin-question-copy">
+                    <div className="admin-question-copy-meta">
+                      {question.status !== "published" && <StatusBadge status={question.status} />}
+                      {question.supersedes_question_id && <span className="admin-revision-label">Correction</span>}
+                      {Number(question.revision_number) > 1 && <span>Revision {question.revision_number}</span>}
+                    </div>
+                    <strong>{question.question_text}</strong>
+                    <small className="admin-question-answer">Correct answer: {question.correct_option}</small>
+                  </div>
+                  <div className="admin-row-actions">
+                    <div className="admin-row-action-group">
+                      <button className="ghost-button admin-row-inspect" type="button" onClick={() => setPreviewQuestion(question)}>Preview</button>
+                      {question.status !== "archived" && (
+                        <button className="link-button admin-row-main-action" type="button" onClick={() => editQuestion(question)}>
+                          {question.status === "published" ? "Correct" : "Edit"}
+                        </button>
+                      )}
+                    </div>
+                    {question.status !== "archived" && (
+                      question.supersedes_question_id && question.status === "review" && (
+                        <button type="button" disabled={working} onClick={() => onPublishCorrection(question.id)}>Publish correction</button>
+                      )
+                    )}
+                    {["draft", "review"].includes(question.status) && !question.supersedes_question_id && (
+                      <button className="admin-danger-link" type="button" disabled={working} onClick={() => onDeleteQuestion(question)}>Remove</button>
+                    )}
+                    {["draft", "review"].includes(question.status) && question.supersedes_question_id && (
+                      <button className="admin-danger-link" type="button" disabled={working} onClick={() => onArchiveQuestion(question)}>Discard</button>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {shownQuestions.length < visibleQuestions.length && (
+            <button className="ghost-button admin-show-more" type="button" onClick={() => setVisibleLimit((current) => current + 30)}>
+              Show 30 more
+            </button>
+          )}
+        </section>
+      )}
+
+      {canEditSet && showImporter && (
+        <div className="admin-dialog-backdrop" role="presentation" onMouseDown={() => setShowImporter(false)}>
+          <section
+            className="admin-module-dialog admin-import-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Upload questions"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <AdminImportPanel
+              presentation="dialog"
+              questions={questions}
+              importing={working}
+              onClose={() => setShowImporter(false)}
+              onImport={onImport}
+            />
+          </section>
+        </div>
+      )}
+
+      <QuestionPreview question={previewQuestion} onClose={() => setPreviewQuestion(null)} />
+    </>
+  );
+}
+
+function activityLabel(value) {
+  return String(value ?? "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function activityTitle(log) {
+  const entity = {
+    module: "Module",
+    practice_set: "Practice set",
+    question: "Question",
+    question_revision: "Question correction",
+  }[log.entity_type] ?? activityLabel(log.entity_type);
+  const action = {
+    ARCHIVE: "archived",
+    CREATE: "created",
+    DELETE: "deleted",
+    IMPORT: "questions imported",
+    PUBLISH: "published",
+    UPDATE: "updated",
+  }[String(log.action).toUpperCase()] ?? String(log.action).replaceAll("_", " ").toLowerCase();
+
+  return action === "questions imported" ? `Questions imported to ${entity.toLowerCase()}` : `${entity} ${action}`;
+}
+
+function activityDetailValue(key, value) {
+  if (key === "price_kobo") return formatAdminCurrency(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined || value === "") return "Not recorded";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function activitySummary(log) {
+  const details = Object.entries(log.metadata ?? {})
+    .filter(([key]) => !key.endsWith("_id"))
+    .slice(0, 2)
+    .map(([key, value]) => `${activityLabel(key)}: ${activityDetailValue(key, value)}`);
+
+  if (details.length > 0) return details.join(" • ");
+  return activityTitle(log);
+}
+
+function ActivityView({ auditLogs, onQueryChange, query }) {
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [selectedLogId, setSelectedLogId] = useState(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const typeOptions = Array.from(new Set(auditLogs.map((log) => String(log.action).toUpperCase()))).sort();
+  const visibleLogs = auditLogs.filter((log) => {
+    const searchable = [log.action, log.entity_type, log.actor?.full_name, log.actor?.email, JSON.stringify(log.metadata)]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    const matchesType = typeFilter === "all" || String(log.action).toUpperCase() === typeFilter;
+    return matchesType && (!normalizedQuery || searchable.includes(normalizedQuery));
+  });
+  const selectedLog = visibleLogs.find((log) => log.id === selectedLogId) ?? visibleLogs[0] ?? null;
+  const selectedDetails = Object.entries(selectedLog?.metadata ?? {})
+    .sort(([firstKey], [secondKey]) => Number(firstKey.endsWith("_id")) - Number(secondKey.endsWith("_id")));
+
+  return (
+    <>
+      <section className="admin-page-heading">
+        <div>
+          <h1>Activity</h1>
+          <p>A record of content and publication changes.</p>
+        </div>
+      </section>
+
+      <section className="admin-activity-board">
+        <div className="admin-list-toolbar">
+          <label className="admin-inline-search">
+            <span className="sr-only">Search activity</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder="Search activity..."
+            />
+          </label>
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Activity filter">
+            <option value="all">All types</option>
+            {typeOptions.map((type) => (
+              <option key={type} value={type}>{activityLabel(type)}</option>
+            ))}
+          </select>
+          <span>{visibleLogs.length} entries</span>
+        </div>
+
+        {visibleLogs.length === 0 ? (
+          <div className="admin-empty-state"><h2>No activity yet</h2><p>Content changes will be recorded here.</p></div>
+        ) : (
+          <>
+            <section className="admin-activity-table" aria-label="Activity log">
+              <div className="admin-activity-table-head" aria-hidden="true">
+                <span>Time</span>
+                <span>User</span>
+                <span>Event</span>
+                <span>Entity</span>
+                <span>Details</span>
+              </div>
+              {visibleLogs.map((log) => (
+                <button
+                  className={`admin-activity-row${selectedLog?.id === log.id ? " is-active" : ""}`}
+                  key={log.id}
+                  type="button"
+                  onClick={() => setSelectedLogId(log.id)}
+                >
+                  <span className="admin-activity-time">
+                    {new Date(log.created_at).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}
+                    <small>{new Date(log.created_at).toLocaleTimeString("en-NG", { hour: "numeric", minute: "2-digit" })}</small>
+                  </span>
+                  <span>{log.actor?.full_name || log.actor?.email || "Admin"}</span>
+                  <span>{activityLabel(log.action)}</span>
+                  <span>{activityLabel(log.entity_type)}</span>
+                  <span>{activitySummary(log)}</span>
+                </button>
+              ))}
+            </section>
+
+            {selectedLog && (
+              <section className="admin-activity-details">
+                <div className="admin-activity-details-head">
+                  <div>
+                    <h2>Event details</h2>
+                    <p>{activityTitle(selectedLog)}</p>
+                  </div>
+                  <span className={`admin-activity-action is-${String(selectedLog.action).toLowerCase()}`}>
+                    {activityLabel(selectedLog.action)}
+                  </span>
+                </div>
+                <dl>
+                  {selectedDetails.map(([key, value]) => (
+                    <div key={key}>
+                      <dt>{activityLabel(key)}</dt>
+                      <dd className={typeof value === "object" ? "is-technical" : undefined}>
+                        {activityDetailValue(key, value)}
+                      </dd>
+                    </div>
+                  ))}
+                  {selectedLog.entity_id && (
+                    <div>
+                      <dt>Record ID</dt>
+                      <dd className="is-technical">{selectedLog.entity_id}</dd>
+                    </div>
+                  )}
+                </dl>
+              </section>
+            )}
+          </>
+        )}
+      </section>
+    </>
+  );
 }
 
 export default function Admin() {
-  const { user } = useAuth();
-  const [pack, setPack] = useState(null);
-  const [subjects, setSubjects] = useState([]);
-  const [counts, setCounts] = useState({ draft_count: 0, review_count: 0, published_count: 0 });
+  const [searchParams] = useSearchParams();
+  const { moduleId: routeModuleId, setId: routeSetId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const selectedModuleId = routeModuleId ?? searchParams.get("module");
+  const selectedSetId = routeSetId ?? searchParams.get("set");
+  const currentView = location.pathname === "/admin/activity" || searchParams.get("view") === "activity"
+    ? "activity"
+    : location.pathname === "/admin/guide" || searchParams.get("view") === "guide"
+      ? "guide"
+      : "modules";
+
+  const [modules, setModules] = useState([]);
+  const [practiceSets, setPracticeSets] = useState([]);
   const [questions, setQuestions] = useState([]);
+  const [validation, setValidation] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [form, setForm] = useState(blankQuestion);
+  const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
+  const [contentSetId, setContentSetId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [sectionLoading, setSectionLoading] = useState(false);
+  const [working, setWorking] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [moduleEditor, setModuleEditor] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [shellSearch, setShellSearch] = useState("");
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [location.pathname]);
+
+  useEffect(() => {
+    let active = true;
+
     async function loadAdmin() {
       try {
-        const [nextPack, nextSubjects, nextCounts, nextQuestions, nextAuditLogs] = await Promise.all([
-          getActivePack(),
-          getSubjects(),
-          getAdminQuestionCounts(),
-          getAdminQuestions(),
+        const [nextModules, nextAuditLogs] = await Promise.all([
+          getAdminContentModules(),
           getAdminAuditLogs(),
         ]);
 
-        setPack(nextPack);
-        setSubjects(nextSubjects);
-        setCounts(nextCounts);
-        setQuestions(nextQuestions);
+        if (!active) return;
+        setModules(nextModules);
         setAuditLogs(nextAuditLogs);
-        setForm((previous) => ({
-          ...previous,
-          exam_pack_id: nextPack?.id ?? "",
-          subject_id: nextSubjects[0]?.id ?? "",
-        }));
       } catch (error) {
-        logAppError("Admin load", error);
-        setMessage(friendlyErrorMessage(error, "We could not load the admin console."));
+        if (!active) return;
+        logAppError("Admin content load", error);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "We could not load the content manager.") });
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     void loadAdmin();
+    return () => { active = false; };
   }, []);
 
-  const selectedSubject = useMemo(
-    () => subjects.find((subject) => subject.id === form.subject_id),
-    [form.subject_id, subjects],
-  );
+  useEffect(() => {
+    let active = true;
 
-  const filteredQuestions = useMemo(() => {
-    if (statusFilter === "all") return questions;
-    return questions.filter((question) => question.status === statusFilter);
-  }, [questions, statusFilter]);
-
-  const moduleSummaries = useMemo(() => {
-    const summaryMap = new Map();
-
-    for (const question of questions) {
-      const subjectName = question.subjects?.name ?? "Unknown module";
-      const subjectSlug = question.subjects?.slug ?? "unknown";
-      const current = summaryMap.get(subjectSlug) ?? {
-        subjectName,
-        subjectSlug,
-        totalQuestions: 0,
-      };
-
-      current.totalQuestions += 1;
-      summaryMap.set(subjectSlug, current);
+    if (!selectedModuleId) {
+      return () => { active = false; };
     }
 
-    return [...summaryMap.values()].sort((a, b) => a.subjectName.localeCompare(b.subjectName));
-  }, [questions]);
+    getAdminPracticeSets(selectedModuleId)
+      .then((rows) => {
+        if (!active) return;
+        setPracticeSets(rows);
+        setPracticeSetsModuleId(selectedModuleId);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin practice sets load", error);
+        setPracticeSets([]);
+        setPracticeSetsModuleId(selectedModuleId);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "We could not load this module's practice sets.") });
+      });
 
-  const batchSummaries = useMemo(() => {
-    const summaryMap = new Map();
+    return () => { active = false; };
+  }, [selectedModuleId]);
 
-    for (const question of questions) {
-      const subjectName = question.subjects?.name ?? "Unknown module";
-      const subjectSlug = question.subjects?.slug ?? "unknown";
-      const batchNumber = Number(question.batch_number ?? 1);
-      const key = `${subjectSlug}::${batchNumber}`;
-      const current = summaryMap.get(key) ?? {
-        subjectName,
-        subjectSlug,
-        batchNumber,
-        totalQuestions: 0,
-        draftCount: 0,
-        reviewCount: 0,
-        publishedCount: 0,
-      };
+  useEffect(() => {
+    let active = true;
 
-      current.totalQuestions += 1;
-      if (question.status === "draft") current.draftCount += 1;
-      if (question.status === "review") current.reviewCount += 1;
-      if (question.status === "published") current.publishedCount += 1;
-      summaryMap.set(key, current);
+    if (!selectedSetId) {
+      return () => { active = false; };
     }
 
-    return [...summaryMap.values()].sort((a, b) =>
-      a.subjectName.localeCompare(b.subjectName) || a.batchNumber - b.batchNumber
-    );
-  }, [questions]);
+    Promise.all([
+      getAdminQuestions(selectedSetId),
+      getAdminPracticeSetValidation(selectedSetId),
+    ])
+      .then(([nextQuestions, nextValidation]) => {
+        if (!active) return;
+        setQuestions(nextQuestions);
+        setValidation(nextValidation);
+        setContentSetId(selectedSetId);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin practice set content load", error);
+        setQuestions([]);
+        setValidation(null);
+        setContentSetId(selectedSetId);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "We could not load this practice set.") });
+      });
 
-  function updateForm(field, value) {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+    return () => { active = false; };
+  }, [selectedSetId]);
+
+  const selectedModule = modules.find((module) => module.subject_id === selectedModuleId) ?? null;
+  const selectedSet = practiceSets.find((practiceSet) => practiceSet.practice_set_id === selectedSetId) ?? null;
+  const moduleContentLoading = Boolean(selectedModuleId && practiceSetsModuleId !== selectedModuleId);
+  const setContentLoading = Boolean(selectedSetId && contentSetId !== selectedSetId);
+  const shellSearchPlaceholder = currentView === "activity"
+    ? "Search activity..."
+    : currentView === "guide"
+      ? "Search guide..."
+      : selectedSet
+        ? "Search questions..."
+        : selectedModule
+          ? "Search practice sets..."
+          : "Search modules...";
+
+  function navigateWithinAdmin(destination) {
+    setShellSearch("");
+    navigate(destination);
   }
 
-  function editQuestion(question) {
-    setForm({
-      id: question.id,
-      exam_pack_id: pack?.id ?? "",
-      subject_id: question.subject_id,
-      batch_number: question.batch_number ?? 1,
-      batch_position: question.batch_position ?? "",
-      service_level: question.service_level ?? "",
-      difficulty: question.difficulty,
-      question_text: question.question_text,
-      option_a: question.option_a,
-      option_b: question.option_b,
-      option_c: question.option_c,
-      option_d: question.option_d,
-      correct_option: question.correct_option,
-      explanation: question.explanation,
-      reference_note: question.reference_note,
-      source_note: question.source_note,
-      status: question.status,
-    });
-    setMessage(`Editing question in ${question.subjects?.name ?? selectedSubject?.name ?? "module"}.`);
+  function reportError(scope, error, fallback) {
+    logAppError(scope, error);
+    setFeedback({ tone: "error", message: adminErrorMessage(error, fallback) });
   }
 
-  function resetForm() {
-    setForm({
-      ...blankQuestion,
-      exam_pack_id: pack?.id ?? "",
-      subject_id: subjects[0]?.id ?? "",
-    });
-    setMessage("");
+  async function refreshModules() {
+    const nextModules = await getAdminContentModules();
+    setModules(nextModules);
+    return nextModules;
   }
 
-  async function reloadAdmin() {
-    const [nextCounts, nextQuestions, nextAuditLogs] = await Promise.all([
-      getAdminQuestionCounts(),
-      getAdminQuestions(),
-      getAdminAuditLogs(),
+  async function refreshPracticeSets(subjectId = selectedModuleId) {
+    if (!subjectId) return [];
+    const nextSets = await getAdminPracticeSets(subjectId);
+    setPracticeSets(nextSets);
+    setPracticeSetsModuleId(subjectId);
+    return nextSets;
+  }
+
+  async function refreshSetContent(setId = selectedSetId) {
+    if (!setId) return;
+    const [nextQuestions, nextValidation] = await Promise.all([
+      getAdminQuestions(setId),
+      getAdminPracticeSetValidation(setId),
     ]);
-
-    setCounts(nextCounts);
     setQuestions(nextQuestions);
-    setAuditLogs(nextAuditLogs);
+    setValidation(nextValidation);
+    setContentSetId(setId);
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setMessage("");
+  async function refreshAudit() {
+    setAuditLogs(await getAdminAuditLogs());
+  }
 
-    const validationMessage = validateQuestion(form);
-
-    if (validationMessage) {
-      setMessage(validationMessage);
-      return;
+  async function handleSaveModule(module) {
+    setWorking(true);
+    try {
+      if (module.subject_id) {
+        await updateAdminModule(module);
+        setFeedback({ tone: "success", message: "Module settings saved." });
+      } else {
+        const created = await createAdminModule(module);
+        setFeedback({ tone: "success", message: `${created.name} was created as a private draft.` });
+      }
+      await Promise.all([refreshModules(), refreshAudit()]);
+      setModuleEditor(null);
+    } catch (error) {
+      reportError("Admin save module", error, "We could not save this module.");
+    } finally {
+      setWorking(false);
     }
+  }
 
-    setSaving(true);
+  async function handleCreateSet(expectedCount, closeCreator) {
+    setSectionLoading(true);
+    try {
+      const createdSet = await createAdminPracticeSet(selectedModuleId, expectedCount);
+      await Promise.all([refreshModules(), refreshPracticeSets(), refreshAudit()]);
+      closeCreator();
+      setFeedback({ tone: "success", message: `Practice set ${createdSet.set_number} was created as a draft.` });
+      navigateWithinAdmin(`/admin/modules/${selectedModuleId}/sets/${createdSet.id}`);
+    } catch (error) {
+      reportError("Admin create practice set", error, "We could not create the practice set.");
+    } finally {
+      setSectionLoading(false);
+    }
+  }
+
+  async function handleSaveQuestion(mode, question, closeEditor) {
+    setWorking(true);
+    try {
+      if (mode === "correction") {
+        if (question.supersedes_question_id) {
+          await updateAdminQuestionRevision(question);
+          setFeedback({ tone: "success", message: "The pending correction was updated." });
+        } else {
+          await createAdminQuestionRevision(question);
+          setFeedback({ tone: "success", message: "Correction saved for review. The live question is unchanged." });
+        }
+      } else {
+        await saveAdminQuestion(question);
+        setFeedback({ tone: "success", message: question.id ? "Question saved." : "Question added to the draft set." });
+      }
+      await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules()]);
+      closeEditor();
+    } catch (error) {
+      reportError("Admin save question", error, "We could not save this question.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleImport(importedQuestions, metadata) {
+    setWorking(true);
+    try {
+      const result = await importAdminQuestions(selectedSetId, importedQuestions, metadata);
+      await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
+      setFeedback({ tone: "success", message: `${result.imported_count} questions were imported into this set.` });
+      return true;
+    } catch (error) {
+      reportError("Admin import questions", error, "The questions were not imported. No partial import was saved.");
+      return false;
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function requestConfirmation(config) {
+    setConfirmDialog(config);
+  }
+
+  async function runConfirmedAction() {
+    if (!confirmDialog?.action) return;
+    setWorking(true);
+    try {
+      await confirmDialog.action();
+      setConfirmDialog(null);
+    } catch (error) {
+      reportError("Admin confirmed action", error, "We could not complete that action.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function handleTransition(status) {
+    const copy = {
+      draft: {
+        title: "Return this set to draft?",
+        body: "Questions will leave review and can be edited again.",
+        label: "Return to draft",
+      },
+      review: {
+        title: "Send this set to review?",
+        body: "All draft questions will be marked ready for final review.",
+        label: "Send to review",
+      },
+      published: {
+        title: "Publish this practice set?",
+        body: "Candidates with module access will be able to start this set immediately. Sales availability will not change.",
+        label: "Publish practice set",
+      },
+      archived: {
+        title: "Archive this practice set?",
+        body: "New attempts will stop immediately. Existing attempt reviews will remain available.",
+        label: "Archive practice set",
+        tone: "danger",
+      },
+    }[status];
+
+    requestConfirmation({
+      ...copy,
+      action: async () => {
+        await transitionAdminPracticeSet(selectedSetId, status);
+        await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
+        setFeedback({
+          tone: "success",
+          message: status === "published"
+            ? "Practice set published. Use module settings when you are ready to change sales availability."
+            : `Practice set ${statusLabel(status).toLowerCase()}.`,
+        });
+      },
+    });
+  }
+
+  function handleDeleteQuestion(question) {
+    requestConfirmation({
+      title: "Remove this question?",
+      body: "It will leave this practice set. If it appears in a past attempt, its historical review will be preserved.",
+      label: "Remove question",
+      tone: "danger",
+      action: async () => {
+        await deleteDraftAdminQuestion(question.id);
+        await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
+        setFeedback({ tone: "success", message: "The question was removed. Historical reviews remain unchanged." });
+      },
+    });
+  }
+
+  function handleArchiveQuestion(question) {
+    requestConfirmation({
+      title: "Discard this correction?",
+      body: "The correction will be archived. The currently published question will not change.",
+      label: "Discard correction",
+      tone: "danger",
+      action: async () => {
+        await archiveAdminQuestion(question.id);
+        await Promise.all([refreshSetContent(), refreshAudit()]);
+        setFeedback({ tone: "success", message: "The pending correction was discarded." });
+      },
+    });
+  }
+
+  function handlePublishCorrection(questionId) {
+    requestConfirmation({
+      title: "Publish this correction?",
+      body: "The corrected version will become live. The previous version will stay attached to historical attempts.",
+      label: "Publish correction",
+      action: async () => {
+        await publishAdminQuestionRevision(questionId);
+        await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshAudit()]);
+        setFeedback({ tone: "success", message: "The correction is now live. Historical reviews were preserved." });
+      },
+    });
+  }
+
+  function handleDeleteModule() {
+    requestConfirmation({
+      title: "Delete this unused module?",
+      body: "The empty module and its inactive price record will be removed permanently.",
+      label: "Delete module",
+      tone: "danger",
+      action: async () => {
+        await deleteEmptyAdminModule(selectedModuleId);
+        await Promise.all([refreshModules(), refreshAudit()]);
+        navigateWithinAdmin("/admin");
+        setFeedback({ tone: "success", message: "The unused module was deleted." });
+      },
+    });
+  }
+
+  function handleDeleteSet() {
+    requestConfirmation({
+      title: "Delete this empty practice set?",
+      body: "The unused set number will be removed permanently.",
+      label: "Delete practice set",
+      tone: "danger",
+      action: async () => {
+        await deleteEmptyAdminPracticeSet(selectedSetId);
+        await Promise.all([refreshPracticeSets(), refreshModules(), refreshAudit()]);
+        navigateWithinAdmin(`/admin/modules/${selectedModuleId}`);
+        setFeedback({ tone: "success", message: "The empty practice set was deleted." });
+      },
+    });
+  }
+
+  async function handleSaveExpectedCount(expectedCount) {
+    setWorking(true);
+    try {
+      await updateAdminPracticeSet(selectedSetId, expectedCount);
+      await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshAudit()]);
+      setFeedback({ tone: "success", message: "Expected question count updated." });
+    } catch (error) {
+      reportError("Admin update practice set", error, "We could not update the expected question count.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleAdminSignOut() {
+    setWorking(true);
+    setFeedback(null);
 
     try {
-      await saveQuestion(form, user.id);
-      await reloadAdmin();
-      resetForm();
-      setMessage("Question saved.");
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/", { replace: true });
     } catch (error) {
-      logAppError("Admin save question", error);
-      setMessage(friendlyErrorMessage(error, "We could not save that question."));
+      reportError("Admin sign out", error, "We could not sign you out. Please try again.");
     } finally {
-      setSaving(false);
+      setWorking(false);
     }
   }
 
-  if (loading) {
-    return <LoadingState fullPage />;
-  }
+  if (loading) return <LoadingState fullPage />;
 
   return (
-    <main className="admin-shell">
-      <header className="practice-topbar">
-        <Link className="text-link" to="/dashboard">
-          Back to dashboard
-        </Link>
-        <span>{pack?.name}</span>
-      </header>
+    <main className="admin-shell admin-content-manager">
+      <div className="admin-workspace">
+        <AdminRail
+          currentView={currentView}
+          navigate={navigateWithinAdmin}
+        />
 
-      <section className="admin-hero premium-hero">
-        <div>
-          <p className="eyebrow">Admin console</p>
-          <h1>Question bank management</h1>
-          <p>
-            Publish clean module-based batch questions with clear explanations and helpful references.
-          </p>
-        </div>
-        <div className="admin-counts">
-          <article>
-            <span>Draft</span>
-            <strong>{counts.draft_count}</strong>
-          </article>
-          <article>
-            <span>Review</span>
-            <strong>{counts.review_count}</strong>
-          </article>
-          <article>
-            <span>Published</span>
-            <strong>{counts.published_count}</strong>
-          </article>
-        </div>
-      </section>
-
-      {message && <p className="notice">{message}</p>}
-
-      <section className="admin-layout">
-        <form className="question-form" onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <label>
-              Module
-              <select value={form.subject_id} onChange={(event) => updateForm("subject_id", event.target.value)}>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Batch number
+        <div className="admin-stage">
+          <header className="admin-topbar">
+            <label className="admin-shell-search">
+              <span className="sr-only">Search current admin view</span>
               <input
-                min="1"
-                type="number"
-                value={form.batch_number}
-                onChange={(event) => updateForm("batch_number", event.target.value)}
+                type="search"
+                value={shellSearch}
+                onChange={(event) => setShellSearch(event.target.value)}
+                placeholder={shellSearchPlaceholder}
               />
             </label>
-            <label>
-              Batch position
-              <input
-                min="1"
-                type="number"
-                value={form.batch_position}
-                onChange={(event) => updateForm("batch_position", event.target.value)}
-                placeholder="Optional"
-              />
-            </label>
-            <label>
-              Service level override
-              <select
-                value={form.service_level}
-                onChange={(event) => updateForm("service_level", event.target.value)}
-              >
-                <option value="">Shared (all eligible candidates)</option>
-                {SERVICE_LEVELS.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Difficulty
-              <select value={form.difficulty} onChange={(event) => updateForm("difficulty", event.target.value)}>
-                {DIFFICULTIES.map((difficulty) => (
-                  <option key={difficulty} value={difficulty}>
-                    {difficulty}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Status
-              <select value={form.status} onChange={(event) => updateForm("status", event.target.value)}>
-                {QUESTION_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label>
-            Question
-            <textarea
-              required
-              rows={4}
-              value={form.question_text}
-              onChange={(event) => updateForm("question_text", event.target.value)}
-              placeholder="Enter the question exactly as candidates should see it"
-            />
-          </label>
-
-          <div className="form-grid">
-            {["a", "b", "c", "d"].map((option) => (
-              <label key={option}>
-                Option {option.toUpperCase()}
-                <input
-                  required
-                  value={form[`option_${option}`]}
-                  onChange={(event) => updateForm(`option_${option}`, event.target.value)}
-                />
-              </label>
-            ))}
-          </div>
-
-          <div className="form-grid">
-            <label>
-              Correct answer
-              <select value={form.correct_option} onChange={(event) => updateForm("correct_option", event.target.value)}>
-                {["A", "B", "C", "D"].map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Reference
-              <input
-                value={form.reference_note}
-                onChange={(event) => updateForm("reference_note", event.target.value)}
-                placeholder="Rule, regulation, book, chapter, or section"
-              />
-            </label>
-            <label>
-              Internal source note
-              <input
-                value={form.source_note}
-                onChange={(event) => updateForm("source_note", event.target.value)}
-                placeholder="Past paper, authoring note, or provenance"
-              />
-            </label>
-          </div>
-
-          <label>
-            Explanation
-            <textarea
-              rows={4}
-              value={form.explanation}
-              onChange={(event) => updateForm("explanation", event.target.value)}
-              placeholder="Explain why the correct option is right"
-            />
-          </label>
-
-          <div className="hero-actions">
-            <button type="submit" disabled={saving}>
-              {saving ? "Saving..." : form.id ? "Update question" : "Save question"}
-            </button>
-            <button className="ghost-button" type="button" onClick={resetForm}>
-              Clear form
-            </button>
-          </div>
-        </form>
-
-        <aside className="admin-question-list">
-          <div className="dashboard-section-head">
-            <div>
-              <p className="eyebrow">Question bank</p>
-              <h2>Latest questions</h2>
+            <div className="admin-topbar-context">
+              <span className="admin-topbar-avatar" aria-hidden="true">A</span>
+              <span className="admin-topbar-label">Admin</span>
+              <button className="admin-signout-button" disabled={working} onClick={() => void handleAdminSignOut()} type="button">
+                {working ? "Please wait" : "Sign out"}
+              </button>
             </div>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="all">All statuses</option>
-              {QUESTION_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-          {filteredQuestions.length === 0 ? (
-            <p>No questions have been entered yet.</p>
-          ) : (
-            filteredQuestions.map((question) => (
-              <article key={question.id}>
-                <div>
-                  <strong>{question.question_text}</strong>
-                  <span>
-                    {question.subjects?.name} · Batch {question.batch_number ?? 1}
-                    {question.batch_position ? ` · Position ${question.batch_position}` : ""}
-                    {question.service_level ? ` · ${question.service_level}` : " · Shared"}
-                    {` · ${question.status}`}
-                  </span>
-                </div>
-                <button className="ghost-button" type="button" onClick={() => editQuestion(question)}>
-                  Edit
-                </button>
-              </article>
-            ))
-          )}
-        </aside>
-      </section>
+          </header>
 
-      <section className="two-column-section">
-        <div>
-          <div className="section-heading">
-            <p className="eyebrow">Batch visibility</p>
-            <h2>Question counts by module and batch</h2>
-          </div>
-          <div className="admin-question-list">
-            {moduleSummaries.map((summary) => (
-              <article key={summary.subjectSlug}>
-                <div>
-                  <strong>{summary.subjectName}</strong>
-                  <span>{summary.totalQuestions} questions</span>
-                </div>
-              </article>
-            ))}
-            {batchSummaries.map((summary) => (
-              <article key={`${summary.subjectSlug}-${summary.batchNumber}`}>
-                <div>
-                  <strong>{`${summary.subjectName} · Batch ${summary.batchNumber}`}</strong>
-                  <span>
-                    {`${summary.totalQuestions} total · ${summary.publishedCount} published · ${summary.reviewCount} review · ${summary.draftCount} draft`}
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
+          <AdminFeedback feedback={feedback} onDismiss={() => setFeedback(null)} />
 
-        <aside className="side-panel">
-          <p className="eyebrow">Audit logs</p>
-          <div className="admin-question-list">
-            {auditLogs.length === 0 ? (
-              <p>No admin activity has been recorded yet.</p>
+          <div className="admin-page">
+            {currentView === "activity" ? (
+              <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
+            ) : currentView === "guide" ? (
+              <AdminGuideView query={shellSearch} />
+            ) : selectedSetId && selectedModule && moduleContentLoading ? (
+              <LoadingState />
+            ) : selectedSetId && selectedModule && !selectedSet ? (
+              <section className="admin-empty-state">
+                <h1>Practice set unavailable</h1>
+                <p>It may have been removed or the link may be out of date.</p>
+                <button type="button" onClick={() => navigateWithinAdmin(`/admin/modules/${selectedModuleId}`)}>Back to module</button>
+              </section>
+            ) : selectedSetId && selectedModule && selectedSet ? (
+              <PracticeSetWorkspace
+                key={`${selectedSet.practice_set_id}:${selectedSet.expected_question_count}`}
+                loading={sectionLoading || setContentLoading}
+                module={selectedModule}
+                practiceSet={selectedSet}
+                questions={questions}
+                onQueryChange={setShellSearch}
+                query={shellSearch}
+                validation={validation}
+                working={working}
+                onArchiveQuestion={handleArchiveQuestion}
+                onBack={() => navigateWithinAdmin(`/admin/modules/${selectedModuleId}`)}
+                onDeleteQuestion={handleDeleteQuestion}
+                onDeleteSet={handleDeleteSet}
+                onImport={handleImport}
+                onPublishCorrection={handlePublishCorrection}
+                onSaveExpectedCount={handleSaveExpectedCount}
+                onSaveQuestion={handleSaveQuestion}
+                onTransition={handleTransition}
+              />
+            ) : selectedModule ? (
+              <ModuleWorkspace
+                key={`${selectedModule.subject_id}:${selectedModule.batch_size}`}
+                loading={sectionLoading || moduleContentLoading}
+                module={selectedModule}
+                practiceSets={practiceSets}
+                query={shellSearch}
+                onBack={() => navigateWithinAdmin("/admin")}
+                onCreateSet={handleCreateSet}
+                onDelete={handleDeleteModule}
+                onEdit={setModuleEditor}
+                onOpenSet={(setId) => navigateWithinAdmin(`/admin/modules/${selectedModuleId}/sets/${setId}`)}
+              />
+            ) : selectedModuleId ? (
+              <section className="admin-empty-state">
+                <h1>Module unavailable</h1>
+                <p>It may have been removed or the link may be out of date.</p>
+                <button type="button" onClick={() => navigateWithinAdmin("/admin")}>Back to content</button>
+              </section>
             ) : (
-              auditLogs.map((log) => (
-                <article key={log.id}>
-                  <div>
-                    <strong>
-                      {log.action} · {log.entity_type}
-                    </strong>
-                    <span>
-                      {log.actor?.email ?? "Unknown admin"}
-                      {log.metadata?.status ? ` · status: ${log.metadata.status}` : ""}
-                    </span>
-                  </div>
-                  <span>{new Date(log.created_at).toLocaleString()}</span>
-                </article>
-              ))
+              <ModuleCatalogue
+                modules={modules}
+                query={shellSearch}
+                onCreate={() => setModuleEditor({})}
+                onManage={(id) => navigateWithinAdmin(`/admin/modules/${id}`)}
+                onQueryChange={setShellSearch}
+              />
             )}
           </div>
-          <p className="eyebrow">Content rule</p>
-          <p>
-            Shared questions are the default pool for all candidates. Use batch numbers and positions
-            to keep progression structured, and only use a service level when you intentionally need
-            an override.
-          </p>
-        </aside>
-      </section>
+        </div>
+      </div>
+
+      {moduleEditor && (
+        <div className="admin-dialog-backdrop" role="presentation" onMouseDown={working ? undefined : () => setModuleEditor(null)}>
+          <section className="admin-module-dialog" role="dialog" aria-modal="true" aria-label={moduleEditor.subject_id ? "Edit module" : "Create module"} onMouseDown={(event) => event.stopPropagation()}>
+            <AdminModuleForm
+              key={moduleEditor.subject_id ?? "new-module"}
+              module={moduleEditor.subject_id ? moduleEditor : null}
+              saving={working}
+              onCancel={() => setModuleEditor(null)}
+              onSubmit={handleSaveModule}
+            />
+          </section>
+        </div>
+      )}
+
+      <AdminConfirmDialog
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title}
+        confirmLabel={confirmDialog?.label}
+        tone={confirmDialog?.tone}
+        busy={working}
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={runConfirmedAction}
+      >
+        <p>{confirmDialog?.body}</p>
+      </AdminConfirmDialog>
     </main>
   );
 }

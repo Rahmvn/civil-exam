@@ -3,7 +3,8 @@ import { EXAM_MODULES, NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
 import { readWithPolicy } from "./requestPolicy";
 
 export const DIFFICULTIES = ["easy", "medium", "hard"];
-export const QUESTION_STATUSES = ["draft", "review", "published"];
+export const QUESTION_STATUSES = ["draft", "review", "published", "archived"];
+export const MODULE_LIFECYCLE_STATUSES = ["draft", "coming_soon", "active", "retired"];
 
 function ensureArray(value) {
   return Array.isArray(value) ? value : [];
@@ -15,6 +16,13 @@ function requireData({ data, error }) {
   }
 
   return data;
+}
+
+async function getAuthenticatedUserId() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (!data.session?.user?.id) throw new Error("Authentication is required.");
+  return data.session.user.id;
 }
 
 export { NIGERIA_STATES, SERVICE_LEVELS };
@@ -140,12 +148,14 @@ export async function getModuleAvailability() {
 }
 
 export async function getRecentAttempts(limit = 6) {
-  return readWithPolicy(`recent-attempts:${limit}`, async () => ensureArray(requireData(
+  const userId = await getAuthenticatedUserId();
+  return readWithPolicy(`recent-attempts:${userId}:${limit}`, async () => ensureArray(requireData(
     await supabase
       .from("attempts")
       .select(
         "id, mode, score, total_questions, completed_at, started_at, service_level, batch_number, score_percent, passed, retry_number, subjects(name, slug)",
       )
+      .eq("user_id", userId)
       .order("started_at", { ascending: false })
       .limit(limit),
   )));
@@ -161,10 +171,12 @@ export async function getQueueAttemptMatches(questionIds = []) {
   const normalizedIds = [...new Set(questionIds.map(String).filter(Boolean))].sort();
   if (normalizedIds.length === 0) return [];
 
-  return readWithPolicy(`queue-attempt-matches:${normalizedIds.join(",")}`, async () => ensureArray(requireData(
+  const userId = await getAuthenticatedUserId();
+  return readWithPolicy(`queue-attempt-matches:${userId}:${normalizedIds.join(",")}`, async () => ensureArray(requireData(
     await supabase
       .from("attempt_answers")
       .select("attempt_id, question_id, answered_at")
+      .eq("user_id", userId)
       .in("question_id", normalizedIds)
       .order("answered_at", { ascending: false })
       .limit(100),
@@ -261,53 +273,153 @@ export async function getAdminQuestionCounts() {
   return rows?.[0] ?? { draft_count: 0, review_count: 0, published_count: 0 };
 }
 
-export async function getAdminQuestions() {
-  return readWithPolicy("admin-questions", async () => requireData(
-    await supabase
+export async function getAdminQuestions(practiceSetId = null) {
+  return readWithPolicy(`admin-questions:${practiceSetId ?? "all"}`, async () => {
+    let request = supabase
       .from("questions")
       .select(
-        "id, question_text, service_level, difficulty, status, explanation, reference_note, source_note, option_a, option_b, option_c, option_d, correct_option, subject_id, batch_number, batch_position, subjects(name, slug)",
-      )
+        "id, exam_pack_id, practice_set_id, question_text, service_level, difficulty, status, explanation, reference_note, source_note, option_a, option_b, option_c, option_d, correct_option, subject_id, batch_number, batch_position, supersedes_question_id, revision_number, created_at, updated_at, subjects(name, slug)",
+      );
+
+    if (practiceSetId) {
+      request = request.eq("practice_set_id", practiceSetId);
+    }
+
+    return requireData(await request
       .order("subject_id", { ascending: true })
       .order("batch_number", { ascending: true })
       .order("batch_position", { ascending: true, nullsFirst: false })
-      .order("updated_at", { ascending: false })
-      .limit(200),
+      .order("revision_number", { ascending: false })
+      .limit(practiceSetId ? 1000 : 200));
+  });
+}
+
+export async function getAdminContentModules() {
+  return readWithPolicy("admin-content-modules", async () => ensureArray(requireData(
+    await supabase.rpc("get_admin_content_modules"),
+  )));
+}
+
+export async function getAdminPracticeSets(subjectId) {
+  if (!subjectId) return [];
+  return readWithPolicy(`admin-practice-sets:${subjectId}`, async () => ensureArray(requireData(
+    await supabase.rpc("get_admin_practice_sets", {
+      requested_subject_id: subjectId,
+    }),
+  )));
+}
+
+export async function getAdminPracticeSetValidation(practiceSetId) {
+  return readWithPolicy(`admin-practice-set-validation:${practiceSetId}`, async () => requireData(
+    await supabase.rpc("admin_get_practice_set_validation", {
+      requested_practice_set_id: practiceSetId,
+    }),
   ));
 }
 
-export async function saveQuestion(question, userId) {
-  const payload = {
-    exam_pack_id: question.exam_pack_id,
-    subject_id: question.subject_id,
-    service_level: question.service_level || null,
-    difficulty: question.difficulty,
-    question_text: question.question_text.trim(),
-    option_a: question.option_a.trim(),
-    option_b: question.option_b.trim(),
-    option_c: question.option_c.trim(),
-    option_d: question.option_d.trim(),
-    correct_option: question.correct_option,
-    explanation: question.explanation.trim(),
-    reference_note: question.reference_note.trim(),
-    source_note: question.source_note.trim(),
-    status: question.status,
-    batch_number: Number(question.batch_number ?? 1),
-    batch_position: question.batch_position ? Number(question.batch_position) : null,
-    updated_by: userId,
-  };
+export async function createAdminModule(module) {
+  return requireData(await supabase.rpc("admin_create_module", {
+    requested_name: module.name.trim(),
+    requested_slug: module.slug.trim(),
+    requested_sort_order: Number(module.sort_order),
+    requested_price_kobo: Number(module.price_kobo),
+    requested_currency: module.currency || "NGN",
+    requested_batch_size: Number(module.batch_size),
+    requested_pass_mark_percent: Number(module.pass_mark_percent),
+    requested_lifecycle_status: module.lifecycle_status,
+  }));
+}
 
-  if (!question.id) {
-    payload.created_by = userId;
-  }
+export async function updateAdminModule(module) {
+  return requireData(await supabase.rpc("admin_update_module", {
+    requested_subject_id: module.subject_id,
+    requested_name: module.subject_name.trim(),
+    requested_sort_order: Number(module.sort_order),
+    requested_price_kobo: Number(module.price_kobo),
+    requested_currency: module.currency || "NGN",
+    requested_batch_size: Number(module.batch_size),
+    requested_pass_mark_percent: Number(module.pass_mark_percent),
+    requested_lifecycle_status: module.lifecycle_status,
+    requested_available_for_purchase: Boolean(module.available_for_purchase),
+  }));
+}
 
-  return requireData(
-    await supabase
-      .from("questions")
-      .upsert(question.id ? { id: question.id, ...payload } : payload)
-      .select()
-      .single(),
-  );
+export async function deleteEmptyAdminModule(subjectId) {
+  return requireData(await supabase.rpc("admin_delete_empty_module", {
+    requested_subject_id: subjectId,
+  }));
+}
+
+export async function createAdminPracticeSet(subjectId, expectedQuestionCount) {
+  return requireData(await supabase.rpc("admin_create_practice_set", {
+    requested_subject_id: subjectId,
+    requested_expected_question_count: Number(expectedQuestionCount),
+  }));
+}
+
+export async function updateAdminPracticeSet(practiceSetId, expectedQuestionCount) {
+  return requireData(await supabase.rpc("admin_update_practice_set", {
+    requested_practice_set_id: practiceSetId,
+    requested_expected_question_count: Number(expectedQuestionCount),
+  }));
+}
+
+export async function transitionAdminPracticeSet(practiceSetId, status) {
+  return requireData(await supabase.rpc("admin_transition_practice_set", {
+    requested_practice_set_id: practiceSetId,
+    requested_status: status,
+  }));
+}
+
+export async function deleteEmptyAdminPracticeSet(practiceSetId) {
+  return requireData(await supabase.rpc("admin_delete_empty_practice_set", {
+    requested_practice_set_id: practiceSetId,
+  }));
+}
+
+export async function saveAdminQuestion(question) {
+  return requireData(await supabase.rpc("admin_save_question", {
+    requested_question: question,
+  }));
+}
+
+export async function createAdminQuestionRevision(question) {
+  return requireData(await supabase.rpc("admin_create_question_revision", {
+    requested_question: question,
+  }));
+}
+
+export async function updateAdminQuestionRevision(question) {
+  return requireData(await supabase.rpc("admin_update_question_revision", {
+    requested_question: question,
+  }));
+}
+
+export async function publishAdminQuestionRevision(questionId) {
+  return requireData(await supabase.rpc("admin_publish_question_revision", {
+    requested_question_id: questionId,
+  }));
+}
+
+export async function archiveAdminQuestion(questionId) {
+  return requireData(await supabase.rpc("admin_archive_question", {
+    requested_question_id: questionId,
+  }));
+}
+
+export async function deleteDraftAdminQuestion(questionId) {
+  return requireData(await supabase.rpc("admin_delete_draft_question", {
+    requested_question_id: questionId,
+  }));
+}
+
+export async function importAdminQuestions(practiceSetId, questions, metadata = {}) {
+  return requireData(await supabase.rpc("admin_import_questions", {
+    requested_practice_set_id: practiceSetId,
+    requested_questions: questions,
+    requested_file_name: metadata?.fileName || null,
+    requested_file_checksum: metadata?.checksum || null,
+  }));
 }
 
 export async function getAdminAuditLogs() {

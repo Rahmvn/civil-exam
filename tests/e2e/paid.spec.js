@@ -2,6 +2,12 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { expectNoHorizontalOverflow } from "./helpers.js";
 
+test("candidate sessions cannot enter content administration", async ({ page }) => {
+  await page.goto("/admin");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
+});
+
 test("paid dashboard, modules, account, and access routes remain connected", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
