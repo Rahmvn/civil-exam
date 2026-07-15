@@ -25,6 +25,7 @@ import {
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
+import { getPracticeRoute } from "../lib/oralPractice";
 
 export default function ModuleDetail() {
   const { subjectSlug = "" } = useParams();
@@ -167,7 +168,7 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: "Retry", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+      return { label: "Retry", to: getPracticeRoute(subject, batchNumber) };
     }
 
     if (row.state === "completed_passed") {
@@ -186,7 +187,7 @@ export default function ModuleDetail() {
           };
         }
 
-        return { label: "Practice again", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+        return { label: "Practice again", to: getPracticeRoute(subject, batchNumber) };
       }
 
       return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subjectSlug)}` };
@@ -209,7 +210,7 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: "Continue", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+      return { label: "Continue", to: getPracticeRoute(subject, batchNumber) };
     }
 
     if (hasModuleAccess) {
@@ -228,13 +229,20 @@ export default function ModuleDetail() {
       }
     }
 
-    return { label: "Start", to: `/practice/${subjectSlug}?batch=${batchNumber}` };
+    return { label: "Start", to: getPracticeRoute(subject, batchNumber) };
   }
 
   function getBatchSecondaryAction(row) {
     if (!row || Number(row.attempt_count ?? 0) <= 0) return null;
 
     const batchNumber = Number(row.batch_number ?? 1);
+    if (subject?.practice_type === "oral" && row.latest_completed_attempt_id) {
+      return {
+        label: "Review",
+        to: `/oral-review?attempt=${row.latest_completed_attempt_id}`,
+      };
+    }
+
     const latestAttemptForBatch = latestAttemptByBatch.get(`${subjectSlug}:${batchNumber}`) ?? null;
 
     if (!latestAttemptForBatch) return null;
@@ -252,6 +260,13 @@ export default function ModuleDetail() {
     setCtaError("");
 
     try {
+      if (startConfirmSubject.practice_type === "oral") {
+        const nextPath = getPracticeRoute(startConfirmSubject, 1);
+        setStartConfirmSubject(null);
+        navigate(nextPath);
+        return;
+      }
+
       const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
       storePracticeBatch(startConfirmSubject.slug, batch);
       setStartConfirmSubject(null);
@@ -393,12 +408,12 @@ export default function ModuleDetail() {
         onClose={() => setSkipAheadConfirm(null)}
         onContinue={() => {
           if (!skipAheadConfirm?.batchNumber) return;
-          navigate(`/practice/${subjectSlug}?batch=${skipAheadConfirm.batchNumber}`);
+          navigate(getPracticeRoute(subject, skipAheadConfirm.batchNumber));
           setSkipAheadConfirm(null);
         }}
         onGoRecommended={() => {
           if (!skipAheadConfirm?.recommendedBatchNumber) return;
-          navigate(`/practice/${subjectSlug}?batch=${skipAheadConfirm.recommendedBatchNumber}`);
+          navigate(getPracticeRoute(subject, skipAheadConfirm.recommendedBatchNumber));
           setSkipAheadConfirm(null);
         }}
       />

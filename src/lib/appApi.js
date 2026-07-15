@@ -110,7 +110,7 @@ export async function getSubjects() {
   const rows = await readWithPolicy("subjects", async () => requireData(
     await supabase
       .from("subjects")
-      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent")
+      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ));
@@ -131,9 +131,73 @@ export async function getModuleBatchAccess(subjectSlug = null) {
     payload.requested_subject_slug = subjectSlug;
   }
 
-  return readWithPolicy(`module-batch-access:${subjectSlug ?? "all"}`, async () =>
-    ensureArray(requireData(await supabase.rpc("get_module_batch_access", payload))),
-  );
+  return readWithPolicy(`module-batch-access:${subjectSlug ?? "all"}`, async () => {
+    const [objectiveResult, oralResult] = await Promise.all([
+      supabase.rpc("get_module_batch_access", payload),
+      supabase.rpc("get_oral_practice_set_access", payload),
+    ]);
+    const objectiveRows = ensureArray(requireData(objectiveResult));
+    const oralRows = ensureArray(requireData(oralResult));
+    const oralSlugs = new Set(oralRows.map((row) => row.subject_slug));
+
+    return [
+      ...objectiveRows.filter((row) => !oralSlugs.has(row.subject_slug)),
+      ...oralRows,
+    ];
+  });
+}
+
+export async function getActiveOralAttempt(subjectSlug, setNumber = 1) {
+  if (!subjectSlug) return null;
+
+  return requireData(await supabase.rpc("get_active_oral_attempt", {
+    requested_subject_slug: subjectSlug,
+    requested_set_number: setNumber,
+  }));
+}
+
+export async function startOrResumeOralAttempt({ subjectSlug, setNumber = 1, secondsPerQuestion }) {
+  return requireData(await supabase.rpc("start_or_resume_oral_attempt", {
+    requested_subject_slug: subjectSlug,
+    requested_set_number: setNumber,
+    requested_seconds_per_question: secondsPerQuestion,
+  }));
+}
+
+export async function getOralAttemptState(attemptId) {
+  return requireData(await supabase.rpc("get_oral_attempt_state", {
+    requested_attempt_id: attemptId,
+  }));
+}
+
+export async function saveOralResponseDraft({ attemptId, questionId, responseText }) {
+  return requireData(await supabase.rpc("save_oral_response_draft", {
+    requested_attempt_id: attemptId,
+    requested_question_id: questionId,
+    requested_response_text: responseText,
+  }));
+}
+
+export async function advanceOralAttempt({ attemptId, questionId, responseText, reason = "manual" }) {
+  return requireData(await supabase.rpc("advance_oral_attempt", {
+    requested_attempt_id: attemptId,
+    requested_question_id: questionId,
+    requested_response_text: responseText,
+    requested_reason: reason,
+  }));
+}
+
+export async function getOralAttemptReview(attemptId) {
+  return ensureArray(requireData(await supabase.rpc("get_oral_attempt_review", {
+    requested_attempt_id: attemptId,
+  })));
+}
+
+export async function saveOralSelfRating(responseId, rating) {
+  return requireData(await supabase.rpc("save_oral_self_rating", {
+    requested_response_id: responseId,
+    requested_rating: rating,
+  }));
 }
 
 export async function getModuleAvailability() {

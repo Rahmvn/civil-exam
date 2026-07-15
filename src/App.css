@@ -8,6 +8,649 @@
   padding: 20px 0 56px;
 }
 
+/* Oral practice is intentionally separate from the scored objective session UI. */
+.oral-start-page,
+.oral-review-page {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.oral-start-page {
+  display: grid;
+  gap: 18px;
+  padding: 18px 0 48px;
+}
+
+.oral-back-link {
+  width: fit-content;
+  color: var(--color-text-soft);
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+
+.oral-start-card {
+  width: min(100%, 780px);
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 52px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.oral-start-card h1 {
+  margin: 6px 0 10px;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.08;
+}
+
+.oral-start-intro {
+  max-width: 640px;
+  color: var(--color-text-soft);
+  font-size: 1.05rem;
+}
+
+.oral-start-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 30px 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.oral-start-facts span {
+  display: grid;
+  align-content: center;
+  min-height: 92px;
+  padding: 16px;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+}
+
+.oral-start-facts span + span {
+  border-left: 1px solid var(--color-border);
+}
+
+.oral-start-facts strong {
+  color: var(--color-text);
+  font-size: 0.98rem;
+}
+
+.oral-duration-picker,
+.oral-rating-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.oral-duration-picker legend,
+.oral-rating-fieldset legend {
+  margin-bottom: 12px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.oral-duration-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.oral-duration-picker legend {
+  grid-column: 1 / -1;
+}
+
+.oral-duration-picker label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 84px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.oral-duration-picker label.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.oral-duration-picker input {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.oral-duration-picker label span {
+  display: grid;
+  gap: 2px;
+}
+
+.oral-duration-picker small {
+  color: var(--color-text-soft);
+}
+
+.oral-start-actions {
+  display: flex;
+  margin-top: 24px;
+}
+
+.oral-start-actions .primary-action {
+  min-width: 210px;
+  justify-content: center;
+}
+
+.oral-no-pause-note {
+  margin-top: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.oral-access-note {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.oral-access-note p {
+  margin-top: 4px;
+  color: var(--color-text-soft);
+}
+
+.oral-session-page {
+  width: min(100%, 1080px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 42px) 0 48px;
+}
+
+.oral-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.oral-session-header > div:first-child {
+  display: grid;
+  gap: 1px;
+}
+
+.oral-session-header p {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.oral-session-header span {
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+}
+
+.oral-session-timer {
+  display: grid;
+  justify-items: end;
+  min-width: 112px;
+}
+
+.oral-session-timer span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.oral-session-timer strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+.oral-session-timer.is-warning strong {
+  color: var(--color-danger);
+}
+
+.oral-session-progress {
+  display: grid;
+  gap: 10px;
+  margin: 26px 0 20px;
+}
+
+.oral-session-progress > div:first-child {
+  display: flex;
+  gap: 5px;
+  color: var(--color-text-soft);
+}
+
+.oral-session-progress > div:first-child strong {
+  color: var(--color-text);
+}
+
+.oral-session-progress-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.oral-session-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 240ms ease;
+}
+
+.oral-question-panel {
+  padding: clamp(24px, 5vw, 52px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.oral-question-panel h1 {
+  max-width: 900px;
+  margin: 8px 0 30px;
+  font-size: clamp(1.65rem, 4vw, 2.6rem);
+  line-height: 1.2;
+}
+
+.oral-question-panel h1:focus {
+  outline: none;
+}
+
+.oral-answer-field {
+  display: grid;
+  gap: 8px;
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.oral-answer-field textarea {
+  width: 100%;
+  min-height: 250px;
+  resize: vertical;
+  padding: 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.oral-answer-field textarea:disabled {
+  background: var(--color-bg);
+}
+
+.oral-answer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.oral-save-state {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.oral-save-state.is-error {
+  color: var(--color-danger);
+}
+
+.oral-session-rule {
+  margin-top: 14px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.oral-session-error {
+  max-width: 760px;
+  margin: 16px auto 0;
+}
+
+.oral-review-page {
+  display: grid;
+  gap: 22px;
+  padding: 16px 0 52px;
+}
+
+.oral-review-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.oral-review-header h1 {
+  margin: 3px 0 4px;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+.oral-review-header > div > span,
+.oral-review-guidance {
+  color: var(--color-text-soft);
+}
+
+.oral-review-summary {
+  display: flex;
+  gap: 18px;
+}
+
+.oral-review-summary span {
+  display: grid;
+  min-width: 78px;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+}
+
+.oral-review-summary strong {
+  color: var(--color-text);
+  font-size: 1.45rem;
+}
+
+.oral-review-guidance {
+  padding-inline: 4px;
+}
+
+.oral-review-list {
+  display: grid;
+  gap: 16px;
+}
+
+.oral-review-card {
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.oral-review-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--color-text-soft);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.oral-response-status {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+}
+
+.oral-response-status.is-timed_out,
+.oral-response-status.is-skipped {
+  color: var(--color-danger);
+}
+
+.oral-review-card > h2 {
+  max-width: 860px;
+  margin: 14px 0 22px;
+  font-size: clamp(1.3rem, 3vw, 1.75rem);
+}
+
+.oral-review-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.oral-review-comparison section {
+  min-width: 0;
+  padding: 22px;
+}
+
+.oral-review-comparison section + section {
+  border-left: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-primary-soft) 52%, white);
+}
+
+.oral-review-comparison h3,
+.oral-key-points h3 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.oral-review-comparison p {
+  white-space: pre-wrap;
+}
+
+.oral-review-comparison p.is-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.oral-key-points {
+  margin-top: 20px;
+  padding: 20px 22px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.oral-key-points ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.oral-key-points p {
+  margin-top: 14px;
+  color: var(--color-text-soft);
+  font-size: 0.9rem;
+}
+
+.oral-rating-fieldset {
+  margin-top: 22px;
+}
+
+.oral-rating-fieldset > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.oral-rating-fieldset button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  box-shadow: none;
+}
+
+.oral-rating-fieldset button.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+}
+
+.oral-review-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.oral-review-empty {
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.oral-review-empty h1 {
+  margin: 0 0 8px;
+}
+
+.oral-review-empty .secondary-action {
+  width: fit-content;
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+  .oral-start-page,
+  .oral-review-page {
+    padding-top: 4px;
+  }
+
+  .oral-start-card {
+    padding: 24px 20px;
+    border-radius: var(--radius-md);
+  }
+
+  .oral-start-facts {
+    grid-template-columns: 1fr;
+    margin: 24px 0;
+  }
+
+  .oral-start-facts span {
+    min-height: 0;
+    padding: 13px 2px;
+  }
+
+  .oral-start-facts span + span {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+
+  .oral-duration-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .oral-duration-picker label {
+    min-height: 70px;
+  }
+
+  .oral-start-actions .primary-action {
+    width: 100%;
+  }
+
+  .oral-session-page {
+    padding: 14px 0 28px;
+  }
+
+  .oral-session-header {
+    padding-bottom: 14px;
+  }
+
+  .oral-session-header p {
+    max-width: 210px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .oral-session-timer {
+    min-width: 88px;
+  }
+
+  .oral-session-timer strong {
+    font-size: 1.45rem;
+  }
+
+  .oral-session-progress {
+    margin: 18px 0 14px;
+  }
+
+  .oral-question-panel {
+    padding: 22px 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .oral-question-panel h1 {
+    margin-bottom: 22px;
+  }
+
+  .oral-answer-field textarea {
+    min-height: 230px;
+    padding: 14px;
+  }
+
+  .oral-answer-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .oral-answer-actions .primary-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .oral-save-state {
+    min-height: 20px;
+    text-align: center;
+  }
+
+  .oral-review-header {
+    align-items: start;
+    flex-direction: column;
+    padding: 24px 20px;
+  }
+
+  .oral-review-summary {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .oral-review-summary span {
+    min-width: 0;
+  }
+
+  .oral-review-card {
+    padding: 22px 18px;
+    border-radius: var(--radius-md);
+  }
+
+  .oral-review-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .oral-review-comparison section + section {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+
+  .oral-review-comparison section,
+  .oral-key-points {
+    padding: 18px;
+  }
+
+  .oral-rating-fieldset > div,
+  .oral-review-actions {
+    display: grid;
+  }
+
+  .oral-review-actions .primary-action,
+  .oral-review-actions .secondary-action {
+    justify-content: center;
+  }
+}
+
 .app-shell {
   width: min(1320px, calc(100% - 32px));
 }
@@ -457,7 +1100,7 @@ button {
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);

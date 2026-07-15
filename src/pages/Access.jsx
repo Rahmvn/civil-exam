@@ -6,10 +6,12 @@ import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import {
   getModuleAccessCatalog,
   getPaymentRecords,
+  getSubjects,
   initializePayment,
 } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
+import { getPracticeRoute } from "../lib/oralPractice";
 import { useAuth } from "../lib/useAuth";
 
 function formatMoney(kobo, currency = "NGN") {
@@ -214,6 +216,7 @@ export default function Access() {
   const [searchParams] = useSearchParams();
   const requestedModule = searchParams.get("module");
   const [moduleAccess, setModuleAccess] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [payments, setPayments] = useState([]);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -224,12 +227,14 @@ export default function Access() {
   useEffect(() => {
     async function loadAccess() {
       try {
-        const [accessRows, paymentRows] = await Promise.all([
+        const [accessRows, paymentRows, subjectRows] = await Promise.all([
           getModuleAccessCatalog(),
           getPaymentRecords(),
+          getSubjects(),
         ]);
         setModuleAccess(accessRows);
         setPayments(paymentRows);
+        setSubjects(subjectRows);
       } catch (loadError) {
         logAppError("Access load", loadError);
         setLoadError(friendlyErrorMessage(loadError, "We could not load your access details. Please try again."));
@@ -322,6 +327,11 @@ export default function Access() {
             {modulesToShow.map((module) => {
               const displayName = getModuleDisplayName(module.subject_name);
               const isPaying = payingModule === module.subject_slug;
+              const subject = subjects.find((item) => item.slug === module.subject_slug) ?? {
+                ...module,
+                slug: module.subject_slug,
+                practice_type: "objective",
+              };
 
               return (
                 <article
@@ -344,7 +354,7 @@ export default function Access() {
 
                   <div className="access-module-action">
                     {module.has_module_access ? (
-                      <Link className="secondary-action" to={`/practice/${module.subject_slug}`}>Continue practice</Link>
+                      <Link className="secondary-action" to={getPracticeRoute(subject)}>Continue practice</Link>
                     ) : module.can_purchase ? (
                       <>
                         <div className="access-module-price">

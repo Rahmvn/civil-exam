@@ -67,7 +67,7 @@ export default function PaymentVerify() {
         <div className="payment-verification-actions">
           {state === "success" ? (
             <>
-              <Link className="primary-action" to={moduleSlug ? `/practice/${moduleSlug}` : "/dashboard#modules"}>Continue practice</Link>
+              <Link className="primary-action" to={moduleSlug ? `/modules/${moduleSlug}` : "/dashboard#modules"}>Continue practice</Link>
               <Link className="secondary-action" to="/access">View access</Link>
             </>
           ) : state === "unconfirmed" ? (

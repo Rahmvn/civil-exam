@@ -9,6 +9,8 @@ import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing";
 import ModuleDetail from "./pages/ModuleDetail";
+import OralPractice from "./pages/OralPractice";
+import OralReview from "./pages/OralReview";
 import PaymentVerify from "./pages/PaymentVerify";
 import Practice from "./pages/Practice";
 import PracticeStart from "./pages/PracticeStart";
@@ -53,6 +55,14 @@ const router = createBrowserRouter([
       {
         path: "/practice/:subjectSlug",
         element: <RequireCandidate><Practice /></RequireCandidate>,
+      },
+      {
+        path: "/oral-practice/:subjectSlug",
+        element: <RequireCandidate><OralPractice /></RequireCandidate>,
+      },
+      {
+        path: "/oral-review",
+        element: <RequireCandidate><OralReview /></RequireCandidate>,
       },
       {
         path: "/result",

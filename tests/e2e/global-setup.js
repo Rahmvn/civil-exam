@@ -49,6 +49,10 @@ async function findOrCreateUser(client, details) {
 async function resetCandidateData(client, user) {
   const testDetails = Object.values(TEST_USERS).find((details) => details.email === user.email);
   requireResult(
+    await client.from("oral_attempts").delete().eq("user_id", user.id),
+    `Clear oral attempts for ${user.email}`,
+  );
+  requireResult(
     await client.from("module_entitlements").delete().eq("user_id", user.id),
     `Clear module entitlements for ${user.email}`,
   );
@@ -92,6 +96,14 @@ async function clearAdminContentFixtures(client) {
   const moduleIds = modules.map((module) => module.id);
   if (moduleIds.length === 0) return;
 
+  requireResult(
+    await client.from("oral_attempts").delete().in("subject_id", moduleIds),
+    "Clear admin fixture oral attempts",
+  );
+  requireResult(
+    await client.from("oral_questions").delete().in("subject_id", moduleIds),
+    "Clear admin fixture oral questions",
+  );
   requireResult(
     await client.from("questions").delete().in("subject_id", moduleIds),
     "Clear admin fixture questions",
@@ -151,6 +163,76 @@ async function seedPracticeContent(client, packId, subjects) {
   requireResult(await client.from("questions").upsert(rows), "Seed practice fixtures");
 }
 
+async function seedOralPracticeContent(client, packId) {
+  const subject = requireResult(
+    await client.from("subjects").insert({
+      id: "30000000-0000-4000-8000-000000000001",
+      name: "Oral Questions",
+      slug: "e2e-oral-questions",
+      description: "Timed oral-answer rehearsal with self-review.",
+      sort_order: 3,
+      is_active: true,
+      batch_size: 3,
+      pass_mark_percent: 70,
+      lifecycle_status: "active",
+      practice_type: "oral",
+    }).select("id, slug, name, practice_type").single(),
+    "Create oral module fixture",
+  );
+
+  const practiceSet = requireResult(
+    await client.from("practice_sets").insert({
+      id: "31000000-0000-4000-8000-000000000001",
+      exam_pack_id: packId,
+      subject_id: subject.id,
+      set_number: 1,
+      expected_question_count: 3,
+      status: "published",
+      published_at: new Date().toISOString(),
+      practice_type: "oral",
+    }).select("id").single(),
+    "Create oral practice set fixture",
+  );
+
+  const oralQuestions = [
+    {
+      id: "32000000-0000-4000-8000-000000000001",
+      question_text: "Explain why accountability matters in public service.",
+      model_answer: "Accountability makes public officers answerable for decisions, conduct, and the use of public resources.",
+      key_points: ["Answerability for decisions", "Responsible use of public resources"],
+      reference_note: "Public Service Rules: accountability",
+      batch_position: 1,
+    },
+    {
+      id: "32000000-0000-4000-8000-000000000002",
+      question_text: "Describe one practical safeguard for public funds.",
+      model_answer: "Segregation of duties ensures that one officer does not control authorization, payment, and review.",
+      key_points: ["Separate key duties", "Independent authorization or review"],
+      reference_note: "Financial Regulations: internal control",
+      batch_position: 2,
+    },
+    {
+      id: "32000000-0000-4000-8000-000000000003",
+      question_text: "How would you respond to an instruction that conflicts with approved procedure?",
+      model_answer: "Clarify the instruction, refer to the approved rule, document the concern, and escalate through the proper channel if necessary.",
+      key_points: ["Check the approved rule", "Document the concern", "Use the proper escalation channel"],
+      reference_note: "Public Service Rules: lawful instructions",
+      batch_position: 3,
+    },
+  ].map((questionRow) => ({
+    ...questionRow,
+    exam_pack_id: packId,
+    subject_id: subject.id,
+    practice_set_id: practiceSet.id,
+    difficulty: "medium",
+    source_note: FIXTURE_SOURCE,
+    status: "published",
+  }));
+
+  requireResult(await client.from("oral_questions").insert(oralQuestions), "Seed oral question fixtures");
+  return subject;
+}
+
 export default async function globalSetup() {
   const supabaseUrl = requireLocalUrl(process.env.E2E_SUPABASE_URL);
   const secretKey = process.env.E2E_SUPABASE_SECRET_KEY;
@@ -187,18 +269,20 @@ export default async function globalSetup() {
   await resetCandidateData(client, paidUser);
   await resetCandidateData(client, freeUser);
   await seedPracticeContent(client, packs[0].id, subjects);
+  const oralSubject = await seedOralPracticeContent(client, packs[0].id);
+  const allTestSubjects = [...subjects, oralSubject];
 
   requireResult(
     await client.from("subjects").update({
       lifecycle_status: "active",
       is_active: true,
-    }).in("id", subjects.map((subject) => subject.id)),
+    }).in("id", allTestSubjects.map((subject) => subject.id)),
     "Activate published test modules",
   );
 
   requireResult(
     await client.from("module_offerings").upsert(
-      subjects.map((subject) => ({
+      allTestSubjects.map((subject) => ({
         exam_pack_id: packs[0].id,
         subject_id: subject.id,
         price_kobo: 250000,
@@ -214,14 +298,24 @@ export default async function globalSetup() {
   if (!paidModule) throw new Error("The paid test module is missing.");
 
   requireResult(
-    await client.from("module_entitlements").insert({
-      user_id: paidUser.id,
-      exam_pack_id: packs[0].id,
-      subject_id: paidModule.id,
-      status: "active",
-      expires_at: "2027-12-31T23:59:59.000Z",
-      metadata: { source: "local-e2e" },
-    }),
-    "Create paid module entitlement",
+    await client.from("module_entitlements").insert([
+      {
+        user_id: paidUser.id,
+        exam_pack_id: packs[0].id,
+        subject_id: paidModule.id,
+        status: "active",
+        expires_at: "2027-12-31T23:59:59.000Z",
+        metadata: { source: "local-e2e" },
+      },
+      {
+        user_id: paidUser.id,
+        exam_pack_id: packs[0].id,
+        subject_id: oralSubject.id,
+        status: "active",
+        expires_at: "2027-12-31T23:59:59.000Z",
+        metadata: { source: "local-e2e" },
+      },
+    ]),
+    "Create paid module entitlements",
   );
 }

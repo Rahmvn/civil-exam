@@ -28,6 +28,7 @@ import {
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
+import { getPracticeRoute } from "../lib/oralPractice";
 import { useAuth } from "../lib/useAuth";
 
 export default function Dashboard() {
@@ -187,7 +188,7 @@ export default function Dashboard() {
     }
 
     if (targetRow.state === "completed_failed") {
-      return { label: "Retry practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+      return { label: "Retry practice", to: getPracticeRoute(subject, batchNumber) };
     }
 
     if (!hasModuleAccess && targetRow.state === "completed_passed") {
@@ -195,12 +196,12 @@ export default function Dashboard() {
     }
 
     if (Number(targetRow.attempt_count ?? 0) > 0) {
-      return { label: "Continue practice", to: `/practice/${subject.slug}?batch=${batchNumber}` };
+      return { label: "Continue practice", to: getPracticeRoute(subject, batchNumber) };
     }
 
     return {
       label: subject.slug === freeModuleSlug ? "Continue practice" : "Start practice",
-      to: `/practice/${subject.slug}?batch=${batchNumber}`,
+      to: getPracticeRoute(subject, batchNumber),
     };
   }
 
@@ -272,6 +273,13 @@ export default function Dashboard() {
     setCtaError("");
 
     try {
+      if (startConfirmSubject.practice_type === "oral") {
+        const nextPath = getPracticeRoute(startConfirmSubject, 1);
+        setStartConfirmSubject(null);
+        navigate(nextPath);
+        return;
+      }
+
       const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
       storePracticeBatch(startConfirmSubject.slug, batch);
       setStartConfirmSubject(null);

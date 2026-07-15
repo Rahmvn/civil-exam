@@ -22,6 +22,7 @@ import {
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
+import { getPracticeRoute } from "../lib/oralPractice";
 
 function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }) {
   const targetRow = module.progression.recommendedRow;
@@ -62,20 +63,20 @@ function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }
   if (targetRow.state === "completed_failed") {
     return {
       label: "Retry practice",
-      to: `/practice/${module.subject.slug}?batch=${batchNumber}`,
+      to: getPracticeRoute(module.subject, batchNumber),
     };
   }
 
   if (Number(targetRow.attempt_count ?? 0) > 0) {
     return {
       label: "Continue practice",
-      to: `/practice/${module.subject.slug}?batch=${batchNumber}`,
+      to: getPracticeRoute(module.subject, batchNumber),
     };
   }
 
   return {
     label: "Start practice",
-    to: `/practice/${module.subject.slug}?batch=${batchNumber}`,
+    to: getPracticeRoute(module.subject, batchNumber),
   };
 }
 
@@ -270,6 +271,13 @@ export default function PracticeStart() {
     setActionError("");
 
     try {
+      if (startConfirmSubject.practice_type === "oral") {
+        const nextPath = getPracticeRoute(startConfirmSubject, 1);
+        setStartConfirmSubject(null);
+        navigate(nextPath);
+        return;
+      }
+
       const practiceQuestions = await startPracticeBatch(startConfirmSubject.slug, 1);
       storePracticeBatch(startConfirmSubject.slug, practiceQuestions);
       const subjectSlug = startConfirmSubject.slug;

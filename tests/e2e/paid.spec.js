@@ -66,6 +66,56 @@ test("practice hub prioritises usable modules and keeps unlock options quiet", a
   await expectNoHorizontalOverflow(page);
 });
 
+test("oral practice is one-way, durable, and reveals guidance only after completion", async ({ page }) => {
+  await page.goto("/modules/e2e-oral-questions");
+  await expect(page.getByRole("heading", { name: "Choose a practice set" })).toBeVisible();
+  await page.getByRole("link", { name: "Start", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/oral-practice\/e2e-oral-questions\?batch=1/);
+  await expect(page.getByRole("heading", { name: "Oral Questions" })).toBeVisible();
+  await expect(page.getByLabel("3 minutes")).toBeChecked();
+  await expect(page.getByLabel("5 minutes")).not.toBeChecked();
+  await expect(page.getByText("Accountability makes public officers answerable", { exact: false })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Begin oral practice" }).click();
+  await expect(page.getByRole("heading", { name: "Explain why accountability matters in public service." })).toBeVisible();
+  await expect(page.getByText("Question 1", { exact: true })).toBeVisible();
+  await expect(page.getByText("Accountability makes public officers answerable", { exact: false })).toHaveCount(0);
+
+  const answerField = page.getByLabel("Your answer");
+  await answerField.fill("It makes officers answerable for decisions and public resources.");
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible({ timeout: 5000 });
+  await page.reload();
+  await expect(page.getByLabel("Your answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
+  await expect(page.getByText("Question 1", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Lock answer and continue" }).click();
+  await expect(page.getByRole("heading", { name: "Describe one practical safeguard for public funds." })).toBeVisible();
+  await expect(page.getByText("Question 2", { exact: true })).toBeVisible();
+  await expect(page.getByText("Explain why accountability matters in public service.", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Continue without an answer" }).click();
+  await expect(page.getByRole("heading", { name: "How would you respond to an instruction that conflicts with approved procedure?" })).toBeVisible();
+  await page.getByLabel("Your answer").fill("I would check the rule, document the concern, and escalate properly.");
+  await page.getByRole("button", { name: "Lock answer and finish" }).click();
+
+  await page.waitForURL(/\/oral-review\?attempt=/);
+  await expect(page.getByRole("heading", { name: "Compare your answers" })).toBeVisible();
+  await expect(page.getByText("Accountability makes public officers answerable", { exact: false })).toBeVisible();
+  await expect(page.getByText("Answerability for decisions", { exact: true })).toBeVisible();
+  await expect(page.getByText("This is a self-review, not a score.", { exact: false })).toBeVisible();
+  await expect(page.getByText(/pass mark/i)).toHaveCount(0);
+
+  const firstReview = page.locator(".oral-review-card").first();
+  await firstReview.getByRole("button", { name: "Partly covered" }).click();
+  await expect(firstReview.getByRole("button", { name: "Partly covered" })).toHaveAttribute("aria-pressed", "true");
+  const reviewUrl = page.url();
+  await page.reload();
+  await expect(page).toHaveURL(reviewUrl);
+  await expect(page.locator(".oral-review-card").first().getByRole("button", { name: "Partly covered" })).toHaveAttribute("aria-pressed", "true");
+  await expectNoHorizontalOverflow(page);
+});
+
 test("completed practice opens a durable result and answer review", async ({ page }) => {
   await page.goto("/practice/public-financial-management?batch=1");
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();

@@ -117,7 +117,9 @@ export function AppFrame({
     location.pathname.startsWith("/modules");
   const isDashboardActive =
     location.pathname === "/dashboard" && location.hash !== "#modules";
-  const isPracticeActive = location.pathname.startsWith("/practice");
+  const isPracticeActive = location.pathname.startsWith("/practice")
+    || location.pathname.startsWith("/oral-practice")
+    || location.pathname === "/oral-review";
   const isReviewActive = location.pathname === "/review";
   const isAccessActive = location.pathname === "/access";
   const isAccountActive = location.pathname === "/profile";
