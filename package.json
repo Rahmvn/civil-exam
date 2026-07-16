@@ -11,6 +11,8 @@
     "test:unit:coverage": "node scripts/test/runUnitCoverage.mjs",
     "test:db": "supabase test db",
     "test:edge": "node scripts/test/runEdgePaymentIntegration.mjs",
+    "test:edge:compat": "node scripts/test/runPreMigrationPaymentSecurity.mjs",
+    "test:operator-access": "node scripts/test/checkOperatorAccess.mjs",
     "test:e2e": "node scripts/test/runPlaywright.mjs",
     "test:e2e:headed": "node scripts/test/runPlaywright.mjs --headed",
     "test:e2e:visual": "node scripts/test/runPlaywright.mjs --visual --project=visual-desktop",

@@ -11,6 +11,8 @@ function fail(message) {
   throw new Error(message);
 }
 
+let publishableApiKey = "";
+
 function parseEnvironment(output) {
   return Object.fromEntries(output.split(/\r?\n/)
     .map((line) => line.match(/^([A-Z0-9_]+)=(?:"(.*)"|(.*))$/))
@@ -182,6 +184,7 @@ async function invoke(apiUrl, functionName, accessToken, body, headers = {}) {
   return fetch(`${apiUrl}/functions/v1/${functionName}`, {
     method: "POST",
     headers: {
+      apikey: publishableApiKey,
       "Content-Type": "application/json",
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
@@ -193,6 +196,7 @@ async function invoke(apiUrl, functionName, accessToken, body, headers = {}) {
 
 async function main() {
   const { apiUrl, publicKey, secretKey } = localEnvironment();
+  publishableApiKey = publicKey;
   process.env.E2E_LOCAL_SUPABASE = "true";
   process.env.E2E_SUPABASE_URL = apiUrl;
   process.env.E2E_SUPABASE_PUBLIC_KEY = publicKey;
@@ -236,8 +240,29 @@ async function main() {
     const token = login.data.session.access_token;
     const userId = login.data.user.id;
 
+    const otherCandidate = createClient(apiUrl, publicKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { transport: WebSocket },
+    });
+    const otherLogin = await otherCandidate.auth.signInWithPassword({
+      email: TEST_USERS.paid.email,
+      password: TEST_PASSWORD,
+    });
+    if (otherLogin.error || !otherLogin.data.session) {
+      fail(`Second payment test sign-in failed: ${otherLogin.error?.message ?? "no session"}`);
+    }
+    const otherToken = otherLogin.data.session.access_token;
+
     const unauthenticated = await invoke(apiUrl, "initialize-paystack-payment", null, { subject_slug: "public-financial-management" });
     if (unauthenticated.ok) fail("Unauthenticated payment initialization was accepted.");
+
+    const invalidSession = await invoke(
+      apiUrl,
+      "initialize-paystack-payment",
+      "invalid-user-jwt",
+      { subject_slug: "public-financial-management" },
+    );
+    if (invalidSession.ok) fail("An invalid user JWT was accepted for payment initialization.");
 
     const unauthenticatedVerification = await invoke(apiUrl, "verify-paystack-payment", null, { reference: "PS-unauthenticated" });
     if (unauthenticatedVerification.ok) fail("Unauthenticated payment verification was accepted.");
@@ -308,6 +333,16 @@ async function main() {
       fail("Payment callback was not derived from the trusted APP_URL configuration.");
     }
 
+    const otherUsersReference = await invoke(
+      apiUrl,
+      "verify-paystack-payment",
+      otherToken,
+      { reference: initializedBody.reference },
+    );
+    if (otherUsersReference.status !== 403) {
+      fail("A candidate could verify another candidate's payment reference.");
+    }
+
     const resumedInitialization = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "public-financial-management" });
     if (!resumedInitialization.ok) fail(`Recent checkout could not be recovered: ${await resumedInitialization.text()}`);
     const resumedBody = await resumedInitialization.json();
@@ -347,6 +382,21 @@ async function main() {
       "x-paystack-signature": "invalid",
     });
     if (invalidWebhook.status !== 401) fail("Invalid webhook signature was not rejected.");
+
+    const missingSignatureWebhook = await invoke(
+      apiUrl,
+      "paystack-webhook",
+      null,
+      { event: "test.webhook", data: {} },
+    );
+    if (missingSignatureWebhook.status !== 401) fail("Missing webhook signature was not rejected.");
+
+    const harmlessEvent = JSON.stringify({ event: "test.webhook", data: {} });
+    const harmlessSignature = await createPaystackSignature(harmlessEvent, "local-edge-payment-secret");
+    const harmlessWebhook = await invoke(apiUrl, "paystack-webhook", null, harmlessEvent, {
+      "x-paystack-signature": harmlessSignature,
+    });
+    if (!harmlessWebhook.ok) fail(`Valid harmless webhook was rejected: ${await harmlessWebhook.text()}`);
 
     const event = JSON.stringify({
       event: "charge.success",

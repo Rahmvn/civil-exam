@@ -450,9 +450,9 @@ async function main() {
   }
 
   const supabaseUrl = getEnv("SUPABASE_URL", ["VITE_SUPABASE_URL"]);
-  const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const secretKey = getEnv("SUPABASE_SECRET_KEY");
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient(supabaseUrl, secretKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     realtime: {
       transport: WebSocket,

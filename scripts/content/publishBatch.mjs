@@ -164,7 +164,7 @@ async function main() {
   const isConfirm = Boolean(args.confirm);
   const archiveDevSeeds = Boolean(args["archive-dev-seeds"]);
   const targetUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
 
   if (!isDryRun && !isConfirm) {
     console.error("Refusing to run: pass either --dry-run or --confirm.");
@@ -178,8 +178,8 @@ async function main() {
     return;
   }
 
-  if (!targetUrl || !serviceRoleKey) {
-    console.error("Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+  if (!targetUrl || !secretKey) {
+    console.error("Missing required environment variables: SUPABASE_URL and SUPABASE_SECRET_KEY.");
     process.exitCode = 1;
     return;
   }
@@ -202,7 +202,7 @@ async function main() {
     return;
   }
 
-  const admin = createClient(targetUrl, serviceRoleKey, {
+  const admin = createClient(targetUrl, secretKey, {
     auth: { persistSession: false },
     realtime: { transport: WebSocket },
   });
