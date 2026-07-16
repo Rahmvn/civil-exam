@@ -18,6 +18,36 @@ function requireData({ data, error }) {
   return data;
 }
 
+async function getFunctionErrorMessage(error, fallbackData = null) {
+  if (fallbackData?.error) return fallbackData.error;
+  if (fallbackData?.message) return fallbackData.message;
+
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (payload?.error) return payload.error;
+      if (payload?.message) return payload.message;
+    } catch {
+      // Supabase wraps non-JSON Edge Function failures too; fall back below.
+    }
+  }
+
+  return error?.message ?? "The request could not be completed.";
+}
+
+async function requireFunctionData({ data, error }) {
+  if (error) {
+    throw new Error(await getFunctionErrorMessage(error, data));
+  }
+
+  if (data?.error || data?.message) {
+    throw new Error(await getFunctionErrorMessage(null, data));
+  }
+
+  return data;
+}
+
 async function getAuthenticatedUserId() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
@@ -98,6 +128,28 @@ export async function getPaymentRecords(limit = 10) {
       expires_at: row.access_expires_at,
     }));
   });
+}
+
+export async function getMySupportRequests(limit = 10) {
+  const userId = await getAuthenticatedUserId();
+  return readWithPolicy(`support-requests:${userId}:${limit}`, async () => ensureArray(requireData(
+    await supabase
+      .from("support_requests")
+      .select("id, category, subject, payment_reference, status, resolution_note, created_at, updated_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+  )));
+}
+
+export async function createSupportRequest({ category, subject, description, paymentReference, pagePath }) {
+  return requireData(await supabase.rpc("create_support_request", {
+    requested_category: category,
+    requested_subject: subject,
+    requested_description: description,
+    requested_payment_reference: paymentReference || null,
+    requested_page_path: pagePath || null,
+  }));
 }
 
 export async function getModuleAccessCatalog() {
@@ -290,44 +342,28 @@ export async function startPracticeBatch(subjectSlug, batchNumber = null) {
   return ensureArray(requireData(await supabase.rpc("start_practice_batch", payload)));
 }
 
-export async function submitAttempt({ mode, subjectId, answers, batchNumber = null }) {
+export async function submitAttempt({ mode, subjectId, answers, batchNumber = null, submissionToken }) {
   const payload = {
     submitted_mode: mode,
     submitted_subject_id: subjectId,
     submitted_answers: answers,
+    submitted_batch_number: typeof batchNumber === "number" && Number.isFinite(batchNumber) ? batchNumber : null,
+    submitted_token: submissionToken,
   };
 
-  if (typeof batchNumber === "number" && Number.isFinite(batchNumber)) {
-    payload.submitted_batch_number = batchNumber;
-  }
-
-  const rows = requireData(
-    await supabase.rpc("submit_attempt", payload),
-  );
-
-  return rows?.[0] ?? null;
+  return requireData(await supabase.rpc("submit_attempt_idempotent", payload));
 }
 
 export async function initializePayment(subjectSlug) {
-  const { data, error } = await supabase.functions.invoke("initialize-paystack-payment", {
+  return requireFunctionData(await supabase.functions.invoke("initialize-paystack-payment", {
     body: { subject_slug: subjectSlug },
-  });
-
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-
-  return data;
+  }));
 }
 
 export async function verifyPayment(reference) {
-  const { data, error } = await supabase.functions.invoke("verify-paystack-payment", {
+  return requireFunctionData(await supabase.functions.invoke("verify-paystack-payment", {
     body: { reference },
-  });
-
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
-
-  return data;
+  }));
 }
 
 export async function getAdminQuestionCounts() {
@@ -512,6 +548,20 @@ export async function getAdminAuditLogs() {
       .order("created_at", { ascending: false })
       .limit(50),
   ));
+}
+
+export async function getAdminSupportRequests(limit = 100) {
+  return readWithPolicy(`admin-support-requests:${limit}`, async () => ensureArray(requireData(
+    await supabase.rpc("get_admin_support_requests", { requested_limit: limit }),
+  )));
+}
+
+export async function updateSupportRequest(requestId, status, resolutionNote) {
+  return requireData(await supabase.rpc("update_support_request", {
+    requested_id: requestId,
+    requested_status: status,
+    requested_resolution_note: resolutionNote || null,
+  }));
 }
 
 export async function getActivePack() {

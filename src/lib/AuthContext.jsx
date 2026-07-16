@@ -2,6 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useRef, useState } from
 import { ensureMyProfile, getProfile } from "./appApi";
 import { clearReadRequests } from "./requestPolicy";
 import { supabase } from "./supabaseClient";
+import { logAppError } from "./errors";
 
 const AuthContext = createContext(null);
 
@@ -20,6 +21,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
   const mountedRef = useRef(true);
   const authReadyRef = useRef(false);
   const currentUserIdRef = useRef(null);
@@ -29,6 +31,7 @@ export function AuthProvider({ children }) {
     if (!userId) {
       profileRequestRef.current += 1;
       setProfile(null);
+      setProfileError(null);
       setProfileLoading(false);
       return null;
     }
@@ -41,9 +44,14 @@ export function AuthProvider({ children }) {
       const nextProfile = await loadProfile(userId);
       if (!mountedRef.current || profileRequestRef.current !== requestId) return nextProfile;
       setProfile(nextProfile);
+      setProfileError(null);
       return nextProfile;
-    } catch {
-      if (mountedRef.current && profileRequestRef.current === requestId) setProfile(null);
+    } catch (error) {
+      logAppError("Account profile load", error);
+      if (mountedRef.current && profileRequestRef.current === requestId) {
+        setProfile(null);
+        setProfileError(error);
+      }
       return null;
     } finally {
       if (mountedRef.current && profileRequestRef.current === requestId) setProfileLoading(false);
@@ -82,6 +90,7 @@ export function AuthProvider({ children }) {
       if (!nextUserId) {
         profileRequestRef.current += 1;
         setProfile(null);
+        setProfileError(null);
         setProfileLoading(false);
         authReadyRef.current = true;
         setLoading(false);
@@ -117,12 +126,13 @@ export function AuthProvider({ children }) {
       session,
       user: session?.user ?? null,
       profile,
+      profileError,
       loading,
       profileLoading,
       isAdmin: profile?.role === "admin",
       refreshProfile,
     }),
-    [loading, profile, profileLoading, refreshProfile, session],
+    [loading, profile, profileError, profileLoading, refreshProfile, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

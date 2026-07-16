@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { UnlockModuleModal } from "../components/UnlockModuleModal";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import {
   getModuleAccessCatalog,
@@ -16,6 +17,7 @@ import {
   getModuleDisplayName,
 } from "../lib/moduleDisplay";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
 import { useAuth } from "../lib/useAuth";
 
 function formatMoney(kobo, currency = "NGN") {
@@ -43,13 +45,6 @@ function formatDate(value) {
     month: "short",
     year: "numeric",
   }).format(date);
-}
-
-function paymentStatusLabel(status) {
-  if (status === "pending") return "Pending";
-  if (status === "failed") return "Failed";
-  if (status === "expired") return "Expired";
-  return "Payment record";
 }
 
 function getPaymentAccessName(payment) {
@@ -217,7 +212,7 @@ function ReceiptModal({ payment, profile, onClose }) {
 
 export default function Access() {
   const { profile } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedModule = searchParams.get("module");
   const [moduleAccess, setModuleAccess] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -301,46 +296,40 @@ export default function Access() {
   const selectedModule = requestedModule
     ? moduleAccess.find((module) => module.subject_slug === requestedModule) ?? null
     : null;
-  const selectedSubject = selectedModule
-    ? subjects.find((subject) => subject.slug === selectedModule.subject_slug) ?? null
+  const selectedModuleSubject = selectedModule
+    ? subjects.find((subject) => subject.slug === selectedModule.subject_slug) ?? selectedModule
     : null;
-  const selectedModuleIsComingSoon = selectedModule
-    ? isCandidateModuleComingSoon(selectedSubject ?? selectedModule, selectedModule.published_batch_count)
-    : false;
   const selectedModuleHasUsableAccess = selectedModule
     ? hasUsableCandidateModuleAccess(
-        selectedSubject ?? selectedModule,
+        selectedModuleSubject,
         selectedModule.published_batch_count,
         selectedModule.has_module_access,
       )
     : false;
-  const modulesToShow = selectedModule
-    ? [selectedModule]
-    : moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
-  const isFocused = Boolean(selectedModule);
+  const unlockModalModule = selectedModule?.can_purchase && !selectedModuleHasUsableAccess
+    ? selectedModule
+    : null;
+  const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
+  const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
+
+  function openUnlockModule(subjectSlug) {
+    setPaymentError(null);
+    setSearchParams({ module: subjectSlug });
+  }
+
+  function closeUnlockModule() {
+    setPaymentError(null);
+    setSearchParams({});
+  }
 
   return (
     <AppFrame showBottomNav={false}>
       <section className="access-page access-page-v2">
-        <header className={`access-page-intro ${isFocused ? "is-focused" : ""}`}>
-          <span>Module access</span>
-          <h1>
-            {selectedModule
-              ? getModuleDisplayName(selectedModule.subject_name)
-              : "Choose a module"}
-          </h1>
-          <p>
-            {selectedModule
-              ? selectedModuleIsComingSoon
-                ? "Practice for this module is coming soon."
-                : selectedModuleHasUsableAccess
-                ? `Access is active through ${formatDate(selectedModule.access_expires_at)}.`
-                : "Unlock every published practice set in this module."
-              : "Pay only for the modules you want to practise."}
-          </p>
+        <header className="access-page-intro">
+          <p>Manage module access and view your payment history.</p>
         </header>
 
-        <section className={`access-module-catalog ${isFocused ? "is-focused" : ""}`} aria-label={isFocused ? "Selected module" : "Available modules"}>
+        <section className="access-module-catalog" aria-label="Available modules">
 
           <div className="access-module-list">
             {modulesToShow.map((module) => {
@@ -360,20 +349,20 @@ export default function Access() {
 
               return (
                 <article
-                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""} ${isFocused ? "is-focused" : ""}`.trim()}
+                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""}`.trim()}
                   key={module.subject_id}
                 >
                   <div className="access-module-copy">
                     <div className="access-module-title-line">
-                      {!isFocused && <h2>{displayName}</h2>}
+                      <h2>{displayName}</h2>
                       {hasUsableModuleAccess && <span className="access-module-state">Unlocked</span>}
                     </div>
                     {isComingSoon ? (
                       <p>Practice is coming soon.</p>
                     ) : hasUsableModuleAccess ? (
-                      !isFocused && <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
+                      <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
                     ) : module.can_purchase ? (
-                      isFocused && <p>Includes all published practice sets, answer review, and retries.</p>
+                      <p>Unlock all published practice sets.</p>
                     ) : (
                       <p>Practice is coming soon.</p>
                     )}
@@ -385,18 +374,11 @@ export default function Access() {
                     ) : hasUsableModuleAccess ? (
                       <Link className="secondary-action" to={getPracticeRoute(subject)}>Continue practice</Link>
                     ) : module.can_purchase ? (
-                      <>
-                        <div className="access-module-price">
-                          <span>Module price</span>
-                          <strong>{formatMoney(module.price_kobo, module.currency)}</strong>
-                        </div>
-                        <button aria-busy={isPaying} disabled={isPaying} onClick={() => void startPayment(module.subject_slug)} type="button">
-                          {isPaying ? "Connecting to Paystack..." : "Continue to payment"}
-                        </button>
-                        {isFocused && <small>Secure payment by Paystack</small>}
-                      </>
+                      <button aria-busy={isPaying} disabled={isPaying} onClick={() => openUnlockModule(module.subject_slug)} type="button">
+                        Unlock module
+                      </button>
                     ) : null}
-                    {paymentError?.subjectSlug === module.subject_slug && (
+                    {paymentError?.subjectSlug === module.subject_slug && !selectedModule && (
                       <p className="access-module-error" role="alert">{paymentError.message}</p>
                     )}
                   </div>
@@ -404,35 +386,61 @@ export default function Access() {
               );
             })}
           </div>
-
-          {isFocused && (
-            <Link className="access-change-module" to="/access">Choose a different module</Link>
-          )}
         </section>
 
-        {payments.length > 0 && (
+        {paymentAttention.length > 0 && (
+          <section className="access-payment-attention" aria-labelledby="payment-attention-title">
+            <header>
+              <h2 id="payment-attention-title">Payment needs attention</h2>
+            </header>
+            <div className="access-payment-list">
+              {paymentAttention.map((payment) => {
+                const statusMeta = getPaymentStatusMeta(payment);
+                return (
+                  <article className="access-payment-row is-attention" key={payment.id}>
+                    <div className="access-payment-main">
+                      <strong>{getPaymentAccessName(payment)}</strong>
+                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      <p>{statusMeta.description}</p>
+                    </div>
+                    <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                    <code>{payment.paystack_reference || "Reference unavailable"}</code>
+                    {statusMeta.canCheck && (
+                      <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>
+                        {payment.provider_status === "success" ? "Check access" : "Check status"}
+                      </Link>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {paymentHistory.length > 0 && (
           <details className="access-payment-section">
             <summary>
               <span>Payment history</span>
-              <small>{payments.length}</small>
+              <small>{paymentHistory.length}</small>
             </summary>
             <div className="access-payment-list">
-              {payments.map((payment) => (
-                <article className={`access-payment-row ${payment.status === "active" ? "is-verified" : ""}`} key={payment.id}>
-                  <div className="access-payment-main">
-                    <strong>{getPaymentAccessName(payment)}</strong>
-                    <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
-                  </div>
-                  {payment.status !== "active" && (
-                    <span className={`access-payment-status is-${payment.status}`}>{paymentStatusLabel(payment.status)}</span>
-                  )}
-                  <code>{payment.paystack_reference || "Reference unavailable"}</code>
-                  {payment.status === "active" ? (
-                    <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
-                  ) : payment.status === "pending" && payment.paystack_reference ? (
-                    <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>Check payment</Link>
-                  ) : null}
-                </article>
+              {paymentHistory.map((payment) => (
+                (() => {
+                  const statusMeta = getPaymentStatusMeta(payment);
+                  return (
+                    <article className={`access-payment-row ${statusMeta.canViewReceipt ? "is-verified" : ""}`} key={payment.id}>
+                      <div className="access-payment-main">
+                        <strong>{getPaymentAccessName(payment)}</strong>
+                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      </div>
+                      <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                      <code>{payment.paystack_reference || "Reference unavailable"}</code>
+                      {statusMeta.canViewReceipt ? (
+                        <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
+                      ) : null}
+                    </article>
+                  );
+                })()
               ))}
             </div>
           </details>
@@ -441,6 +449,15 @@ export default function Access() {
 
       {selectedReceipt && (
         <ReceiptModal payment={selectedReceipt} profile={profile} onClose={() => setSelectedReceipt(null)} />
+      )}
+      {unlockModalModule && (
+        <UnlockModuleModal
+          error={paymentError?.subjectSlug === unlockModalModule.subject_slug ? paymentError.message : ""}
+          module={unlockModalModule}
+          onClose={closeUnlockModule}
+          onStartPayment={startPayment}
+          paying={payingModule === unlockModalModule.subject_slug}
+        />
       )}
     </AppFrame>
   );

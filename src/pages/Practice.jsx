@@ -11,11 +11,14 @@ import {
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   clearActivePractice,
+  clearPracticeDraft,
   clearPracticeBatch,
   consumePracticeBatch,
   markActivePractice,
   preparePracticeQuestions,
   readActivePractice,
+  readPracticeDraft,
+  storePracticeDraft,
 } from "../lib/practiceSession";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
 
@@ -155,14 +158,14 @@ function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
   );
 }
 
-function PracticeRestartNotice({ onLeave, onRestart }) {
+function PracticeRestartNotice({ onLeave, onResume }) {
   return (
     <section className="practice-restart-card" aria-labelledby="practice-restart-title">
-      <p className="eyebrow">Practice restarted</p>
-      <h1 id="practice-restart-title">Your previous answers were not submitted.</h1>
-      <p>Reloading ends an active practice. Start again when you are ready and the timer will begin from the start.</p>
+      <p className="eyebrow">Practice paused</p>
+      <h1 id="practice-restart-title">Continue your practice?</h1>
+      <p>Your answers and remaining time were saved on this device.</p>
       <div className="practice-restart-actions">
-        <button className="primary-action" onClick={onRestart} type="button">Start again</button>
+        <button className="primary-action" onClick={onResume} type="button">Resume practice</button>
         <button className="ghost-button" onClick={onLeave} type="button">Back to modules</button>
       </div>
     </section>
@@ -189,8 +192,9 @@ export default function Practice() {
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState(null);
-  const [restartPending, setRestartPending] = useState(() => Boolean(readActivePractice(subjectSlug)));
+  const [restartPending, setRestartPending] = useState(() => Boolean(readPracticeDraft(subjectSlug) || readActivePractice(subjectSlug)));
   const allowExitRef = useRef(false);
+  const submissionTokenRef = useRef(crypto.randomUUID());
 
   useLayoutEffect(() => {
     window.scrollTo({ left: 0, top: 0, behavior: "instant" });
@@ -246,6 +250,7 @@ export default function Practice() {
       setExitConfirmOpen(false);
       setDeadlineAt(null);
       allowExitRef.current = false;
+      submissionTokenRef.current = crypto.randomUUID();
 
       try {
         const [nextSummary, nextSubjects] = await Promise.all([
@@ -264,6 +269,23 @@ export default function Practice() {
 
         if (restartPending) {
           setLoading(false);
+          return;
+        }
+
+        const savedDraft = readPracticeDraft(nextSubject.slug);
+        const savedBatchNumber = Number(savedDraft?.questions?.[0]?.batch_number ?? 0) || null;
+        if (
+          savedDraft &&
+          (!requestedBatchNumber || savedBatchNumber === requestedBatchNumber)
+        ) {
+          setQuestions(savedDraft.questions);
+          setAnswers(savedDraft.answers && typeof savedDraft.answers === "object" ? savedDraft.answers : {});
+          setTimeSpent(savedDraft.time_spent && typeof savedDraft.time_spent === "object" ? savedDraft.time_spent : {});
+          setFlagged(Array.isArray(savedDraft.flagged) ? savedDraft.flagged : []);
+          setCurrentIndex(Math.min(Math.max(Number(savedDraft.current_index) || 0, 0), savedDraft.questions.length - 1));
+          setDeadlineAt(Number(savedDraft.deadline_at));
+          if (savedDraft.submission_token) submissionTokenRef.current = savedDraft.submission_token;
+          markActivePractice(nextSubject.slug, { batch_number: savedBatchNumber });
           return;
         }
 
@@ -347,10 +369,12 @@ export default function Practice() {
         subjectId: subject.id,
         answers: submittedAnswers,
         batchNumber: batchMeta.batchNumber,
+        submissionToken: submissionTokenRef.current,
       });
 
       clearPracticeBatch(subject.slug);
       clearActivePractice(subject.slug);
+      clearPracticeDraft(subject.slug);
       allowExitRef.current = true;
       navigate(`/result?attempt=${nextResult.attempt_id}`, {
         state: {
@@ -372,6 +396,19 @@ export default function Practice() {
       setSubmitting(false);
     }
   }, [answers, batchMeta.batchNumber, batchMeta.passMarkPercent, navigate, questions, subject, submitting, timeSpent]);
+
+  useEffect(() => {
+    if (!subject?.slug || questions.length === 0 || !deadlineAt || allowExitRef.current) return;
+    storePracticeDraft(subject.slug, {
+      questions,
+      answers,
+      time_spent: timeSpent,
+      flagged,
+      current_index: currentIndex,
+      deadline_at: deadlineAt,
+      submission_token: submissionTokenRef.current,
+    });
+  }, [answers, currentIndex, deadlineAt, flagged, questions, subject?.slug, timeSpent]);
 
   useEffect(() => {
     if (questions.length === 0 || submitting || !deadlineAt) return undefined;
@@ -481,6 +518,7 @@ export default function Practice() {
     if (subject?.slug) {
       clearPracticeBatch(subject.slug);
       clearActivePractice(subject.slug);
+      clearPracticeDraft(subject.slug);
     }
     setExitConfirmOpen(false);
     if (blocker.state === "blocked") {
@@ -495,14 +533,14 @@ export default function Practice() {
     setExitConfirmOpen(false);
   }
 
-  function restartPractice() {
-    clearActivePractice(subjectSlug);
+  function resumePractice() {
     setRestartPending(false);
   }
 
   function leaveRestartNotice() {
     clearPracticeBatch(subjectSlug);
     clearActivePractice(subjectSlug);
+    clearPracticeDraft(subjectSlug);
     allowExitRef.current = true;
     navigate("/dashboard#modules", { replace: true });
   }
@@ -522,7 +560,7 @@ export default function Practice() {
         {error && <p className="action-error practice-action-error" role="alert">{error}</p>}
 
         {restartPending ? (
-          <PracticeRestartNotice onLeave={leaveRestartNotice} onRestart={restartPractice} />
+          <PracticeRestartNotice onLeave={leaveRestartNotice} onResume={resumePractice} />
         ) : questions.length === 0 ? (
           <section className="empty-panel">
             <h2>{emptyMessage || "Questions for this module are not available yet."}</h2>

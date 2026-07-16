@@ -21,6 +21,7 @@ import {
   getAdminPracticeSets,
   getAdminPracticeSetValidation,
   getAdminQuestions,
+  getAdminSupportRequests,
   importAdminQuestions,
   publishAdminQuestionRevision,
   saveAdminQuestion,
@@ -28,6 +29,7 @@ import {
   updateAdminModule,
   updateAdminPracticeSet,
   updateAdminQuestionRevision,
+  updateSupportRequest,
 } from "../lib/appApi";
 import { formatAdminCurrency } from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
@@ -154,6 +156,14 @@ function AdminRail({ currentView, navigate }) {
         >
           <AdminChromeIcon name="guide" />
           <strong>Guide</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "support" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/help")}
+        >
+          <AdminChromeIcon name="activity" />
+          <strong>Help requests</strong>
         </button>
       </nav>
     </aside>
@@ -961,6 +971,95 @@ function ActivityView({ auditLogs, onQueryChange, query }) {
   );
 }
 
+function SupportRequestDetail({ onUpdate, request, working }) {
+  const [status, setStatus] = useState(request.status);
+  const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
+
+  return (
+    <section className="admin-support-detail">
+      <header>
+        <div>
+          <span>{request.category}</span>
+          <h2>{request.subject}</h2>
+          <p>{request.requester_name || request.requester_email || "Candidate"}</p>
+        </div>
+        <strong>{request.status.replace("_", " ")}</strong>
+      </header>
+      <p className="admin-support-description">{request.description}</p>
+      <dl>
+        {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
+        {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
+        {request.page_path && <div><dt>Page</dt><dd>{request.page_path}</dd></div>}
+        <div><dt>Received</dt><dd>{new Date(request.created_at).toLocaleString("en-NG")}</dd></div>
+      </dl>
+      <div className="admin-support-resolution">
+        <label>
+          <span>Status</span>
+          <select disabled={working} onChange={(event) => setStatus(event.target.value)} value={status}>
+            <option value="received">Received</option>
+            <option value="in_review">In review</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+        </label>
+        <label>
+          <span>Resolution note</span>
+          <textarea disabled={working} maxLength={2000} onChange={(event) => setResolutionNote(event.target.value)} rows={4} value={resolutionNote} />
+        </label>
+        <button disabled={working || (status === request.status && resolutionNote === (request.resolution_note ?? ""))} onClick={() => onUpdate(request.id, status, resolutionNote)} type="button">
+          {working ? "Saving..." : "Save update"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AdminSupportView({ onQueryChange, onUpdate, query, requests, working }) {
+  const [selectedId, setSelectedId] = useState(null);
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleRequests = requests.filter((request) => [
+    request.subject,
+    request.description,
+    request.requester_name,
+    request.requester_email,
+    request.payment_reference,
+    request.status,
+  ].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery));
+  const selected = visibleRequests.find((request) => request.id === selectedId) ?? visibleRequests[0] ?? null;
+
+  return (
+    <>
+      <section className="admin-page-heading">
+        <div><h1>Help requests</h1><p>Resolve account, access, payment, practice, and technical problems reported by candidates.</p></div>
+      </section>
+      <section className="admin-support-board">
+        <div className="admin-list-toolbar">
+          <label className="admin-inline-search">
+            <span className="sr-only">Search help requests</span>
+            <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search help requests..." type="search" value={query} />
+          </label>
+          <span>{visibleRequests.length} requests</span>
+        </div>
+        {visibleRequests.length === 0 ? (
+          <div className="admin-empty-state"><h2>No help requests</h2><p>New candidate requests will appear here.</p></div>
+        ) : (
+          <div className="admin-support-layout">
+            <div className="admin-support-list">
+              {visibleRequests.map((request) => (
+                <button className={selected?.id === request.id ? "is-active" : ""} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
+                  <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
+                  <small>{request.status.replace("_", " ")}</small>
+                </button>
+              ))}
+            </div>
+            {selected && <SupportRequestDetail key={`${selected.id}:${selected.updated_at}`} onUpdate={onUpdate} request={selected} working={working} />}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
 export default function Admin() {
   const [searchParams] = useSearchParams();
   const { moduleId: routeModuleId, setId: routeSetId } = useParams();
@@ -970,6 +1069,8 @@ export default function Admin() {
   const selectedSetId = routeSetId ?? searchParams.get("set");
   const currentView = location.pathname === "/admin/activity" || searchParams.get("view") === "activity"
     ? "activity"
+    : location.pathname === "/admin/help" || searchParams.get("view") === "support"
+      ? "support"
     : location.pathname === "/admin/guide" || searchParams.get("view") === "guide"
       ? "guide"
       : "modules";
@@ -979,6 +1080,7 @@ export default function Admin() {
   const [questions, setQuestions] = useState([]);
   const [validation, setValidation] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [supportRequests, setSupportRequests] = useState([]);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
   const [contentKey, setContentKey] = useState(null);
   const [validationKey, setValidationKey] = useState(null);
@@ -1027,6 +1129,23 @@ export default function Admin() {
     void loadAdmin();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (currentView !== "support") return undefined;
+    let active = true;
+
+    getAdminSupportRequests(100)
+      .then((rows) => {
+        if (active) setSupportRequests(rows);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin support requests load", error);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Help requests could not be loaded.") });
+      });
+
+    return () => { active = false; };
+  }, [currentView]);
 
   useEffect(() => {
     let active = true;
@@ -1098,6 +1217,8 @@ export default function Admin() {
   const setContentLoading = Boolean(routeContentKey && contentKey !== routeContentKey);
   const shellSearchPlaceholder = currentView === "activity"
     ? "Search activity..."
+    : currentView === "support"
+      ? "Search help requests..."
     : currentView === "guide"
       ? "Search guide..."
       : selectedSet
@@ -1114,6 +1235,19 @@ export default function Admin() {
   function reportError(scope, error, fallback) {
     logAppError(scope, error);
     setFeedback({ tone: "error", message: adminErrorMessage(error, fallback) });
+  }
+
+  async function handleSupportUpdate(requestId, status, resolutionNote) {
+    setWorking(true);
+    try {
+      const updated = await updateSupportRequest(requestId, status, resolutionNote);
+      setSupportRequests((current) => current.map((request) => request.id === requestId ? { ...request, ...updated } : request));
+      setFeedback({ tone: "success", message: "Help request updated." });
+    } catch (error) {
+      reportError("Admin support request update", error, "The help request could not be updated.");
+    } finally {
+      setWorking(false);
+    }
   }
 
   async function refreshModules() {
@@ -1413,6 +1547,8 @@ export default function Admin() {
           <div className="admin-page">
             {currentView === "activity" ? (
               <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
+            ) : currentView === "support" ? (
+              <AdminSupportView onQueryChange={setShellSearch} onUpdate={(...args) => void handleSupportUpdate(...args)} query={shellSearch} requests={supportRequests} working={working} />
             ) : currentView === "guide" ? (
               <AdminGuideView query={shellSearch} />
             ) : selectedSetId && selectedModule && moduleContentLoading ? (

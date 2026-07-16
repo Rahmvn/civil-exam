@@ -27,6 +27,17 @@ test("authentication uses the canonical product descriptor", async ({ page }) =>
   await expect(page.getByText("Public Service Promotion Exam Practice", { exact: true })).toHaveCount(1);
 });
 
+test("a user who forgot their password can reach a clear recovery form", async ({ page }) => {
+  await page.goto("/auth?mode=sign-in");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+
+  await expect(page).toHaveURL(/mode=forgot/);
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+});
+
 test("protected direct URL preserves the intended destination", async ({ page }) => {
   await page.goto("/review?attempt=00000000-0000-4000-8000-000000000001");
 

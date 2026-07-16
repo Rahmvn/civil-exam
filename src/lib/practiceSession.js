@@ -1,5 +1,6 @@
 const PRACTICE_LAUNCH_PREFIX = "practice-launch:";
 const ACTIVE_PRACTICE_PREFIX = "practice-active:";
+const PRACTICE_DRAFT_PREFIX = "practice-draft:";
 const OPTION_KEYS = ["A", "B", "C", "D"];
 
 function getLaunchKey(subjectSlug) {
@@ -8,6 +9,35 @@ function getLaunchKey(subjectSlug) {
 
 function getActivePracticeKey(subjectSlug) {
   return `${ACTIVE_PRACTICE_PREFIX}${subjectSlug}`;
+}
+
+function getPracticeDraftKey(subjectSlug) {
+  return `${PRACTICE_DRAFT_PREFIX}${subjectSlug}`;
+}
+
+function readSessionValue(key) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionValue(key, value) {
+  try {
+    window.sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removeSessionValue(key) {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // Storage can be unavailable in restricted browser modes.
+  }
 }
 
 function randomIndex(maxExclusive) {
@@ -54,7 +84,7 @@ export function preparePracticeQuestions(questions, batchNumber) {
 export function storePracticeBatch(subjectSlug, questions) {
   if (!subjectSlug || !Array.isArray(questions) || questions.length === 0) return;
 
-  window.sessionStorage.setItem(
+  writeSessionValue(
     getLaunchKey(subjectSlug),
     JSON.stringify({ questions }),
   );
@@ -64,8 +94,8 @@ export function consumePracticeBatch(subjectSlug) {
   if (!subjectSlug) return null;
 
   const key = getLaunchKey(subjectSlug);
-  const raw = window.sessionStorage.getItem(key);
-  window.sessionStorage.removeItem(key);
+  const raw = readSessionValue(key);
+  removeSessionValue(key);
   if (!raw) return null;
 
   try {
@@ -78,19 +108,19 @@ export function consumePracticeBatch(subjectSlug) {
 
 export function clearPracticeBatch(subjectSlug) {
   if (!subjectSlug) return;
-  window.sessionStorage.removeItem(getLaunchKey(subjectSlug));
+  removeSessionValue(getLaunchKey(subjectSlug));
 }
 
 export function readActivePractice(subjectSlug) {
   if (!subjectSlug) return null;
 
-  const raw = window.sessionStorage.getItem(getActivePracticeKey(subjectSlug));
+  const raw = readSessionValue(getActivePracticeKey(subjectSlug));
   if (!raw) return null;
 
   try {
     return JSON.parse(raw);
   } catch {
-    window.sessionStorage.removeItem(getActivePracticeKey(subjectSlug));
+    removeSessionValue(getActivePracticeKey(subjectSlug));
     return null;
   }
 }
@@ -98,7 +128,7 @@ export function readActivePractice(subjectSlug) {
 export function markActivePractice(subjectSlug, details = {}) {
   if (!subjectSlug) return;
 
-  window.sessionStorage.setItem(
+  writeSessionValue(
     getActivePracticeKey(subjectSlug),
     JSON.stringify({
       ...details,
@@ -109,5 +139,35 @@ export function markActivePractice(subjectSlug, details = {}) {
 
 export function clearActivePractice(subjectSlug) {
   if (!subjectSlug) return;
-  window.sessionStorage.removeItem(getActivePracticeKey(subjectSlug));
+  removeSessionValue(getActivePracticeKey(subjectSlug));
+}
+
+export function storePracticeDraft(subjectSlug, draft) {
+  if (!subjectSlug || !Array.isArray(draft?.questions) || draft.questions.length === 0) return false;
+  return writeSessionValue(
+    getPracticeDraftKey(subjectSlug),
+    JSON.stringify({ ...draft, saved_at: new Date().toISOString() }),
+  );
+}
+
+export function readPracticeDraft(subjectSlug) {
+  if (!subjectSlug) return null;
+  const key = getPracticeDraftKey(subjectSlug);
+  const raw = readSessionValue(key);
+  if (!raw) return null;
+
+  try {
+    const draft = JSON.parse(raw);
+    if (!Array.isArray(draft?.questions) || draft.questions.length === 0) throw new Error("Invalid practice draft");
+    if (!Number.isFinite(Number(draft.deadline_at))) throw new Error("Invalid practice deadline");
+    return draft;
+  } catch {
+    removeSessionValue(key);
+    return null;
+  }
+}
+
+export function clearPracticeDraft(subjectSlug) {
+  if (!subjectSlug) return;
+  removeSessionValue(getPracticeDraftKey(subjectSlug));
 }

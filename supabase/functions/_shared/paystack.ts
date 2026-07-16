@@ -87,15 +87,12 @@ export async function getModuleOffering(
     throw new Error("This module is not available");
   }
 
-  const { count, error: questionError } = await adminClient
-    .from(getPublishedContentTable(subject.practice_type))
-    .select("id", { count: "exact", head: true })
-    .eq("exam_pack_id", packId)
-    .eq("subject_id", subject.id)
-    .eq("status", "published");
+  const hasPublishedContent = subject.practice_type === "oral"
+    ? await hasPublishedOralSet(adminClient, packId, subject.id)
+    : await hasPublishedObjectiveQuestions(adminClient, packId, subject.id);
 
-  if (questionError || !count) {
-    throw new Error("This module is not available for purchase yet");
+  if (!hasPublishedContent) {
+    throw new Error("This module has no published practice sets available for purchase yet");
   }
 
   const { data: offering, error: offeringError } = await adminClient
@@ -107,10 +104,44 @@ export async function getModuleOffering(
     .maybeSingle();
 
   if (offeringError || !offering) {
-    throw new Error("This module is not available for purchase yet");
+    throw new Error("This module does not have an active payment offering yet");
   }
 
   return { offering, subject };
+}
+
+async function hasPublishedObjectiveQuestions(
+  adminClient: ReturnType<typeof getAdminClient>,
+  packId: string,
+  subjectId: string,
+) {
+  const { count, error } = await adminClient
+    .from(getPublishedContentTable("objective"))
+    .select("id", { count: "exact", head: true })
+    .eq("exam_pack_id", packId)
+    .eq("subject_id", subjectId)
+    .eq("status", "published");
+
+  if (error) throw error;
+  return Number(count ?? 0) > 0;
+}
+
+async function hasPublishedOralSet(
+  adminClient: ReturnType<typeof getAdminClient>,
+  packId: string,
+  subjectId: string,
+) {
+  const { count, error } = await adminClient
+    .from("oral_questions")
+    .select("id, practice_sets!inner(id)", { count: "exact", head: true })
+    .eq("exam_pack_id", packId)
+    .eq("subject_id", subjectId)
+    .eq("status", "published")
+    .eq("practice_sets.practice_type", "oral")
+    .eq("practice_sets.status", "published");
+
+  if (error) throw error;
+  return Number(count ?? 0) > 0;
 }
 
 export async function getActiveModuleAccess(
@@ -150,12 +181,115 @@ export async function getModulePaymentOrder(reference: string) {
   const adminClient = getAdminClient();
   const { data, error } = await adminClient
     .from("payment_orders")
-    .select("id, user_id, exam_pack_id, subject_id, provider_reference, status, amount_kobo, currency")
+    .select("id, user_id, exam_pack_id, subject_id, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status")
     .eq("provider_reference", reference)
     .maybeSingle();
 
   if (error) throw error;
   return data ?? null;
+}
+
+export function getPaystackTransactionStatus(payload: Record<string, unknown>) {
+  const data = payload?.data as Record<string, unknown> | undefined;
+  const status = data?.status ?? payload?.status;
+  return typeof status === "string" ? status.trim().toLowerCase() : "";
+}
+
+export function getPaystackTransactionMessage(payload: Record<string, unknown>) {
+  const data = payload?.data as Record<string, unknown> | undefined;
+  const gatewayResponse = data?.gateway_response;
+  const message = data?.message ?? payload?.message ?? gatewayResponse;
+  return typeof message === "string" ? message.trim() : "";
+}
+
+export function getPaystackGatewayResponseCode(payload: Record<string, unknown>) {
+  const data = payload?.data as Record<string, unknown> | undefined;
+  const code = data?.gateway_response_code ?? payload?.gateway_response_code;
+  return typeof code === "string" ? code.trim().toLowerCase() : "";
+}
+
+function getPaystackPaidAt(payload: Record<string, unknown>) {
+  const data = payload?.data as Record<string, unknown> | undefined;
+  const value = data?.paid_at ?? data?.paidAt;
+  if (typeof value !== "string") return null;
+  const timestamp = new Date(value);
+  return Number.isNaN(timestamp.getTime()) ? null : timestamp.toISOString();
+}
+
+export function isFinalUnsuccessfulPaystackPayment(payload: Record<string, unknown>) {
+  const status = getPaystackTransactionStatus(payload);
+  return [
+    "abandoned",
+    "cancelled",
+    "canceled",
+    "declined",
+    "failed",
+    "reversed",
+    "timeout",
+  ].includes(status);
+}
+
+export async function recordModulePaymentStatus(
+  reference: string,
+  paymentPayload: Record<string, unknown>,
+) {
+  const adminClient = getAdminClient();
+  const order = await getModulePaymentOrder(reference);
+  if (!order) return null;
+
+  const providerStatus = getPaystackTransactionStatus(paymentPayload);
+  const isSuccessful = providerStatus === "success";
+  const isProcessing = ["ongoing", "pending", "processing", "queued"].includes(providerStatus);
+  const isUnsuccessful = isFinalUnsuccessfulPaystackPayment(paymentPayload);
+  const alreadyFulfilled = order.status === "active" || order.fulfillment_status === "fulfilled";
+  const updates: Record<string, unknown> = {
+    provider_payload: paymentPayload ?? {},
+    provider_checked_at: new Date().toISOString(),
+    provider_message: getPaystackTransactionMessage(paymentPayload) || null,
+    gateway_response_code: getPaystackGatewayResponseCode(paymentPayload) || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (providerStatus) updates.provider_status = providerStatus;
+  if (isSuccessful) {
+    updates.paid_at = getPaystackPaidAt(paymentPayload) ?? new Date().toISOString();
+    if (!alreadyFulfilled) updates.fulfillment_status = "pending";
+  } else if (isProcessing) {
+    if (!alreadyFulfilled) updates.status = "pending";
+  } else if (isUnsuccessful && !alreadyFulfilled) {
+    updates.status = providerStatus === "reversed" ? "expired" : "failed";
+    if (providerStatus === "reversed") updates.fulfillment_status = "revoked";
+  }
+
+  const { error } = await adminClient
+    .from("payment_orders")
+    .update(updates)
+    .eq("provider_reference", reference)
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw error;
+  return order;
+}
+
+export async function markModulePaymentFulfillmentFailed(
+  reference: string,
+  error: unknown,
+) {
+  const adminClient = getAdminClient();
+  const message = error instanceof Error ? error.message : "Module access activation failed";
+  const { error: updateError } = await adminClient
+    .from("payment_orders")
+    .update({
+      fulfillment_status: "failed",
+      fulfillment_error: message.slice(0, 500),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("provider_reference", reference)
+    .eq("provider_status", "success")
+    .neq("fulfillment_status", "fulfilled");
+
+  if (updateError) throw updateError;
 }
 
 export function validateModulePayment(

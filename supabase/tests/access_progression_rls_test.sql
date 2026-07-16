@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(33);
+select plan(39);
 
 update public.exam_packs set is_active = false;
 
@@ -154,6 +154,48 @@ select is(
   'successful activation leaves the payment order active'
 );
 
+insert into public.payment_orders (
+  id, user_id, exam_pack_id, subject_id, module_offering_id,
+  provider_reference, status, amount_kobo, currency,
+  provider_status, fulfillment_status, provider_payload
+) values
+  (
+    '96000000-0000-4000-8000-000000000002',
+    '92000000-0000-4000-8000-000000000003',
+    '90000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001',
+    '95000000-0000-4000-8000-000000000001',
+    'e2e-initialized-only', 'pending', 150000, 'NGN',
+    null, 'not_started', '{}'::jsonb
+  ),
+  (
+    '96000000-0000-4000-8000-000000000003',
+    '92000000-0000-4000-8000-000000000003',
+    '90000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001',
+    '95000000-0000-4000-8000-000000000001',
+    'e2e-declined', 'failed', 150000, 'NGN',
+    'failed', 'not_started', '{"data":{"status":"failed","gateway_response":"Declined"}}'::jsonb
+  ),
+  (
+    '96000000-0000-4000-8000-000000000004',
+    '92000000-0000-4000-8000-000000000003',
+    '90000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001',
+    '95000000-0000-4000-8000-000000000001',
+    'e2e-processing', 'pending', 150000, 'NGN',
+    'processing', 'not_started', '{"data":{"status":"processing"}}'::jsonb
+  ),
+  (
+    '96000000-0000-4000-8000-000000000005',
+    '92000000-0000-4000-8000-000000000003',
+    '90000000-0000-4000-8000-000000000001',
+    '91000000-0000-4000-8000-000000000001',
+    '95000000-0000-4000-8000-000000000001',
+    'e2e-access-issue', 'pending', 150000, 'NGN',
+    'success', 'failed', '{"data":{"status":"success"}}'::jsonb
+  );
+
 update public.profiles
 set
   phone_number = '+2348000000000',
@@ -264,6 +306,47 @@ select is(
   'owner can review every submitted question'
 );
 
+create temporary table idempotent_submission_result as
+select
+  public.submit_attempt_idempotent(
+    'timed_mock',
+    '91000000-0000-4000-8000-000000000001',
+    '[
+      {"question_id":"93000000-0000-4000-8000-000000000001","selected_option":"A"},
+      {"question_id":"93000000-0000-4000-8000-000000000002","selected_option":"B"},
+      {"question_id":"93000000-0000-4000-8000-000000000003","selected_option":"C"},
+      {"question_id":"93000000-0000-4000-8000-000000000004","selected_option":"D"}
+    ]'::jsonb,
+    1,
+    '94000000-0000-4000-8000-000000000001'
+  ) as first_response;
+
+alter table idempotent_submission_result add column second_response jsonb;
+update idempotent_submission_result set second_response = public.submit_attempt_idempotent(
+  'timed_mock',
+  '91000000-0000-4000-8000-000000000001',
+  '[
+    {"question_id":"93000000-0000-4000-8000-000000000001","selected_option":"A"},
+    {"question_id":"93000000-0000-4000-8000-000000000002","selected_option":"B"},
+    {"question_id":"93000000-0000-4000-8000-000000000003","selected_option":"C"},
+    {"question_id":"93000000-0000-4000-8000-000000000004","selected_option":"D"}
+  ]'::jsonb,
+  1,
+  '94000000-0000-4000-8000-000000000001'
+);
+
+select is(
+  (select first_response->>'attempt_id' from idempotent_submission_result),
+  (select second_response->>'attempt_id' from idempotent_submission_result),
+  'replaying one submission token returns the original attempt'
+);
+reset role;
+select is(
+  (select count(*)::integer from public.attempt_submission_keys where submission_token = '94000000-0000-4000-8000-000000000001'),
+  1,
+  'one submission token is stored once'
+);
+
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '92000000-0000-4000-8000-000000000003', true);
@@ -304,9 +387,28 @@ select is(
   'payment history identifies the module that was purchased'
 );
 select is(
-  (select count(*)::integer from public.payment_orders),
+  (select count(*)::integer from public.get_payment_history(10) where provider_reference in ('e2e-initialized-only', 'e2e-declined')),
+  0,
+  'initialized and declined checkout attempts are excluded from payment history'
+);
+select is(
+  (select record_type from public.get_payment_history(10) where provider_reference = 'e2e-processing'),
+  'attention',
+  'provider-confirmed processing is returned as an attention item'
+);
+select is(
+  (select record_type from public.get_payment_history(10) where provider_reference = 'e2e-access-issue'),
+  'attention',
+  'successful payment without fulfilled access is returned as an attention item'
+);
+select is(
+  (select count(*)::integer from public.get_payment_history(10) where record_type = 'history'),
   1,
-  'module buyer can read the owned payment order'
+  'only the fulfilled payment is included in completed payment history'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.payment_orders', 'SELECT'),
+  'module buyer reads sanitized payment history through the RPC only'
 );
 
 reset role;
@@ -374,10 +476,9 @@ select is(
   0,
   'candidate cannot review another candidate attempt'
 );
-select is(
-  (select count(*)::integer from public.payment_orders),
-  0,
-  'candidate cannot read another candidate payment order'
+select ok(
+  not has_table_privilege('authenticated', 'public.payment_orders', 'SELECT'),
+  'candidate cannot directly read payment order internals'
 );
 
 select * from finish();

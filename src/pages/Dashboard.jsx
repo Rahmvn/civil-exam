@@ -8,8 +8,11 @@ import {
   FreeBatchConfirmationModal,
   ScoreRing,
 } from "../components/DashboardUi";
+import { UnlockModuleModal } from "../components/UnlockModuleModal";
 import {
   getCandidateSummary,
+  initializePayment,
+  getModuleAccessCatalog,
   getModuleBatchAccess,
   getRecentAttempts,
   getReviewQueue,
@@ -23,11 +26,14 @@ import {
   formatDate,
   formatPercent,
   getFirstName,
+  hasStartablePublishedBatch,
   hasUsableCandidateModuleAccess,
+  isModulePurchaseUnavailable,
   isCandidateModuleComingSoon,
   getModuleDisplayName,
   getProgressionRecommendation,
   isPublishedBatchRow,
+  shouldShowCandidateModule,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
@@ -40,6 +46,7 @@ export default function Dashboard() {
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [moduleAccessCatalog, setModuleAccessCatalog] = useState([]);
   const [moduleBatchAccess, setModuleBatchAccess] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
@@ -47,16 +54,22 @@ export default function Dashboard() {
   const [subjectsNotice, setSubjectsNotice] = useState("");
   const [attemptsNotice, setAttemptsNotice] = useState("");
   const [reviewNotice, setReviewNotice] = useState("");
+  const [moduleDataError, setModuleDataError] = useState("");
   const [startConfirmSubject, setStartConfirmSubject] = useState(null);
   const [startingBatch, setStartingBatch] = useState(false);
+  const [unlockModule, setUnlockModule] = useState(null);
+  const [payingModule, setPayingModule] = useState("");
   const [ctaError, setCtaError] = useState("");
+  const [paymentError, setPaymentError] = useState(null);
 
   const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading && mountedRef.current) setLoading(true);
+    if (mountedRef.current) setModuleDataError("");
 
     const requests = [
       { key: "summary", promise: getCandidateSummary() },
       { key: "subjects", promise: getSubjects() },
+      { key: "catalog", promise: getModuleAccessCatalog() },
       { key: "batchAccess", promise: getModuleBatchAccess() },
       { key: "attempts", promise: getRecentAttempts(12) },
       { key: "review", promise: getReviewQueue(6) },
@@ -74,6 +87,7 @@ export default function Dashboard() {
           setSubjects(Array.isArray(result.value) ? result.value : []);
           setSubjectsNotice("");
         }
+        if (request.key === "catalog") setModuleAccessCatalog(Array.isArray(result.value) ? result.value : []);
         if (request.key === "batchAccess") setModuleBatchAccess(Array.isArray(result.value) ? result.value : []);
         if (request.key === "attempts") {
           setAttempts(Array.isArray(result.value) ? result.value : []);
@@ -95,6 +109,7 @@ export default function Dashboard() {
         setSubjects([]);
         setSubjectsNotice("Modules are not available right now.");
       }
+      if (request.key === "catalog") setModuleAccessCatalog([]);
       if (request.key === "batchAccess") setModuleBatchAccess([]);
       if (request.key === "attempts") {
         setAttempts([]);
@@ -105,6 +120,14 @@ export default function Dashboard() {
         setReviewNotice("Review items are not available right now.");
       }
     });
+
+    const criticalModuleKeys = new Set(["summary", "subjects", "catalog", "batchAccess"]);
+    const hasModuleFailure = requests.some((request, index) => (
+      criticalModuleKeys.has(request.key) && results[index].status === "rejected"
+    ));
+    setModuleDataError(hasModuleFailure
+      ? "Your module access could not be loaded. No access changes have been made."
+      : "");
 
     if (mountedRef.current) setLoading(false);
   }, []);
@@ -133,6 +156,16 @@ export default function Dashboard() {
 
     return grouped;
   }, [moduleBatchAccess]);
+  const catalogBySubject = useMemo(() => {
+    const entries = new Map();
+
+    moduleAccessCatalog.forEach((row) => {
+      if (!row?.subject_slug) return;
+      entries.set(row.subject_slug, row);
+    });
+
+    return entries;
+  }, [moduleAccessCatalog]);
 
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
@@ -155,14 +188,67 @@ export default function Dashboard() {
     return () => window.cancelAnimationFrame(frameId);
   }, [loading, location.hash]);
 
-  function buildModuleAction(subject, rows, progression, completedCount, publishedCount, hasModuleAccess) {
+  function openUnlockModule(subject) {
+    const catalogEntry = catalogBySubject.get(subject.slug);
+    setCtaError("");
+    setPaymentError(null);
+
+    if (!catalogEntry?.can_purchase || !Number.isFinite(Number(catalogEntry.price_kobo))) {
+      setCtaError("We could not prepare this module payment right now.");
+      return;
+    }
+
+    setUnlockModule({
+      ...subject,
+      subject_slug: subject.slug,
+      subject_name: subject.name,
+      price_kobo: catalogEntry?.price_kobo,
+      currency: catalogEntry?.currency,
+    });
+  }
+
+  function closeUnlockModule() {
+    setPaymentError(null);
+    setUnlockModule(null);
+  }
+
+  async function startPayment(subjectSlug) {
+    if (payingModule) return;
+    setPayingModule(subjectSlug);
+    setPaymentError(null);
+
+    try {
+      const payment = await initializePayment(subjectSlug);
+      if (payment.already_paid) {
+        await loadDashboardData({ showLoading: false });
+        closeUnlockModule();
+        return;
+      }
+      window.location.assign(payment.authorization_url);
+    } catch (paymentRequestError) {
+      logAppError("Dashboard payment start", paymentRequestError);
+      setPaymentError({
+        subjectSlug,
+        message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
+      });
+    } finally {
+      setPayingModule("");
+    }
+  }
+
+  function buildModuleAction(subject, rows, progression, completedCount, publishedCount, hasModuleAccess, canPurchase) {
     const recommendedRow = progression.recommendedRow;
     const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? recommendedRow;
     const targetRow = !hasModuleAccess ? batchOneRow : recommendedRow;
     const batchNumber = Number(targetRow?.batch_number ?? 1);
+    const purchaseUnavailable = isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows });
 
     if (publishedCount === 0 || !targetRow) {
       return { label: "Coming soon", disabled: true };
+    }
+
+    if (purchaseUnavailable) {
+      return { label: "Not available yet", disabled: true };
     }
 
     if (hasModuleAccess && completedCount === publishedCount) {
@@ -180,7 +266,7 @@ export default function Dashboard() {
     }
 
     if (targetRow.state === "locked_requires_payment" || !targetRow.can_start) {
-      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` };
+      return { label: "Unlock module", action: () => openUnlockModule(subject) };
     }
 
     if (targetRow.state === "completed_failed") {
@@ -188,7 +274,7 @@ export default function Dashboard() {
     }
 
     if (!hasModuleAccess && targetRow.state === "completed_passed") {
-      return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` };
+      return { label: "Unlock module", action: () => openUnlockModule(subject) };
     }
 
     if (Number(targetRow.attempt_count ?? 0) > 0) {
@@ -203,9 +289,13 @@ export default function Dashboard() {
 
   const moduleCards = subjectsForDisplay.map((subject) => {
     const rows = batchAccessBySubject[subject.slug] ?? [];
+    const catalogEntry = catalogBySubject.get(subject.slug) ?? null;
     const publishedRows = rows.filter(isPublishedBatchRow);
     const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? null;
-    const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
+    const hasModuleAccess =
+      Boolean(catalogEntry?.has_module_access) ||
+      rows.some((row) => Boolean(row?.is_paid));
+    const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
     const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
     const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
     const progressPercent = publishedRows.length > 0
@@ -217,6 +307,8 @@ export default function Dashboard() {
       publishedRows.length,
       hasModuleAccess,
     );
+    const purchaseUnavailable = isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows });
+    const hasStartableAccess = hasStartablePublishedBatch(rows);
     const hasModuleActivity = hasUsableModuleAccess || (!isComingSoon && publishedRows.some((row) =>
       Number(row?.attempt_count ?? 0) > 0
       || row?.state === "completed_passed"
@@ -224,11 +316,12 @@ export default function Dashboard() {
     ));
     const primaryAction = isComingSoon
       ? { label: "Coming soon", disabled: true }
-      : buildModuleAction(subject, rows, progression, completedCount, publishedRows.length, hasModuleAccess);
+      : buildModuleAction(subject, rows, progression, completedCount, publishedRows.length, hasModuleAccess, canPurchase);
+    const shouldEmphasizeUnlock = !purchaseUnavailable && !hasModuleAccess && primaryAction.label === "Try free" && !isComingSoon;
     const secondaryAction = hasUsableModuleAccess && completedCount < publishedRows.length
       ? { label: "Choose another practice set", to: `/modules/${subject.slug}` }
-      : !hasModuleAccess && primaryAction.label !== "Unlock module" && !isComingSoon
-        ? { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` }
+      : !purchaseUnavailable && !hasModuleAccess && primaryAction.label !== "Unlock module" && !isComingSoon
+        ? { label: "Unlock module", action: () => openUnlockModule(subject) }
         : null;
 
     return {
@@ -239,8 +332,17 @@ export default function Dashboard() {
       progressPercent,
       isComingSoon,
       isComplete: !isComingSoon && publishedRows.length > 0 && completedCount === publishedRows.length,
+      canPurchase,
       hasModuleAccess,
       hasUsableModuleAccess,
+      hasStartableAccess,
+      isVisibleToCandidate: shouldShowCandidateModule({
+        subject,
+        publishedCount: publishedRows.length,
+        hasModuleAccess,
+        canPurchase,
+        rows,
+      }),
       showProgress: hasModuleActivity,
       freePracticeComplete: Boolean(
         batchOneRow?.state === "completed_passed"
@@ -249,9 +351,13 @@ export default function Dashboard() {
         || batchOneRow?.reason_code === "free_batch_passed_requires_payment"
       ),
       primaryAction,
+      primaryActionClassName: shouldEmphasizeUnlock ? "module-free-action" : "primary-action",
       secondaryAction,
+      secondaryActionClassName: shouldEmphasizeUnlock
+        ? "primary-action"
+        : hasUsableModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action",
     };
-  });
+  }).filter((card) => card.isVisibleToCandidate);
   const unlockedModuleCount = moduleCards.filter((card) => card.hasUsableModuleAccess).length;
 
   const accessCopy = (() => {
@@ -310,12 +416,12 @@ export default function Dashboard() {
         <section className={`dashboard-welcome-panel dashboard-welcome-panel-compact ${attempts.length === 0 ? "without-score" : ""}`.trim()}>
           <div className="dashboard-welcome-copy dashboard-welcome-copy-intro">
             <h1>{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
-            <div className="dashboard-welcome-access-line">
+            {!moduleDataError ? <div className="dashboard-welcome-access-line">
               <span className={`dashboard-access-chip ${unlockedModuleCount > 0 ? "is-full" : "is-free"}`}>
                 {unlockedModuleCount > 0 ? "Module access" : "Free practice available"}
               </span>
               <p>{accessCopy}</p>
-            </div>
+            </div> : <p className="dashboard-authority-note">Module access is temporarily unavailable.</p>}
           </div>
           {attempts.length > 0 && (
             <ScoreRing
@@ -338,7 +444,12 @@ export default function Dashboard() {
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}
           </div>
 
-          <div className="dashboard-module-grid-v3">
+          {moduleDataError ? (
+            <div className="dashboard-module-load-error" role="alert">
+              <p>{moduleDataError}</p>
+              <button className="text-action" onClick={() => void loadDashboardData({ showLoading: false })} type="button">Try again</button>
+            </div>
+          ) : <div className="dashboard-module-grid-v3">
             {moduleCards.map((card) => (
               <article className={`module-card-v3 module-card-progressive ${card.hasUsableModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
                 <div className="module-card-v3-head">
@@ -362,16 +473,16 @@ export default function Dashboard() {
                   ) : null}
 
                   <div className="module-card-actions module-card-actions-progressive">
-                    <DashboardActionButton action={card.primaryAction} />
+                    <DashboardActionButton action={card.primaryAction} className={card.primaryActionClassName} />
                     <DashboardActionButton
                       action={card.secondaryAction}
-                      className={card.hasUsableModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action"}
+                      className={card.secondaryActionClassName}
                     />
                   </div>
                 </div>
               </article>
             ))}
-          </div>
+          </div>}
         </section>
 
         {(previewAttempts.length > 0 || attemptsNotice) && <section className="dashboard-section-block">
@@ -418,6 +529,13 @@ export default function Dashboard() {
         onCancel={() => setStartConfirmSubject(null)}
         onConfirm={() => void confirmStartFreeBatch()}
         subject={startConfirmSubject}
+      />
+      <UnlockModuleModal
+        error={paymentError && unlockModule && paymentError.subjectSlug === unlockModule.subject_slug ? paymentError.message : ""}
+        module={unlockModule}
+        onClose={closeUnlockModule}
+        onStartPayment={startPayment}
+        paying={payingModule === unlockModule?.subject_slug}
       />
     </AppFrame>
   );

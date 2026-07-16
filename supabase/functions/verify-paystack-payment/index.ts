@@ -2,8 +2,12 @@ import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
 import {
   activateEntitlement,
   activateModulePurchase,
+  getPaystackTransactionMessage,
+  getPaystackTransactionStatus,
   getAuthedUser,
   getModulePaymentOrder,
+  markModulePaymentFulfillmentFailed,
+  recordModulePaymentStatus,
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
@@ -46,18 +50,30 @@ Deno.serve(async (request) => {
       dataStatus: payload?.data?.status ?? null,
     });
 
-    if (!paystackResponse.ok || !payload.status || payload.data.status !== "success") {
-      return jsonResponse({ error: "Payment has not been completed" }, 400);
-    }
-
     const order = await getModulePaymentOrder(reference);
-    const paidUserId = getPaymentUserId(payload.data);
 
-    if (paidUserId !== user.id) {
-      return jsonResponse(
-        { error: "This payment reference does not belong to your account" },
-        403,
-      );
+    const providerStatus = getPaystackTransactionStatus(payload);
+
+    if (!paystackResponse.ok || !payload.status || providerStatus !== "success") {
+      if (order) {
+        if (order.user_id !== user.id) {
+          return jsonResponse(
+            { error: "This payment reference does not belong to your account" },
+            403,
+          );
+        }
+
+        if (providerStatus) await recordModulePaymentStatus(reference, payload);
+      }
+
+      const providerMessage = getPaystackTransactionMessage(payload);
+      const errorMessage = ["declined", "failed"].includes(providerStatus)
+        ? "Payment was declined"
+        : ["abandoned", "cancelled", "canceled", "timeout"].includes(providerStatus)
+          ? "Payment was not completed"
+          : providerMessage || "Payment has not been completed";
+
+      return jsonResponse({ error: errorMessage }, 400);
     }
 
     if (order) {
@@ -68,15 +84,37 @@ Deno.serve(async (request) => {
         );
       }
 
-      validateModulePayment(order, payload.data);
-      const entitlement = await activateModulePurchase(reference, payload.data);
+      await recordModulePaymentStatus(reference, payload);
 
-      return jsonResponse({
-        status: "active",
-        expires_at: entitlement.expires_at,
-        subject_name: entitlement.subject_name,
-        subject_slug: entitlement.subject_slug,
-      });
+      try {
+        const paidUserId = getPaymentUserId(payload.data);
+        if (paidUserId !== user.id) {
+          throw new Error("Payment metadata does not match the payment order");
+        }
+        validateModulePayment(order, payload.data);
+        const entitlement = await activateModulePurchase(reference, payload.data);
+
+        return jsonResponse({
+          status: "active",
+          expires_at: entitlement.expires_at,
+          subject_name: entitlement.subject_name,
+          subject_slug: entitlement.subject_slug,
+        });
+      } catch (fulfillmentError) {
+        await markModulePaymentFulfillmentFailed(reference, fulfillmentError);
+        return jsonResponse({
+          code: "PAYMENT_FULFILLMENT_FAILED",
+          error: "Payment was received, but module access still needs attention. Please check again.",
+        }, 409);
+      }
+    }
+
+    const paidUserId = getPaymentUserId(payload.data);
+    if (paidUserId !== user.id) {
+      return jsonResponse(
+        { error: "This payment reference does not belong to your account" },
+        403,
+      );
     }
 
     // Preserve verification for transactions initialized immediately before

@@ -331,6 +331,13 @@ test("admin guide and activity remain directly accessible and searchable", async
   await expectNoHorizontalOverflow(page);
 });
 
+test("admin help queue is directly accessible", async ({ page }) => {
+  await page.goto("/admin/help");
+  await expect(page.getByRole("heading", { name: "Help requests", exact: true })).toBeVisible();
+  await expect(page.getByPlaceholder("Search help requests...").first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
 test("admin catalogue has no serious automated accessibility violations", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Content", exact: true })).toBeVisible();

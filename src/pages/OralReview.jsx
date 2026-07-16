@@ -103,10 +103,9 @@ export default function OralReview() {
     <AppFrame showBottomNav={false}>
       <section className="oral-review-page">
         <header className="oral-review-header">
-          <div>
-            <p className="eyebrow">Oral practice complete</p>
-            <h1>Compare your answers</h1>
-            <span>{`${getModuleDisplayName(first?.subject_name)} · Practice set ${first?.set_number}`}</span>
+          <div className="oral-review-context">
+            <strong>{`${getModuleDisplayName(first?.subject_name)} - Practice set ${first?.set_number}`}</strong>
+            <span>Self-review only. No score is assigned.</span>
           </div>
           <div className="oral-review-summary" aria-label="Completion summary">
             <span><strong>{summary.answered}</strong> answered</span>
@@ -115,9 +114,6 @@ export default function OralReview() {
           </div>
         </header>
 
-        <p className="oral-review-guidance">
-          This is a self-review, not a score. Compare the meaning and key points rather than matching every word.
-        </p>
         {error && <p className="action-error" role="alert">{error}</p>}
 
         <div className="oral-review-list">
@@ -130,7 +126,7 @@ export default function OralReview() {
               <h2>{row.question_text}</h2>
 
               <div className="oral-review-comparison">
-                <section>
+                <section className={row.response_text?.trim() ? "" : "is-empty-response"}>
                   <h3>Your answer</h3>
                   <p className={row.response_text?.trim() ? "" : "is-empty"}>
                     {row.response_text?.trim() || "No answer was recorded."}

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import "./App.css";
 import { AuthProvider } from "./lib/AuthContext";
+import { NetworkStatus } from "./components/NetworkStatus";
 import { RequireAdmin, RequireCandidate } from "./lib/AuthGuards";
 import Access from "./pages/Access";
 import Admin from "./pages/Admin";
@@ -20,10 +21,13 @@ import Result from "./pages/Result";
 import Review from "./pages/Review";
 import ProfileSetup from "./pages/ProfileSetup";
 import RouteState from "./pages/RouteState";
+import ResetPassword from "./pages/ResetPassword";
+import Support from "./pages/Support";
 
 function AppProviders() {
   return (
     <AuthProvider>
+      <NetworkStatus />
       <Outlet />
     </AuthProvider>
   );
@@ -39,6 +43,7 @@ const router = createBrowserRouter([
       { path: "/practice-preview", element: <PracticePreview /> },
       { path: "/auth", element: <Auth /> },
       { path: "/auth/callback", element: <AuthCallback /> },
+      { path: "/reset-password", element: <ResetPassword /> },
       {
         path: "/dashboard",
         element: <RequireCandidate><Dashboard /></RequireCandidate>,
@@ -81,6 +86,10 @@ const router = createBrowserRouter([
         element: <RequireCandidate><Access /></RequireCandidate>,
       },
       {
+        path: "/help",
+        element: <RequireCandidate><Support /></RequireCandidate>,
+      },
+      {
         path: "/payment/verify",
         element: <RequireCandidate><PaymentVerify /></RequireCandidate>,
       },
@@ -94,6 +103,10 @@ const router = createBrowserRouter([
       },
       {
         path: "/admin/guide",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/help",
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
       {

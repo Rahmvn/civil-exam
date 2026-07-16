@@ -9,6 +9,7 @@ import {
 import { LoadingState } from "../components/LoadingState";
 import {
   getCandidateSummary,
+  getModuleAccessCatalog,
   getModuleBatchAccess,
   getRecentAttempts,
   getSubjects,
@@ -19,8 +20,11 @@ import {
   FALLBACK_SUBJECTS,
   getModuleDisplayName,
   getProgressionRecommendation,
+  hasStartablePublishedBatch,
+  isModulePurchaseUnavailable,
   isCandidateModuleComingSoon,
   isPublishedBatchRow,
+  shouldShowPracticeHubModule,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
@@ -30,6 +34,10 @@ function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }
   const batchNumber = Number(targetRow?.batch_number ?? 1);
 
   if (!targetRow) return null;
+
+  if (module.isPurchaseUnavailable) {
+    return { label: "Not available yet", disabled: true };
+  }
 
   if (module.isComplete && module.hasModuleAccess) {
     return { label: "Practice again", to: `/modules/${module.subject.slug}` };
@@ -128,6 +136,7 @@ export default function PracticeStart() {
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [moduleAccessCatalog, setModuleAccessCatalog] = useState([]);
   const [batchRows, setBatchRows] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,9 +147,10 @@ export default function PracticeStart() {
 
   const loadPracticeHub = useCallback(async () => {
     try {
-      const [candidateSummary, nextSubjects, rows, recentAttempts] = await Promise.all([
+      const [candidateSummary, nextSubjects, accessCatalog, rows, recentAttempts] = await Promise.all([
         getCandidateSummary(),
         getSubjects(),
+        getModuleAccessCatalog(),
         getModuleBatchAccess(),
         getRecentAttempts(12),
       ]);
@@ -148,6 +158,7 @@ export default function PracticeStart() {
       if (!mountedRef.current) return;
       setSummary(candidateSummary);
       setSubjects(Array.isArray(nextSubjects) ? nextSubjects : []);
+      setModuleAccessCatalog(Array.isArray(accessCatalog) ? accessCatalog : []);
       setBatchRows(Array.isArray(rows) ? rows : []);
       setAttempts(Array.isArray(recentAttempts) ? recentAttempts : []);
     } catch (loadError) {
@@ -173,6 +184,16 @@ export default function PracticeStart() {
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
   const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
+  const catalogBySubject = useMemo(() => {
+    const entries = new Map();
+
+    moduleAccessCatalog.forEach((row) => {
+      if (!row?.subject_slug) return;
+      entries.set(row.subject_slug, row);
+    });
+
+    return entries;
+  }, [moduleAccessCatalog]);
 
   const modules = useMemo(() => {
     const rowsBySubject = new Map();
@@ -186,10 +207,15 @@ export default function PracticeStart() {
 
     return subjectsForDisplay.map((subject) => {
       const rows = rowsBySubject.get(subject.slug) ?? [];
+      const catalogEntry = catalogBySubject.get(subject.slug) ?? null;
       const publishedRows = rows.filter(isPublishedBatchRow);
-      const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
+      const hasModuleAccess =
+        Boolean(catalogEntry?.has_module_access) ||
+        rows.some((row) => Boolean(row?.is_paid));
+      const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
       const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
       const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
+      const hasStartableAccess = hasStartablePublishedBatch(rows);
 
       return {
         subject,
@@ -201,22 +227,26 @@ export default function PracticeStart() {
           ? Math.round((completedCount / publishedRows.length) * 100)
           : 0,
         progression,
+        canPurchase,
         hasModuleAccess,
+        hasStartableAccess,
+        isPurchaseUnavailable: isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows }),
+        isVisibleInPracticeHub: shouldShowPracticeHubModule({ hasModuleAccess, canPurchase, rows }),
         isComingSoon: isCandidateModuleComingSoon(subject, publishedRows.length),
         isComplete: publishedRows.length > 0 && completedCount === publishedRows.length,
       };
     });
-  }, [batchRows, subjectsForDisplay]);
+  }, [batchRows, catalogBySubject, subjectsForDisplay]);
 
-  const publishedModules = modules.filter((module) => !module.isComingSoon);
+  const publishedModules = modules.filter((module) => !module.isComingSoon && module.isVisibleInPracticeHub);
   const practiceModules = publishedModules.filter(
-    (module) => module.hasModuleAccess || module.subject.slug === freeModuleSlug,
+    (module) => module.hasModuleAccess || module.hasStartableAccess,
   );
   const isChoosingFirstModule = practiceModules.length === 0;
   const lockedModules = isChoosingFirstModule
     ? []
     : publishedModules.filter(
-      (module) => !module.hasModuleAccess && module.subject.slug !== freeModuleSlug,
+      (module) => !module.hasModuleAccess && !module.hasStartableAccess,
     );
 
   function selectFreeModule(subject) {
@@ -238,6 +268,10 @@ export default function PracticeStart() {
   }
 
   function getSecondaryAction(module, { firstChoice = false } = {}) {
+    if (module.isPurchaseUnavailable) {
+      return null;
+    }
+
     if (firstChoice) {
       return {
         label: "Unlock module",
@@ -304,12 +338,14 @@ export default function PracticeStart() {
   return (
     <AppFrame>
       <section className="practice-hub">
-        <header className="practice-hub-heading">
-          <h1>{isChoosingFirstModule ? "Choose a module" : "Practice"}</h1>
-          {isChoosingFirstModule && !error && (
-            <p>Try one module free, or unlock the module you need.</p>
-          )}
-        </header>
+        {(isChoosingFirstModule || error) && (
+          <header className="practice-hub-heading">
+            {isChoosingFirstModule && <h1>Choose a module</h1>}
+            {isChoosingFirstModule && !error && (
+              <p>Try one module free, or unlock the module you need.</p>
+            )}
+          </header>
+        )}
 
         {error ? (
           <article className="practice-hub-error">

@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  clearOralResponseDraft,
   formatOralTime,
   getOralRemainingSeconds,
   getPracticeRoute,
   getServerOffset,
+  readOralResponseDraft,
+  storeOralResponseDraft,
 } from "../../src/lib/oralPractice.js";
+
+class MemoryStorage {
+  #values = new Map();
+  getItem(key) { return this.#values.has(key) ? this.#values.get(key) : null; }
+  setItem(key, value) { this.#values.set(key, String(value)); }
+  removeItem(key) { this.#values.delete(key); }
+}
+
+globalThis.window = { sessionStorage: new MemoryStorage() };
 
 test("oral timers format without becoming negative", () => {
   assert.equal(formatOralTime(180), "3:00");
@@ -33,4 +45,11 @@ test("module practice routes are selected by explicit practice type", () => {
     getPracticeRoute({ slug: "public-service-rules", practice_type: "objective" }, 1),
     "/practice/public-service-rules?batch=1",
   );
+});
+
+test("oral response drafts remain local until the server confirms them", () => {
+  assert.equal(storeOralResponseDraft("attempt-1", "question-1", "My latest answer"), true);
+  assert.equal(readOralResponseDraft("attempt-1", "question-1"), "My latest answer");
+  clearOralResponseDraft("attempt-1", "question-1");
+  assert.equal(readOralResponseDraft("attempt-1", "question-1"), null);
 });

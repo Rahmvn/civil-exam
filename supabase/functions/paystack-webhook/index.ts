@@ -3,6 +3,9 @@ import {
   activateEntitlement,
   activateModulePurchase,
   getModulePaymentOrder,
+  isFinalUnsuccessfulPaystackPayment,
+  markModulePaymentFulfillmentFailed,
+  recordModulePaymentStatus,
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
@@ -34,13 +37,23 @@ Deno.serve(async (request) => {
       const order = await getModulePaymentOrder(event.data.reference);
 
       if (order) {
-        validateModulePayment(order, event.data);
-        await activateModulePurchase(event.data.reference, event.data);
+        await recordModulePaymentStatus(event.data.reference, event);
+        try {
+          validateModulePayment(order, event.data);
+          await activateModulePurchase(event.data.reference, event.data);
+        } catch (fulfillmentError) {
+          await markModulePaymentFulfillmentFailed(event.data.reference, fulfillmentError);
+          throw fulfillmentError;
+        }
       } else {
         // Preserve in-flight transactions initialized before module payments.
         await validateLegacyPayment(event.data);
         await activateEntitlement(event.data.reference, event.data);
       }
+    }
+
+    if (event.data?.reference && isFinalUnsuccessfulPaystackPayment(event)) {
+      await recordModulePaymentStatus(event.data.reference, event);
     }
 
     return jsonResponse({ received: true });

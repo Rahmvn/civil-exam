@@ -40,7 +40,8 @@ export default function Auth() {
   const { isAdmin, loading, user } = useAuth();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const mode = searchParams.get("mode") === "sign-up" ? "sign-up" : "sign-in";
+  const requestedMode = searchParams.get("mode");
+  const mode = requestedMode === "sign-up" || requestedMode === "forgot" ? requestedMode : "sign-in";
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +49,7 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [signUpStep, setSignUpStep] = useState(1);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState("error");
   const [busyMethod, setBusyMethod] = useState("");
   const stateReturnTo = location.state?.from ? buildLocationPath(location.state.from) : null;
   const redirectTo = getSafeReturnTo(searchParams.get("returnTo") || stateReturnTo, "/dashboard");
@@ -70,6 +72,7 @@ export default function Auth() {
     setShowPassword(false);
     setSignUpStep(1);
     setMessage("");
+    setMessageTone("error");
   }
 
   async function continueWithGoogle() {
@@ -93,6 +96,29 @@ export default function Auth() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (mode === "forgot") {
+      setBusyMethod("email");
+      setMessage("");
+      setMessageTone("error");
+
+      try {
+        const callbackUrl = new URL("/auth/callback", window.location.origin);
+        callbackUrl.searchParams.set("mode", "recovery");
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: callbackUrl.toString(),
+        });
+        if (error) throw error;
+        setMessageTone("success");
+        setMessage("If an account uses this email, a password reset link has been sent.");
+      } catch (error) {
+        logAppError("Password reset request", error);
+        setMessage(getAuthMessage(error, mode));
+      } finally {
+        setBusyMethod("");
+      }
+      return;
+    }
 
     if (mode === "sign-up" && signUpStep === 1) {
       setMessage("");
@@ -118,6 +144,7 @@ export default function Auth() {
         if (error) throw error;
         if (!data.session) {
           switchMode("sign-in");
+          setMessageTone("success");
           setMessage("Account created. Sign in with your email and password to continue.");
         }
       } else {
@@ -135,6 +162,7 @@ export default function Auth() {
   const isBusy = Boolean(busyMethod);
   const isSignUpDetailsStep = mode === "sign-up" && signUpStep === 1;
   const isSignUpPasswordStep = mode === "sign-up" && signUpStep === 2;
+  const isForgotPassword = mode === "forgot";
 
   function updateField(setter, value) {
     setter(value);
@@ -152,19 +180,21 @@ export default function Auth() {
       </Link>
 
       <section className="auth-card-v2">
-        <div className="auth-mode-switch" aria-label="Authentication mode">
-          <button className={`auth-mode-option ${mode === "sign-in" ? "is-active" : ""}`} onClick={() => switchMode("sign-in")} type="button">Sign in</button>
-          <button className={`auth-mode-option ${mode === "sign-up" ? "is-active" : ""}`} onClick={() => switchMode("sign-up")} type="button">Create account</button>
-        </div>
+        {!isForgotPassword && (
+          <div className="auth-mode-switch" aria-label="Authentication mode">
+            <button className={`auth-mode-option ${mode === "sign-in" ? "is-active" : ""}`} onClick={() => switchMode("sign-in")} type="button">Sign in</button>
+            <button className={`auth-mode-option ${mode === "sign-up" ? "is-active" : ""}`} onClick={() => switchMode("sign-up")} type="button">Create account</button>
+          </div>
+        )}
 
         <header className="auth-card-heading">
-          <h1>{mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
-          <p>{mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
+          <h1>{isForgotPassword ? "Reset your password" : mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
+          <p>{isForgotPassword ? "Enter your email and we will send you a secure reset link." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
         </header>
 
         {authNotice && <p className="auth-inline-notice">{authNotice}</p>}
 
-        {!isSignUpPasswordStep && (
+        {!isSignUpPasswordStep && !isForgotPassword && (
           <>
             <button className="auth-google-button" disabled={isBusy} onClick={() => void continueWithGoogle()} type="button">
               <GoogleMark />
@@ -232,17 +262,23 @@ export default function Auth() {
                     <input autoComplete="current-password" disabled={isBusy} minLength={6} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Your password" required type={showPassword ? "text" : "password"} value={password} />
                     <button className="auth-password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button>
                   </div>
+                  <button className="auth-forgot-link" onClick={() => switchMode("forgot")} type="button">Forgot password?</button>
                 </label>
               )}
             </>
           )}
 
-          {message && <p className="auth-form-message" role="alert">{message}</p>}
+          {message && <p className={`auth-form-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
           {isSignUpPasswordStep ? (
             <div className="auth-step-actions">
               <button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button>
               <button className="auth-email-submit" disabled={isBusy} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button>
+            </div>
+          ) : isForgotPassword ? (
+            <div className="auth-step-actions">
+              <button className="auth-step-back" disabled={isBusy} onClick={() => switchMode("sign-in")} type="button">Back</button>
+              <button className="auth-email-submit" disabled={isBusy} type="submit">{busyMethod === "email" ? "Sending..." : "Send reset link"}</button>
             </div>
           ) : (
             <button className="auth-email-submit" disabled={isBusy} type="submit">

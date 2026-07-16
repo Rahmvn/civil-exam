@@ -271,9 +271,10 @@ export function AppFrame({
           {showFooter && (
             <footer className="authenticated-footer">
               <span>{BRAND_NAME}</span>
-              <Link onClick={closeAccountMenu} to="/access">
-                Access and payment
-              </Link>
+              <div className="authenticated-footer-links">
+                <Link onClick={closeAccountMenu} to="/access">Access and payment</Link>
+                <Link onClick={closeAccountMenu} to="/help">Help</Link>
+              </div>
             </footer>
           )}
         </div>

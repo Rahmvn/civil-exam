@@ -53,9 +53,16 @@ update oral_admin_fixture set set_id = (
   select (public.admin_create_practice_set((select module_id from oral_admin_fixture), 2)->>'id')::uuid
 );
 
-select is((select practice_type::text from public.practice_sets where id = (select set_id from oral_admin_fixture)),
+select is((
+  select practice_type::text
+  from public.get_admin_practice_sets_v2((select module_id from oral_admin_fixture))
+  where practice_set_id = (select set_id from oral_admin_fixture)
+),
   'oral', 'new practice sets inherit the module type');
 
+-- Raw table writes are RPC-only for application roles. Use the trusted test
+-- role solely to prove the table trigger still rejects mixed content types.
+reset role;
 select throws_ok(
   $$ insert into public.questions (
     exam_pack_id, subject_id, practice_set_id, batch_number, batch_position,
@@ -66,6 +73,7 @@ select throws_ok(
   'The objective question must belong to an objective set in the same module and exam pack',
   'objective questions cannot enter an oral set'
 );
+set local role authenticated;
 
 update oral_admin_fixture set first_id = (
   select (public.admin_save_oral_question(jsonb_build_object(

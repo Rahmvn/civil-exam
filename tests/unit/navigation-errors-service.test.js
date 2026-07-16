@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { friendlyErrorMessage, isExpectedAbortError } from "../../src/lib/errors.js";
+import { friendlyErrorMessage, isExpectedAbortError, PROBLEM_CODES, resolveAppProblem } from "../../src/lib/errors.js";
 import { buildLocationPath, getSafeReturnTo, withReturnTo } from "../../src/lib/navigation.js";
 import { formatServiceLevelLabel } from "../../src/lib/serviceLevel.js";
 
@@ -18,7 +18,7 @@ test("return navigation preserves safe local paths and rejects redirects", () =>
 test("friendly errors redact infrastructure details into actionable messages", () => {
   assert.equal(
     friendlyErrorMessage(new Error("TypeError: Failed to fetch")),
-    "Unable to connect right now. Please check your internet connection and try again.",
+    "Check your internet connection, then try again.",
   );
   assert.equal(
     friendlyErrorMessage(new Error("permission denied by row-level security")),
@@ -30,13 +30,28 @@ test("friendly errors redact infrastructure details into actionable messages", (
   );
   assert.equal(
     friendlyErrorMessage(new Error("column practice_type does not exist")),
-    "This section is still being prepared.",
+    "Refresh the page to load the latest version. If it continues, return to the dashboard.",
   );
   assert.equal(
     friendlyErrorMessage(new Error("Payment reference is required")),
     "We could not confirm your payment yet. Please try again.",
   );
   assert.equal(friendlyErrorMessage(new Error("unexpected internal detail"), "Safe fallback"), "Safe fallback");
+});
+
+test("problem classification gives recovery behavior independently from display copy", () => {
+  const timeout = resolveAppProblem(Object.assign(new Error("request timed out"), { status: 504 }));
+  assert.equal(timeout.code, PROBLEM_CODES.TIMEOUT);
+  assert.equal(timeout.retryable, true);
+  assert.equal(timeout.action, "retry");
+
+  const activeOral = resolveAppProblem(new Error("Finish your active oral practice before starting another set"));
+  assert.equal(activeOral.code, PROBLEM_CODES.ACTIVE_ORAL);
+  assert.equal(activeOral.action, "resume");
+
+  const declined = resolveAppProblem(new Error("Payment was declined"));
+  assert.equal(declined.code, PROBLEM_CODES.PAYMENT_DECLINED);
+  assert.equal(declined.retryable, false);
 });
 
 test("abort detection accepts browser cancellation variants only", () => {

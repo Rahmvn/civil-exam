@@ -15,6 +15,7 @@ const KNOWN_USER_MESSAGES = new Map([
   ["Please sign in to continue.", "Please sign in to continue."],
   ["Unlock full access to continue.", "Unlock this module to continue."],
   ["Unlock full access to continue to the next batch.", "Unlock this module to continue."],
+  ["Finish your active oral practice before starting another set", "You already have an oral practice in progress. Continue that active practice before starting another set."],
   ["Questions for this module are not available yet.", "Questions for this module are not available yet."],
   ["This batch is no longer available. Start again from the dashboard.", "This batch is no longer available. Start again from the dashboard."],
   ["Your service level is locked. Contact support if it needs correction", "Your service level is locked. Contact support if it needs correction."],
@@ -22,6 +23,8 @@ const KNOWN_USER_MESSAGES = new Map([
   ["Free trial limit reached", "Your free batch access has been used."],
   ["Payment reference is required", "We could not confirm your payment yet. Please try again."],
   ["Payment has not been completed", "We could not confirm your payment yet. Please try again."],
+  ["Payment was declined", "This payment was declined. No access was unlocked."],
+  ["Payment was not completed", "This payment was not completed. No access was unlocked."],
   ["This payment reference does not belong to your account", "We could not confirm your payment yet. Please try again."],
 ]);
 
@@ -79,6 +82,12 @@ const QUESTION_CONTENT_MARKERS = [
   "subject",
 ];
 
+let appErrorReporter = null;
+
+export function configureAppErrorReporter(reporter) {
+  appErrorReporter = typeof reporter === "function" ? reporter : null;
+}
+
 function normalizeMessage(error) {
   return String(
     error?.message ??
@@ -88,6 +97,11 @@ function normalizeMessage(error) {
       error ??
       "",
   ).trim();
+}
+
+function getStatus(error) {
+  const status = Number(error?.status ?? error?.statusCode ?? error?.context?.status ?? 0);
+  return Number.isFinite(status) ? status : 0;
 }
 
 function includesAny(message, markers) {
@@ -110,7 +124,6 @@ export function isExpectedAbortError(error) {
 }
 
 export function logAppError(context, error) {
-  if (!import.meta.env.DEV) return;
   if (error?.__loggedByApp) return;
   if (isExpectedAbortError(error)) return;
 
@@ -118,52 +131,185 @@ export function logAppError(context, error) {
     if (error && typeof error === "object") {
       error.__loggedByApp = true;
     }
-    console.error(`[${context}]`, error);
+    if (import.meta.env.DEV) console.error(`[${context}]`, error);
+    if (appErrorReporter) {
+      const problem = resolveAppProblem(error);
+      void Promise.resolve(appErrorReporter({
+        context: String(context).slice(0, 120),
+        problemCode: problem.code,
+        status: problem.status || null,
+      })).catch(() => {});
+    }
   } catch {
     // ignore logging failures
   }
 }
 
-export function friendlyErrorMessage(error, fallback = "Something went wrong. Please try again.") {
+export const PROBLEM_CODES = Object.freeze({
+  CANCELLED: "request_cancelled",
+  OFFLINE: "connection_offline",
+  NETWORK: "connection_failed",
+  TIMEOUT: "request_timeout",
+  RATE_LIMITED: "rate_limited",
+  SESSION: "session_required",
+  ACCESS: "access_denied",
+  ACTIVE_ORAL: "active_oral_conflict",
+  PAYMENT_DECLINED: "payment_declined",
+  PAYMENT_UNCONFIRMED: "payment_unconfirmed",
+  CONTENT_UNAVAILABLE: "content_unavailable",
+  CLIENT_VERSION: "client_version_mismatch",
+  VALIDATION: "validation_failed",
+  SERVER: "server_unavailable",
+  UNKNOWN: "unknown_problem",
+});
+
+export function resolveAppProblem(error, options = {}) {
   const rawMessage = normalizeMessage(error);
   const message = rawMessage.toLowerCase();
+  const status = getStatus(error);
+  const fallback = options.fallback ?? "Something went wrong. Please try again.";
+  const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
 
-  if (!message) {
-    return fallback;
+  const problem = (code, title, userMessage, action, retryable = false) => ({
+    code,
+    title,
+    message: userMessage,
+    action,
+    retryable,
+    status,
+  });
+
+  if (isExpectedAbortError(error)) {
+    return problem(PROBLEM_CODES.CANCELLED, "Request cancelled", "Nothing was changed.", "none");
   }
 
-  const knownMessage = KNOWN_USER_MESSAGES.get(rawMessage);
-  if (knownMessage) {
-    return knownMessage;
+  if (isOffline) {
+    return problem(
+      PROBLEM_CODES.OFFLINE,
+      "You are offline",
+      "Reconnect to the internet, then try again.",
+      "reconnect",
+      true,
+    );
   }
 
-  if (includesAny(message, NO_ROW_MARKERS)) {
-    return "This content is not available yet.";
+  if (error?.isRequestTimeout || includesAny(message, ["timed out", "took too long", "timeout"])) {
+    return problem(
+      PROBLEM_CODES.TIMEOUT,
+      "This is taking longer than expected",
+      "Check your connection, then try again.",
+      "retry",
+      true,
+    );
   }
 
-  if (includesAny(message, SCHEMA_MARKERS)) {
-    return "This section is still being prepared.";
+  if (status === 429 || message.includes("rate limit") || message.includes("too many requests")) {
+    return problem(
+      PROBLEM_CODES.RATE_LIMITED,
+      "Please wait a moment",
+      "There have been too many attempts. Wait briefly, then try again.",
+      "wait",
+      true,
+    );
   }
 
   if (includesAny(message, NETWORK_MARKERS)) {
-    return "Unable to connect right now. Please check your internet connection and try again.";
+    return problem(
+      PROBLEM_CODES.NETWORK,
+      "We could not connect",
+      "Check your internet connection, then try again.",
+      "retry",
+      true,
+    );
   }
 
-  if (includesAny(message, ACCESS_MARKERS)) {
-    return "You do not have access to this content yet.";
+  if (rawMessage === "Finish your active oral practice before starting another set") {
+    return problem(
+      PROBLEM_CODES.ACTIVE_ORAL,
+      "Oral practice already in progress",
+      KNOWN_USER_MESSAGES.get(rawMessage),
+      "resume",
+    );
+  }
+
+  if (rawMessage === "Payment was declined" || message.includes("payment was declined")) {
+    return problem(
+      PROBLEM_CODES.PAYMENT_DECLINED,
+      "Payment declined",
+      "This payment was declined. No access was unlocked.",
+      "new-payment",
+    );
   }
 
   if (includesAny(message, PAYMENT_MARKERS)) {
-    return "We could not confirm your payment yet. Please try again.";
+    return problem(
+      PROBLEM_CODES.PAYMENT_UNCONFIRMED,
+      "Payment not confirmed",
+      KNOWN_USER_MESSAGES.get(rawMessage) ?? "We could not confirm your payment yet. Check its status before trying to pay again.",
+      "check-payment",
+      true,
+    );
   }
 
   if (includesAny(message, AUTH_MARKERS)) {
-    return "Please sign in to continue.";
+    return problem(
+      PROBLEM_CODES.SESSION,
+      "Sign in required",
+      "Please sign in to continue.",
+      "sign-in",
+    );
   }
 
-  if (includesAny(message, QUESTION_CONTENT_MARKERS)) {
-    return "Practice questions for this module are not available yet.";
+  if (includesAny(message, ACCESS_MARKERS)) {
+    return problem(
+      PROBLEM_CODES.ACCESS,
+      "Access unavailable",
+      KNOWN_USER_MESSAGES.get(rawMessage) ?? "You do not have access to this content yet.",
+      "view-access",
+    );
   }
 
-  return fallback;
+  if (includesAny(message, SCHEMA_MARKERS)) {
+    return problem(
+      PROBLEM_CODES.CLIENT_VERSION,
+      "This page needs to be refreshed",
+      "Refresh the page to load the latest version. If it continues, return to the dashboard.",
+      "refresh",
+      true,
+    );
+  }
+
+  if (includesAny(message, NO_ROW_MARKERS) || includesAny(message, QUESTION_CONTENT_MARKERS)) {
+    return problem(
+      PROBLEM_CODES.CONTENT_UNAVAILABLE,
+      "Content unavailable",
+      KNOWN_USER_MESSAGES.get(rawMessage) ?? "This content is not available yet.",
+      "go-back",
+    );
+  }
+
+  if (KNOWN_USER_MESSAGES.has(rawMessage) || status === 400 || error?.code === "P0001") {
+    return problem(
+      PROBLEM_CODES.VALIDATION,
+      "Action could not be completed",
+      KNOWN_USER_MESSAGES.get(rawMessage) ?? fallback,
+      "correct-or-return",
+    );
+  }
+
+  if (status >= 500) {
+    return problem(
+      PROBLEM_CODES.SERVER,
+      "Service temporarily unavailable",
+      "Your request could not be completed right now. Please try again.",
+      "retry",
+      true,
+    );
+  }
+
+  return problem(PROBLEM_CODES.UNKNOWN, "Something went wrong", fallback, "retry", true);
+}
+
+export function friendlyErrorMessage(error, fallback = "Something went wrong. Please try again.") {
+  return resolveAppProblem(error, { fallback }).message;
 }

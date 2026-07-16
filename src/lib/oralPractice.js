@@ -3,6 +3,46 @@ export const ORAL_DURATION_OPTIONS = [
   { seconds: 300, label: "5 minutes", note: "More time to develop your answer" },
 ];
 
+const ORAL_DRAFT_PREFIX = "oral-response-draft:";
+
+function oralDraftKey(attemptId, questionId) {
+  return `${ORAL_DRAFT_PREFIX}${attemptId}:${questionId}`;
+}
+
+export function storeOralResponseDraft(attemptId, questionId, responseText) {
+  if (!attemptId || !questionId) return false;
+  try {
+    window.sessionStorage.setItem(oralDraftKey(attemptId, questionId), JSON.stringify({
+      response_text: String(responseText ?? ""),
+      saved_at: new Date().toISOString(),
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function readOralResponseDraft(attemptId, questionId) {
+  if (!attemptId || !questionId) return null;
+  try {
+    const raw = window.sessionStorage.getItem(oralDraftKey(attemptId, questionId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.response_text === "string" ? parsed.response_text : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearOralResponseDraft(attemptId, questionId) {
+  if (!attemptId || !questionId) return;
+  try {
+    window.sessionStorage.removeItem(oralDraftKey(attemptId, questionId));
+  } catch {
+    // Storage can be unavailable in restricted browser modes.
+  }
+}
+
 export function formatOralTime(totalSeconds) {
   const safeSeconds = Math.max(0, Math.ceil(Number(totalSeconds) || 0));
   const minutes = Math.floor(safeSeconds / 60);

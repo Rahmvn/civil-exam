@@ -7,12 +7,16 @@ import {
   getBatchProgressionGuidance,
   getBatchStatusConfig,
   hasUsableCandidateModuleAccess,
+  hasStartablePublishedBatch,
   isCandidateModuleComingSoon,
+  isModulePurchaseUnavailable,
   getLockReason,
   getModuleDisplayName,
   getPracticeModuleRecommendation,
   getProgressionRecommendation,
   isPublishedBatchRow,
+  shouldShowCandidateModule,
+  shouldShowPracticeHubModule,
 } from "../../src/lib/moduleDisplay.js";
 
 function batch(number, state, overrides = {}) {
@@ -113,4 +117,69 @@ test("module recommendations prioritize recent unfinished usable modules", () =>
   assert.equal(result.availableCount, 2);
   assert.equal(result.completedCount, 1);
   assert.equal(result.allComplete, false);
+});
+
+test("practice hub visibility respects startable access and sale availability", () => {
+  const completedFreeOralRows = [
+    batch(1, "completed_passed", { can_start: false }),
+    batch(2, "locked_requires_payment", { can_start: false }),
+  ];
+  const startableFreeRows = [
+    batch(1, "available", { can_start: true, reason_code: "free_batch_available" }),
+  ];
+
+  assert.equal(hasStartablePublishedBatch(completedFreeOralRows), false);
+  assert.equal(hasStartablePublishedBatch(startableFreeRows), true);
+  assert.equal(
+    shouldShowPracticeHubModule({
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: completedFreeOralRows,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldShowPracticeHubModule({
+      hasModuleAccess: false,
+      canPurchase: true,
+      rows: completedFreeOralRows,
+    }),
+    true,
+  );
+  assert.equal(
+    isModulePurchaseUnavailable({
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: completedFreeOralRows,
+    }),
+    true,
+  );
+  assert.equal(
+    isModulePurchaseUnavailable({
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: startableFreeRows,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldShowCandidateModule({
+      subject: { slug: "oral-questions", lifecycle_status: "active" },
+      publishedCount: 2,
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: completedFreeOralRows,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldShowCandidateModule({
+      subject: { slug: "future-module", lifecycle_status: "coming_soon" },
+      publishedCount: 0,
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: [],
+    }),
+    true,
+  );
 });

@@ -136,8 +136,8 @@ select ok(
 );
 
 select ok(
-  (select price_kobo = 150000 and not is_active
-   from public.module_offerings
+  (select price_kobo = 150000 and not available_for_purchase
+   from public.get_admin_content_modules()
    where subject_id = (select module_id from admin_module_fixture)),
   'a new module receives an inactive price record'
 );
@@ -150,8 +150,10 @@ select is(
   'the admin catalogue returns the draft module'
 );
 
+reset role;
 delete from public.module_offerings
 where subject_id = (select module_id from admin_module_fixture);
+set local role authenticated;
 
 select public.admin_update_module(
   (select module_id from admin_module_fixture),
@@ -166,8 +168,8 @@ select public.admin_update_module(
 );
 
 select ok(
-  (select price_kobo = 175000 and not is_active
-   from public.module_offerings
+  (select price_kobo = 175000 and not available_for_purchase
+   from public.get_admin_content_modules()
    where subject_id = (select module_id from admin_module_fixture)),
   'module settings recreate a missing offering safely'
 );
@@ -180,8 +182,8 @@ select (public.admin_create_practice_set(
 
 select ok(
   (select set_number = 1 and expected_question_count = 2 and status = 'draft'
-   from public.practice_sets
-   where id = (select set_id from admin_set_fixture)),
+   from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+   where practice_set_id = (select set_id from admin_set_fixture)),
   'the first practice set is numbered and kept in draft'
 );
 
@@ -315,7 +317,9 @@ select throws_ok(
 select public.admin_transition_practice_set((select set_id from admin_set_fixture), 'review');
 
 select is(
-  (select status::text from public.practice_sets where id = (select set_id from admin_set_fixture)),
+  (select status::text
+   from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+   where practice_set_id = (select set_id from admin_set_fixture)),
   'review',
   'the set enters review'
 );
@@ -332,7 +336,9 @@ select is(
 select public.admin_transition_practice_set((select set_id from admin_set_fixture), 'published');
 
 select is(
-  (select status::text from public.practice_sets where id = (select set_id from admin_set_fixture)),
+  (select status::text
+   from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+   where practice_set_id = (select set_id from admin_set_fixture)),
   'published',
   'the reviewed set publishes'
 );
@@ -347,10 +353,9 @@ select is(
 );
 
 select ok(
-  (select s.lifecycle_status = 'active' and s.is_active and not mo.is_active
-   from public.subjects as s
-   join public.module_offerings as mo on mo.subject_id = s.id
-   where s.id = (select module_id from admin_module_fixture)),
+  (select lifecycle_status = 'active' and is_active and not available_for_purchase
+   from public.get_admin_content_modules()
+   where subject_id = (select module_id from admin_module_fixture)),
   'publishing activates content without silently enabling sales'
 );
 
@@ -364,9 +369,9 @@ select is(
 );
 
 select ok(
-  (select mo.is_active
-   from public.module_offerings as mo
-   where mo.subject_id = (select module_id from admin_module_fixture)),
+  (select available_for_purchase
+   from public.get_admin_content_modules()
+   where subject_id = (select module_id from admin_module_fixture)),
   'the explicit sales setting is persisted'
 );
 
@@ -409,10 +414,9 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', 'a1000000-0000-4000-8000-000000000002', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
-select is(
-  (select count(*)::integer from public.practice_sets),
-  0,
-  'candidate cannot read practice-set administration rows'
+select ok(
+  not has_table_privilege('authenticated', 'public.practice_sets', 'SELECT'),
+  'candidate cannot read practice-set administration rows directly'
 );
 
 select is(
@@ -622,18 +626,19 @@ select ok(
   (select status = 'archived'
       and not exists (
         select 1 from public.questions q
-        where q.practice_set_id = practice_sets.id and q.status = 'published'
+        where q.practice_set_id = practice_sets_rpc.practice_set_id
+          and q.status = 'published'
       )
-   from public.practice_sets
-   where id = (select set_id from admin_set_fixture)),
+   from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+     as practice_sets_rpc
+   where practice_sets_rpc.practice_set_id = (select set_id from admin_set_fixture)),
   'archiving removes the set from new practice without deleting it'
 );
 
 select ok(
-  (select s.lifecycle_status = 'coming_soon' and s.is_active and not mo.is_active
-   from public.subjects as s
-   join public.module_offerings as mo on mo.subject_id = s.id
-   where s.id = (select module_id from admin_module_fixture)),
+  (select lifecycle_status = 'coming_soon' and is_active and not available_for_purchase
+   from public.get_admin_content_modules()
+   where subject_id = (select module_id from admin_module_fixture)),
   'archiving the final live set stops sales without deleting the module'
 );
 
@@ -660,10 +665,9 @@ select (public.admin_create_practice_set(
 insert into admin_delete_question_fixture (question_id)
 select (public.admin_save_question(jsonb_build_object(
   'practice_set_id', (
-    select ps.id
-    from public.practice_sets as ps
-    where ps.subject_id = (select module_id from admin_module_fixture)
-      and ps.set_number = 2
+    select practice_set_id
+    from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+    where set_number = 2
   ),
   'batch_position', 1,
   'difficulty', 'medium',
@@ -697,10 +701,9 @@ select ok(
 
 select ok(
   public.admin_delete_empty_practice_set(
-    (select ps.id
-     from public.practice_sets as ps
-     where ps.subject_id = (select module_id from admin_module_fixture)
-       and ps.set_number = 2)
+    (select practice_set_id
+     from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+     where set_number = 2)
   ),
   'an unused empty draft set can be deleted'
 );
@@ -724,10 +727,9 @@ select (public.admin_create_practice_set(
 insert into admin_history_question_fixture (question_id)
 select (public.admin_save_question(jsonb_build_object(
   'practice_set_id', (
-    select ps.id
-    from public.practice_sets as ps
-    where ps.subject_id = (select module_id from admin_module_fixture)
-      and ps.set_number = 2
+    select practice_set_id
+    from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+    where set_number = 2
   ),
   'batch_position', 1,
   'difficulty', 'medium',
@@ -776,10 +778,9 @@ select is(
 );
 
 select is(
-  (select ps.status::text
-   from public.practice_sets as ps
-   where ps.subject_id = (select module_id from admin_module_fixture)
-     and ps.set_number = 2),
+  (select status::text
+   from public.get_admin_practice_sets((select module_id from admin_module_fixture))
+   where set_number = 2),
   'draft',
   'removing the last historical question leaves its practice set editable'
 );

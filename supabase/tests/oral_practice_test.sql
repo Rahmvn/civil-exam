@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(35);
+select plan(40);
 
 update public.exam_packs set is_active = false;
 
@@ -248,11 +248,42 @@ select is(
   'candidate direct table reads cannot see oral questions or model answers'
 );
 
-select is(
-  (select count(*)::integer from public.oral_attempts),
-  0,
+select ok(
+  not has_table_privilege('authenticated', 'public.oral_attempts', 'SELECT'),
   'candidate direct table reads cannot bypass the oral attempt API'
 );
+
+select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000002', true);
+
+select ok(
+  (
+    select can_start and state = 'available' and reason_code = 'free_batch_available'
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  'new unpaid candidate can choose oral set 1 as free practice'
+);
+
+select ok(
+  (
+    select not can_start and state = 'locked_requires_payment' and reason_code = 'requires_payment'
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 2
+  ),
+  'new unpaid candidate cannot start later oral sets without module access'
+);
+
+select is(
+  (
+    select message
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  'Choose this module for your free oral practice.',
+  'oral catalogue explains the free choice path'
+);
+
+select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000001', true);
 
 select is(
   (select count(*)::integer from public.get_oral_practice_set_access('oral-questions-test')),
@@ -327,6 +358,22 @@ select is(
   'resuming cannot silently change the attempt duration'
 );
 
+select is(
+  (
+    select (public.start_or_resume_oral_attempt('oral-questions-test', 2, 300)->>'attempt_id')::uuid
+  ),
+  (select attempt_id from oral_attempt_fixture),
+  'starting a different oral set resumes the current active attempt'
+);
+
+select is(
+  (
+    select (public.start_or_resume_oral_attempt('oral-questions-test', 2, 300)->>'set_number')::integer
+  ),
+  1,
+  'resuming from another set keeps the candidate in the active set'
+);
+
 select lives_ok(
   $$
     select public.save_oral_response_draft(
@@ -371,9 +418,8 @@ select is(
   'a repeated continue request is idempotent and cannot skip a question'
 );
 
-select is(
-  (select count(*)::integer from public.oral_responses),
-  0,
+select ok(
+  not has_table_privilege('authenticated', 'public.oral_responses', 'SELECT'),
   'candidate direct reads cannot inspect active response snapshots'
 );
 
@@ -451,9 +497,8 @@ select is(
   'locking the final response completes the oral attempt'
 );
 
-select is(
-  (select count(*)::integer from public.oral_responses),
-  0,
+select ok(
+  not has_table_privilege('authenticated', 'public.oral_responses', 'SELECT'),
   'candidate direct reads still cannot inspect completed response rows'
 );
 

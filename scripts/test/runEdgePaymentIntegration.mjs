@@ -82,11 +82,17 @@ async function jsonBody(request) {
 
 async function startMockPaystack() {
   const initialized = new Map();
+  let oralInitializationCount = 0;
   const server = createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.method === "POST" && request.url === "/transaction/initialize") {
       const body = await jsonBody(request);
-      initialized.set(body.reference, body);
+      initialized.set(body.reference, {
+        ...body,
+        testScenario: body.metadata?.subject_slug === "e2e-oral-questions"
+          ? ++oralInitializationCount
+          : 0,
+      });
       response.end(JSON.stringify({
         status: true,
         message: "Authorization URL created",
@@ -99,21 +105,40 @@ async function startMockPaystack() {
       return;
     }
 
-    const verifyMatch = request.url?.match(/^\/transaction\/verify\/(.+)$/);
-    if (request.method === "GET" && verifyMatch) {
-      const reference = decodeURIComponent(verifyMatch[1]);
-      const initializedPayment = initialized.get(reference);
-      if (!initializedPayment) {
+      const verifyMatch = request.url?.match(/^\/transaction\/verify\/(.+)$/);
+      if (request.method === "GET" && verifyMatch) {
+        const reference = decodeURIComponent(verifyMatch[1]);
+        const initializedPayment = initialized.get(reference);
+        if (!initializedPayment) {
         response.statusCode = 404;
-        response.end(JSON.stringify({ status: false, message: "Unknown reference" }));
-        return;
-      }
-      response.end(JSON.stringify({
-        status: true,
-        data: {
-          status: "success",
+          response.end(JSON.stringify({ status: false, message: "Unknown reference" }));
+          return;
+        }
+        if (
+          initializedPayment.metadata?.subject_slug === "e2e-oral-questions" &&
+          initializedPayment.testScenario === 1
+        ) {
+          response.end(JSON.stringify({
+            status: true,
+            data: {
+              status: "failed",
+              reference,
+              amount: initializedPayment.amount,
+              currency: initializedPayment.currency,
+              gateway_response: "Declined",
+              metadata: initializedPayment.metadata,
+            },
+          }));
+          return;
+        }
+        response.end(JSON.stringify({
+          status: true,
+          data: {
+            status: "success",
           reference,
-          amount: initializedPayment.amount,
+          amount: initializedPayment.testScenario === 2
+            ? initializedPayment.amount + 100
+            : initializedPayment.amount,
           currency: initializedPayment.currency,
           metadata: initializedPayment.metadata,
         },
@@ -126,7 +151,7 @@ async function startMockPaystack() {
   });
 
   await new Promise((resolve) => server.listen(0, "0.0.0.0", resolve));
-  return { server, port: server.address().port };
+  return { server, port: server.address().port, initialized };
 }
 
 async function waitForFunctions(apiUrl, publicKey, processHandle, logs) {
@@ -217,17 +242,92 @@ async function main() {
 
     const oral = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-oral-questions" });
     if (!oral.ok) fail(`Published oral module payment initialization failed: ${await oral.text()}`);
+    const oralBody = await oral.json();
+    const declinedOral = await invoke(apiUrl, "verify-paystack-payment", token, { reference: oralBody.reference });
+    if (declinedOral.ok) fail("A declined module payment was accepted as verified.");
+    const declinedOrder = await service.from("payment_orders")
+      .select("status, provider_status, fulfillment_status, provider_payload")
+      .eq("provider_reference", oralBody.reference)
+      .single();
+    if (
+      declinedOrder.error ||
+      declinedOrder.data.status !== "failed" ||
+      declinedOrder.data.provider_status !== "failed" ||
+      declinedOrder.data.fulfillment_status !== "not_started"
+    ) {
+      fail("Declined module payment was not persisted as failed.");
+    }
+    const declinedHistory = await candidate.rpc("get_payment_history", { requested_limit: 20 });
+    if (
+      declinedHistory.error ||
+      declinedHistory.data.some((payment) => payment.provider_reference === oralBody.reference)
+    ) {
+      fail("Declined checkout attempt leaked into customer payment history.");
+    }
 
-    const initialized = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "public-financial-management" });
+    const invalidFulfillment = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-oral-questions" });
+    if (!invalidFulfillment.ok) fail(`Access-issue payment initialization failed: ${await invalidFulfillment.text()}`);
+    const invalidFulfillmentBody = await invalidFulfillment.json();
+    const rejectedFulfillment = await invoke(apiUrl, "verify-paystack-payment", token, { reference: invalidFulfillmentBody.reference });
+    if (rejectedFulfillment.status !== 409) fail("A paid transaction with invalid fulfillment data was not classified as an access issue.");
+    const attentionOrder = await service.from("payment_orders")
+      .select("status, provider_status, fulfillment_status, paid_at")
+      .eq("provider_reference", invalidFulfillmentBody.reference)
+      .single();
+    if (
+      attentionOrder.error ||
+      attentionOrder.data.status !== "pending" ||
+      attentionOrder.data.provider_status !== "success" ||
+      attentionOrder.data.fulfillment_status !== "failed" ||
+      !attentionOrder.data.paid_at
+    ) {
+      fail("Paid transaction was not retained when access fulfillment failed.");
+    }
+    const attentionHistory = await candidate.rpc("get_payment_history", { requested_limit: 20 });
+    const attentionRecord = attentionHistory.data?.find((payment) => payment.provider_reference === invalidFulfillmentBody.reference);
+    if (attentionHistory.error || attentionRecord?.record_type !== "attention") {
+      fail("Paid transaction with an access issue was not surfaced for customer attention.");
+    }
+
+    const initialized = await invoke(
+      apiUrl,
+      "initialize-paystack-payment",
+      token,
+      { subject_slug: "public-financial-management" },
+      { Origin: "https://untrusted-origin.example" },
+    );
     if (!initialized.ok) fail(`Module payment initialization failed: ${await initialized.text()}`);
     const initializedBody = await initialized.json();
     if (!initializedBody.reference || !initializedBody.authorization_url) fail("Initialization response omitted payment details.");
+    if (mock.initialized.get(initializedBody.reference)?.callback_url !== "http://127.0.0.1:4173/payment/verify") {
+      fail("Payment callback was not derived from the trusted APP_URL configuration.");
+    }
+
+    const resumedInitialization = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "public-financial-management" });
+    if (!resumedInitialization.ok) fail(`Recent checkout could not be recovered: ${await resumedInitialization.text()}`);
+    const resumedBody = await resumedInitialization.json();
+    if (resumedBody.reference !== initializedBody.reference || resumedBody.resumed !== true) {
+      fail("Repeated initialization created or returned a different checkout.");
+    }
 
     const verified = await invoke(apiUrl, "verify-paystack-payment", token, { reference: initializedBody.reference });
     if (!verified.ok) fail(`Module payment verification failed: ${await verified.text()}`);
     const verifiedBody = await verified.json();
     if (verifiedBody.status !== "active" || verifiedBody.subject_slug !== "public-financial-management") {
       fail("Verification did not activate the expected module.");
+    }
+    const fulfilledOrder = await service.from("payment_orders")
+      .select("status, provider_status, fulfillment_status, paid_at")
+      .eq("provider_reference", initializedBody.reference)
+      .single();
+    if (
+      fulfilledOrder.error ||
+      fulfilledOrder.data.status !== "active" ||
+      fulfilledOrder.data.provider_status !== "success" ||
+      fulfilledOrder.data.fulfillment_status !== "fulfilled" ||
+      !fulfilledOrder.data.paid_at
+    ) {
+      fail("Successful payment truth and access fulfillment were not persisted together.");
     }
 
     const replay = await invoke(apiUrl, "verify-paystack-payment", token, { reference: initializedBody.reference });

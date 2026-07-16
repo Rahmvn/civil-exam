@@ -198,6 +198,39 @@ export function isPublishedBatchRow(row) {
   return Boolean(row) && Number(row.published_question_count ?? 0) > 0 && row.state !== "unavailable_not_published";
 }
 
+export function hasStartablePublishedBatch(rows = []) {
+  return (rows ?? []).some((row) => isPublishedBatchRow(row) && Boolean(row?.can_start));
+}
+
+export function shouldShowPracticeHubModule({
+  hasModuleAccess = false,
+  canPurchase = false,
+  rows = [],
+} = {}) {
+  return Boolean(hasModuleAccess) || Boolean(canPurchase) || hasStartablePublishedBatch(rows);
+}
+
+export function shouldShowCandidateModule({
+  subject = null,
+  publishedCount = 0,
+  hasModuleAccess = false,
+  canPurchase = false,
+  rows = [],
+} = {}) {
+  return (
+    isCandidateModuleComingSoon(subject, publishedCount) ||
+    shouldShowPracticeHubModule({ hasModuleAccess, canPurchase, rows })
+  );
+}
+
+export function isModulePurchaseUnavailable({
+  hasModuleAccess = false,
+  canPurchase = false,
+  rows = [],
+} = {}) {
+  return !hasModuleAccess && !canPurchase && !hasStartablePublishedBatch(rows);
+}
+
 export function getProgressionRecommendation(rows, { isPaidUser = false } = {}) {
   const sortedRows = [...(rows ?? [])].sort(
     (left, right) => Number(left?.batch_number ?? 0) - Number(right?.batch_number ?? 0),

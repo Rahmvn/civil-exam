@@ -10,6 +10,7 @@ import {
 } from "../components/DashboardUi";
 import {
   getCandidateSummary,
+  getModuleAccessCatalog,
   getModuleBatchAccess,
   getRecentAttempts,
   getSubjects,
@@ -22,6 +23,7 @@ import {
   getLockReason,
   getModuleDisplayName,
   getProgressionRecommendation,
+  isModulePurchaseUnavailable,
   isCandidateModuleComingSoon,
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
@@ -34,6 +36,7 @@ export default function ModuleDetail() {
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
+  const [moduleAccessCatalog, setModuleAccessCatalog] = useState([]);
   const [rows, setRows] = useState([]);
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +60,7 @@ export default function ModuleDetail() {
     const requests = [
       { key: "summary", promise: getCandidateSummary() },
       { key: "subjects", promise: getSubjects() },
+      { key: "catalog", promise: getModuleAccessCatalog() },
       { key: "batchAccess", promise: getModuleBatchAccess(subjectSlug) },
       { key: "attempts", promise: getRecentAttempts() },
     ];
@@ -84,6 +88,7 @@ export default function ModuleDetail() {
 
     setSummary(next.summary ?? null);
     setSubjects(Array.isArray(next.subjects) && next.subjects.length > 0 ? next.subjects : FALLBACK_SUBJECTS);
+    setModuleAccessCatalog(Array.isArray(next.catalog) ? next.catalog : []);
     setRows(Array.isArray(next.batchAccess) ? next.batchAccess : []);
     setAttempts(Array.isArray(next.attempts) ? next.attempts : []);
     setLoading(false);
@@ -100,9 +105,13 @@ export default function ModuleDetail() {
 
   const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
   const subject = subjectsForDisplay.find((item) => item.slug === subjectSlug) ?? null;
+  const catalogEntry = moduleAccessCatalog.find((item) => item?.subject_slug === subjectSlug) ?? null;
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
-  const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
+  const hasModuleAccess =
+    Boolean(catalogEntry?.has_module_access) ||
+    rows.some((row) => Boolean(row?.is_paid));
+  const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
   const selectedModuleName = getModuleDisplayName(
     subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
@@ -133,9 +142,14 @@ export default function ModuleDetail() {
 
   function getBatchPrimaryAction(row) {
     const batchNumber = Number(row?.batch_number ?? 1);
+    const purchaseUnavailable = isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows });
 
     if (isComingSoon || !row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
       return { label: "Coming soon", disabled: true };
+    }
+
+    if (purchaseUnavailable) {
+      return { label: "Not available yet", disabled: true };
     }
 
     if (row.state === "locked_requires_payment" || !row.can_start) {

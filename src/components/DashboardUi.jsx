@@ -143,6 +143,17 @@ export function DashboardActionButton({ action, className = "primary-action" }) 
 }
 
 export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfirm }) {
+  useEffect(() => {
+    if (!subject || loading) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onCancel();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [loading, onCancel, subject]);
+
   if (!subject) return null;
 
   return (
@@ -150,21 +161,31 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
       <section
         aria-labelledby="free-batch-modal-title"
         aria-modal="true"
-        className="auth-modal-card dashboard-confirmation-modal"
+        className="auth-modal-card dashboard-confirmation-modal free-batch-confirmation-modal"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="eyebrow">Free practice</p>
-        <h2 id="free-batch-modal-title">{`Use your free practice for ${getModuleDisplayName(subject.name)}?`}</h2>
-        <p>
-          You can complete Practice Set 1, with one retry if your first attempt does not pass.
-        </p>
-        <div className="auth-modal-actions">
-          <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
-            {loading ? "Starting..." : "Use free practice"}
+        <header className="free-batch-confirmation-header">
+          <div>
+            <h2 id="free-batch-modal-title">Use free practice?</h2>
+            <p>{getModuleDisplayName(subject.name)}</p>
+          </div>
+          <button
+            aria-label="Close free practice confirmation"
+            className="free-batch-confirmation-close"
+            disabled={loading}
+            onClick={onCancel}
+            type="button"
+          >
+            &times;
           </button>
-          <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
-            Not now
+        </header>
+        <p className="free-batch-confirmation-note">
+          Your free practice unlocks Practice Set 1 for this module and includes one retry.
+        </p>
+        <div className="free-batch-confirmation-actions">
+          <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
+            {loading ? "Starting..." : "Start free practice"}
           </button>
         </div>
       </section>

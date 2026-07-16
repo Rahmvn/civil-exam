@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   clearActivePractice,
+  clearPracticeDraft,
   consumePracticeBatch,
   markActivePractice,
   preparePracticeQuestions,
   readActivePractice,
+  readPracticeDraft,
   shufflePracticeItems,
   storePracticeBatch,
+  storePracticeDraft,
 } from "../../src/lib/practiceSession.js";
 
 class MemoryStorage {
@@ -62,4 +65,25 @@ test("active practice markers are durable, timestamped, and safely cleared", () 
 
   clearActivePractice("pfm");
   assert.equal(readActivePractice("pfm"), null);
+});
+
+test("practice drafts preserve answers and reject corrupt recovery data", () => {
+  assert.equal(storePracticeDraft("pfm", {
+    questions: [{ id: "q1", option_order: ["A", "B", "C", "D"] }],
+    answers: { q1: "B" },
+    flagged: ["q1"],
+    current_index: 0,
+    deadline_at: Date.now() + 60_000,
+  }), true);
+
+  const draft = readPracticeDraft("pfm");
+  assert.equal(draft.answers.q1, "B");
+  assert.deepEqual(draft.flagged, ["q1"]);
+
+  window.sessionStorage.setItem("practice-draft:broken", JSON.stringify({ questions: [] }));
+  assert.equal(readPracticeDraft("broken"), null);
+  assert.equal(window.sessionStorage.getItem("practice-draft:broken"), null);
+
+  clearPracticeDraft("pfm");
+  assert.equal(readPracticeDraft("pfm"), null);
 });

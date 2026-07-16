@@ -49,6 +49,20 @@ test("paid dashboard, modules, account, and access routes remain connected", asy
   await expectNoHorizontalOverflow(page);
 });
 
+test("candidate can submit and track a help request", async ({ page }) => {
+  await page.goto("/help");
+  await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();
+
+  await page.getByLabel("What do you need help with?").selectOption("technical");
+  await page.getByLabel("Issue").fill("Practice page did not respond");
+  await page.getByLabel("What happened?").fill("The practice page remained open but the action did not complete when selected.");
+  await page.getByRole("button", { name: "Send request" }).click();
+
+  await expect(page.getByText("Your request has been received. You can follow its status below.")).toBeVisible();
+  await expect(page.getByText("Practice page did not respond", { exact: true })).toBeVisible();
+  await expect(page.getByText("Received", { exact: true })).toBeVisible();
+});
+
 test("coming-soon lifecycle is never presented as unlocked", async ({ page }) => {
   await page.goto("/dashboard");
   const dashboardModule = page.locator("article").filter({ hasText: "Coming Soon Regression" }).first();
@@ -179,14 +193,15 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
 });
 
-test("active practice warns on refresh instead of silently continuing", async ({ page }) => {
+test("active practice can recover saved work after refresh", async ({ page }) => {
   await page.goto("/practice/public-financial-management?batch=2");
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await page.getByRole("button", { name: "Mark for review" }).first().click();
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Your previous answers were not submitted." })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start again" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Continue your practice?" })).toBeVisible();
+  await page.getByRole("button", { name: "Resume practice" }).click();
+  await expect(page.getByRole("button", { name: "Remove review flag" }).first()).toBeVisible();
 });
 
 test("authenticated shell has no serious automated accessibility violations", async ({ page }) => {
