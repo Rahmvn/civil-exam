@@ -96,9 +96,37 @@ async function clearAdminContentFixtures(client) {
   const moduleIds = modules.map((module) => module.id);
   if (moduleIds.length === 0) return;
 
+  const attempts = requireResult(
+    await client.from("attempts").select("id").in("subject_id", moduleIds),
+    "Find admin fixture attempts",
+  );
+  const attemptIds = attempts.map((attempt) => attempt.id);
+  if (attemptIds.length > 0) {
+    requireResult(
+      await client.from("attempt_answers").delete().in("attempt_id", attemptIds),
+      "Clear admin fixture attempt answers",
+    );
+    requireResult(
+      await client.from("attempts").delete().in("id", attemptIds),
+      "Clear admin fixture attempts",
+    );
+  }
+
   requireResult(
     await client.from("oral_attempts").delete().in("subject_id", moduleIds),
     "Clear admin fixture oral attempts",
+  );
+  requireResult(
+    await client.from("module_entitlements").delete().in("subject_id", moduleIds),
+    "Clear admin fixture module entitlements",
+  );
+  requireResult(
+    await client.from("payment_orders").delete().in("subject_id", moduleIds),
+    "Clear admin fixture payment orders",
+  );
+  requireResult(
+    await client.from("module_offerings").delete().in("subject_id", moduleIds),
+    "Clear admin fixture module offerings",
   );
   requireResult(
     await client.from("oral_questions").delete().in("subject_id", moduleIds),
@@ -159,6 +187,8 @@ async function seedPracticeContent(client, packId, subjects) {
     question("20000000-0000-4000-8000-000000000001", psr.id, packId, 1, 1, "A", "Which principle supports impartial public service?"),
     question("20000000-0000-4000-8000-000000000002", psr.id, packId, 1, 2, "B", "Which action follows an approved public service procedure?"),
   ];
+  rows[0].explanation = "";
+  rows[0].reference_note = "";
 
   requireResult(await client.from("questions").upsert(rows), "Seed practice fixtures");
 }
@@ -233,6 +263,36 @@ async function seedOralPracticeContent(client, packId) {
   return subject;
 }
 
+async function seedComingSoonModule(client, packId) {
+  const subject = requireResult(
+    await client.from("subjects").insert({
+      name: "Coming Soon Regression",
+      slug: "e2e-coming-soon",
+      description: "Lifecycle and entitlement precedence regression fixture.",
+      sort_order: 90,
+      is_active: true,
+      batch_size: 5,
+      pass_mark_percent: 70,
+      lifecycle_status: "coming_soon",
+      practice_type: "objective",
+    }).select("id, slug, name, practice_type").single(),
+    "Create coming-soon module fixture",
+  );
+
+  requireResult(
+    await client.from("module_offerings").upsert({
+      exam_pack_id: packId,
+      subject_id: subject.id,
+      price_kobo: 250000,
+      currency: "NGN",
+      is_active: false,
+    }, { onConflict: "exam_pack_id,subject_id" }),
+    "Create disabled coming-soon module offer",
+  );
+
+  return subject;
+}
+
 export default async function globalSetup() {
   const supabaseUrl = requireLocalUrl(process.env.E2E_SUPABASE_URL);
   const secretKey = process.env.E2E_SUPABASE_SECRET_KEY;
@@ -270,6 +330,7 @@ export default async function globalSetup() {
   await resetCandidateData(client, freeUser);
   await seedPracticeContent(client, packs[0].id, subjects);
   const oralSubject = await seedOralPracticeContent(client, packs[0].id);
+  const comingSoonSubject = await seedComingSoonModule(client, packs[0].id);
   const allTestSubjects = [...subjects, oralSubject];
 
   requireResult(
@@ -314,6 +375,14 @@ export default async function globalSetup() {
         status: "active",
         expires_at: "2027-12-31T23:59:59.000Z",
         metadata: { source: "local-e2e" },
+      },
+      {
+        user_id: paidUser.id,
+        exam_pack_id: packs[0].id,
+        subject_id: comingSoonSubject.id,
+        status: "active",
+        expires_at: "2027-12-31T23:59:59.000Z",
+        metadata: { source: "local-e2e-coming-soon-regression" },
       },
     ]),
     "Create paid module entitlements",

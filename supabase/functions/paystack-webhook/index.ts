@@ -6,28 +6,7 @@ import {
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
-
-function bytesToHex(bytes: ArrayBuffer) {
-  return [...new Uint8Array(bytes)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function isValidSignature(body: string, signature: string | null) {
-  if (!signature) return false;
-
-  const secret = requireEnv("PAYSTACK_SECRET_KEY");
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-512" },
-    false,
-    ["sign"],
-  );
-  const signed = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
-
-  return bytesToHex(signed) === signature;
-}
+import { isValidPaystackSignature } from "../_shared/payment-validation.js";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -44,7 +23,7 @@ Deno.serve(async (request) => {
 
     console.log("Received Paystack webhook", { signature: Boolean(signature) });
 
-    if (!(await isValidSignature(body, signature))) {
+    if (!(await isValidPaystackSignature(body, signature, requireEnv("PAYSTACK_SECRET_KEY")))) {
       console.warn("Invalid Paystack webhook signature");
       return jsonResponse({ error: "Invalid signature" }, 401);
     }

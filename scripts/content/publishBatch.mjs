@@ -249,7 +249,6 @@ async function main() {
     reviewedDraftRows.length === 0 &&
     reviewedPublishedRows.length === expectedBatchSize &&
     devSeedPublishedRows.length === 0 &&
-    emptyExplanationCount === 0 &&
     duplicateReviewedRows.length === 0;
   const state = alreadyPublished ? "ALREADY_PUBLISHED" : "READY_OR_BLOCKED";
 
@@ -265,10 +264,6 @@ async function main() {
 
   if (!alreadyPublished && reviewedPublishedRows.length !== 0) {
     errors.push(`Reviewed rows already published: ${reviewedPublishedRows.length}.`);
-  }
-
-  if (emptyExplanationCount !== 0) {
-    errors.push(`Reviewed rows with empty explanations: ${emptyExplanationCount}.`);
   }
 
   if (duplicateReviewedRows.length !== 0) {

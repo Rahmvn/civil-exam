@@ -1,5 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.2";
 import { requireEnv } from "./http.ts";
+import {
+  getPaymentUserId,
+  getPublishedContentTable,
+  validateLegacyPaymentData,
+  validateModulePaymentData,
+} from "./payment-validation.js";
 
 export function getAdminClient() {
   return createClient(
@@ -71,9 +77,10 @@ export async function getModuleOffering(
 ) {
   const { data: subject, error: subjectError } = await adminClient
     .from("subjects")
-    .select("id, name, slug")
+    .select("id, name, slug, lifecycle_status, practice_type")
     .eq("slug", subjectSlug)
     .eq("is_active", true)
+    .eq("lifecycle_status", "active")
     .maybeSingle();
 
   if (subjectError || !subject) {
@@ -81,7 +88,7 @@ export async function getModuleOffering(
   }
 
   const { count, error: questionError } = await adminClient
-    .from("questions")
+    .from(getPublishedContentTable(subject.practice_type))
     .select("id", { count: "exact", head: true })
     .eq("exam_pack_id", packId)
     .eq("subject_id", subject.id)
@@ -155,39 +162,13 @@ export function validateModulePayment(
   order: Record<string, unknown>,
   paymentData: Record<string, unknown>,
 ) {
-  if (Number(paymentData.amount) !== Number(order.amount_kobo)) {
-    throw new Error("The verified payment amount does not match this module order");
-  }
-
-  const paidCurrency = String(paymentData.currency ?? "").toUpperCase();
-  const orderCurrency = String(order.currency ?? "").toUpperCase();
-
-  if (!paidCurrency || paidCurrency !== orderCurrency) {
-    throw new Error("The verified payment currency does not match this module order");
-  }
-
-  const metadata = paymentData.metadata as Record<string, unknown> | undefined;
-  if (
-    metadata?.payment_order_id !== order.id
-    || metadata?.user_id !== order.user_id
-    || metadata?.subject_id !== order.subject_id
-  ) {
-    throw new Error("The verified payment does not match this module order");
-  }
+  validateModulePaymentData(order, paymentData);
 }
 
 export async function validateLegacyPayment(paymentData: Record<string, unknown>) {
   const adminClient = getAdminClient();
   const pack = await getActivePack(adminClient);
-  const metadata = paymentData.metadata as Record<string, unknown> | undefined;
-
-  if (
-    metadata?.exam_pack_id !== pack.id
-    || Number(paymentData.amount) !== Number(pack.price_kobo)
-    || String(paymentData.currency ?? "").toUpperCase() !== String(pack.currency).toUpperCase()
-  ) {
-    throw new Error("This legacy payment does not match the active access offer");
-  }
+  validateLegacyPaymentData(pack, paymentData);
 }
 
 export async function activateModulePurchase(
@@ -212,10 +193,9 @@ export async function activateEntitlement(
 ) {
   const adminClient = getAdminClient();
   const pack = await getActivePack(adminClient);
-  const metadata = paymentData.metadata as Record<string, unknown> | undefined;
-  const userId = metadata?.user_id;
+  const userId = getPaymentUserId(paymentData);
 
-  if (!userId || typeof userId !== "string") {
+  if (!userId) {
     throw new Error("Payment metadata does not include a user id");
   }
 

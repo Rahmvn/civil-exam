@@ -40,7 +40,11 @@ if (hostname !== "127.0.0.1" && hostname !== "localhost") {
 }
 
 const command = process.platform === "win32" ? "npx.cmd" : "npx";
-const result = spawnSync(command, ["playwright", "test", ...process.argv.slice(2)], {
+const requestedArgs = process.argv.slice(2);
+const visual = requestedArgs.includes("--visual");
+const performance = requestedArgs.includes("--performance");
+const playwrightArgs = requestedArgs.filter((argument) => !["--visual", "--performance"].includes(argument));
+const result = spawnSync(command, ["playwright", "test", ...playwrightArgs], {
   cwd: process.cwd(),
   env: {
     ...process.env,
@@ -51,6 +55,8 @@ const result = spawnSync(command, ["playwright", "test", ...process.argv.slice(2
     VITE_E2E: "true",
     VITE_SUPABASE_URL: apiUrl,
     VITE_SUPABASE_ANON_KEY: publicKey,
+    E2E_VISUAL: visual ? "true" : "false",
+    E2E_PERFORMANCE: performance ? "true" : "false",
   },
   shell: process.platform === "win32",
   stdio: "inherit",

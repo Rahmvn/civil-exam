@@ -49,6 +49,30 @@ test("paid dashboard, modules, account, and access routes remain connected", asy
   await expectNoHorizontalOverflow(page);
 });
 
+test("coming-soon lifecycle is never presented as unlocked", async ({ page }) => {
+  await page.goto("/dashboard");
+  const dashboardModule = page.locator("article").filter({ hasText: "Coming Soon Regression" }).first();
+  await expect(dashboardModule).toBeVisible();
+  await expect(dashboardModule.getByText("Unlocked", { exact: true })).toHaveCount(0);
+  await expect(dashboardModule.getByText("Practice for this module is coming soon.")).toBeVisible();
+  await expect(dashboardModule.getByRole("button", { name: "Coming soon" })).toBeDisabled();
+  await expect(dashboardModule).not.toHaveClass(/is-unlocked/);
+
+  await page.goto("/access");
+  const accessModule = page.locator("article").filter({ hasText: "Coming Soon Regression" }).first();
+  await expect(accessModule).toBeVisible();
+  await expect(accessModule.getByText("Unlocked", { exact: true })).toHaveCount(0);
+  await expect(accessModule.getByText("Practice is coming soon.")).toBeVisible();
+  await expect(accessModule.getByText("Not available yet")).toBeVisible();
+  await expect(accessModule.getByRole("link", { name: "Continue practice" })).toHaveCount(0);
+  await expect(accessModule).not.toHaveClass(/is-unlocked/);
+
+  await page.goto("/modules/e2e-coming-soon");
+  await expect(page.getByRole("heading", { name: "Practice is coming soon" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Coming soon" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: /^(Start|Continue|Retry)/ })).toHaveCount(0);
+});
+
 test("practice hub prioritises usable modules and keeps unlock options quiet", async ({ page }) => {
   await page.goto("/practice");
 
@@ -151,6 +175,7 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await page.getByRole("link", { name: "Review answers" }).click();
   await expect(page.getByRole("heading", { name: "Answer review" })).toBeVisible();
   await expect(page.getByText("1 of 4", { exact: true })).toBeVisible();
+  await expect(page.locator(".answer-review-explanation")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
 });
 

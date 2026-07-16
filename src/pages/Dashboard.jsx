@@ -23,6 +23,8 @@ import {
   formatDate,
   formatPercent,
   getFirstName,
+  hasUsableCandidateModuleAccess,
+  isCandidateModuleComingSoon,
   getModuleDisplayName,
   getProgressionRecommendation,
   isPublishedBatchRow,
@@ -134,12 +136,6 @@ export default function Dashboard() {
 
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
-  const unlockedModuleCount = useMemo(() => new Set(
-    moduleBatchAccess
-      .filter((row) => row?.is_paid)
-      .map((row) => row.subject_slug)
-      .filter(Boolean),
-  ).size, [moduleBatchAccess]);
   const firstName = getFirstName(profile?.full_name);
   const averageScore = attempts.length > 0
     ? Math.round(
@@ -210,21 +206,26 @@ export default function Dashboard() {
     const publishedRows = rows.filter(isPublishedBatchRow);
     const batchOneRow = rows.find((row) => Number(row.batch_number ?? 0) === 1) ?? null;
     const hasModuleAccess = rows.some((row) => Boolean(row?.is_paid));
-    const hasModuleActivity = hasModuleAccess || publishedRows.some((row) =>
-      Number(row?.attempt_count ?? 0) > 0
-      || row?.state === "completed_passed"
-      || row?.state === "completed_failed"
-    );
     const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
     const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
     const progressPercent = publishedRows.length > 0
       ? Math.round((completedCount / publishedRows.length) * 100)
       : 0;
-    const isComingSoon = subject.slug === "current-affairs" || publishedRows.length === 0;
+    const isComingSoon = isCandidateModuleComingSoon(subject, publishedRows.length);
+    const hasUsableModuleAccess = hasUsableCandidateModuleAccess(
+      subject,
+      publishedRows.length,
+      hasModuleAccess,
+    );
+    const hasModuleActivity = hasUsableModuleAccess || (!isComingSoon && publishedRows.some((row) =>
+      Number(row?.attempt_count ?? 0) > 0
+      || row?.state === "completed_passed"
+      || row?.state === "completed_failed"
+    ));
     const primaryAction = isComingSoon
       ? { label: "Coming soon", disabled: true }
       : buildModuleAction(subject, rows, progression, completedCount, publishedRows.length, hasModuleAccess);
-    const secondaryAction = hasModuleAccess && publishedRows.length > 0 && completedCount < publishedRows.length
+    const secondaryAction = hasUsableModuleAccess && completedCount < publishedRows.length
       ? { label: "Choose another practice set", to: `/modules/${subject.slug}` }
       : !hasModuleAccess && primaryAction.label !== "Unlock module" && !isComingSoon
         ? { label: "Unlock module", to: `/access?module=${encodeURIComponent(subject.slug)}` }
@@ -237,8 +238,9 @@ export default function Dashboard() {
       publishedCount: publishedRows.length,
       progressPercent,
       isComingSoon,
-      isComplete: publishedRows.length > 0 && completedCount === publishedRows.length,
+      isComplete: !isComingSoon && publishedRows.length > 0 && completedCount === publishedRows.length,
       hasModuleAccess,
+      hasUsableModuleAccess,
       showProgress: hasModuleActivity,
       freePracticeComplete: Boolean(
         batchOneRow?.state === "completed_passed"
@@ -250,6 +252,7 @@ export default function Dashboard() {
       secondaryAction,
     };
   });
+  const unlockedModuleCount = moduleCards.filter((card) => card.hasUsableModuleAccess).length;
 
   const accessCopy = (() => {
     if (unlockedModuleCount > 0) {
@@ -337,10 +340,10 @@ export default function Dashboard() {
 
           <div className="dashboard-module-grid-v3">
             {moduleCards.map((card) => (
-              <article className={`module-card-v3 module-card-progressive ${card.hasModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
+              <article className={`module-card-v3 module-card-progressive ${card.hasUsableModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
                 <div className="module-card-v3-head">
                   <h3>{card.displayName}</h3>
-                  {card.hasModuleAccess && !card.isComplete && (
+                  {card.hasUsableModuleAccess && !card.isComplete && (
                     <span className="module-access-state">Unlocked</span>
                   )}
                 </div>
@@ -362,7 +365,7 @@ export default function Dashboard() {
                     <DashboardActionButton action={card.primaryAction} />
                     <DashboardActionButton
                       action={card.secondaryAction}
-                      className={card.hasModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action"}
+                      className={card.hasUsableModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action"}
                     />
                   </div>
                 </div>

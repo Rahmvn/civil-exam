@@ -89,8 +89,8 @@ test("admin can bulk upload, review, and publish without silently enabling sales
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     buffer: createXlsxBuffer([
       ["position", "question_text", "option_a", "option_b", "option_c", "option_d", "correct_answer", "explanation", "reference", "difficulty"],
-      [1, "Which record should be checked first?", "Vote book", "Visitor log", "Blank form", "Personal note", "A", "The vote book is the official control record.", "E2E source", "medium"],
-      [2, "Who authorises the control?", "Designated officer", "Visitor", "Vendor", "No one", "A", "The designated officer is responsible.", "E2E source", "easy"],
+      [1, "Which record should be checked first?", "Vote book", "Visitor log", "Blank form", "Personal note", "A", "", "", "medium"],
+      [2, "Who authorises the control?", "Designated officer", "Visitor", "Vendor", "No one", "A", "", "", "easy"],
     ]),
   });
 
@@ -114,6 +114,87 @@ test("admin can bulk upload, review, and publish without silently enabling sales
   await expect(page.getByText(/Practice set published\. Use module settings/)).toBeVisible();
 
   await page.getByRole("button", { name: moduleName }).click();
+  await expect(page.getByText("Not on sale", { exact: true })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("admin can create, import, review, and publish an oral practice module", async ({ page }, testInfo) => {
+  const suffix = `${testInfo.project.name}-${Date.now()}`.replace(/[^a-z0-9]+/gi, "-");
+  const moduleName = `E2E Oral Admin ${suffix}`;
+
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Create module" }).click();
+  const moduleDialog = page.getByRole("dialog", { name: "Create module" });
+  await moduleDialog.getByLabel("Module name").fill(moduleName);
+  await moduleDialog.getByLabel("Oral practice").check();
+  await expect(moduleDialog.getByLabel("Questions per practice set")).toHaveValue("5");
+  await expect(moduleDialog.getByLabel("Pass mark (%)")).toHaveCount(0);
+  await moduleDialog.getByLabel("Module price (NGN)").fill("2000");
+  await moduleDialog.getByRole("button", { name: "Create module" }).click();
+
+  const moduleRow = page.locator(".admin-module-row").filter({ hasText: moduleName });
+  await expect(moduleRow.getByText("Oral practice", { exact: true })).toBeVisible();
+  await moduleRow.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Add practice set" }).click();
+  await page.getByLabel("Questions required").fill("2");
+  await page.getByRole("button", { name: "Add draft set" }).click();
+
+  await page.getByRole("button", { name: "Add one question" }).click();
+  await expect(page.getByLabel("Model answer")).toBeVisible();
+  await expect(page.getByLabel("Key point 1")).toBeVisible();
+  await expect(page.getByLabel("Option A")).toHaveCount(0);
+  await page.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: "Upload questions" }).click();
+  const uploadDialog = page.getByRole("dialog", { name: "Upload questions" });
+  await expect(uploadDialog.getByRole("heading", { name: "Upload oral questions" })).toBeVisible();
+  await expect(uploadDialog.getByRole("button", { name: "Download oral CSV template" })).toBeVisible();
+  await expect(uploadDialog.getByRole("button", { name: "Download oral JSON example" })).toBeVisible();
+  await expect(uploadDialog.getByText("Use the oral template fields, not answer options A-D.", { exact: false })).toBeVisible();
+  await uploadDialog.locator(".admin-file-drop input").setInputFiles({
+    name: "oral-questions.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify([
+      {
+        batch_position: 1,
+        question_text: "Explain accountability in public service.",
+        model_answer: "Accountability means being answerable for decisions and public resources.",
+        key_points: ["Answerability", "Responsible use of resources"],
+        reference_note: "PSR",
+        difficulty: "medium",
+      },
+      {
+        batch_position: 2,
+        question_text: "Describe due process.",
+        model_answer: "Due process follows approved and documented procedures.",
+        key_points: ["Approved procedure", "Documented decisions"],
+        difficulty: "easy",
+      },
+    ])),
+  });
+
+  await expect(uploadDialog.getByText("2 questions found")).toBeVisible();
+  await expect(uploadDialog.getByText("2 key points", { exact: true }).first()).toBeVisible();
+  await uploadDialog.getByRole("button", { name: "Import 2 questions" }).click();
+  await expect(page.getByText("2 questions were imported into this set.")).toBeVisible();
+  await expect(page.getByText("Explain accountability in public service.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Correct answer:")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Preview", exact: true }).first().click();
+  const preview = page.getByRole("dialog", { name: "Question 1" });
+  await expect(preview.getByText("Model answer", { exact: true })).toBeVisible();
+  await expect(preview.getByText("Answerability", { exact: true })).toBeVisible();
+  await preview.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: "Send for review" }).click();
+  await page.getByRole("dialog", { name: "Send this set to review?" })
+    .getByRole("button", { name: "Send to review" }).click();
+  await page.getByRole("button", { name: "Publish set" }).click();
+  await page.getByRole("dialog", { name: "Publish this practice set?" })
+    .getByRole("button", { name: "Publish practice set" }).click();
+
+  await page.getByRole("button", { name: moduleName }).click();
+  await expect(page.getByText("Oral practice", { exact: true })).toBeVisible();
   await expect(page.getByText("Not on sale", { exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
@@ -178,7 +259,7 @@ test("admin import blocks invalid question files without saving partial content"
   await expectNoHorizontalOverflow(page);
 });
 
-test("admin can add, validate, preview, edit, and remove one question", async ({ page }, testInfo) => {
+test("admin can add, validate, preview, and remove one question without optional guidance", async ({ page }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`.replace(/[^a-z0-9]+/gi, "-");
   const moduleName = `E2E Manual Question ${suffix}`;
   const questionText = "Which document provides the approved spending control?";
@@ -202,14 +283,10 @@ test("admin can add, validate, preview, edit, and remove one question", async ({
   await page.getByLabel("Option B").fill("Visitor register");
   await page.getByLabel("Option C").fill("Personal note");
   await page.getByLabel("Option D").fill("Blank form");
+  await expect(page.getByLabel("Explanation (optional)")).toBeVisible();
   await page.getByRole("button", { name: "Add question", exact: true }).click();
 
   await expect(page.getByText(questionText, { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send for review" })).toBeDisabled();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page.getByLabel("Explanation").fill("The approved vote book is the authorised spending control.");
-  await page.getByRole("button", { name: "Save question" }).click();
-
   await expect(page.getByRole("button", { name: "Send for review" })).toBeEnabled();
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   const previewDialog = page.getByRole("dialog", { name: "Question 1" });
@@ -241,6 +318,9 @@ test("admin guide and activity remain directly accessible and searchable", async
   await expect(page.getByRole("heading", { name: "Admin guide" })).toBeVisible();
   await page.getByRole("searchbox", { name: "Search current admin view" }).fill("bulk import");
   await expect(page.locator("summary").filter({ hasText: "Bulk import" })).toBeVisible();
+
+  await page.getByRole("searchbox", { name: "Search current admin view" }).fill("oral practice");
+  await expect(page.locator("summary").filter({ hasText: "Oral practice" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.getByRole("button", { name: "Activity" }).click();
@@ -290,14 +370,28 @@ test("admin catalogue keeps its management layout at each breakpoint", async ({ 
   }
 });
 
-test("admin content workspaces use durable URLs", async ({ page }) => {
+test("published admin questions and correction controls survive durable URL reloads", async ({ page }) => {
   await page.goto("/admin");
-  const moduleRow = page.locator(".admin-module-row").filter({ hasText: "Public Service Rules" });
+  const moduleRow = page.locator(".admin-module-row").filter({ hasText: "Public Financial Management" });
   await moduleRow.getByRole("button", { name: "Open" }).click();
   await expect(page).toHaveURL(/\/admin\/modules\/[^/]+$/);
   await page.locator(".admin-set-list article").first().getByRole("button", { name: "Open" }).click();
   await expect(page).toHaveURL(/\/admin\/modules\/[^/]+\/sets\/[^/]+$/);
   await expect(page.getByRole("heading", { name: /Practice set \d+/ })).toBeVisible();
+
+  const questionRows = page.locator(".admin-question-rows article");
+  await expect(questionRows.first()).toBeVisible();
+  await expect(page.getByText("Checking", { exact: true })).toHaveCount(0);
+  await expect(questionRows.first().getByRole("button", { name: "Preview" })).toBeVisible();
+  await expect(questionRows.first().getByRole("button", { name: "Correct" })).toBeVisible();
+  await expect(questionRows.first().getByRole("button", { name: "Remove" })).toHaveCount(0);
+
+  const setUrl = page.url();
+  await page.reload();
+  await expect(page).toHaveURL(setUrl);
+  await expect(questionRows.first()).toBeVisible();
+  await expect(page.getByText("Checking", { exact: true })).toHaveCount(0);
+  await expect(questionRows.first().getByRole("button", { name: "Correct" })).toBeVisible();
 });
 
 test("admin sessions stay outside the candidate experience", async ({ page }) => {

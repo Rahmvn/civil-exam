@@ -43,6 +43,10 @@ const STATUS_LABELS = {
   review: "In review",
 };
 
+function practiceTypeLabel(value) {
+  return value === "oral" ? "Oral practice" : "Objective";
+}
+
 const COUNT_FORMATTER = new Intl.NumberFormat("en-NG");
 
 function statusLabel(status) {
@@ -257,7 +261,8 @@ function ModuleCatalogue({ modules, onCreate, onManage, onQueryChange, query }) 
           {visibleModules.map((module) => (
             <article className="admin-module-row" key={module.subject_id}>
               <div className="admin-module-row-name">
-                <strong>{module.subject_name}</strong>
+              <strong>{module.subject_name}</strong>
+              <small className="admin-module-type">{practiceTypeLabel(module.practice_type)}</small>
               </div>
               <div className="admin-module-row-status"><StatusBadge status={module.lifecycle_status} /></div>
               <span className="admin-module-metric admin-module-metric-sets">
@@ -320,6 +325,7 @@ function ModuleWorkspace({
         <div>
           <div className="admin-inline-status">
             <StatusBadge status={module.lifecycle_status} />
+            <span>{practiceTypeLabel(module.practice_type)}</span>
             <span>{module.available_for_purchase ? "On sale" : "Not on sale"}</span>
           </div>
           <h1>{module.subject_name}</h1>
@@ -447,7 +453,12 @@ function QuestionPreview({ question, onClose }) {
           <button className="link-button" type="button" onClick={onClose}>Close</button>
         </div>
         <p className="admin-preview-question">{question.question_text}</p>
-        <div className="admin-preview-options">
+        {question.model_answer ? (
+          <div className="admin-preview-oral">
+            <div><strong>Model answer</strong><p>{question.model_answer}</p></div>
+            <div><strong>Key points</strong><ul>{question.key_points.map((point) => <li key={point}>{point}</li>)}</ul></div>
+          </div>
+        ) : <div className="admin-preview-options">
           {["A", "B", "C", "D"].map((option) => (
             <div className={question.correct_option === option ? "is-answer" : ""} key={option}>
               <span>{option}</span>
@@ -455,7 +466,7 @@ function QuestionPreview({ question, onClose }) {
               {question.correct_option === option && <strong>Correct answer</strong>}
             </div>
           ))}
-        </div>
+        </div>}
         {question.explanation && (
           <div className="admin-preview-explanation"><strong>Explanation</strong><p>{question.explanation}</p></div>
         )}
@@ -489,6 +500,7 @@ function PracticeSetWorkspace({
   const [statusFilter, setStatusFilter] = useState("current");
   const [visibleLimit, setVisibleLimit] = useState(30);
   const [expectedCount, setExpectedCount] = useState(practiceSet.expected_question_count);
+  const practiceType = practiceSet.practice_type ?? module.practice_type ?? "objective";
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleQuestions = questions.filter((question) => {
@@ -577,6 +589,7 @@ function PracticeSetWorkspace({
             mode={editor.mode}
             nextPosition={nextPosition}
             practiceSetId={practiceSet.practice_set_id}
+            practiceType={practiceType}
             saving={working}
             onCancel={() => setEditor(null)}
             onSubmit={(question) => onSaveQuestion(editor.mode, question, () => setEditor(null))}
@@ -680,7 +693,7 @@ function PracticeSetWorkspace({
         </details>
       )}
 
-      {!noQuestionsYet && (
+      {(loading || !noQuestionsYet) && (
         <section className="admin-question-bank">
           <div className="admin-question-bank-head">
             <div>
@@ -726,7 +739,11 @@ function PracticeSetWorkspace({
                       {Number(question.revision_number) > 1 && <span>Revision {question.revision_number}</span>}
                     </div>
                     <strong>{question.question_text}</strong>
-                    <small className="admin-question-answer">Correct answer: {question.correct_option}</small>
+                    <small className="admin-question-answer">
+                      {practiceType === "oral"
+                        ? `${question.key_points.length} key point${question.key_points.length === 1 ? "" : "s"}`
+                        : `Correct answer: ${question.correct_option}`}
+                    </small>
                   </div>
                   <div className="admin-row-actions">
                     <div className="admin-row-action-group">
@@ -773,6 +790,7 @@ function PracticeSetWorkspace({
             <AdminImportPanel
               presentation="dialog"
               questions={questions}
+              practiceType={practiceType}
               importing={working}
               onClose={() => setShowImporter(false)}
               onImport={onImport}
@@ -798,6 +816,7 @@ function activityTitle(log) {
     practice_set: "Practice set",
     question: "Question",
     question_revision: "Question correction",
+    oral_question: "Oral question",
   }[log.entity_type] ?? activityLabel(log.entity_type);
   const action = {
     ARCHIVE: "archived",
@@ -961,7 +980,8 @@ export default function Admin() {
   const [validation, setValidation] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
-  const [contentSetId, setContentSetId] = useState(null);
+  const [contentKey, setContentKey] = useState(null);
+  const [validationKey, setValidationKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sectionLoading, setSectionLoading] = useState(false);
   const [working, setWorking] = useState(false);
@@ -969,6 +989,14 @@ export default function Admin() {
   const [moduleEditor, setModuleEditor] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [shellSearch, setShellSearch] = useState("");
+  const selectedModule = modules.find((module) => module.subject_id === selectedModuleId) ?? null;
+  const selectedSet = practiceSets.find((practiceSet) => practiceSet.practice_set_id === selectedSetId) ?? null;
+  const routePracticeType = selectedSet?.practice_type
+    ?? selectedModule?.practice_type
+    ?? (selectedModule ? "objective" : null);
+  const routeContentKey = selectedSetId && routePracticeType
+    ? `${selectedSetId}:${routePracticeType}`
+    : null;
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -1031,32 +1059,43 @@ export default function Admin() {
       return () => { active = false; };
     }
 
-    Promise.all([
-      getAdminQuestions(selectedSetId),
-      getAdminPracticeSetValidation(selectedSetId),
-    ])
-      .then(([nextQuestions, nextValidation]) => {
+    if (!routePracticeType) return () => { active = false; };
+
+    getAdminQuestions(selectedSetId, routePracticeType)
+      .then((nextQuestions) => {
         if (!active) return;
         setQuestions(nextQuestions);
-        setValidation(nextValidation);
-        setContentSetId(selectedSetId);
+        setContentKey(`${selectedSetId}:${routePracticeType}`);
       })
       .catch((error) => {
         if (!active) return;
         logAppError("Admin practice set content load", error);
         setQuestions([]);
-        setValidation(null);
-        setContentSetId(selectedSetId);
-        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "We could not load this practice set.") });
+        setContentKey(`${selectedSetId}:${routePracticeType}`);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "We could not load this practice set's questions.") });
+      });
+
+    getAdminPracticeSetValidation(selectedSetId)
+      .then((nextValidation) => {
+        if (!active) return;
+        setValidation(nextValidation);
+        setValidationKey(selectedSetId);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin practice set validation load", error);
+        setValidation({
+          ready: false,
+          errors: ["Readiness checks could not be loaded. Refresh before changing this set's status."],
+        });
+        setValidationKey(selectedSetId);
       });
 
     return () => { active = false; };
-  }, [selectedSetId]);
+  }, [routePracticeType, selectedSetId]);
 
-  const selectedModule = modules.find((module) => module.subject_id === selectedModuleId) ?? null;
-  const selectedSet = practiceSets.find((practiceSet) => practiceSet.practice_set_id === selectedSetId) ?? null;
   const moduleContentLoading = Boolean(selectedModuleId && practiceSetsModuleId !== selectedModuleId);
-  const setContentLoading = Boolean(selectedSetId && contentSetId !== selectedSetId);
+  const setContentLoading = Boolean(routeContentKey && contentKey !== routeContentKey);
   const shellSearchPlaceholder = currentView === "activity"
     ? "Search activity..."
     : currentView === "guide"
@@ -1093,13 +1132,17 @@ export default function Admin() {
 
   async function refreshSetContent(setId = selectedSetId) {
     if (!setId) return;
+    const practiceType = practiceSets.find((practiceSet) => practiceSet.practice_set_id === setId)?.practice_type
+      ?? selectedModule?.practice_type
+      ?? "objective";
     const [nextQuestions, nextValidation] = await Promise.all([
-      getAdminQuestions(setId),
+      getAdminQuestions(setId, practiceType),
       getAdminPracticeSetValidation(setId),
     ]);
     setQuestions(nextQuestions);
     setValidation(nextValidation);
-    setContentSetId(setId);
+    setContentKey(`${setId}:${practiceType}`);
+    setValidationKey(setId);
   }
 
   async function refreshAudit() {
@@ -1145,14 +1188,14 @@ export default function Admin() {
     try {
       if (mode === "correction") {
         if (question.supersedes_question_id) {
-          await updateAdminQuestionRevision(question);
+          await updateAdminQuestionRevision(question, selectedModule.practice_type);
           setFeedback({ tone: "success", message: "The pending correction was updated." });
         } else {
-          await createAdminQuestionRevision(question);
+          await createAdminQuestionRevision(question, selectedModule.practice_type);
           setFeedback({ tone: "success", message: "Correction saved for review. The live question is unchanged." });
         }
       } else {
-        await saveAdminQuestion(question);
+        await saveAdminQuestion(question, selectedModule.practice_type);
         setFeedback({ tone: "success", message: question.id ? "Question saved." : "Question added to the draft set." });
       }
       await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules()]);
@@ -1167,7 +1210,7 @@ export default function Admin() {
   async function handleImport(importedQuestions, metadata) {
     setWorking(true);
     try {
-      const result = await importAdminQuestions(selectedSetId, importedQuestions, metadata);
+      const result = await importAdminQuestions(selectedSetId, importedQuestions, metadata, selectedModule.practice_type);
       await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
       setFeedback({ tone: "success", message: `${result.imported_count} questions were imported into this set.` });
       return true;
@@ -1243,7 +1286,7 @@ export default function Admin() {
       label: "Remove question",
       tone: "danger",
       action: async () => {
-        await deleteDraftAdminQuestion(question.id);
+        await deleteDraftAdminQuestion(question.id, selectedModule.practice_type);
         await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
         setFeedback({ tone: "success", message: "The question was removed. Historical reviews remain unchanged." });
       },
@@ -1257,7 +1300,7 @@ export default function Admin() {
       label: "Discard correction",
       tone: "danger",
       action: async () => {
-        await archiveAdminQuestion(question.id);
+        await archiveAdminQuestion(question.id, selectedModule.practice_type);
         await Promise.all([refreshSetContent(), refreshAudit()]);
         setFeedback({ tone: "success", message: "The pending correction was discarded." });
       },
@@ -1270,7 +1313,7 @@ export default function Admin() {
       body: "The corrected version will become live. The previous version will stay attached to historical attempts.",
       label: "Publish correction",
       action: async () => {
-        await publishAdminQuestionRevision(questionId);
+        await publishAdminQuestionRevision(questionId, selectedModule.practice_type);
         await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshAudit()]);
         setFeedback({ tone: "success", message: "The correction is now live. Historical reviews were preserved." });
       },
@@ -1386,10 +1429,10 @@ export default function Admin() {
                 loading={sectionLoading || setContentLoading}
                 module={selectedModule}
                 practiceSet={selectedSet}
-                questions={questions}
+                questions={setContentLoading ? [] : questions}
                 onQueryChange={setShellSearch}
                 query={shellSearch}
-                validation={validation}
+                validation={validationKey === selectedSetId ? validation : null}
                 working={working}
                 onArchiveQuestion={handleArchiveQuestion}
                 onBack={() => navigateWithinAdmin(`/admin/modules/${selectedModuleId}`)}

@@ -19,6 +19,7 @@ import {
   FALLBACK_SUBJECTS,
   getModuleDisplayName,
   getProgressionRecommendation,
+  isCandidateModuleComingSoon,
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
@@ -201,7 +202,7 @@ export default function PracticeStart() {
           : 0,
         progression,
         hasModuleAccess,
-        isComingSoon: subject.slug === "current-affairs" || publishedRows.length === 0,
+        isComingSoon: isCandidateModuleComingSoon(subject, publishedRows.length),
         isComplete: publishedRows.length > 0 && completedCount === publishedRows.length,
       };
     });

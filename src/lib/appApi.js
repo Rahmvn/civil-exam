@@ -110,7 +110,7 @@ export async function getSubjects() {
   const rows = await readWithPolicy("subjects", async () => requireData(
     await supabase
       .from("subjects")
-      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type")
+      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type, lifecycle_status")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ));
@@ -337,8 +337,23 @@ export async function getAdminQuestionCounts() {
   return rows?.[0] ?? { draft_count: 0, review_count: 0, published_count: 0 };
 }
 
-export async function getAdminQuestions(practiceSetId = null) {
-  return readWithPolicy(`admin-questions:${practiceSetId ?? "all"}`, async () => {
+export async function getAdminQuestions(practiceSetId = null, practiceType = "objective") {
+  return readWithPolicy(`admin-questions:${practiceType}:${practiceSetId ?? "all"}`, async () => {
+    if (practiceType === "oral") {
+      let request = supabase
+        .from("oral_questions")
+        .select(
+          "id, exam_pack_id, practice_set_id, question_text, difficulty, status, model_answer, key_points, reference_note, source_note, subject_id, batch_position, supersedes_question_id, revision_number, created_at, updated_at, subjects(name, slug)",
+        );
+
+      if (practiceSetId) request = request.eq("practice_set_id", practiceSetId);
+      return requireData(await request
+        .order("subject_id", { ascending: true })
+        .order("batch_position", { ascending: true, nullsFirst: false })
+        .order("revision_number", { ascending: false })
+        .limit(practiceSetId ? 1000 : 200));
+    }
+
     let request = supabase
       .from("questions")
       .select(
@@ -360,14 +375,14 @@ export async function getAdminQuestions(practiceSetId = null) {
 
 export async function getAdminContentModules() {
   return readWithPolicy("admin-content-modules", async () => ensureArray(requireData(
-    await supabase.rpc("get_admin_content_modules"),
+    await supabase.rpc("get_admin_content_modules_v2"),
   )));
 }
 
 export async function getAdminPracticeSets(subjectId) {
   if (!subjectId) return [];
   return readWithPolicy(`admin-practice-sets:${subjectId}`, async () => ensureArray(requireData(
-    await supabase.rpc("get_admin_practice_sets", {
+    await supabase.rpc("get_admin_practice_sets_v2", {
       requested_subject_id: subjectId,
     }),
   )));
@@ -375,14 +390,14 @@ export async function getAdminPracticeSets(subjectId) {
 
 export async function getAdminPracticeSetValidation(practiceSetId) {
   return readWithPolicy(`admin-practice-set-validation:${practiceSetId}`, async () => requireData(
-    await supabase.rpc("admin_get_practice_set_validation", {
+    await supabase.rpc("admin_get_practice_set_validation_v2", {
       requested_practice_set_id: practiceSetId,
     }),
   ));
 }
 
 export async function createAdminModule(module) {
-  return requireData(await supabase.rpc("admin_create_module", {
+  return requireData(await supabase.rpc("admin_create_module_typed", {
     requested_name: module.name.trim(),
     requested_slug: module.slug.trim(),
     requested_sort_order: Number(module.sort_order),
@@ -391,11 +406,12 @@ export async function createAdminModule(module) {
     requested_batch_size: Number(module.batch_size),
     requested_pass_mark_percent: Number(module.pass_mark_percent),
     requested_lifecycle_status: module.lifecycle_status,
+    requested_practice_type: module.practice_type || "objective",
   }));
 }
 
 export async function updateAdminModule(module) {
-  return requireData(await supabase.rpc("admin_update_module", {
+  return requireData(await supabase.rpc("admin_update_module_v2", {
     requested_subject_id: module.subject_id,
     requested_name: module.subject_name.trim(),
     requested_sort_order: Number(module.sort_order),
@@ -409,7 +425,7 @@ export async function updateAdminModule(module) {
 }
 
 export async function deleteEmptyAdminModule(subjectId) {
-  return requireData(await supabase.rpc("admin_delete_empty_module", {
+  return requireData(await supabase.rpc("admin_delete_empty_module_v2", {
     requested_subject_id: subjectId,
   }));
 }
@@ -429,56 +445,56 @@ export async function updateAdminPracticeSet(practiceSetId, expectedQuestionCoun
 }
 
 export async function transitionAdminPracticeSet(practiceSetId, status) {
-  return requireData(await supabase.rpc("admin_transition_practice_set", {
+  return requireData(await supabase.rpc("admin_transition_practice_set_v2", {
     requested_practice_set_id: practiceSetId,
     requested_status: status,
   }));
 }
 
 export async function deleteEmptyAdminPracticeSet(practiceSetId) {
-  return requireData(await supabase.rpc("admin_delete_empty_practice_set", {
+  return requireData(await supabase.rpc("admin_delete_empty_practice_set_v2", {
     requested_practice_set_id: practiceSetId,
   }));
 }
 
-export async function saveAdminQuestion(question) {
-  return requireData(await supabase.rpc("admin_save_question", {
+export async function saveAdminQuestion(question, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_save_oral_question" : "admin_save_question", {
     requested_question: question,
   }));
 }
 
-export async function createAdminQuestionRevision(question) {
-  return requireData(await supabase.rpc("admin_create_question_revision", {
+export async function createAdminQuestionRevision(question, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_create_oral_question_revision" : "admin_create_question_revision", {
     requested_question: question,
   }));
 }
 
-export async function updateAdminQuestionRevision(question) {
-  return requireData(await supabase.rpc("admin_update_question_revision", {
+export async function updateAdminQuestionRevision(question, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_update_oral_question_revision" : "admin_update_question_revision", {
     requested_question: question,
   }));
 }
 
-export async function publishAdminQuestionRevision(questionId) {
-  return requireData(await supabase.rpc("admin_publish_question_revision", {
+export async function publishAdminQuestionRevision(questionId, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_publish_oral_question_revision" : "admin_publish_question_revision", {
     requested_question_id: questionId,
   }));
 }
 
-export async function archiveAdminQuestion(questionId) {
-  return requireData(await supabase.rpc("admin_archive_question", {
+export async function archiveAdminQuestion(questionId, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_archive_oral_question" : "admin_archive_question", {
     requested_question_id: questionId,
   }));
 }
 
-export async function deleteDraftAdminQuestion(questionId) {
-  return requireData(await supabase.rpc("admin_delete_draft_question", {
+export async function deleteDraftAdminQuestion(questionId, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_delete_draft_oral_question" : "admin_delete_draft_question", {
     requested_question_id: questionId,
   }));
 }
 
-export async function importAdminQuestions(practiceSetId, questions, metadata = {}) {
-  return requireData(await supabase.rpc("admin_import_questions", {
+export async function importAdminQuestions(practiceSetId, questions, metadata = {}, practiceType = "objective") {
+  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_import_oral_questions" : "admin_import_questions", {
     requested_practice_set_id: practiceSetId,
     requested_questions: questions,
     requested_file_name: metadata?.fileName || null,

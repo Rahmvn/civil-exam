@@ -10,7 +10,11 @@ import {
   initializePayment,
 } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
-import { getModuleDisplayName } from "../lib/moduleDisplay";
+import {
+  hasUsableCandidateModuleAccess,
+  isCandidateModuleComingSoon,
+  getModuleDisplayName,
+} from "../lib/moduleDisplay";
 import { getPracticeRoute } from "../lib/oralPractice";
 import { useAuth } from "../lib/useAuth";
 
@@ -297,6 +301,19 @@ export default function Access() {
   const selectedModule = requestedModule
     ? moduleAccess.find((module) => module.subject_slug === requestedModule) ?? null
     : null;
+  const selectedSubject = selectedModule
+    ? subjects.find((subject) => subject.slug === selectedModule.subject_slug) ?? null
+    : null;
+  const selectedModuleIsComingSoon = selectedModule
+    ? isCandidateModuleComingSoon(selectedSubject ?? selectedModule, selectedModule.published_batch_count)
+    : false;
+  const selectedModuleHasUsableAccess = selectedModule
+    ? hasUsableCandidateModuleAccess(
+        selectedSubject ?? selectedModule,
+        selectedModule.published_batch_count,
+        selectedModule.has_module_access,
+      )
+    : false;
   const modulesToShow = selectedModule
     ? [selectedModule]
     : moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
@@ -314,7 +331,9 @@ export default function Access() {
           </h1>
           <p>
             {selectedModule
-              ? selectedModule.has_module_access
+              ? selectedModuleIsComingSoon
+                ? "Practice for this module is coming soon."
+                : selectedModuleHasUsableAccess
                 ? `Access is active through ${formatDate(selectedModule.access_expires_at)}.`
                 : "Unlock every published practice set in this module."
               : "Pay only for the modules you want to practise."}
@@ -332,18 +351,26 @@ export default function Access() {
                 slug: module.subject_slug,
                 practice_type: "objective",
               };
+              const isComingSoon = isCandidateModuleComingSoon(subject, module.published_batch_count);
+              const hasUsableModuleAccess = hasUsableCandidateModuleAccess(
+                subject,
+                module.published_batch_count,
+                module.has_module_access,
+              );
 
               return (
                 <article
-                  className={`access-module-row ${module.has_module_access ? "is-unlocked" : ""} ${isFocused ? "is-focused" : ""}`.trim()}
+                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""} ${isFocused ? "is-focused" : ""}`.trim()}
                   key={module.subject_id}
                 >
                   <div className="access-module-copy">
                     <div className="access-module-title-line">
                       {!isFocused && <h2>{displayName}</h2>}
-                      {module.has_module_access && <span className="access-module-state">Unlocked</span>}
+                      {hasUsableModuleAccess && <span className="access-module-state">Unlocked</span>}
                     </div>
-                    {module.has_module_access ? (
+                    {isComingSoon ? (
+                      <p>Practice is coming soon.</p>
+                    ) : hasUsableModuleAccess ? (
                       !isFocused && <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
                     ) : module.can_purchase ? (
                       isFocused && <p>Includes all published practice sets, answer review, and retries.</p>
@@ -353,7 +380,9 @@ export default function Access() {
                   </div>
 
                   <div className="access-module-action">
-                    {module.has_module_access ? (
+                    {isComingSoon ? (
+                      <span className="access-module-coming-soon">Not available yet</span>
+                    ) : hasUsableModuleAccess ? (
                       <Link className="secondary-action" to={getPracticeRoute(subject)}>Continue practice</Link>
                     ) : module.can_purchase ? (
                       <>
@@ -366,9 +395,7 @@ export default function Access() {
                         </button>
                         {isFocused && <small>Secure payment by Paystack</small>}
                       </>
-                    ) : (
-                      <span className="access-module-coming-soon">Not available yet</span>
-                    )}
+                    ) : null}
                     {paymentError?.subjectSlug === module.subject_slug && (
                       <p className="access-module-error" role="alert">{paymentError.message}</p>
                     )}

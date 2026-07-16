@@ -161,7 +161,6 @@ function validateQuestion(record, sourceFile, context) {
     "option_d",
     "correct_option",
     "status",
-    "explanation",
   ];
 
   for (const field of requiredFields) {

@@ -1,5 +1,7 @@
 # Importer Alignment Report
 
+> Policy update, July 16, 2026: objective explanations and references are now optional. Findings below that described empty explanations as blocking have been updated; file-path findings remain applicable.
+
 ## 1. Purpose
 
 This report compares the current local content-pipeline import-readiness rules against the actual behavior of the existing question importer.
@@ -91,34 +93,32 @@ The importer treats these as required and blocking:
 - `option_d`
 - `correct_option`
 - `status`
-- `explanation`
 
 Important detail:
 
-- `explanation` is required even for draft items.
-- The importer checks required fields with `normalizeText(record[field])`.
-- An empty string explanation fails validation.
+- `explanation` and `reference_note` are optional for every objective-question status.
+- When omitted, they are normalized to empty strings.
 
 ---
 
 ## 5. Whether Empty Explanations Are Blocking
 
-Yes. Empty explanations are currently **blocking**.
+No. Empty explanations are non-blocking and may be reported for editorial awareness.
 
 Reason:
 
-In `validateQuestion`, `explanation` is included in the importer `requiredFields` list:
+In `validateQuestion`, `explanation` is not included in the importer `requiredFields` list.
 
-- `const requiredFields = [ ... "status", "explanation" ];`
+- `const requiredFields = [ ... "correct_option", "status" ];`
 
-Then the importer throws if the normalized value is empty:
+The importer still normalizes optional guidance consistently:
 
-- `if (!normalizeText(record[field])) { throw new Error(...) }`
+- blank explanation and reference values become empty strings
 
 Result:
 
-- A record with `explanation: ""` is rejected by the importer.
-- This is true even when `status` is `draft`.
+- A record with `explanation: ""` is accepted when its required question fields are valid.
+- This applies to draft, review, and published input records.
 
 ---
 
@@ -208,10 +208,9 @@ So in its current location, it will not be consumed at all.
 
 `contents/import-ready/public-financial-management.batch1.json` is **not currently consumable** by the existing importer.
 
-Two reasons:
+One reason:
 
 1. wrong input path
-2. empty `explanation` values are blocking
 
 ---
 
@@ -230,7 +229,7 @@ These parts mostly align:
 - oral prep should not pass objective import checks
 - dev seed markers should not be treated as clean import-ready content
 
-### Mismatch 1 - Explanations
+### Explanation Policy
 
 `checkImportReady` behavior:
 
@@ -239,9 +238,9 @@ These parts mostly align:
 
 `importQuestions.mjs` behavior:
 
-- empty explanations are blocking errors
+- empty explanations are accepted
 
-This is the most important mismatch.
+The checker and importer are aligned.
 
 ### Mismatch 2 - Status Set
 
@@ -311,12 +310,11 @@ Recommended next step:
 
 Recommended order:
 
-1. Update `checkImportReady` so importer-alignment mode treats empty explanations as blocking for the current importer.
-2. Update `checkImportReady` status rules to match the importer exactly:
+1. Keep `checkImportReady` status rules aligned with the importer:
    - `draft`
    - `review`
    - `published`
-3. Decide whether import-ready files should:
+2. Decide whether import-ready files should:
    - stay in `contents/import-ready/` and use a separate import command, or
    - be copied into `content/questions/` as a deliberate pre-import step.
 4. Clean PFM Batch 1 explanations before attempting any local draft import through the current importer.

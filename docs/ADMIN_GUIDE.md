@@ -77,12 +77,22 @@ Candidates start practice through published practice sets.
 
 ### Question
 
-A question belongs to one practice set and has:
+A question belongs to one practice set. Its fields depend on the module type.
+
+An objective question has:
 
 - a position
 - four answer options
 - one correct answer
-- an explanation
+- an optional explanation
+- an optional reference
+
+An oral question has:
+
+- a position
+- an open-response prompt
+- a complete model answer
+- one or more key points for candidate self-review
 
 ### Correction
 
@@ -253,12 +263,56 @@ The readiness checks look for:
 
 - the expected number of questions
 - valid question positions
-- four distinct answer options
-- a valid correct answer
-- explanations
+- four distinct answer options and a valid correct answer for objective questions
+- a complete model answer and at least one distinct key point for oral questions
 - no duplicate question text in the same set
 
 If the readiness block says the set is blocked, resolve every listed issue before moving forward.
+
+### Oral Practice Modules
+
+Choose `Oral practice` when creating a module for timed written responses followed by self-review. The module type is permanent after practice sets are created.
+
+Oral practice does not use answer options, correct-answer letters, pass marks, or automatic scores. For every oral question provide:
+
+- the prompt candidates receive
+- a complete model answer revealed after the full attempt
+- at least one distinct key point used for comparison
+- the final question position
+- an optional reference and internal source note
+
+Candidates choose three or five minutes per question. They move forward when they submit or when time expires, cannot return to earlier questions, and see model answers only after completing the set.
+
+The oral CSV and Excel templates use `position`, `question_text`, `model_answer`, `key_point_1` through `key_point_6`, `reference`, and `difficulty`. Oral JSON uses a `key_points` array. Do not use the objective template for an oral set.
+
+#### Build An Oral Practice Set Safely
+
+1. Create the module and choose `Oral practice` before adding any practice sets.
+2. Add a practice set and enter the required question count.
+3. Select `Upload questions` and download the oral template, or use `Add one question`.
+4. Write each prompt exactly as candidates should receive it.
+5. Add a complete model answer and at least one distinct key point for every prompt.
+6. Arrange questions using unique ascending positions.
+7. Preview the imported questions and resolve every readiness issue.
+8. Send the complete set to review, verify it again, and then publish.
+
+#### Oral Content Quality Checks
+
+Before review or publication, confirm that:
+
+- each prompt is clear enough to answer within three or five minutes
+- the model answer directly answers the prompt and does not introduce unsupported claims
+- the key points identify the essential ideas candidates should compare against
+- key points are distinct and do not merely repeat one another
+- references are accurate and current when a source is available
+- spelling, punctuation, question order, and expected question count are correct
+- no A-D options, correct-answer letters, pass marks, or automatic scoring instructions were added
+
+Do not place private marking notes or internal-only information in the model answer or key points. Candidates see this guidance after completing the full practice set.
+
+#### Correct A Published Oral Question
+
+Use `Correct` rather than directly editing or deleting a published oral question. Review the replacement prompt, model answer, and key points before publishing the correction. Historical attempts remain linked to the version the candidate originally received.
 
 ### Practice Set Actions
 
@@ -290,15 +344,23 @@ Use this when the set should no longer accept new candidate attempts.
 
 ### Add Or Edit A Question
 
-When adding or editing a question:
+For an objective question:
 
 1. enter the question text exactly as candidates should see it
 2. fill all four answer options
 3. select the correct answer letter
-4. add the explanation
+4. add an explanation or reference only when useful
 5. save
 
 Additional details are available under `Additional details`.
+
+For an oral question:
+
+1. enter the prompt exactly as candidates should receive it
+2. write the complete model answer
+3. add at least one distinct key point
+4. add the reference and difficulty when appropriate
+5. save and preview the question
 
 ### Question Fields
 
@@ -319,9 +381,9 @@ Candidates see questions in position order, so confirm the order before review a
 
 ### Explanation
 
-Explains why the correct answer is right.
+Optionally explains why the correct answer is right.
 
-This is especially important before publication.
+Leave it blank when no additional explanation is needed. When supplied, candidates see it during review.
 
 ### Difficulty
 
@@ -333,7 +395,7 @@ One of:
 
 ### Reference
 
-The source reference, rule, chapter, section, or supporting authority.
+An optional source reference, rule, chapter, section, or supporting authority.
 
 ### Internal source note
 
@@ -406,7 +468,7 @@ If you are relying on automatic positions, keep the spreadsheet rows in the same
 
 ### How To Write The File Correctly
 
-Before uploading:
+Before uploading an objective file:
 
 - use one row for one question only
 - write the complete question exactly as candidates should see it
@@ -414,10 +476,21 @@ Before uploading:
 - make sure the four options are different from one another
 - set `correct_answer` to `A`, `B`, `C`, or `D`
 - confirm that the chosen correct answer letter matches the real correct option
-- include the explanation before publication
+- explanation and reference may be left blank
 - keep positions unique
 - keep the rows in the final order you want candidates to see if you are relying on file order
 - review spelling, punctuation, and answer consistency before upload
+
+Before uploading an oral file:
+
+- use the oral template downloaded from the target oral practice set
+- use one row for one prompt only
+- provide `question_text` and a complete `model_answer`
+- provide at least `key_point_1`; use additional key-point columns only when they add distinct guidance
+- use a `key_points` array when uploading JSON
+- keep positions unique and in the final candidate order
+- do not include objective answer-option or correct-answer fields
+- review every model answer and key point for factual accuracy before upload
 
 ### Import Columns
 
@@ -433,6 +506,8 @@ The standard template includes:
 - `explanation`
 - `reference`
 - `difficulty`
+
+The `explanation` and `reference` columns are optional and may be blank.
 
 The `position` column controls question order.
 
@@ -458,9 +533,10 @@ Before publishing a practice set, confirm all of the following:
 
 - the expected number of questions is present
 - question positions are correct and not duplicated
-- every question has four distinct answer options
-- every correct answer is set correctly
-- every explanation is present and readable
+- objective questions have four distinct options and the correct answer
+- any supplied objective explanation or reference is accurate and readable
+- oral questions have a complete model answer and at least one useful, distinct key point
+- oral prompts can reasonably be answered within the available three- or five-minute period
 - the order of questions is final
 - recent imports or corrections have been previewed
 
@@ -554,9 +630,10 @@ If the delete action is available:
 Check:
 
 - question count
-- explanations
+- objective answer options and correct answers
+- oral model answers and key points
 - duplicate question text
-- option validity
+- objective option validity
 - readiness errors
 
 ### An Import Is Blocked

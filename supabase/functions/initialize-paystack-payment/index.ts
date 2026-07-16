@@ -85,7 +85,8 @@ Deno.serve(async (request) => {
       amount: offering.price_kobo,
     });
 
-    const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
+    const paystackApiUrl = Deno.env.get("PAYSTACK_API_URL") ?? "https://api.paystack.co";
+    const paystackResponse = await fetch(`${paystackApiUrl}/transaction/initialize`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${requireEnv("PAYSTACK_SECRET_KEY")}`,

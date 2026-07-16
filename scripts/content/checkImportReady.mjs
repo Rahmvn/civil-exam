@@ -115,7 +115,7 @@ function checkImportReady(items) {
 
     if (!hasValue(item.explanation)) {
       emptyExplanationItems.push(index + 1);
-      errors.push(`${label}: explanation is empty and would block the current importer.`);
+      warnings.push(`${label}: explanation is empty (optional).`);
     }
 
     if (item.needs_review === true) {
@@ -168,7 +168,7 @@ function checkImportReady(items) {
   let recommendation = "Do not import.";
 
   if (errors.length === 0) {
-    if (published && allReviewed && emptyExplanationItems.length === 0) {
+    if (published && allReviewed) {
       readiness = "PUBLISH_READY";
       recommendation = "Ready for controlled publish.";
     } else if (
@@ -254,7 +254,7 @@ ${toBulletList(pathWarning ? [pathWarning] : [])}
 ## Recommendation
 
 - ${result.recommendation}
-- Explanations must be filled before import through the current importer.
+- Explanations and references are optional; review any supplied guidance for accuracy.
 `;
 }
 

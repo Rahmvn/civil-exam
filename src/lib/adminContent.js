@@ -1,4 +1,4 @@
-const REQUIRED_IMPORT_FIELDS = [
+const REQUIRED_OBJECTIVE_IMPORT_FIELDS = [
   "question_text",
   "option_a",
   "option_b",
@@ -6,6 +6,8 @@ const REQUIRED_IMPORT_FIELDS = [
   "option_d",
   "correct_option",
 ];
+
+const REQUIRED_ORAL_IMPORT_FIELDS = ["question_text", "model_answer"];
 
 const HEADER_ALIASES = {
   question: "question_text",
@@ -30,6 +32,22 @@ const HEADER_ALIASES = {
   difficulty: "difficulty",
   position: "batch_position",
   batch_position: "batch_position",
+  model_answer: "model_answer",
+  "model answer": "model_answer",
+  key_points: "key_points",
+  "key points": "key_points",
+  key_point_1: "key_point_1",
+  "key point 1": "key_point_1",
+  key_point_2: "key_point_2",
+  "key point 2": "key_point_2",
+  key_point_3: "key_point_3",
+  "key point 3": "key_point_3",
+  key_point_4: "key_point_4",
+  "key point 4": "key_point_4",
+  key_point_5: "key_point_5",
+  "key point 5": "key_point_5",
+  key_point_6: "key_point_6",
+  "key point 6": "key_point_6",
 };
 
 export const ADMIN_IMPORT_TEMPLATE = [
@@ -47,6 +65,22 @@ export const ADMIN_IMPORT_JSON_EXAMPLE = JSON.stringify([
     option_d: "Fourth option",
     correct_option: "A",
     explanation: "Explain why A is correct",
+    reference_note: "Source or section",
+    difficulty: "medium",
+  },
+], null, 2);
+
+export const ADMIN_ORAL_IMPORT_TEMPLATE = [
+  "position,question_text,model_answer,key_point_1,key_point_2,key_point_3,key_point_4,key_point_5,key_point_6,reference,difficulty",
+  '1,"Explain the topic here","Write the complete model answer here","First essential point","Second essential point","","","","","Source or section",medium',
+].join("\r\n");
+
+export const ADMIN_ORAL_IMPORT_JSON_EXAMPLE = JSON.stringify([
+  {
+    batch_position: 1,
+    question_text: "Explain the topic here",
+    model_answer: "Write the complete model answer here",
+    key_points: ["First essential point", "Second essential point"],
     reference_note: "Source or section",
     difficulty: "medium",
   },
@@ -119,7 +153,7 @@ function normalizeHeader(value) {
   return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function normalizeImportRow(row, index, startPosition) {
+function normalizeImportRow(row, index, startPosition, practiceType) {
   const suppliedPosition = row.batch_position;
   const position = suppliedPosition === undefined
     || suppliedPosition === null
@@ -127,24 +161,40 @@ function normalizeImportRow(row, index, startPosition) {
     ? startPosition + index
     : suppliedPosition;
 
-  const normalized = {
+  const shared = {
     batch_position: Number(position),
     question_text: String(row.question_text ?? "").trim(),
+    reference_note: String(row.reference_note ?? "").trim(),
+    source_note: String(row.source_note ?? "Admin bulk import").trim() || "Admin bulk import",
+    difficulty: String(row.difficulty ?? "medium").trim().toLowerCase() || "medium",
+  };
+
+  if (practiceType === "oral") {
+    const suppliedPoints = Array.isArray(row.key_points)
+      ? row.key_points
+      : row.key_points
+        ? [row.key_points]
+        : [row.key_point_1, row.key_point_2, row.key_point_3, row.key_point_4, row.key_point_5, row.key_point_6];
+
+    return {
+      ...shared,
+      model_answer: String(row.model_answer ?? "").trim(),
+      key_points: suppliedPoints.map((point) => String(point ?? "").trim()).filter(Boolean),
+    };
+  }
+
+  return {
+    ...shared,
     option_a: String(row.option_a ?? "").trim(),
     option_b: String(row.option_b ?? "").trim(),
     option_c: String(row.option_c ?? "").trim(),
     option_d: String(row.option_d ?? "").trim(),
     correct_option: String(row.correct_option ?? "").trim().toUpperCase(),
     explanation: String(row.explanation ?? "").trim(),
-    reference_note: String(row.reference_note ?? "").trim(),
-    source_note: String(row.source_note ?? "Admin bulk import").trim() || "Admin bulk import",
-    difficulty: String(row.difficulty ?? "medium").trim().toLowerCase() || "medium",
   };
-
-  return normalized;
 }
 
-function rowsFromTable(tableRows, sourceLabel) {
+function rowsFromTable(tableRows, sourceLabel, practiceType) {
   if (tableRows.length < 2) {
     throw new Error(`The ${sourceLabel} file must contain a header and at least one question.`);
   }
@@ -154,6 +204,10 @@ function rowsFromTable(tableRows, sourceLabel) {
     throw new Error(`The ${sourceLabel} header must include question_text.`);
   }
 
+  if (practiceType === "oral" && !mappedHeaders.includes("model_answer")) {
+    throw new Error(`The ${sourceLabel} header must include model_answer.`);
+  }
+
   return tableRows.slice(1).map((values) => Object.fromEntries(
     mappedHeaders
       .map((header, index) => [header, values[index]])
@@ -161,11 +215,11 @@ function rowsFromTable(tableRows, sourceLabel) {
   ));
 }
 
-function rowsFromCsv(text) {
-  return rowsFromTable(parseCsv(text), "CSV");
+function rowsFromCsv(text, practiceType) {
+  return rowsFromTable(parseCsv(text), "CSV", practiceType);
 }
 
-async function rowsFromWorkbook(file) {
+async function rowsFromWorkbook(file, practiceType) {
   const { unzipSync } = await import("fflate");
   const archive = unzipSync(new Uint8Array(await file.arrayBuffer()));
   const workbook = parseWorkbookXml(archive, "xl/workbook.xml");
@@ -198,7 +252,7 @@ async function rowsFromWorkbook(file) {
     return values;
   });
 
-  return rowsFromTable(rows, "Excel");
+  return rowsFromTable(rows, "Excel", practiceType);
 }
 
 function normalizeArchivePath(path) {
@@ -266,12 +320,13 @@ async function sha256File(file) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export function validateAdminImportRows(rows, startPosition = 1) {
+export function validateAdminImportRows(rows, startPosition = 1, practiceType = "objective") {
   if (!Array.isArray(rows)) throw new Error("The imported file must contain a list of questions.");
   if (rows.length < 1) throw new Error("The imported file has no questions.");
   if (rows.length > 200) throw new Error("Import no more than 200 questions at once.");
 
-  const questions = rows.map((row, index) => normalizeImportRow(row, index, startPosition));
+  if (!['objective', 'oral'].includes(practiceType)) throw new Error("Choose a valid practice type.");
+  const questions = rows.map((row, index) => normalizeImportRow(row, index, startPosition, practiceType));
   const errors = [];
   const seenPositions = new Set();
   const seenQuestions = new Set();
@@ -279,7 +334,8 @@ export function validateAdminImportRows(rows, startPosition = 1) {
   questions.forEach((question, index) => {
     const rowNumber = index + 2;
 
-    for (const field of REQUIRED_IMPORT_FIELDS) {
+    const requiredFields = practiceType === "oral" ? REQUIRED_ORAL_IMPORT_FIELDS : REQUIRED_OBJECTIVE_IMPORT_FIELDS;
+    for (const field of requiredFields) {
       if (!question[field]) errors.push(`Row ${rowNumber}: ${field.replaceAll("_", " ")} is required.`);
     }
 
@@ -290,14 +346,22 @@ export function validateAdminImportRows(rows, startPosition = 1) {
     }
     seenPositions.add(question.batch_position);
 
-    const optionValues = [question.option_a, question.option_b, question.option_c, question.option_d]
-      .map((value) => value.toLowerCase());
-    if (new Set(optionValues).size !== 4) {
-      errors.push(`Row ${rowNumber}: answer options must be different.`);
-    }
+    if (practiceType === "oral") {
+      if (question.key_points.length < 1) {
+        errors.push(`Row ${rowNumber}: add at least one key point.`);
+      } else if (new Set(question.key_points.map((point) => point.toLowerCase())).size !== question.key_points.length) {
+        errors.push(`Row ${rowNumber}: key points must be different.`);
+      }
+    } else {
+      const optionValues = [question.option_a, question.option_b, question.option_c, question.option_d]
+        .map((value) => value.toLowerCase());
+      if (new Set(optionValues).size !== 4) {
+        errors.push(`Row ${rowNumber}: answer options must be different.`);
+      }
 
-    if (!["A", "B", "C", "D"].includes(question.correct_option)) {
-      errors.push(`Row ${rowNumber}: correct answer must be A, B, C, or D.`);
+      if (!["A", "B", "C", "D"].includes(question.correct_option)) {
+        errors.push(`Row ${rowNumber}: correct answer must be A, B, C, or D.`);
+      }
     }
 
     if (!["easy", "medium", "hard"].includes(question.difficulty)) {
@@ -314,7 +378,7 @@ export function validateAdminImportRows(rows, startPosition = 1) {
   return { questions, errors };
 }
 
-export async function parseAdminImportFile(file, startPosition = 1) {
+export async function parseAdminImportFile(file, startPosition = 1, practiceType = "objective") {
   if (!file) throw new Error("Choose a CSV, Excel, or JSON file first.");
   if (file.size > 5 * 1024 * 1024) throw new Error("Choose a file smaller than 5 MB.");
 
@@ -324,15 +388,15 @@ export async function parseAdminImportFile(file, startPosition = 1) {
   if (extension === "json") {
     rows = JSON.parse(await file.text());
   } else if (extension === "csv") {
-    rows = rowsFromCsv(await file.text());
+    rows = rowsFromCsv(await file.text(), practiceType);
   } else if (extension === "xlsx") {
-    rows = await rowsFromWorkbook(file);
+    rows = await rowsFromWorkbook(file, practiceType);
   } else {
     throw new Error("Use a .csv, .xlsx, or .json file.");
   }
 
   return {
-    ...validateAdminImportRows(rows, startPosition),
+    ...validateAdminImportRows(rows, startPosition, practiceType),
     metadata: {
       checksum: await sha256File(file),
       fileName: file.name.slice(0, 255),

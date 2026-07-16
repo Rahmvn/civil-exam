@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(28);
+select plan(33);
 
 update public.exam_packs set is_active = false;
 
@@ -135,6 +135,24 @@ begin
   );
 end;
 $$;
+
+select lives_ok(
+  $$select * from public.activate_module_purchase(
+    'e2e-module-payment',
+    '{"status":"success","amount":150000,"currency":"NGN"}'::jsonb
+  )$$,
+  'replaying a successful module activation is idempotent'
+);
+select is(
+  (select count(*)::integer from public.module_entitlements where payment_order_id = '96000000-0000-4000-8000-000000000001'),
+  1,
+  'payment replay creates only one module entitlement'
+);
+select is(
+  (select status::text from public.payment_orders where id = '96000000-0000-4000-8000-000000000001'),
+  'active',
+  'successful activation leaves the payment order active'
+);
 
 update public.profiles
 set
@@ -285,6 +303,11 @@ select is(
   'E2E Financial Management',
   'payment history identifies the module that was purchased'
 );
+select is(
+  (select count(*)::integer from public.payment_orders),
+  1,
+  'module buyer can read the owned payment order'
+);
 
 reset role;
 set local role authenticated;
@@ -350,6 +373,11 @@ select is(
   (select count(*)::integer from public.get_attempt_review((select attempt_id from paid_result))),
   0,
   'candidate cannot review another candidate attempt'
+);
+select is(
+  (select count(*)::integer from public.payment_orders),
+  0,
+  'candidate cannot read another candidate payment order'
 );
 
 select * from finish();

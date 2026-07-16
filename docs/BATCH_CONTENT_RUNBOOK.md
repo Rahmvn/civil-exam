@@ -74,7 +74,7 @@ Run:
 Requirements:
 
 - `0` blocking errors
-- explanations must be non-empty
+- explanations and references may be blank
 - statuses must match importer rules
 - warnings may remain, but they must be understood before proceeding
 

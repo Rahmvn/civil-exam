@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(34);
+select plan(35);
 
 update public.exam_packs set is_active = false;
 
@@ -419,9 +419,17 @@ select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000001
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
 select is(
-  (select (public.get_oral_attempt_state(attempt_id)->>'current_position')::integer from oral_attempt_fixture),
+  (
+    select (public.advance_oral_attempt(
+      attempt_id,
+      second_question_id,
+      'This text arrived after the deadline.',
+      'manual'
+    )->>'current_position')::integer
+    from oral_attempt_fixture
+  ),
   3,
-  'refreshing an expired question locks it and starts the next question'
+  'an expired question locks and starts the next question'
 );
 
 update oral_attempt_fixture as fixture
@@ -453,6 +461,16 @@ select is(
   (select count(*)::integer from public.get_oral_attempt_review((select attempt_id from oral_attempt_fixture))),
   3,
   'completed review returns every response in the set'
+);
+
+select is(
+  (
+    select response_text
+    from public.get_oral_attempt_review((select attempt_id from oral_attempt_fixture))
+    where display_order = 2
+  ),
+  '',
+  'text submitted after the deadline cannot replace the last autosave'
 );
 
 select is(

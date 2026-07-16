@@ -72,7 +72,7 @@ export function getModuleDisplayName(subjectName) {
 
   return value
     .replace(/\s*\([^)]*\)\s*/g, "")
-    .split(" / ")[0]
+    .split(/\s*\/\s*/)[0]
     .trim();
 }
 
@@ -81,6 +81,16 @@ export function getModuleShortName(subjectSlug, subjectName) {
   if (subjectSlug === "public-service-rules") return "PSR";
   if (subjectSlug === "current-affairs") return "Current Affairs";
   return getModuleDisplayName(subjectName);
+}
+
+export function isCandidateModuleComingSoon(subject, publishedCount = 0) {
+  if (subject?.lifecycle_status === "coming_soon") return true;
+
+  return subject?.slug === "current-affairs" || Number(publishedCount ?? 0) === 0;
+}
+
+export function hasUsableCandidateModuleAccess(subject, publishedCount, hasModuleAccess) {
+  return Boolean(hasModuleAccess) && !isCandidateModuleComingSoon(subject, publishedCount);
 }
 
 export function getBatchStatusConfig(row, isPaidUser) {

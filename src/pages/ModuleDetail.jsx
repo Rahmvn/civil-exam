@@ -22,6 +22,7 @@ import {
   getLockReason,
   getModuleDisplayName,
   getProgressionRecommendation,
+  isCandidateModuleComingSoon,
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
@@ -106,6 +107,7 @@ export default function ModuleDetail() {
     subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
   const liveRows = rows.filter(isPublishedBatchRow);
+  const isComingSoon = isCandidateModuleComingSoon(subject, liveRows.length);
   const latestAttemptByBatch = useMemo(() => {
     const map = new Map();
 
@@ -121,9 +123,9 @@ export default function ModuleDetail() {
 
     return map;
   }, [attempts, subjectSlug]);
-  const progression = useMemo(
-    () => getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess }),
-    [hasModuleAccess, rows],
+  const progression = getProgressionRecommendation(
+    isComingSoon ? [] : rows,
+    { isPaidUser: hasModuleAccess },
   );
 
   const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
@@ -132,7 +134,7 @@ export default function ModuleDetail() {
   function getBatchPrimaryAction(row) {
     const batchNumber = Number(row?.batch_number ?? 1);
 
-    if (!row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
+    if (isComingSoon || !row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
       return { label: "Coming soon", disabled: true };
     }
 
@@ -233,7 +235,7 @@ export default function ModuleDetail() {
   }
 
   function getBatchSecondaryAction(row) {
-    if (!row || Number(row.attempt_count ?? 0) <= 0) return null;
+    if (isComingSoon || !row || Number(row.attempt_count ?? 0) <= 0) return null;
 
     const batchNumber = Number(row.batch_number ?? 1);
     if (subject?.practice_type === "oral" && row.latest_completed_attempt_id) {
@@ -306,7 +308,9 @@ export default function ModuleDetail() {
     );
   }
 
-  const rowsToShow = rows.length > 0
+  const rowsToShow = isComingSoon
+    ? [{ batch_number: 1, state: "unavailable_not_published", reason_code: "no_questions" }]
+    : rows.length > 0
     ? rows
     : [{ batch_number: 1, state: "unavailable_not_published", reason_code: "no_questions" }];
 
@@ -317,10 +321,12 @@ export default function ModuleDetail() {
           <article className="dashboard-panel-card module-detail-hero module-chooser-hero">
             <div className="module-detail-copy">
               <p className="dashboard-section-kicker">{getModuleDisplayName(subject.name)}</p>
-              <h1 className="module-detail-title">Choose a practice set</h1>
+              <h1 className="module-detail-title">
+                {isComingSoon ? "Practice is coming soon" : "Choose a practice set"}
+              </h1>
             </div>
 
-            {liveRows.length > 0 && (
+            {!isComingSoon && liveRows.length > 0 && (
               <div className="module-progress-summary module-progress-summary-detail">
                 <div className="module-progress-summary-copy">
                   <span>Module progress</span>

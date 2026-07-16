@@ -5,6 +5,7 @@ const DEFAULT_MODULE = {
   subject_id: "",
   subject_name: "",
   subject_slug: "",
+  practice_type: "objective",
   sort_order: 100,
   lifecycle_status: "draft",
   batch_size: 30,
@@ -38,6 +39,10 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
 
       if (field === "lifecycle_status" && value !== "active") {
         next.available_for_purchase = false;
+      }
+
+      if (field === "practice_type" && !isEditing) {
+        next.batch_size = value === "oral" ? 5 : 30;
       }
 
       return next;
@@ -77,6 +82,37 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
 
         {!isEditing && form.subject_slug && (
           <p className="admin-field-note">URL: /modules/{form.subject_slug}</p>
+        )}
+
+        {!isEditing ? (
+          <fieldset className="admin-type-picker">
+            <legend>Practice type</legend>
+            <label className={form.practice_type === "objective" ? "is-selected" : ""}>
+              <input
+                checked={form.practice_type === "objective"}
+                name="practice-type"
+                type="radio"
+                value="objective"
+                onChange={(event) => updateField("practice_type", event.target.value)}
+              />
+              <span><strong>Objective</strong><small>Multiple-choice questions with automatic scoring.</small></span>
+            </label>
+            <label className={form.practice_type === "oral" ? "is-selected" : ""}>
+              <input
+                checked={form.practice_type === "oral"}
+                name="practice-type"
+                type="radio"
+                value="oral"
+                onChange={(event) => updateField("practice_type", event.target.value)}
+              />
+              <span><strong>Oral practice</strong><small>Timed written responses followed by self-review.</small></span>
+            </label>
+          </fieldset>
+        ) : (
+          <p className="admin-locked-type">
+            <strong>{form.practice_type === "oral" ? "Oral practice" : "Objective"}</strong>
+            <span>Module type cannot be changed after creation.</span>
+          </p>
         )}
 
         <div className="admin-form-grid">
@@ -128,17 +164,19 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
             />
           </label>
 
-          <label>
-            Pass mark (%)
-            <input
-              min="1"
-              max="100"
-              required
-              type="number"
-              value={form.pass_mark_percent}
-              onChange={(event) => updateField("pass_mark_percent", event.target.value)}
-            />
-          </label>
+          {form.practice_type !== "oral" && (
+            <label>
+              Pass mark (%)
+              <input
+                min="1"
+                max="100"
+                required
+                type="number"
+                value={form.pass_mark_percent}
+                onChange={(event) => updateField("pass_mark_percent", event.target.value)}
+              />
+            </label>
+          )}
         </div>
       </div>
 

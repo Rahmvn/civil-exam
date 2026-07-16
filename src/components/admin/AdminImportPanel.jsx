@@ -2,69 +2,90 @@ import { useRef, useState } from "react";
 import {
   ADMIN_IMPORT_JSON_EXAMPLE,
   ADMIN_IMPORT_TEMPLATE,
+  ADMIN_ORAL_IMPORT_JSON_EXAMPLE,
+  ADMIN_ORAL_IMPORT_TEMPLATE,
   parseAdminImportFile,
 } from "../../lib/adminContent";
 
 const PREVIEW_PAGE_SIZE = 20;
-const IMPORT_FORMATS = {
+function getImportFormats(practiceType) {
+  const isOral = practiceType === "oral";
+  const csvExample = isOral ? ADMIN_ORAL_IMPORT_TEMPLATE : ADMIN_IMPORT_TEMPLATE;
+  const jsonExample = isOral ? ADMIN_ORAL_IMPORT_JSON_EXAMPLE : ADMIN_IMPORT_JSON_EXAMPLE;
+  const columns = isOral
+    ? "A1 position\nB1 question_text\nC1 model_answer\nD1 key_point_1\nE1 key_point_2\nF1 key_point_3\nG1 key_point_4\nH1 key_point_5\nI1 key_point_6\nJ1 reference\nK1 difficulty"
+    : "A1 position\nB1 question_text\nC1 option_a\nD1 option_b\nE1 option_c\nF1 option_d\nG1 correct_answer\nH1 explanation\nI1 reference\nJ1 difficulty";
+
+  return {
   csv: {
     label: "CSV",
     badge: "Recommended",
-    description: "Best for a simple spreadsheet export or a file edited in plain text.",
+    description: isOral
+      ? "Best for preparing oral prompts, model answers, and key points in a spreadsheet."
+      : "Best for a simple spreadsheet export or a file edited in plain text.",
     rules: [
       "Keep the first row as the column names.",
-      "Put one full question on each row after the header.",
+      isOral
+        ? "Each row needs a question, model answer, and at least one key point."
+        : "Put one full question on each row after the header.",
       "Save the file as `.csv`.",
     ],
-    example: ADMIN_IMPORT_TEMPLATE,
+    example: csvExample,
   },
   excel: {
     label: "Excel",
-    description: "Best if you want to work in Excel or Google Sheets and save the final file as `.xlsx`.",
+    description: isOral
+      ? "Best for writing and reviewing oral-answer guidance in Excel or Google Sheets."
+      : "Best if you want to work in Excel or Google Sheets and save the final file as `.xlsx`.",
     rules: [
       "Use the same columns as the CSV template in row 1.",
       "Put one full question on each spreadsheet row.",
       "Save the finished file as `.xlsx` before upload.",
     ],
-    example: "A1 position\nB1 question_text\nC1 option_a\nD1 option_b\nE1 option_c\nF1 option_d\nG1 correct_answer\nH1 explanation\nI1 reference\nJ1 difficulty",
+    example: columns,
   },
   json: {
     label: "JSON",
-    description: "Best for technical workflows or when another system is generating the question file for you.",
+    description: isOral
+      ? "Best when another system generates oral prompts with model answers and a key_points array."
+      : "Best for technical workflows or when another system is generating the question file for you.",
     rules: [
       "Use an array of question objects.",
       "Use one object for each question.",
       "Save the file as `.json`.",
     ],
-    example: ADMIN_IMPORT_JSON_EXAMPLE,
+    example: jsonExample,
   },
-};
+  };
+}
 
-function downloadTemplate() {
-  const blob = new Blob([ADMIN_IMPORT_TEMPLATE], { type: "text/csv;charset=utf-8" });
+function downloadTemplate(practiceType) {
+  const isOral = practiceType === "oral";
+  const blob = new Blob([isOral ? ADMIN_ORAL_IMPORT_TEMPLATE : ADMIN_IMPORT_TEMPLATE], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "promotionsure-question-template.csv";
+  anchor.download = `promotionsure-${isOral ? "oral-" : ""}question-template.csv`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
 }
 
-function downloadJsonExample() {
-  const blob = new Blob([ADMIN_IMPORT_JSON_EXAMPLE], { type: "application/json;charset=utf-8" });
+function downloadJsonExample(practiceType) {
+  const isOral = practiceType === "oral";
+  const blob = new Blob([isOral ? ADMIN_ORAL_IMPORT_JSON_EXAMPLE : ADMIN_IMPORT_JSON_EXAMPLE], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "promotionsure-question-example.json";
+  anchor.download = `promotionsure-${isOral ? "oral-" : ""}question-example.json`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
 }
 
-export function AdminImportPanel({ questions, importing, onClose, onImport, presentation = "inline" }) {
+export function AdminImportPanel({ questions, importing, onClose, onImport, practiceType = "objective", presentation = "inline" }) {
   const inputRef = useRef(null);
   const [fileName, setFileName] = useState("");
   const [metadata, setMetadata] = useState(null);
@@ -90,7 +111,7 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, pres
     if (!file) return;
 
     try {
-      const result = await parseAdminImportFile(file, nextPosition);
+      const result = await parseAdminImportFile(file, nextPosition, practiceType);
       const existingPositions = new Set(currentQuestions.map((question) => Number(question.batch_position)));
       const existingTexts = new Set(currentQuestions.map((question) =>
         question.question_text.toLowerCase().replace(/\s+/g, " ").trim()));
@@ -130,26 +151,28 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, pres
 
   const pageCount = Math.max(1, Math.ceil(preview.length / PREVIEW_PAGE_SIZE));
   const shownQuestions = preview.slice(page * PREVIEW_PAGE_SIZE, (page + 1) * PREVIEW_PAGE_SIZE);
-  const activeFormat = IMPORT_FORMATS[selectedFormat];
+  const importFormats = getImportFormats(practiceType);
+  const activeFormat = importFormats[selectedFormat];
+  const isOral = practiceType === "oral";
 
   return (
     <section className={`admin-import-panel${presentation === "dialog" ? " is-dialog" : ""}`}>
       <div className="admin-import-heading">
         <div>
-          <span className="admin-form-step">Bulk upload</span>
-          <h2>Upload questions</h2>
-          <p>Choose one format, prepare the file carefully, then review every row before saving.</p>
+          <span className="admin-form-step">{isOral ? "Oral question import" : "Bulk upload"}</span>
+          <h2>{isOral ? "Upload oral questions" : "Upload questions"}</h2>
+          <p>Choose one format, prepare the {isOral ? "oral prompts, model answers, and key points" : "questions and answers"} carefully, then review every row.</p>
         </div>
         <div className="admin-inline-actions">
-          <button className="ghost-button" type="button" onClick={downloadTemplate}>Download CSV template</button>
-          <button className="ghost-button" type="button" onClick={downloadJsonExample}>Download JSON example</button>
+          <button className="ghost-button" type="button" onClick={() => downloadTemplate(practiceType)}>Download {isOral ? "oral " : ""}CSV template</button>
+          <button className="ghost-button" type="button" onClick={() => downloadJsonExample(practiceType)}>Download {isOral ? "oral " : ""}JSON example</button>
           {onClose && <button className="link-button" type="button" onClick={onClose}>Close</button>}
         </div>
       </div>
 
-      <section className="admin-import-formats" aria-label="Supported import formats">
-        <div className="admin-import-format-picker" role="tablist" aria-label="Question import formats">
-          {Object.entries(IMPORT_FORMATS).map(([key, format]) => (
+      <section className="admin-import-formats" aria-label={isOral ? "Supported oral question import formats" : "Supported import formats"}>
+        <div className="admin-import-format-picker" role="tablist" aria-label={isOral ? "Oral question import formats" : "Question import formats"}>
+          {Object.entries(importFormats).map(([key, format]) => (
             <button
               key={key}
               className={`admin-import-format-toggle${selectedFormat === key ? " is-active" : ""}`}
@@ -189,22 +212,33 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, pres
               <path d="M5 18.5h14" />
             </svg>
           </span>
-          <strong>{fileName || "Drop your file here"}</strong>
-          <span className="admin-file-drop-action">{fileName ? "Choose a different file" : "Click to choose a CSV, Excel, or JSON file"}</span>
-          <small>Maximum 200 questions and 5 MB. Excel should use the same columns as the CSV template. Nothing is saved until you confirm the import.</small>
+          <strong>{fileName || (isOral ? "Drop your oral-question file here" : "Drop your file here")}</strong>
+          <span className="admin-file-drop-action">{fileName ? "Choose a different file" : `Click to choose ${isOral ? "an oral-question" : "a"} CSV, Excel, or JSON file`}</span>
+          <small>{isOral ? "Use the oral template fields, not answer options A-D." : "Excel should use the same columns as the CSV template."} Maximum 200 questions and 5 MB. Nothing is saved until you confirm the import.</small>
         </label>
 
-        <section className="admin-import-checklist" aria-label="Import preparation guide">
+        <section className="admin-import-checklist" aria-label={isOral ? "Oral question import checks" : "Import preparation guide"}>
           <div>
-            <strong>Before you upload</strong>
+            <strong>{isOral ? "Check the oral answers" : "Before you upload"}</strong>
             <p>Check the essentials before you confirm the import.</p>
           </div>
           <ul>
             <li>Use one row for one question only.</li>
-            <li>Write the full question and all four options exactly as candidates should see them.</li>
-            <li>Set `correct_answer` to `A`, `B`, `C`, or `D` so it matches the right option.</li>
+            {isOral ? (
+              <>
+                <li>Write the full question and complete model answer.</li>
+                <li>Add at least one distinct key point candidates should compare against.</li>
+                <li>Reference may be left blank.</li>
+              </>
+            ) : (
+              <>
+                <li>Write the full question and all four options exactly as candidates should see them.</li>
+                <li>Set `correct_answer` to `A`, `B`, `C`, or `D` so it matches the right option.</li>
+                <li>Explanation and reference may be left blank.</li>
+              </>
+            )}
             <li>Use unique positions in the final order you want candidates to see.</li>
-            <li>Review spelling, punctuation, explanations, and answer accuracy before confirming.</li>
+            <li>Review spelling, punctuation, and answer accuracy before confirming.</li>
           </ul>
         </section>
       </section>
@@ -227,17 +261,17 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, pres
             </div>
             <span>Rows {page * PREVIEW_PAGE_SIZE + 1}-{Math.min((page + 1) * PREVIEW_PAGE_SIZE, preview.length)} of {preview.length}</span>
           </div>
-          <div className="admin-import-preview-table" role="table" aria-label="Questions ready to import">
+          <div className="admin-import-preview-table" role="table" aria-label={isOral ? "Oral questions ready to import" : "Questions ready to import"}>
             <div className="admin-import-preview-row is-heading" role="row">
               <span role="columnheader">Position</span>
               <span role="columnheader">Question</span>
-              <span role="columnheader">Answer</span>
+              <span role="columnheader">{isOral ? "Guidance" : "Answer"}</span>
             </div>
             {shownQuestions.map((question) => (
               <div className="admin-import-preview-row" role="row" key={`${question.batch_position}-${question.question_text}`}>
                 <span role="cell">{question.batch_position}</span>
                 <span role="cell">{question.question_text}</span>
-                <strong role="cell">{question.correct_option}</strong>
+                <strong role="cell">{isOral ? `${question.key_points.length} key point${question.key_points.length === 1 ? "" : "s"}` : question.correct_option}</strong>
               </div>
             ))}
           </div>
