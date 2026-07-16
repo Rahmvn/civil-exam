@@ -6,11 +6,28 @@ import {
   validateLegacyPaymentData,
   validateModulePaymentData,
 } from "./payment-validation.js";
+import { resolveSupabaseKey } from "./supabase-keys.js";
+
+function getSupabasePublishableKey() {
+  return resolveSupabaseKey({
+    dictionaryEnvName: "SUPABASE_PUBLISHABLE_KEYS",
+    legacyEnvName: "SUPABASE_ANON_KEY",
+    label: "Supabase publishable key",
+  });
+}
+
+function getSupabaseSecretKey() {
+  return resolveSupabaseKey({
+    dictionaryEnvName: "SUPABASE_SECRET_KEYS",
+    legacyEnvName: "SUPABASE_SERVICE_ROLE_KEY",
+    label: "Supabase secret key",
+  });
+}
 
 export function getAdminClient() {
   return createClient(
     requireEnv("SUPABASE_URL"),
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    getSupabaseSecretKey(),
     {
       auth: {
         persistSession: false,
@@ -28,7 +45,7 @@ export async function getAuthedUser(request: Request) {
 
   const supabase = createClient(
     requireEnv("SUPABASE_URL"),
-    requireEnv("SUPABASE_ANON_KEY"),
+    getSupabasePublishableKey(),
     {
       global: {
         headers: {

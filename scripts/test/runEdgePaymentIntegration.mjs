@@ -203,6 +203,8 @@ async function main() {
   const envPath = "test-results/edge-payment.env";
   await mkdir("test-results", { recursive: true });
   await writeFile(envPath, [
+    `SUPABASE_PUBLISHABLE_KEYS=${JSON.stringify({ default: publicKey })}`,
+    `SUPABASE_SECRET_KEYS=${JSON.stringify({ default: secretKey })}`,
     "PAYSTACK_SECRET_KEY=local-edge-payment-secret",
     `PAYSTACK_API_URL=http://host.docker.internal:${mock.port}`,
     "APP_URL=http://127.0.0.1:4173",
@@ -236,6 +238,9 @@ async function main() {
 
     const unauthenticated = await invoke(apiUrl, "initialize-paystack-payment", null, { subject_slug: "public-financial-management" });
     if (unauthenticated.ok) fail("Unauthenticated payment initialization was accepted.");
+
+    const unauthenticatedVerification = await invoke(apiUrl, "verify-paystack-payment", null, { reference: "PS-unauthenticated" });
+    if (unauthenticatedVerification.ok) fail("Unauthenticated payment verification was accepted.");
 
     const comingSoon = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-coming-soon" });
     if (comingSoon.ok) fail("A coming-soon module was accepted for payment.");
