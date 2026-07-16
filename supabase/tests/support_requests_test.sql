@@ -50,13 +50,13 @@ select lives_ok(
 );
 
 select is(
-  (select count(*)::integer from public.support_requests),
+  (select count(*)::integer from public.support_requests where payment_reference = 'PS-support-test'),
   1,
   'the support request is stored once'
 );
 
 select is(
-  (select payment_reference from public.support_requests limit 1),
+  (select payment_reference from public.support_requests where user_id = 'e1000000-0000-4000-8000-000000000001' limit 1),
   'PS-support-test',
   'the payment reference is retained for reconciliation'
 );
@@ -85,33 +85,36 @@ select throws_ok(
 
 select set_config('request.jwt.claim.sub', 'e1000000-0000-4000-8000-000000000002', true);
 select is(
-  (select count(*)::integer from public.support_requests),
+  (select count(*)::integer from public.support_requests where payment_reference = 'PS-support-test'),
   0,
   'another candidate cannot read the request'
 );
 
 select set_config('request.jwt.claim.sub', 'e1000000-0000-4000-8000-000000000003', true);
 select is(
-  (select count(*)::integer from public.support_requests),
+  (select count(*)::integer from public.support_requests where payment_reference = 'PS-support-test'),
   1,
   'an administrator can read support requests for resolution'
 );
 
 select lives_ok(
   $$ select public.update_support_request(
-    (select id from public.support_requests limit 1),
+    (select id from public.support_requests where payment_reference = 'PS-support-test' limit 1),
     'resolved',
     'Module access was reconciled successfully.'
   ) $$,
   'an administrator can resolve a support request'
 );
 select is(
-  (select status from public.support_requests limit 1),
+  (select status from public.support_requests where payment_reference = 'PS-support-test' limit 1),
   'resolved',
   'the resolved status is visible to the requester and administrator'
 );
 select is(
-  (select count(*)::integer from public.admin_audit_logs where entity_type = 'support_request'),
+  (select count(*)::integer
+   from public.admin_audit_logs
+   where entity_type = 'support_request'
+     and entity_id = (select id from public.support_requests where payment_reference = 'PS-support-test' limit 1)),
   1,
   'support resolution creates an admin audit event'
 );

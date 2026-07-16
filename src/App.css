@@ -12148,7 +12148,7 @@ button.module-chooser-link {
 
 .batch-status-badge.is-passed {
   background: var(--color-success-soft);
-  color: var(--color-success);
+  color: var(--color-primary-dark);
 }
 
 .batch-status-badge.is-failed {

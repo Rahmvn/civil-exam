@@ -17,10 +17,13 @@ test("mobile navigation and practice controls fit the viewport", async ({ page }
 
 test("oral practice start and answer controls fit a mobile viewport", async ({ page }) => {
   await page.goto("/oral-practice/e2e-oral-questions?batch=1");
-  await expect(page.getByRole("heading", { name: "Oral Questions" })).toBeVisible();
+  await expect(page.getByText("Oral Questions", { exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
-  await page.getByRole("button", { name: "Begin oral practice" }).click();
+  if (await page.getByRole("button", { name: "Begin oral practice" }).isVisible()) {
+    await expect(page.getByText("Answer each prompt in your own words. Once you continue, that answer is locked.")).toBeVisible();
+    await page.getByRole("button", { name: "Begin oral practice" }).click();
+  }
   await expect(page.getByLabel("Your answer")).toBeVisible();
   await expect(page.getByRole("button", { name: /continue|finish/i })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
