@@ -14351,7 +14351,7 @@ button.account-edit-open {
 
 .landing-experience-modules > p {
   grid-column: 2;
-  margin: -2px 0 0;
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 0.78rem;
   line-height: 1.45;

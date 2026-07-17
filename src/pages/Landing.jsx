@@ -1,13 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { PublicNav } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { getPublicModuleCatalog } from "../lib/appApi";
+import { logAppError } from "../lib/errors";
+import { normalizePublicModules } from "../lib/publicModules";
 import { useAuth } from "../lib/useAuth";
-
-const MODULES = [
-  { name: "Public Financial Management" },
-  { name: "Public Service Rules" },
-  { name: "Current Affairs", status: "Coming soon" },
-];
 
 function PracticeExperiencePreview() {
   return (
@@ -68,6 +66,30 @@ function PracticeExperiencePreview() {
 
 export default function Landing() {
   const { isAdmin, loading, user } = useAuth();
+  const [modules, setModules] = useState(null);
+  const [moduleLoadFailed, setModuleLoadFailed] = useState(false);
+
+  useEffect(() => {
+    if (loading || user) return undefined;
+
+    let cancelled = false;
+
+    getPublicModuleCatalog()
+      .then((rows) => {
+        if (!cancelled) setModules(normalizePublicModules(rows));
+      })
+      .catch((error) => {
+        logAppError("Landing public module catalog", error);
+        if (!cancelled) {
+          setModules([]);
+          setModuleLoadFailed(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, user]);
 
   if (loading) {
     return <LoadingState fullPage />;
@@ -93,17 +115,24 @@ export default function Landing() {
 
         <PracticeExperiencePreview />
 
-        <div className="landing-experience-modules" aria-label="Available modules">
-          <strong>Available modules</strong>
-          <div>
-            {MODULES.map((module) => (
-              <span className={module.status ? "is-coming-soon" : ""} key={module.name}>
-                {module.name}
-                {module.status && <small>{module.status}</small>}
-              </span>
-            ))}
-          </div>
-          <p>Preparing for another examination year? Later editions will be added as they are ready.</p>
+        <div className="landing-experience-modules" aria-label="Current modules">
+          <strong>Current modules</strong>
+          {modules === null ? (
+            <p className="landing-module-state" role="status">Loading current modules...</p>
+          ) : moduleLoadFailed ? (
+            <p className="landing-module-state" role="status">Module information is temporarily unavailable.</p>
+          ) : modules.length === 0 ? (
+            <p className="landing-module-state" role="status">No modules are available right now.</p>
+          ) : (
+            <div>
+              {modules.map((module) => (
+                <span className={module.status === "coming_soon" ? "is-coming-soon" : ""} key={module.slug}>
+                  {module.name}
+                  {module.status === "coming_soon" && <small>Coming soon</small>}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </main>

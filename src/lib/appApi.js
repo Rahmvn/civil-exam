@@ -142,6 +142,12 @@ export async function getMySupportRequests(limit = 10) {
   )));
 }
 
+export async function getPublicModuleCatalog() {
+  return readWithPolicy("public-module-catalog", async () => ensureArray(requireData(
+    await supabase.rpc("get_public_module_catalog"),
+  )));
+}
+
 export async function createSupportRequest({ category, subject, description, paymentReference, pagePath }) {
   return requireData(await supabase.rpc("create_support_request", {
     requested_category: category,
