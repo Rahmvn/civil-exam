@@ -535,6 +535,10 @@ function PracticeSetWorkspace({
   const [expectedCount, setExpectedCount] = useState(practiceSet.expected_question_count);
   const practiceType = practiceSet.practice_type ?? module.practice_type ?? "objective";
   const capabilities = practiceSet.capabilities ?? {};
+  const isReplacementVersion = Boolean(practiceSet.replaces_practice_set_id);
+  const canPublishSet = Boolean(capabilities.can_publish) && !isReplacementVersion;
+  const canPublishReplacement = Boolean(capabilities.can_publish_replacement)
+    || (practiceSet.status === "review" && isReplacementVersion);
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleQuestions = questions.filter((question) => {
@@ -671,10 +675,10 @@ function PracticeSetWorkspace({
           {capabilities.can_return_to_draft && (
             <>
               <button className="ghost-button" disabled={working} type="button" onClick={() => onTransition("draft")}>Return to draft</button>
-              {capabilities.can_publish && <button disabled={!validation?.ready || working} type="button" onClick={() => onTransition("published")}>Publish set</button>}
-              {capabilities.can_publish_replacement && <button disabled={!validation?.ready || working} type="button" onClick={() => onLifecycleAction("publish_replacement")}>Publish replacement</button>}
+              {canPublishSet && <button disabled={!validation?.ready || working} type="button" onClick={() => onTransition("published")}>Publish set</button>}
             </>
           )}
+          {canPublishReplacement && <button disabled={!validation?.ready || working} type="button" onClick={() => onLifecycleAction("publish_replacement")}>Publish replacement</button>}
           {capabilities.can_withdraw && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("withdraw")}>Withdraw temporarily</button>}
           {capabilities.can_republish && <button disabled={working} type="button" onClick={() => onLifecycleAction("republish")}>Republish unchanged</button>}
           {capabilities.can_create_replacement && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("create_replacement")}>Create corrected replacement</button>}
