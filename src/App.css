@@ -248,6 +248,27 @@
   color: var(--color-danger);
 }
 
+.oral-session-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.oral-session-exit-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
+  border-radius: 999px;
+  color: var(--color-danger);
+  background: var(--color-surface);
+  font-weight: 800;
+}
+
+.oral-session-exit-button:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 6%, var(--color-surface));
+}
+
 .oral-session-progress {
   display: grid;
   grid-template-columns: 1fr;
@@ -670,15 +691,24 @@
   }
 
   .oral-session-header p {
-    max-width: 190px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  .oral-session-controls {
+    gap: 8px;
+  }
+
   .oral-session-timer {
-    min-width: 88px;
+    min-width: 72px;
     padding: 0;
+  }
+
+  .oral-session-exit-button {
+    min-height: 38px;
+    padding-inline: 10px;
   }
 
   .oral-session-timer strong {

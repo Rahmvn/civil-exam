@@ -126,7 +126,22 @@ test("oral practice is one-way, durable, and reveals guidance only after complet
   const answerField = page.getByLabel("Your answer");
   await answerField.fill("It makes officers answerable for decisions and public resources.");
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({ timeout: 5000 });
+  page.once("dialog", (dialog) => dialog.accept());
   await page.reload();
+  await expect(page.getByLabel("Your answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
+  await expect(page.getByText(/Question 1 of 3/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Exit" }).click();
+  const exitDialog = page.getByRole("dialog", { name: "Leave oral practice?" });
+  await expect(exitDialog).toBeVisible();
+  await expect(exitDialog).toContainText("the current question timer will continue");
+  await exitDialog.getByRole("button", { name: "Continue practice" }).click();
+  await expect(exitDialog).not.toBeVisible();
+
+  await page.getByRole("button", { name: "Exit" }).click();
+  await exitDialog.getByRole("button", { name: "Save and leave" }).click();
+  await page.waitForURL(/\/dashboard#modules$/);
+  await page.goto("/oral-practice/e2e-oral-questions?batch=1");
   await expect(page.getByLabel("Your answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
   await expect(page.getByText(/Question 1 of 3/)).toBeVisible();
 

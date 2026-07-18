@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useBlocker, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import {
@@ -25,6 +25,33 @@ import {
 } from "../lib/oralPractice";
 
 const AUTOSAVE_DELAY_MS = 1000;
+
+function OralExitConfirmModal({ busy, onCancel, onConfirm }) {
+  return (
+    <div className="auth-modal-backdrop" role="presentation" onClick={busy ? undefined : onCancel}>
+      <section
+        aria-labelledby="oral-exit-confirm-title"
+        aria-modal="true"
+        className="auth-modal-card practice-exit-modal"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+      >
+        <p className="eyebrow">Active oral practice</p>
+        <h2 id="oral-exit-confirm-title">Leave oral practice?</h2>
+        <p>
+          Your latest answer will be saved, but the current question timer will continue.
+          When time expires, the answer is locked. You must finish this attempt before starting another oral practice set.
+        </p>
+        <div className="auth-modal-actions">
+          <button className="primary-action" disabled={busy} onClick={onCancel} type="button">Continue practice</button>
+          <button className="ghost-button practice-confirm-exit" disabled={busy} onClick={onConfirm} type="button">
+            {busy ? "Saving..." : "Save and leave"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function OralStart({ accessRow, canPurchase, duration, error, onDurationChange, onStart, starting, subject }) {
   const questionCount = Number(accessRow?.published_question_count ?? 0);
@@ -113,15 +140,25 @@ export default function OralPractice() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [saveState, setSaveState] = useState("Saved");
   const [error, setError] = useState("");
   const serverOffsetRef = useRef(0);
   const answerRef = useRef("");
   const sessionRef = useRef(null);
   const autosaveTimerRef = useRef(null);
+  const autosavePromiseRef = useRef(null);
   const advanceRetryAtRef = useRef(0);
   const advancingRef = useRef(false);
+  const allowExitRef = useRef(false);
   const questionHeadingRef = useRef(null);
+  const hasActiveSession = session?.status === "active";
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => (
+    hasActiveSession
+    && !allowExitRef.current
+    && `${currentLocation.pathname}${currentLocation.search}` !== `${nextLocation.pathname}${nextLocation.search}`
+  ));
 
   const applySession = useCallback((nextSession, { preserveAnswer = false } = {}) => {
     if (!nextSession) return;
@@ -133,6 +170,7 @@ export default function OralPractice() {
 
     if (nextSession.status === "completed") {
       clearOralResponseDraft(previousAttemptId ?? nextSession.attempt_id, previousQuestionId);
+      allowExitRef.current = true;
       navigate(`/oral-review?attempt=${nextSession.attempt_id}`, { replace: true });
       return;
     }
@@ -236,12 +274,27 @@ export default function OralPractice() {
     }
 
     window.addEventListener("online", reconcileSession);
+    window.addEventListener("pageshow", reconcileSession);
     document.addEventListener("visibilitychange", reconcileSession);
     return () => {
       window.removeEventListener("online", reconcileSession);
+      window.removeEventListener("pageshow", reconcileSession);
       document.removeEventListener("visibilitychange", reconcileSession);
     };
   }, [applySession]);
+
+  useEffect(() => {
+    if (!hasActiveSession) return undefined;
+
+    const handleBeforeUnload = (event) => {
+      if (allowExitRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasActiveSession]);
 
   function changeAnswer(event) {
     const nextAnswer = event.target.value;
@@ -256,12 +309,15 @@ export default function OralPractice() {
     storeOralResponseDraft(activeSession.attempt_id, questionId, nextAnswer);
 
     autosaveTimerRef.current = window.setTimeout(async () => {
+      const savePromise = saveOralResponseDraft({
+        attemptId: activeSession.attempt_id,
+        questionId,
+        responseText: nextAnswer,
+      });
+      autosavePromiseRef.current = savePromise;
+
       try {
-        const nextSession = await saveOralResponseDraft({
-          attemptId: activeSession.attempt_id,
-          questionId,
-          responseText: nextAnswer,
-        });
+        const nextSession = await savePromise;
         if (sessionRef.current?.current_question?.id !== questionId) return;
         if (nextSession?.current_question?.id !== questionId || nextSession?.status === "completed") {
           applySession(nextSession);
@@ -272,8 +328,70 @@ export default function OralPractice() {
       } catch (saveError) {
         logAppError("Oral answer autosave", saveError);
         setSaveState("Not saved");
+      } finally {
+        if (autosavePromiseRef.current === savePromise) autosavePromiseRef.current = null;
       }
     }, AUTOSAVE_DELAY_MS);
+  }
+
+  function cancelExit() {
+    if (leaving) return;
+    if (blocker.state === "blocked") blocker.reset();
+    setExitConfirmOpen(false);
+  }
+
+  async function confirmExit() {
+    const activeSession = sessionRef.current;
+    const questionId = activeSession?.current_question?.id;
+    if (!activeSession?.attempt_id || !questionId || leaving) return;
+
+    window.clearTimeout(autosaveTimerRef.current);
+    storeOralResponseDraft(activeSession.attempt_id, questionId, answerRef.current);
+    setLeaving(true);
+    setSaveState("Saving...");
+    setError("");
+
+    try {
+      if (autosavePromiseRef.current) {
+        try {
+          await autosavePromiseRef.current;
+        } catch {
+          // The final save below retries with the newest answer.
+        }
+      }
+
+      const nextSession = await saveOralResponseDraft({
+        attemptId: activeSession.attempt_id,
+        questionId,
+        responseText: answerRef.current,
+      });
+
+      clearOralResponseDraft(activeSession.attempt_id, questionId);
+      setSaveState("Saved");
+      setExitConfirmOpen(false);
+
+      if (nextSession.status === "completed") {
+        if (blocker.state === "blocked") blocker.reset();
+        applySession(nextSession);
+        return;
+      }
+
+      allowExitRef.current = true;
+      if (blocker.state === "blocked") {
+        blocker.proceed();
+      } else {
+        navigate("/dashboard#modules", { replace: true });
+      }
+    } catch (saveError) {
+      logAppError("Oral practice exit save", saveError);
+      setSaveState("Not saved");
+      setError(friendlyErrorMessage(
+        saveError,
+        "We could not save your latest answer, so the practice is still open. Please try again.",
+      ));
+    } finally {
+      setLeaving(false);
+    }
   }
 
   async function beginPractice() {
@@ -365,13 +483,23 @@ export default function OralPractice() {
               <p>{getModuleDisplayName(session.subject_name)}</p>
               <span>{`Practice set ${session.set_number} - Question ${session.current_position} of ${session.total_questions}`}</span>
             </div>
-            <div
-              aria-label={`${formatOralTime(remainingSeconds)} remaining`}
-              className={`oral-session-timer ${remainingSeconds <= 30 ? "is-warning" : ""}`}
-              role="timer"
-            >
-              <span>Time left</span>
-              <strong>{formatOralTime(remainingSeconds)}</strong>
+            <div className="oral-session-controls">
+              <div
+                aria-label={`${formatOralTime(remainingSeconds)} remaining`}
+                className={`oral-session-timer ${remainingSeconds <= 30 ? "is-warning" : ""}`}
+                role="timer"
+              >
+                <span>Time left</span>
+                <strong>{formatOralTime(remainingSeconds)}</strong>
+              </div>
+              <button
+                className="oral-session-exit-button"
+                disabled={advancing || leaving}
+                onClick={() => setExitConfirmOpen(true)}
+                type="button"
+              >
+                Exit
+              </button>
             </div>
           </header>
 
@@ -425,6 +553,13 @@ export default function OralPractice() {
 
         {error && <p className="action-error oral-session-error" role="alert">{error}</p>}
       </main>
+      {(exitConfirmOpen || blocker.state === "blocked") && (
+        <OralExitConfirmModal
+          busy={leaving}
+          onCancel={cancelExit}
+          onConfirm={() => void confirmExit()}
+        />
+      )}
     </AppFrame>
   );
 }
