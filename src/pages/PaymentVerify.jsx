@@ -50,6 +50,9 @@ export default function PaymentVerify() {
       : state === "unconfirmed"
         ? "Payment not confirmed yet"
         : "Checking your payment";
+  const continuePath = moduleSlug
+    ? `/modules/${encodeURIComponent(moduleSlug)}`
+    : "/dashboard#modules";
 
   return (
     <main className="state-shell payment-verification-page">
@@ -67,7 +70,7 @@ export default function PaymentVerify() {
         <div className="payment-verification-actions">
           {state === "success" ? (
             <>
-              <Link className="primary-action" to={moduleSlug ? `/modules/${moduleSlug}` : "/dashboard#modules"}>Continue practice</Link>
+              <Link className="primary-action" to={continuePath}>Continue practice</Link>
               <Link className="secondary-action" to="/access">View access</Link>
             </>
           ) : state === "unconfirmed" ? (

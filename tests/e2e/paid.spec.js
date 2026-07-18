@@ -49,6 +49,45 @@ test("paid dashboard, modules, account, and access routes remain connected", asy
   await expectNoHorizontalOverflow(page);
 });
 
+test("payment return stays on the receipt until the candidate opens the purchased module", async ({ page }) => {
+  const reference = "PS-e2e-payment-return";
+  let verificationCount = 0;
+
+  await page.route("**/functions/v1/verify-paystack-payment", async (route) => {
+    verificationCount += 1;
+    const requestBody = route.request().postDataJSON();
+    expect(requestBody).toEqual({ reference });
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        status: "active",
+        expires_at: "2027-07-18T00:00:00.000Z",
+        subject_name: "Public Financial Management",
+        subject_slug: "public-financial-management",
+      }),
+    });
+  });
+
+  await page.goto(`/payment/verify?trxref=${reference}&reference=${reference}`);
+  await expect(page).toHaveURL(new RegExp(`/payment/verify\\?trxref=${reference}&reference=${reference}$`));
+  await expect(page.getByRole("heading", { name: "Access unlocked" })).toBeVisible();
+  await expect(page.getByText("Public Financial Management is now unlocked.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue practice" })).toHaveAttribute(
+    "href",
+    "/modules/public-financial-management",
+  );
+
+  const verificationCountBeforeReload = verificationCount;
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Access unlocked" })).toBeVisible();
+  expect(verificationCount).toBeGreaterThan(verificationCountBeforeReload);
+
+  await page.getByRole("link", { name: "Continue practice" }).click();
+  await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
+  await expect(page.getByText("Public Financial Management", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toHaveCount(0);
+});
+
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
   await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();

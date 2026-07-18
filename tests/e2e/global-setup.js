@@ -129,6 +129,14 @@ async function clearAdminContentFixtures(client) {
     "Clear admin fixture module offerings",
   );
   requireResult(
+    await client.from("oral_questions").update({ status: "archived" }).in("subject_id", moduleIds).eq("status", "published"),
+    "Archive admin fixture oral questions",
+  );
+  requireResult(
+    await client.from("questions").update({ status: "archived" }).in("subject_id", moduleIds).eq("status", "published"),
+    "Archive admin fixture questions",
+  );
+  requireResult(
     await client.from("oral_questions").delete().in("subject_id", moduleIds),
     "Clear admin fixture oral questions",
   );
@@ -168,6 +176,10 @@ function question(id, subjectId, packId, batchNumber, position, correctOption, t
 }
 
 async function seedPracticeContent(client, packId, subjects) {
+  requireResult(
+    await client.from("questions").update({ status: "archived" }).eq("source_note", FIXTURE_SOURCE).eq("status", "published"),
+    "Archive practice fixtures",
+  );
   requireResult(
     await client.from("questions").delete().eq("source_note", FIXTURE_SOURCE),
     "Clear practice fixtures",
