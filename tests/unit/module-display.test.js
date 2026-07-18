@@ -37,7 +37,7 @@ test("module display helpers normalize names, scores, and publication status", (
   assert.equal(isPublishedBatchRow(batch(1, "available")), true);
   assert.equal(isPublishedBatchRow(batch(1, "unavailable_not_published")), false);
   assert.equal(buildModuleStatusLine("public-service-rules", 6, 2), "5+ batches - 2 soon");
-  assert.equal(buildModuleStatusLine("current-affairs", 4, 0), "Coming soon");
+  assert.equal(buildModuleStatusLine("current-affairs", 4, 0), "4 batches");
 });
 
 test("coming-soon lifecycle takes precedence over a stored module entitlement", () => {
@@ -55,6 +55,22 @@ test("coming-soon lifecycle takes precedence over a stored module entitlement", 
   assert.equal(isCandidateModuleComingSoon(activeSubject, 3), false);
   assert.equal(hasUsableCandidateModuleAccess(activeSubject, 3, true), true);
   assert.equal(hasUsableCandidateModuleAccess(activeSubject, 3, false), false);
+});
+
+test("current affairs follows admin candidate availability instead of a hard-coded hold", () => {
+  const availableCurrentAffairs = {
+    slug: "current-affairs",
+    lifecycle_status: "active",
+    candidate_availability: "available",
+  };
+  const heldCurrentAffairs = {
+    ...availableCurrentAffairs,
+    candidate_availability: "coming_soon",
+  };
+
+  assert.equal(isCandidateModuleComingSoon(availableCurrentAffairs, 7), false);
+  assert.equal(hasUsableCandidateModuleAccess(availableCurrentAffairs, 7, true), true);
+  assert.equal(isCandidateModuleComingSoon(heldCurrentAffairs, 7), true);
 });
 
 test("batch status and lock copy follow server state and reason codes", () => {

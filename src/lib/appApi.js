@@ -168,7 +168,7 @@ export async function getSubjects() {
   const rows = await readWithPolicy("subjects", async () => requireData(
     await supabase
       .from("subjects")
-      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type, lifecycle_status")
+      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type, lifecycle_status, candidate_availability")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ));

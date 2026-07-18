@@ -84,9 +84,12 @@ export function getModuleShortName(subjectSlug, subjectName) {
 }
 
 export function isCandidateModuleComingSoon(subject, publishedCount = 0) {
-  if (subject?.lifecycle_status === "coming_soon") return true;
+  if (
+    subject?.candidate_availability === "coming_soon"
+    || subject?.lifecycle_status === "coming_soon"
+  ) return true;
 
-  return subject?.slug === "current-affairs" || Number(publishedCount ?? 0) === 0;
+  return Number(publishedCount ?? 0) === 0;
 }
 
 export function hasUsableCandidateModuleAccess(subject, publishedCount, hasModuleAccess) {
@@ -149,10 +152,6 @@ export function getLockReason(row, selectedModuleName) {
 }
 
 export function buildModuleStatusLine(subjectSlug, liveCount, comingSoonCount) {
-  if (subjectSlug === "current-affairs") {
-    return "Coming soon";
-  }
-
   const batchLabel = liveCount > 5
     ? "5+ batches"
     : liveCount === 1
@@ -175,10 +174,6 @@ export function buildModuleStatusLine(subjectSlug, liveCount, comingSoonCount) {
 }
 
 export function getModuleStatusTone(subjectSlug, liveCount, comingSoonCount) {
-  if (subjectSlug === "current-affairs") {
-    return "soon";
-  }
-
   if (liveCount > 0 && comingSoonCount > 0) {
     return "mixed";
   }
