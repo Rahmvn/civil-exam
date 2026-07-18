@@ -340,11 +340,11 @@ export default function Auth() {
 
         {authNotice && <p className="auth-inline-notice">{authNotice}</p>}
 
-        {!isSignUpPasswordStep && !isForgotPassword && !isVerification && (
+        {GOOGLE_ENABLED && !isSignUpPasswordStep && !isForgotPassword && !isVerification && (
           <>
-            <button className="auth-google-button" disabled={isBusy || !GOOGLE_ENABLED} onClick={() => void continueWithGoogle()} type="button">
+            <button className="auth-google-button" disabled={isBusy} onClick={() => void continueWithGoogle()} type="button">
               <GoogleMark />
-              <span>{busyMethod === "google" ? "Connecting..." : GOOGLE_ENABLED ? "Continue with Google" : "Google sign-in coming soon"}</span>
+              <span>{busyMethod === "google" ? "Connecting..." : "Continue with Google"}</span>
             </button>
             <div className="auth-divider"><span>or continue with email</span></div>
           </>

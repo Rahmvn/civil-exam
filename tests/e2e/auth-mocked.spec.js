@@ -30,6 +30,15 @@ async function openSignupVerification(page) {
   await page.goto("/auth?mode=verify-signup");
 }
 
+test("disabled Google authentication is not presented as an unfinished option", async ({ page }) => {
+  await page.goto("/auth?mode=sign-in");
+  await expect(page.getByRole("button", { name: /Google/i })).toHaveCount(0);
+  await expect(page.getByText("Google sign-in coming soon")).toHaveCount(0);
+
+  await page.goto("/auth?mode=sign-up");
+  await expect(page.getByRole("button", { name: /Google/i })).toHaveCount(0);
+});
+
 test("OTP uses one accessible numeric input with six visual cells", async ({ page }) => {
   await openSignupVerification(page);
 
