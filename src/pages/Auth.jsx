@@ -198,7 +198,7 @@ export default function Auth() {
       switchMode("verify-signup");
       setEmail(normalizedEmail);
       setMessageTone("success");
-      setMessage("We sent a six-digit verification code to your email.");
+      setMessage("If this email can be registered, a six-digit verification code has been sent.");
       return;
     }
 
@@ -255,7 +255,11 @@ export default function Auth() {
     setPending(nextPending);
     setNow(Date.now());
     setMessageTone("success");
-    setMessage("A new code was sent. Only the latest code will work.");
+    setMessage(
+      verificationPurpose === AUTH_PURPOSES.SIGNUP
+        ? "If this email can be registered, a new code has been sent. Only the latest code will work."
+        : "A new code was sent. Only the latest code will work.",
+    );
   }
 
   async function handleSubmit(event) {
@@ -331,7 +335,7 @@ export default function Auth() {
 
         <header className="auth-card-heading">
           <h1>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? "Verify your email" : "Enter your recovery code") : isForgotPassword ? "Reset your password" : mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
-          <p>{isVerification ? `Use the latest code sent to ${maskEmail(pending?.email)}.` : isForgotPassword ? "Enter your email and we will send secure recovery instructions." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
+          <p>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? `Enter the latest code if one was sent to ${maskEmail(pending?.email)}.` : `Use the latest code sent to ${maskEmail(pending?.email)}.`) : isForgotPassword ? "Enter your email and we will send secure recovery instructions." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
         </header>
 
         {authNotice && <p className="auth-inline-notice">{authNotice}</p>}
