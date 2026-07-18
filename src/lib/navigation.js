@@ -4,15 +4,35 @@ export function buildLocationPath(location) {
 }
 
 export function getSafeReturnTo(value, fallback = "/dashboard") {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
+  if (typeof value !== "string") {
     return fallback;
   }
 
   try {
-    const url = new URL(value, "http://app.local");
+    const candidate = value.trim();
+    if (!candidate.startsWith("/") || candidate.startsWith("//") || candidate.includes("\\")) {
+      return fallback;
+    }
+
+    let decoded = candidate;
+    for (let index = 0; index < 2; index += 1) {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    }
+    if (decoded.startsWith("//") || /^(?:javascript|data):/i.test(decoded) || decoded.includes("\\")) {
+      return fallback;
+    }
+
+    const url = new URL(candidate, "http://app.local");
     if (url.origin !== "http://app.local") return fallback;
     const path = `${url.pathname}${url.search}${url.hash}`;
-    if (url.pathname === "/auth" || url.pathname === "/profile-setup") return fallback;
+    if (url.pathname === "/auth" || url.pathname === "/auth/callback" || url.pathname === "/reset-password" || url.pathname === "/profile-setup") return fallback;
+
+    for (const key of ["returnTo", "redirect", "redirectTo", "next"]) {
+      const nested = url.searchParams.get(key);
+      if (nested && getSafeReturnTo(nested, null) === null) return fallback;
+    }
     return path;
   } catch {
     return fallback;

@@ -14,6 +14,7 @@
     "test:edge:compat": "node scripts/test/runPreMigrationPaymentSecurity.mjs",
     "test:operator-access": "node scripts/test/checkOperatorAccess.mjs",
     "test:e2e": "node scripts/test/runPlaywright.mjs",
+    "test:e2e:auth-mock": "playwright test --config=playwright.auth-mock.config.js",
     "test:e2e:headed": "node scripts/test/runPlaywright.mjs --headed",
     "test:e2e:visual": "node scripts/test/runPlaywright.mjs --visual --project=visual-desktop",
     "test:e2e:performance": "node scripts/test/runPlaywright.mjs --performance --project=performance-desktop",
@@ -35,7 +36,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/supabase-js": "2.108.2",
     "fflate": "^0.8.3",
     "jspdf": "^4.2.1",
     "react": "^19.2.6",

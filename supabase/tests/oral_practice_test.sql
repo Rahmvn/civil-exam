@@ -25,7 +25,7 @@ insert into public.exam_packs (
 
 insert into public.subjects (
   id, name, slug, description, sort_order, is_active, batch_size,
-  pass_mark_percent, lifecycle_status, practice_type
+  pass_mark_percent, lifecycle_status, practice_type, candidate_availability
 ) values
   (
     'b1000000-0000-4000-8000-000000000001',
@@ -37,7 +37,8 @@ insert into public.subjects (
     3,
     70,
     'active',
-    'oral'
+    'oral',
+    'available'
   ),
   (
     'b1000000-0000-4000-8000-000000000002',
@@ -49,7 +50,8 @@ insert into public.subjects (
     1,
     70,
     'active',
-    'objective'
+    'objective',
+    'available'
   );
 
 insert into public.practice_sets (

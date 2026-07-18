@@ -145,6 +145,19 @@ export function logAppError(context, error) {
   }
 }
 
+export function logSanitizedAuthProblem(context, problem) {
+  if (!problem?.isSanitizedAuthProblem) return;
+  logAppError(context, {
+    code: problem.code,
+    purpose: problem.purpose,
+    route: problem.route,
+    provider: problem.provider,
+    retryable: problem.retryable,
+    correlationId: problem.correlationId,
+    appVersion: problem.appVersion,
+  });
+}
+
 export const PROBLEM_CODES = Object.freeze({
   CANCELLED: "request_cancelled",
   OFFLINE: "connection_offline",

@@ -10,6 +10,14 @@ test("return navigation preserves safe local paths and rejects redirects", () =>
   assert.equal(getSafeReturnTo("/review?attempt=1#answer"), "/review?attempt=1#answer");
   assert.equal(getSafeReturnTo("//evil.example/path"), "/dashboard");
   assert.equal(getSafeReturnTo("https://evil.example/path"), "/dashboard");
+  assert.equal(getSafeReturnTo("%2F%2Fevil.example/path"), "/dashboard");
+  assert.equal(getSafeReturnTo("%252F%252Fevil.example/path"), "/dashboard");
+  assert.equal(getSafeReturnTo("/\\evil.example/path"), "/dashboard");
+  assert.equal(getSafeReturnTo("/%5Cevil.example/path"), "/dashboard");
+  assert.equal(getSafeReturnTo("javascript:alert(1)"), "/dashboard");
+  assert.equal(getSafeReturnTo("data:text/html,unsafe"), "/dashboard");
+  assert.equal(getSafeReturnTo("/dashboard?returnTo=https%3A%2F%2Fevil.example"), "/dashboard");
+  assert.equal(getSafeReturnTo("/dashboard?tab=progress&filter=active"), "/dashboard?tab=progress&filter=active");
   assert.equal(getSafeReturnTo("/auth?returnTo=/admin"), "/dashboard");
   assert.equal(getSafeReturnTo("/profile-setup"), "/dashboard");
   assert.equal(withReturnTo("/auth?mode=sign-in", "/modules/psr?batch=2"), "/auth?mode=sign-in&returnTo=%2Fmodules%2Fpsr%3Fbatch%3D2");

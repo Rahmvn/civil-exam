@@ -71,6 +71,11 @@ insert into public.questions (
    'd2000000-0000-4000-8000-000000000001', 'd3000000-0000-4000-8000-000000000001', 1, 2,
    'Lifecycle question two?', 'Wrong', 'Correct two', 'Wrong C', 'Wrong D', 'B', 'B is correct.', 'pgtap', 'draft');
 
+-- Assertions below inspect persisted state directly. Keep this test-only grant
+-- inside the transaction; rollback removes it before the next test file.
+grant select on public.practice_sets, public.questions, public.attempts, public.entitlements
+to authenticated;
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -176,8 +181,14 @@ select is((select status::text from public.practice_sets where id = 'd3000000-00
   'source version is retired during replacement publication');
 select is((select status::text from public.practice_sets where id = (select (payload->>'id')::uuid from lifecycle_replacement)), 'published',
   'replacement becomes the current published version');
+
+reset role;
 select is((select score from public.attempts where id = (select (payload->>'attempt_id')::uuid from lifecycle_result)), 2,
   'replacement publication does not regrade historical attempts');
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
 select throws_ok(
   $$ select public.admin_delete_unpublished_practice_set('d3000000-0000-4000-8000-000000000001') $$,
   'P0001', 'Only an unpublished draft or review set can be deleted.',
@@ -316,7 +327,7 @@ select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000002
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select throws_ok(
   $$ select public.admin_withdraw_practice_set('d3000000-0000-4000-8000-000000000001') $$,
-  'P0001', 'Administrator access is required',
+  'P0001', 'Admin access is required',
   'non-admin cannot mutate lifecycle state');
 
 reset role;

@@ -6799,6 +6799,107 @@ button.auth-step-back {
   margin-top: 0;
 }
 
+.auth-otp-field {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-otp-label {
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.auth-otp-control {
+  position: relative;
+  min-height: 58px;
+}
+
+.auth-form-v2 input.auth-otp-input {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  min-height: 58px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  letter-spacing: 2rem;
+  opacity: 0.02;
+}
+
+.auth-form-v2 input.auth-otp-input:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.auth-otp-cells {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.auth-otp-cell {
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-primary-soft));
+  color: var(--color-primary-dark);
+  font-size: 1.22rem;
+  font-weight: 850;
+}
+
+.auth-otp-input:focus + .auth-otp-cells .auth-otp-cell {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-soft) 68%, transparent);
+}
+
+.auth-otp-cell.is-filled {
+  background: var(--color-primary-soft);
+}
+
+.auth-otp-field small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.auth-verification-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+button.auth-resend-button {
+  min-height: 40px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  box-shadow: none;
+}
+
+.auth-captcha {
+  min-height: 65px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+button.auth-google-button:disabled {
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 86%, var(--color-bg));
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
 @media (max-width: 520px) {
   .auth-page-v2 {
     align-content: start;
@@ -6819,6 +6920,15 @@ button.auth-step-back {
   .auth-card-v2 {
     padding: 21px 17px 22px;
     border-radius: 18px;
+  }
+
+  .auth-otp-cells {
+    gap: 5px;
+  }
+
+  .auth-otp-cell {
+    min-height: 51px;
+    border-radius: 9px;
   }
 }
 

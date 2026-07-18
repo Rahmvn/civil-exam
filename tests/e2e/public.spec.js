@@ -33,7 +33,7 @@ test("a user who forgot their password can reach a clear recovery form", async (
 
   await expect(page).toHaveURL(/mode=forgot/);
   await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send recovery code" })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
 });

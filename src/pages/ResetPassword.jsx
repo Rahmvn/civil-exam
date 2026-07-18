@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LoadingState } from "../components/LoadingState";
-import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import {
+  AUTH_PROBLEM_CODES,
+  clearPendingAuthState,
+  clearRecoveryAuthorization,
+  createSanitizedAuthProblem,
+  readRecoveryAuthorization,
+} from "../lib/authFlow";
+import { logSanitizedAuthProblem } from "../lib/errors";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/useAuth";
 
@@ -15,13 +22,17 @@ export default function ResetPassword() {
 
   if (loading) return <LoadingState fullPage />;
 
-  if (!user) {
+  const recoveryAuthorization = user && typeof window !== "undefined"
+    ? readRecoveryAuthorization(window.sessionStorage, user)
+    : null;
+
+  if (!user || !recoveryAuthorization) {
     return (
       <main className="state-shell">
         <section className="state-card route-state-card">
-          <h1>Reset link expired</h1>
-          <p>Request a new password reset link and open it on this device.</p>
-          <Link className="primary-action" to="/auth?mode=forgot">Request a new link</Link>
+          <h1>Password recovery required</h1>
+          <p>Verify a new recovery code before choosing a password.</p>
+          <Link className="primary-action" to="/auth?mode=forgot">Start password recovery</Link>
         </section>
       </main>
     );
@@ -40,10 +51,16 @@ export default function ResetPassword() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      clearRecoveryAuthorization(window.sessionStorage);
+      clearPendingAuthState(window.sessionStorage, "recovery");
       navigate("/dashboard", { replace: true });
     } catch (error) {
-      logAppError("Password update", error);
-      setMessage(friendlyErrorMessage(error, "We could not update your password. Please try again."));
+      const problem = createSanitizedAuthProblem(
+        error?.code === "session_not_found" ? AUTH_PROBLEM_CODES.RECOVERY_SESSION_MISSING : error,
+        { purpose: "recovery", route: "/reset-password" },
+      );
+      logSanitizedAuthProblem("Password update", problem);
+      setMessage(problem.message);
     } finally {
       setBusy(false);
     }

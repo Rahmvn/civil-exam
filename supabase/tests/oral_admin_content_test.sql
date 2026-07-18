@@ -142,7 +142,7 @@ select is((select status::text from public.oral_questions where id = (select rev
 
 select throws_ok(
   $$ select public.admin_delete_empty_practice_set_v2(set_id) from oral_admin_fixture $$,
-  'P0001', 'Only an empty unused practice set can be permanently deleted',
+  'P0001', 'Only an unpublished draft or review set can be deleted.',
   'oral content prevents destructive practice-set deletion'
 );
 select throws_ok(
