@@ -329,6 +329,7 @@ function ModuleWorkspace({
   onOpenSet,
 }) {
   const [showSetCreator, setShowSetCreator] = useState(false);
+  const [showRetiredHistory, setShowRetiredHistory] = useState(false);
   const [expectedCount, setExpectedCount] = useState(module.batch_size ?? 30);
   const [creationTarget, setCreationTarget] = useState("new");
   const isUnused = Number(module.question_count) === 0
@@ -341,10 +342,13 @@ function ModuleWorkspace({
     { label: "Current access", value: formatCount(module.active_entitlement_count) },
   ];
   const normalizedQuery = query.trim().toLowerCase();
-  const visiblePracticeSets = practiceSets.filter((practiceSet) => {
-    if (!normalizedQuery) return true;
-    return `practice set ${practiceSet.set_number}`.toLowerCase().includes(normalizedQuery);
-  });
+  const retiredPracticeSets = practiceSets.filter((practiceSet) => practiceSet.status === "archived");
+  const visiblePracticeSets = practiceSets
+    .filter((practiceSet) => showRetiredHistory || practiceSet.status !== "archived")
+    .filter((practiceSet) => (
+      !normalizedQuery
+      || `practice set ${practiceSet.set_number}`.toLowerCase().includes(normalizedQuery)
+    ));
   const retiredVersionOptions = getRetiredPracticeSetVersionOptions(practiceSets);
   const nextSetNumber = getNextPracticeSetNumber(practiceSets);
 
@@ -469,16 +473,30 @@ function ModuleWorkspace({
       <section className="admin-section-heading">
         <div>
           <h2>Practice sets</h2>
-          <p>Open a set to manage its questions and publication status.</p>
+          <p>{showRetiredHistory ? "Current sets and immutable historical versions." : "Current versions available for administration."}</p>
         </div>
+        {retiredPracticeSets.length > 0 && (
+          <button
+            className="ghost-button admin-history-toggle"
+            type="button"
+            aria-expanded={showRetiredHistory}
+            onClick={() => setShowRetiredHistory((current) => !current)}
+          >
+            {showRetiredHistory ? "Hide retired history" : `Show retired history (${retiredPracticeSets.length})`}
+          </button>
+        )}
       </section>
 
       {loading ? (
         <LoadingState />
       ) : visiblePracticeSets.length === 0 ? (
         <section className="admin-empty-state">
-          <h2>No matching practice sets</h2>
-          <p>{practiceSets.length === 0 ? "Use the create action above, then add questions individually or import them." : "Try another search."}</p>
+          <h2>{practiceSets.length > 0 && !showRetiredHistory && !normalizedQuery ? "No current practice sets" : "No matching practice sets"}</h2>
+          <p>{practiceSets.length === 0
+            ? "Use the create action above, then add questions individually or import them."
+            : !showRetiredHistory && !normalizedQuery
+              ? "Add a new version from a retired slot, or show retired history for inspection."
+              : "Try another search."}</p>
         </section>
       ) : (
         <section className="admin-set-list">
@@ -495,6 +513,9 @@ function ModuleWorkspace({
                     <div>
                       <strong>Practice set {practiceSet.set_number}</strong>
                       <StatusBadge status={practiceSet.status} />
+                      {practiceSet.status === "archived" && (
+                        <small className="admin-version-label">Version {practiceSet.version_number} history</small>
+                      )}
                     </div>
                     <span className={questionCount !== expected ? "needs-attention" : ""}>
                       {questionCount} of {expected} questions

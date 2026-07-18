@@ -99,6 +99,8 @@ Historical attempts continue to reference the exact practice-set and question ve
 
 If a numbered set was already retired, use `Add practice set` and choose `New version of Practice set N`, or open the latest retired version and select `Create new version`. This creates a separate draft in the same numbered slot. Choosing `New Practice set N+1` creates a genuinely new slot instead.
 
+Retired versions are hidden from the main practice-set list by default. Select `Show retired history` only when inspecting old versions, attempts, or lineage; hiding history never deletes those records or prevents an eligible retired slot from appearing in `Add practice set`.
+
 ## CSV, Excel, And JSON Import
 
 Bulk upload is the primary way to add a prepared question set and is available only for draft or review sets. Use `Upload questions` from the practice-set header. Download the CSV template rather than creating column names from memory; `.xlsx` spreadsheets using the same headings are also accepted. JSON remains available for technical workflows.
