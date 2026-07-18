@@ -2638,3 +2638,96 @@ button.admin-danger-link {
     grid-template-columns: 1fr;
   }
 }
+.admin-import-mode-picker,
+.admin-dialog-choice {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--admin-border, #d9ddd7);
+  border-radius: 0.75rem;
+}
+
+.admin-import-mode-picker label,
+.admin-dialog-choice label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.admin-import-mode-picker span,
+.admin-dialog-choice span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-import-mode-picker small,
+.admin-dialog-choice small,
+.admin-module-metric small {
+  display: block;
+  color: var(--admin-muted, #667067);
+  font-weight: 400;
+}
+
+.admin-import-impact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.admin-import-impact div {
+  padding: 0.8rem;
+  border-radius: 0.65rem;
+  background: #f2f5ef;
+}
+
+.admin-import-impact dt {
+  color: var(--admin-muted, #667067);
+  font-size: 0.78rem;
+}
+
+.admin-import-impact dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.admin-dialog-reason {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  font-weight: 700;
+}
+
+.admin-dialog-reason textarea {
+  resize: vertical;
+}
+
+.admin-module-notices {
+  display: grid;
+  gap: 0.35rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid #b2782f;
+  background: #fff8e9;
+}
+
+.admin-module-notices p {
+  margin: 0;
+}
+
+.admin-capability-detail > div {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .admin-import-impact {
+    grid-template-columns: 1fr;
+  }
+}
+.admin-status-withdrawn {
+  color: #7a4b10;
+  background: #fff0cf;
+  border-color: #e4c27e;
+}

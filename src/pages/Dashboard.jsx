@@ -296,6 +296,7 @@ export default function Dashboard() {
       Boolean(catalogEntry?.has_module_access) ||
       rows.some((row) => Boolean(row?.is_paid));
     const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
+    const isPaused = catalogEntry?.candidate_availability === "paused";
     const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
     const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
     const progressPercent = publishedRows.length > 0
@@ -308,13 +309,15 @@ export default function Dashboard() {
       hasModuleAccess,
     );
     const purchaseUnavailable = isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows });
-    const hasStartableAccess = hasStartablePublishedBatch(rows);
+    const hasStartableAccess = !isPaused && hasStartablePublishedBatch(rows);
     const hasModuleActivity = hasUsableModuleAccess || (!isComingSoon && publishedRows.some((row) =>
       Number(row?.attempt_count ?? 0) > 0
       || row?.state === "completed_passed"
       || row?.state === "completed_failed"
     ));
-    const primaryAction = isComingSoon
+    const primaryAction = isPaused
+      ? { label: "Temporarily paused", disabled: true }
+      : isComingSoon
       ? { label: "Coming soon", disabled: true }
       : buildModuleAction(subject, rows, progression, completedCount, publishedRows.length, hasModuleAccess, canPurchase);
     const shouldEmphasizeUnlock = !purchaseUnavailable && !hasModuleAccess && primaryAction.label === "Try free" && !isComingSoon;
@@ -331,6 +334,7 @@ export default function Dashboard() {
       publishedCount: publishedRows.length,
       progressPercent,
       isComingSoon,
+      isPaused,
       isComplete: !isComingSoon && publishedRows.length > 0 && completedCount === publishedRows.length,
       canPurchase,
       hasModuleAccess,
@@ -460,7 +464,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className={`module-card-progressive-body ${card.showProgress ? "has-progress" : ""}`.trim()}>
-                  {card.isComingSoon ? (
+                  {card.isPaused ? (
+                    <p className="module-card-availability">Practice is temporarily paused. Your access and previous results are safe.</p>
+                  ) : card.isComingSoon ? (
                     <p className="module-card-availability">Practice for this module is coming soon.</p>
                   ) : card.showProgress ? (
                     <div className="module-progress-summary">

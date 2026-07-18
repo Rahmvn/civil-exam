@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function AdminConfirmDialog({
   open,
@@ -7,10 +7,17 @@ export function AdminConfirmDialog({
   confirmLabel,
   tone = "primary",
   busy,
+  choiceLabel,
+  choices = [],
+  reasonLabel,
+  reasonRequired = false,
   onCancel,
   onConfirm,
 }) {
   const cancelRef = useRef(null);
+  const firstChoice = choices[0]?.value ?? "";
+  const [choice, setChoice] = useState(firstChoice);
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (!open) return undefined;
@@ -38,11 +45,44 @@ export function AdminConfirmDialog({
         <span className="admin-form-step">Confirm action</span>
         <h2 id="admin-dialog-title">{title}</h2>
         <div className="admin-dialog-copy">{children}</div>
+        {choices.length > 0 && (
+          <fieldset className="admin-dialog-choice">
+            <legend>{choiceLabel}</legend>
+            {choices.map((item) => (
+              <label key={item.value}>
+                <input
+                  checked={choice === item.value}
+                  name="admin-confirm-choice"
+                  type="radio"
+                  value={item.value}
+                  onChange={(event) => setChoice(event.target.value)}
+                />
+                <span><strong>{item.label}</strong>{item.description && <small>{item.description}</small>}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+        {reasonLabel && (
+          <label className="admin-dialog-reason">
+            {reasonLabel}
+            <textarea
+              required={reasonRequired}
+              rows="3"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </label>
+        )}
         <div className="admin-form-actions">
           <button ref={cancelRef} className="ghost-button" type="button" onClick={onCancel} disabled={busy}>
             Cancel
           </button>
-          <button className={tone === "danger" ? "admin-danger-button" : ""} type="button" onClick={onConfirm} disabled={busy}>
+          <button
+            className={tone === "danger" ? "admin-danger-button" : ""}
+            type="button"
+            onClick={() => onConfirm({ choice, reason })}
+            disabled={busy || (reasonRequired && reason.trim().length < 3)}
+          >
             {busy ? "Working..." : confirmLabel}
           </button>
         </div>

@@ -112,6 +112,7 @@ export default function ModuleDetail() {
     Boolean(catalogEntry?.has_module_access) ||
     rows.some((row) => Boolean(row?.is_paid));
   const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
+  const isPaused = catalogEntry?.candidate_availability === "paused";
   const selectedModuleName = getModuleDisplayName(
     subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
@@ -143,6 +144,10 @@ export default function ModuleDetail() {
   function getBatchPrimaryAction(row) {
     const batchNumber = Number(row?.batch_number ?? 1);
     const purchaseUnavailable = isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows });
+
+    if (isPaused) {
+      return { label: "Temporarily paused", disabled: true };
+    }
 
     if (isComingSoon || !row || row.state === "unavailable_not_published" || Number(row.published_question_count ?? 0) === 0) {
       return { label: "Coming soon", disabled: true };
@@ -336,8 +341,9 @@ export default function ModuleDetail() {
             <div className="module-detail-copy">
               <p className="dashboard-section-kicker">{getModuleDisplayName(subject.name)}</p>
               <h1 className="module-detail-title">
-                {isComingSoon ? "Practice is coming soon" : "Choose a practice set"}
+                {isPaused ? "Practice is temporarily paused" : isComingSoon ? "Practice is coming soon" : "Choose a practice set"}
               </h1>
+              {isPaused && <p>Your access and previous results are safe while new attempts are paused.</p>}
             </div>
 
             {!isComingSoon && liveRows.length > 0 && (

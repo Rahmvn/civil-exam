@@ -3,7 +3,7 @@ import { EXAM_MODULES, NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
 import { readWithPolicy } from "./requestPolicy";
 
 export const DIFFICULTIES = ["easy", "medium", "hard"];
-export const QUESTION_STATUSES = ["draft", "review", "published", "archived"];
+export const QUESTION_STATUSES = ["draft", "review", "published", "withdrawn", "archived"];
 export const MODULE_LIFECYCLE_STATUSES = ["draft", "coming_soon", "active", "retired"];
 
 function ensureArray(value) {
@@ -320,17 +320,16 @@ export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber 
     requested_subject_id: subjectId,
   };
 
-  if (typeof limit === "number") {
-    payload.requested_limit = limit;
-  }
-
   if (typeof batchNumber === "number" && Number.isFinite(batchNumber)) {
     payload.requested_batch_number = batchNumber;
   }
 
   return readWithPolicy(
     `practice-questions:${subjectId}:${batchNumber ?? "next"}:${limit ?? "all"}`,
-    async () => ensureArray(requireData(await supabase.rpc("get_practice_questions", payload))),
+    async () => ensureArray(requireData(await supabase.rpc("start_objective_practice_session", {
+      ...payload,
+      requested_allow_free_lock: false,
+    }))?.questions),
   );
 }
 
@@ -345,19 +344,32 @@ export async function startPracticeBatch(subjectSlug, batchNumber = null) {
     payload.requested_batch_number = batchNumber;
   }
 
-  return ensureArray(requireData(await supabase.rpc("start_practice_batch", payload)));
+  const session = requireData(await supabase.rpc("start_objective_practice_session", {
+    ...payload,
+    requested_allow_free_lock: true,
+  }));
+  return ensureArray(session?.questions);
 }
 
-export async function submitAttempt({ mode, subjectId, answers, batchNumber = null, submissionToken }) {
+export async function submitAttempt({ mode, subjectId, answers, batchNumber = null, practiceSessionId, submissionToken }) {
+  if (!practiceSessionId) {
+    return requireData(await supabase.rpc("submit_attempt_idempotent", {
+      submitted_mode: mode,
+      submitted_subject_id: subjectId,
+      submitted_answers: answers,
+      submitted_batch_number: typeof batchNumber === "number" && Number.isFinite(batchNumber) ? batchNumber : null,
+      submitted_token: submissionToken,
+    }));
+  }
+
   const payload = {
+    submitted_session_id: practiceSessionId,
     submitted_mode: mode,
-    submitted_subject_id: subjectId,
     submitted_answers: answers,
-    submitted_batch_number: typeof batchNumber === "number" && Number.isFinite(batchNumber) ? batchNumber : null,
     submitted_token: submissionToken,
   };
 
-  return requireData(await supabase.rpc("submit_attempt_idempotent", payload));
+  return requireData(await supabase.rpc("submit_attempt_idempotent_v2", payload));
 }
 
 export async function initializePayment(subjectSlug) {
@@ -417,14 +429,14 @@ export async function getAdminQuestions(practiceSetId = null, practiceType = "ob
 
 export async function getAdminContentModules() {
   return readWithPolicy("admin-content-modules", async () => ensureArray(requireData(
-    await supabase.rpc("get_admin_content_modules_v2"),
+    await supabase.rpc("get_admin_content_modules_v3"),
   )));
 }
 
 export async function getAdminPracticeSets(subjectId) {
   if (!subjectId) return [];
   return readWithPolicy(`admin-practice-sets:${subjectId}`, async () => ensureArray(requireData(
-    await supabase.rpc("get_admin_practice_sets_v2", {
+    await supabase.rpc("get_admin_practice_sets_v3", {
       requested_subject_id: subjectId,
     }),
   )));
@@ -493,6 +505,61 @@ export async function transitionAdminPracticeSet(practiceSetId, status) {
   }));
 }
 
+export async function withdrawAdminPracticeSet(practiceSetId) {
+  return requireData(await supabase.rpc("admin_withdraw_practice_set", {
+    requested_practice_set_id: practiceSetId,
+  }));
+}
+
+export async function republishAdminPracticeSet(practiceSetId) {
+  return requireData(await supabase.rpc("admin_republish_practice_set", {
+    requested_practice_set_id: practiceSetId,
+  }));
+}
+
+export async function retireAdminPracticeSet(practiceSetId, reason) {
+  return requireData(await supabase.rpc("admin_retire_practice_set", {
+    requested_practice_set_id: practiceSetId,
+    requested_reason: reason,
+  }));
+}
+
+export async function createAdminPracticeSetReplacement(practiceSetId, copyQuestions = true) {
+  return requireData(await supabase.rpc("admin_create_practice_set_replacement", {
+    requested_source_practice_set_id: practiceSetId,
+    requested_copy_questions: copyQuestions,
+  }));
+}
+
+export async function publishAdminPracticeSetReplacement(practiceSetId) {
+  return requireData(await supabase.rpc("admin_publish_practice_set_replacement", {
+    requested_replacement_practice_set_id: practiceSetId,
+  }));
+}
+
+export async function updateAdminModuleAvailability(subjectId, availability, reason = null) {
+  return requireData(await supabase.rpc("admin_update_module_availability", {
+    requested_subject_id: subjectId,
+    requested_availability: availability,
+    requested_reason: reason,
+  }));
+}
+
+export async function updateAdminModuleLifecycle(subjectId, lifecycleStatus, reason = null) {
+  return requireData(await supabase.rpc("admin_update_module_lifecycle", {
+    requested_subject_id: subjectId,
+    requested_lifecycle_status: lifecycleStatus,
+    requested_reason: reason,
+  }));
+}
+
+export async function updateAdminModuleSalesAvailability(subjectId, availableForPurchase) {
+  return requireData(await supabase.rpc("admin_update_module_sales_availability", {
+    requested_subject_id: subjectId,
+    requested_available_for_purchase: Boolean(availableForPurchase),
+  }));
+}
+
 export async function deleteEmptyAdminPracticeSet(practiceSetId) {
   return requireData(await supabase.rpc("admin_delete_empty_practice_set_v2", {
     requested_practice_set_id: practiceSetId,
@@ -535,8 +602,11 @@ export async function deleteDraftAdminQuestion(questionId, practiceType = "objec
   }));
 }
 
-export async function importAdminQuestions(practiceSetId, questions, metadata = {}, practiceType = "objective") {
-  return requireData(await supabase.rpc(practiceType === "oral" ? "admin_import_oral_questions" : "admin_import_questions", {
+export async function importAdminQuestions(practiceSetId, questions, metadata = {}, practiceType = "objective", mode = "append") {
+  const functionName = mode === "replace"
+    ? "admin_replace_practice_set_questions"
+    : practiceType === "oral" ? "admin_import_oral_questions" : "admin_import_questions";
+  return requireData(await supabase.rpc(functionName, {
     requested_practice_set_id: practiceSetId,
     requested_questions: questions,
     requested_file_name: metadata?.fileName || null,

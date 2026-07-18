@@ -8,6 +8,7 @@ const DEFAULT_MODULE = {
   practice_type: "objective",
   sort_order: 100,
   lifecycle_status: "draft",
+  candidate_availability: "hidden",
   batch_size: 30,
   pass_mark_percent: 70,
   price_kobo: 500000,
@@ -20,6 +21,7 @@ function toFormState(module) {
   return {
     ...DEFAULT_MODULE,
     ...source,
+    lifecycle_status: source.lifecycle_status === "coming_soon" ? "draft" : source.lifecycle_status,
     price_naira: Number(source.price_kobo ?? DEFAULT_MODULE.price_kobo) / 100,
   };
 }
@@ -37,8 +39,9 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
         next.subject_slug = slugifyModuleName(value);
       }
 
-      if (field === "lifecycle_status" && value !== "active") {
+      if (field === "lifecycle_status" && value === "retired") {
         next.available_for_purchase = false;
+        next.candidate_availability = "hidden";
       }
 
       if (field === "practice_type" && !isEditing) {
@@ -67,7 +70,7 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
       <div className="admin-form-section">
         <div>
           <h2>{isEditing ? "Module settings" : "Create module"}</h2>
-          <p>{isEditing ? "Update how this module appears and is sold." : "Start privately, then add and review its practice sets."}</p>
+          <p>{isEditing ? "Manage the module lifecycle separately from candidate and sales availability." : "Start privately, then add and review its practice sets."}</p>
         </div>
 
         <label>
@@ -123,7 +126,6 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
               onChange={(event) => updateField("lifecycle_status", event.target.value)}
             >
               {!hasPublishedSets && <option value="draft">Draft</option>}
-              {!hasPublishedSets && <option value="coming_soon">Coming soon</option>}
               {isEditing && hasPublishedSets && <option value="active">Active</option>}
               {isEditing && <option value="retired">Retired</option>}
             </select>
@@ -143,6 +145,29 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
             />
           </label>
         </details>
+      </div>
+
+      <div className="admin-form-section">
+        <div>
+          <h3>Candidate availability</h3>
+          <p>Pausing practice does not remove anyone's paid or granted access.</p>
+        </div>
+
+        {isEditing && (
+          <label>
+            Candidate practice
+            <select
+              disabled={form.lifecycle_status === "retired"}
+              value={form.candidate_availability}
+              onChange={(event) => updateField("candidate_availability", event.target.value)}
+            >
+              <option value="hidden">Hidden</option>
+              <option value="coming_soon">Coming soon</option>
+              <option value="available" disabled={!hasPublishedSets}>Available</option>
+              <option value="paused">Paused</option>
+            </select>
+          </label>
+        )}
       </div>
 
       <div className="admin-form-section">

@@ -5,7 +5,7 @@ const ADMIN_GUIDE_QUICK_START = [
   "Add a practice set inside the module.",
   "Add or import questions while the set is still in Draft.",
   "Resolve every readiness issue before review or publication.",
-  "Use Correct for published questions instead of editing them like drafts.",
+  "Create a replacement version when published content needs correction.",
 ];
 
 const ADMIN_GUIDE_TASKS = [
@@ -43,17 +43,18 @@ const ADMIN_GUIDE_TASKS = [
     steps: [
       "Open the draft or review practice set and select Upload questions.",
       "Download the template instead of creating the file from memory.",
-      "Keep the rows in the same order you want candidates to see if you are relying on automatic positions.",
-      "Upload the file, review the preview, and fix every blocked row.",
-      "Confirm the import only when the preview is clean.",
+      "Choose Validate only, Append, or Replace all before selecting the file.",
+      "Upload the file and review the current, imported, and final question counts.",
+      "Fix every blocked row, then confirm Append or Replace all only when the preview is clean.",
     ],
   },
   {
-    title: "Correct a published question",
+    title: "Correct a published set",
     steps: [
-      "Open the published question and select Correct.",
-      "Edit and save the correction version.",
-      "Preview it carefully, then publish the correction when it is ready.",
+      "Open the published set and select Create corrected replacement.",
+      "Copy the current questions or start with an empty draft, then make the required corrections.",
+      "Review the complete replacement and publish it only when it is ready.",
+      "Publishing switches new attempts to the replacement and retires the old version without changing candidate history.",
     ],
   },
 ];
@@ -91,7 +92,7 @@ const ADMIN_GUIDE_SECTIONS = [
       "Create a set from the module page and enter the target question count.",
       "Use Add question for manual entry and Upload questions for prepared files.",
       "A set should be complete before it moves to review or publication.",
-      "Published sets are for live candidate use. Archived sets preserve history but should not start new attempts.",
+      "Published sets are for live candidate use. Withdrawn sets are temporarily paused; retired sets are permanent historical records.",
     ],
   },
   {
@@ -102,7 +103,8 @@ const ADMIN_GUIDE_SECTIONS = [
       "Draft: add, edit, import, or remove questions.",
       "In review: final check stage before publication.",
       "Published: live for candidates and no longer edited directly.",
-      "Archived: preserved for history and unavailable for new use.",
+      "Withdrawn: temporarily unavailable for new attempts and can be republished unchanged.",
+      "Retired: permanently unavailable for new attempts and cannot be reopened.",
     ],
   },
   {
@@ -143,7 +145,7 @@ const ADMIN_GUIDE_SECTIONS = [
       "Model answers and key points stay hidden until the candidate completes the full set, then support self-review.",
       "Use the oral CSV, Excel, or JSON structure. Never upload the objective A-D template into an oral set.",
       "Before publication, verify the exact question count, unique positions, prompt clarity, model-answer accuracy, and useful key points.",
-      "Use Correct for a published oral question so historical attempts remain attached to the version candidates received.",
+      "Create a replacement set for published oral corrections so historical attempts remain attached to the version candidates received.",
     ],
   },
   {
@@ -156,19 +158,19 @@ const ADMIN_GUIDE_SECTIONS = [
       "When adding questions manually, the next position is filled automatically from the current highest position.",
       "When importing, the position column controls the final order. If position is left blank, positions are assigned from the file order starting after the current last question.",
       "Do not reuse an existing position in the same practice set.",
-      "Published question corrections keep the live question's place in the set. They are not used to rearrange the set.",
+      "Published content is rearranged only in a replacement draft; the live version remains unchanged until replacement publication.",
     ],
   },
   {
     id: "corrections",
-    title: "Corrections",
-    intro: "Do not directly rewrite a published question. Use the correction workflow.",
+    title: "Published corrections",
+    intro: "Do not directly rewrite published questions. Replace the complete practice-set version.",
     items: [
-      "Open the published question and select Correct.",
-      "Edit and save the correction version.",
-      "Preview the correction before publishing it.",
-      "Publish the correction only when it has been reviewed.",
-      "Historical candidate attempts remain attached to the original version they answered.",
+      "Open the published set and select Create corrected replacement.",
+      "Copy existing questions for a small correction or start empty for a full re-upload.",
+      "Edit and import only inside the replacement draft, then send the complete set for review.",
+      "Publishing the replacement atomically retires the old version and makes the new version current.",
+      "Historical attempts, answers, scores, and reviews remain attached to the original version.",
     ],
   },
   {
@@ -185,8 +187,10 @@ const ADMIN_GUIDE_SECTIONS = [
       "The file can contain up to 200 questions and must be 5 MB or smaller.",
       "The template supports a position column so you can control question order before upload.",
       "Keep positions unique and in the final order you want candidates to see.",
-      "Imports are previewed before saving.",
-      "If one row fails validation, the import is blocked until every issue is fixed.",
+      "Validate only checks the file and never writes questions.",
+      "Append keeps existing questions and adds the imported rows.",
+      "Replace all atomically replaces every question in an unpublished draft or review set.",
+      "If one row fails validation, nothing from that import is saved.",
     ],
   },
   {
@@ -219,18 +223,19 @@ const ADMIN_GUIDE_SECTIONS = [
     title: "Activity log",
     intro: "Use Activity to confirm what changed, who changed it, and when it happened.",
     items: [
-      "Review imports, updates, publishes, corrections, and archives.",
+      "Review imports, updates, publishes, withdrawals, replacements, and retirements.",
       "Use the filters to narrow the log by action type.",
       "Open an entry to inspect the recorded details.",
     ],
   },
   {
     id: "safe-actions",
-    title: "Archive, delete, and stop sales",
+    title: "Withdraw, retire, delete, and stop sales",
     intro: "These actions are not interchangeable.",
     items: [
       "Turn off Available for purchase to stop new sales without removing existing access.",
-      "Archive when content should no longer be used for new candidate activity but history must remain.",
+      "Withdraw a published set to pause new attempts temporarily; republish only if its content is unchanged.",
+      "Retire a set when it must never be used for new attempts again.",
       "Delete only unused drafts or empty unused content.",
       "When unsure, preserve history and choose the safer action.",
     ],
@@ -242,8 +247,8 @@ const ADMIN_GUIDE_SECTIONS = [
     items: [
       "If a set will not publish, review every readiness issue.",
       "If an import is blocked, fix the file and upload it again. Partial rows were not saved.",
-      "If a module cannot retire, stop new sales and review whether active access still exists.",
-      "If a published question needs a change, use Correct instead of trying to edit it like a draft question.",
+      "Pausing candidate availability or stopping sales does not remove existing entitlements, results, or reviews.",
+      "If published content needs a change, create a replacement instead of republishing or editing the live version.",
     ],
   },
 ];

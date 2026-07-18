@@ -9,6 +9,41 @@ const REQUIRED_OBJECTIVE_IMPORT_FIELDS = [
 
 const REQUIRED_ORAL_IMPORT_FIELDS = ["question_text", "model_answer"];
 
+export const PRACTICE_SET_STATUS_LABELS = {
+  archived: "Retired",
+  draft: "Draft",
+  published: "Published",
+  review: "In review",
+  withdrawn: "Withdrawn",
+};
+
+export function getPracticeSetActions(capabilities = {}) {
+  return [
+    ["edit", "Edit details", capabilities.can_edit],
+    ["import_append", "Append questions", capabilities.can_import_append],
+    ["import_replace", "Replace draft questions", capabilities.can_import_replace],
+    ["send_to_review", "Send for review", capabilities.can_send_to_review],
+    ["return_to_draft", "Return to draft", capabilities.can_return_to_draft],
+    ["publish", "Publish", capabilities.can_publish],
+    ["publish_replacement", "Publish replacement", capabilities.can_publish_replacement],
+    ["withdraw", "Withdraw temporarily", capabilities.can_withdraw],
+    ["republish", "Republish unchanged", capabilities.can_republish],
+    ["create_replacement", "Create corrected replacement", capabilities.can_create_replacement],
+    ["retire", "Retire permanently", capabilities.can_retire],
+    ["delete", "Delete unused draft", capabilities.can_delete],
+  ].map(([key, label, allowed]) => ({ key, label, allowed: Boolean(allowed) }));
+}
+
+export function getImportImpact({ currentCount = 0, importedCount = 0, mode = "append" } = {}) {
+  const current = Math.max(0, Number(currentCount) || 0);
+  const imported = Math.max(0, Number(importedCount) || 0);
+  return {
+    currentCount: current,
+    importedCount: imported,
+    finalCount: mode === "replace" ? imported : current + imported,
+  };
+}
+
 const HEADER_ALIASES = {
   question: "question_text",
   question_text: "question_text",

@@ -12,6 +12,7 @@ import {
   archiveAdminQuestion,
   createAdminModule,
   createAdminPracticeSet,
+  createAdminPracticeSetReplacement,
   createAdminQuestionRevision,
   deleteDraftAdminQuestion,
   deleteEmptyAdminModule,
@@ -23,26 +24,37 @@ import {
   getAdminQuestions,
   getAdminSupportRequests,
   importAdminQuestions,
+  publishAdminPracticeSetReplacement,
   publishAdminQuestionRevision,
   saveAdminQuestion,
+  republishAdminPracticeSet,
+  retireAdminPracticeSet,
   transitionAdminPracticeSet,
   updateAdminModule,
+  updateAdminModuleAvailability,
+  updateAdminModuleLifecycle,
+  updateAdminModuleSalesAvailability,
   updateAdminPracticeSet,
   updateAdminQuestionRevision,
   updateSupportRequest,
+  withdrawAdminPracticeSet,
 } from "../lib/appApi";
-import { formatAdminCurrency } from "../lib/adminContent";
+import { formatAdminCurrency, PRACTICE_SET_STATUS_LABELS } from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { supabase } from "../lib/supabaseClient";
 
 const STATUS_LABELS = {
   active: "Active",
-  archived: "Archived",
+  available: "Available",
+  archived: "Retired",
   coming_soon: "Coming soon",
   draft: "Draft",
+  hidden: "Hidden",
+  paused: "Paused",
   published: "Published",
   retired: "Retired",
   review: "In review",
+  withdrawn: "Withdrawn",
 };
 
 function practiceTypeLabel(value) {
@@ -52,7 +64,7 @@ function practiceTypeLabel(value) {
 const COUNT_FORMATTER = new Intl.NumberFormat("en-NG");
 
 function statusLabel(status) {
-  return STATUS_LABELS[status] ?? status;
+  return PRACTICE_SET_STATUS_LABELS[status] ?? STATUS_LABELS[status] ?? status;
 }
 
 function formatCount(value) {
@@ -63,7 +75,7 @@ function adminErrorMessage(error, fallback) {
   const rawMessage = String(error?.message ?? error?.details ?? "").trim();
 
   if (rawMessage.includes("Only an unused draft or review question can be permanently deleted")) {
-    return "This question has candidate history. Apply the latest database update so it can be archived safely instead.";
+    return "This question has candidate history and must remain available for historical review. Create a replacement set instead.";
   }
 
   // Business-rule exceptions are deliberately written for administrators.
@@ -280,6 +292,7 @@ function ModuleCatalogue({ modules, onCreate, onManage, onQueryChange, query }) 
               </span>
               <span className="admin-module-metric admin-module-metric-sales">
                 {module.available_for_purchase ? "On sale" : "Not on sale"}
+                <small>{statusLabel(module.candidate_availability)}</small>
               </span>
               <span className="admin-module-metric admin-module-metric-price">
                 {module.price_kobo ? formatAdminCurrency(module.price_kobo, module.currency) : "Not set"}
@@ -336,6 +349,7 @@ function ModuleWorkspace({
           <div className="admin-inline-status">
             <StatusBadge status={module.lifecycle_status} />
             <span>{practiceTypeLabel(module.practice_type)}</span>
+            <span>Candidates: {statusLabel(module.candidate_availability)}</span>
             <span>{module.available_for_purchase ? "On sale" : "Not on sale"}</span>
           </div>
           <h1>{module.subject_name}</h1>
@@ -348,6 +362,14 @@ function ModuleWorkspace({
       </section>
 
       <AdminSummaryStrip items={summaryItems} />
+
+      <section className="admin-module-notices" aria-label="Module availability summary">
+        {Number(module.published_set_count) === 0 && <p>This module has no published practice sets.</p>}
+        {Number(module.active_entitlement_count) > 0 && <p>Existing entitled candidates still retain access.</p>}
+        {!module.available_for_purchase && <p>New purchases are disabled.</p>}
+        {Number(module.in_progress_attempt_count) > 0 && <p>{formatCount(module.in_progress_attempt_count)} attempts are currently in progress.</p>}
+        {module.candidate_availability === "paused" && <p>New attempts are paused while candidate history and entitlements remain safe.</p>}
+      </section>
 
       {showSetCreator && (
         <form
@@ -396,7 +418,7 @@ function ModuleWorkspace({
       ) : (
         <section className="admin-set-list">
           {visiblePracticeSets.map((practiceSet) => {
-            const questionCount = Number(practiceSet.active_question_count ?? 0);
+            const questionCount = Number(practiceSet.capabilities?.question_count ?? practiceSet.active_question_count ?? 0);
             const expected = Number(practiceSet.expected_question_count ?? 0);
             const percentage = expected > 0 ? Math.min(100, Math.round((questionCount / expected) * 100)) : 0;
 
@@ -499,6 +521,7 @@ function PracticeSetWorkspace({
   onDeleteQuestion,
   onDeleteSet,
   onImport,
+  onLifecycleAction,
   onPublishCorrection,
   onSaveExpectedCount,
   onSaveQuestion,
@@ -511,6 +534,7 @@ function PracticeSetWorkspace({
   const [visibleLimit, setVisibleLimit] = useState(30);
   const [expectedCount, setExpectedCount] = useState(practiceSet.expected_question_count);
   const practiceType = practiceSet.practice_type ?? module.practice_type ?? "objective";
+  const capabilities = practiceSet.capabilities ?? {};
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleQuestions = questions.filter((question) => {
@@ -523,18 +547,17 @@ function PracticeSetWorkspace({
   const activeQuestions = questions.filter((question) => question.status !== "archived");
   const shownQuestions = visibleQuestions.slice(0, visibleLimit);
   const noQuestionsYet = questions.length === 0;
-  const isEmptyDraft = practiceSet.status === "draft" && noQuestionsYet;
   const nextPosition = activeQuestions.reduce(
     (highest, question) => Math.max(highest, Number(question.batch_position ?? 0)),
     0,
   ) + 1;
-  const canEditSet = ["draft", "review"].includes(practiceSet.status);
+  const canEditSet = Boolean(capabilities.can_edit);
   const readinessLoading = loading || !validation;
   const readinessReady = Boolean(validation?.ready);
   const readinessErrors = validation?.errors ?? [];
   const shouldShowReadinessPanel = readinessLoading
     || readinessErrors.length > 0
-    || ["review", "published", "archived"].includes(practiceSet.status);
+    || ["review", "published", "withdrawn", "archived"].includes(practiceSet.status);
   const stageGuide = {
     draft: {
       label: "Draft set",
@@ -546,19 +569,25 @@ function PracticeSetWorkspace({
     },
     published: {
       label: "Published set",
-      note: "Live content is available to candidates. Use corrections for updates.",
+      note: "This is the candidate-facing version. Create a replacement for content corrections.",
+    },
+    withdrawn: {
+      label: "Withdrawn set",
+      note: "New attempts are paused. Existing attempts, results, and reviews remain safe.",
     },
     archived: {
-      label: "Archived set",
-      note: "Unavailable for new attempts but still preserved for history.",
+      label: "Retired set",
+      note: "Permanently closed to new attempts and preserved for candidate history.",
     },
   }[practiceSet.status] ?? {
     label: statusLabel(practiceSet.status),
     note: "Manage this practice set from the current workspace.",
   };
   const summaryItems = [
-    { label: "Questions", value: formatCount(practiceSet.active_question_count) },
+    { label: "Questions", value: formatCount(capabilities.question_count ?? practiceSet.active_question_count) },
     { label: "Target", value: formatCount(practiceSet.expected_question_count) },
+    { label: "Attempts", value: formatCount(practiceSet.attempt_count) },
+    { label: "In progress", value: formatCount(practiceSet.in_progress_attempt_count) },
     {
       label: "Readiness",
       value: readinessLoading ? "Checking" : readinessReady ? "Ready" : "Blocked",
@@ -621,7 +650,7 @@ function PracticeSetWorkspace({
         <div>
           <div className="admin-inline-status">
             <StatusBadge status={practiceSet.status} />
-            <span>{practiceSet.active_question_count} of {practiceSet.expected_question_count} questions</span>
+            <span>{capabilities.question_count ?? practiceSet.active_question_count} of {practiceSet.expected_question_count} questions</span>
           </div>
           <h1>Practice set {practiceSet.set_number}</h1>
           <p>{stageGuide.note}</p>
@@ -633,21 +662,23 @@ function PracticeSetWorkspace({
               <button className="ghost-button" type="button" onClick={() => setEditor({ mode: "question", question: null })}>Add one question</button>
             </>
           )}
-          {isEmptyDraft && (
-            <button className="admin-danger-link" type="button" onClick={onDeleteSet}>Delete empty set</button>
+          {capabilities.can_delete && (
+            <button className="admin-danger-link" type="button" onClick={onDeleteSet}>Delete unused draft</button>
           )}
-          {practiceSet.status === "draft" && (
+          {capabilities.can_send_to_review && (
             <button className="ghost-button" disabled={!validation?.ready || working} type="button" onClick={() => onTransition("review")}>Send for review</button>
           )}
-          {practiceSet.status === "review" && (
+          {capabilities.can_return_to_draft && (
             <>
               <button className="ghost-button" disabled={working} type="button" onClick={() => onTransition("draft")}>Return to draft</button>
-              <button disabled={!validation?.ready || working} type="button" onClick={() => onTransition("published")}>Publish set</button>
+              {capabilities.can_publish && <button disabled={!validation?.ready || working} type="button" onClick={() => onTransition("published")}>Publish set</button>}
+              {capabilities.can_publish_replacement && <button disabled={!validation?.ready || working} type="button" onClick={() => onLifecycleAction("publish_replacement")}>Publish replacement</button>}
             </>
           )}
-          {practiceSet.status === "published" && (
-            <button className="admin-danger-outline" disabled={working} type="button" onClick={() => onTransition("archived")}>Archive set</button>
-          )}
+          {capabilities.can_withdraw && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("withdraw")}>Withdraw temporarily</button>}
+          {capabilities.can_republish && <button disabled={working} type="button" onClick={() => onLifecycleAction("republish")}>Republish unchanged</button>}
+          {capabilities.can_create_replacement && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("create_replacement")}>Create corrected replacement</button>}
+          {capabilities.can_retire && <button className="admin-danger-outline" disabled={working} type="button" onClick={() => onLifecycleAction("retire")}>Retire permanently</button>}
         </div>
       </section>
 
@@ -661,7 +692,8 @@ function PracticeSetWorkspace({
               {practiceSet.status === "draft" && "Draft sets should pass every readiness check before review."}
               {practiceSet.status === "review" && "Review sets should be complete and verified before publication."}
               {practiceSet.status === "published" && "Published sets should use correction revisions instead of direct edits."}
-              {practiceSet.status === "archived" && "Archived sets remain historical records and are not open for new attempts."}
+              {practiceSet.status === "withdrawn" && "Withdrawn sets can be republished unchanged or replaced with a corrected version."}
+              {practiceSet.status === "archived" && "Retired sets remain historical records and are not open for new attempts."}
             </p>
           </div>
           <div className="admin-readiness-details">
@@ -674,6 +706,19 @@ function PracticeSetWorkspace({
             )}
           </div>
         </section>
+      )}
+
+      {(capabilities.warnings?.length > 0 || Object.keys(capabilities.blocking_reasons ?? {}).length > 0) && (
+        <details className="admin-set-tools admin-capability-detail">
+          <summary>Availability and blocked actions</summary>
+          {capabilities.warnings?.length > 0 && <ul>{capabilities.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>}
+          {Object.entries(capabilities.blocking_reasons ?? {}).map(([action, reasons]) => (
+            <div key={action}>
+              <strong>{action === "edit" ? "Editing" : "Deleting"}</strong>
+              <ul>{reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+            </div>
+          ))}
+        </details>
       )}
 
       {canEditSet && (
@@ -724,7 +769,7 @@ function PracticeSetWorkspace({
                   <option value="draft">Draft</option>
                   <option value="review">In review</option>
                   <option value="published">Published</option>
-                  <option value="archived">Archived</option>
+                  <option value="archived">Retired</option>
                 </select>
               </div>
             )}
@@ -758,13 +803,13 @@ function PracticeSetWorkspace({
                   <div className="admin-row-actions">
                     <div className="admin-row-action-group">
                       <button className="ghost-button admin-row-inspect" type="button" onClick={() => setPreviewQuestion(question)}>Preview</button>
-                      {question.status !== "archived" && (
+                      {canEditSet && question.status !== "archived" && (
                         <button className="link-button admin-row-main-action" type="button" onClick={() => editQuestion(question)}>
-                          {question.status === "published" ? "Correct" : "Edit"}
+                          Edit
                         </button>
                       )}
                     </div>
-                    {question.status !== "archived" && (
+                    {canEditSet && question.status !== "archived" && (
                       question.supersedes_question_id && question.status === "review" && (
                         <button type="button" disabled={working} onClick={() => onPublishCorrection(question.id)}>Publish correction</button>
                       )
@@ -798,6 +843,7 @@ function PracticeSetWorkspace({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <AdminImportPanel
+              expectedQuestionCount={practiceSet.expected_question_count}
               presentation="dialog"
               questions={questions}
               practiceType={practiceType}
@@ -1284,10 +1330,41 @@ export default function Admin() {
   }
 
   async function handleSaveModule(module) {
+    if (module.subject_id && module.lifecycle_status === "retired" && selectedModule?.lifecycle_status !== "retired") {
+      requestConfirmation({
+        title: "Retire this module permanently?",
+        body: `This stops all new practice and sales for the module. ${formatCount(selectedModule.active_entitlement_count)} existing entitlements and all candidate history will be preserved. Retire individual practice sets separately if needed.`,
+        label: "Retire module",
+        tone: "danger",
+        reasonLabel: "Reason for module retirement",
+        reasonRequired: true,
+        action: async ({ reason }) => {
+          await updateAdminModule({
+            ...module,
+            lifecycle_status: selectedModule.lifecycle_status,
+            available_for_purchase: selectedModule.available_for_purchase,
+          });
+          await updateAdminModuleLifecycle(module.subject_id, "retired", reason);
+          await updateAdminModuleSalesAvailability(module.subject_id, false);
+          await Promise.all([refreshModules(), refreshAudit()]);
+          setModuleEditor(null);
+          setFeedback({ tone: "success", message: "Module retired. Existing entitlements and history were preserved." });
+        },
+      });
+      return;
+    }
+
     setWorking(true);
     try {
       if (module.subject_id) {
-        await updateAdminModule(module);
+        await updateAdminModule({
+          ...module,
+          lifecycle_status: selectedModule.lifecycle_status,
+          available_for_purchase: selectedModule.available_for_purchase,
+        });
+        await updateAdminModuleLifecycle(module.subject_id, module.lifecycle_status);
+        await updateAdminModuleAvailability(module.subject_id, module.candidate_availability);
+        await updateAdminModuleSalesAvailability(module.subject_id, module.available_for_purchase);
         setFeedback({ tone: "success", message: "Module settings saved." });
       } else {
         const created = await createAdminModule(module);
@@ -1341,12 +1418,17 @@ export default function Admin() {
     }
   }
 
-  async function handleImport(importedQuestions, metadata) {
+  async function handleImport(importedQuestions, metadata, mode = "append") {
     setWorking(true);
     try {
-      const result = await importAdminQuestions(selectedSetId, importedQuestions, metadata, selectedModule.practice_type);
+      const result = await importAdminQuestions(selectedSetId, importedQuestions, metadata, selectedModule.practice_type, mode);
       await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
-      setFeedback({ tone: "success", message: `${result.imported_count} questions were imported into this set.` });
+      setFeedback({
+        tone: "success",
+        message: mode === "replace"
+          ? `Draft questions replaced. The set now has ${result.final_count} questions.`
+          : `${result.imported_count} questions were imported into this set.`,
+      });
       return true;
     } catch (error) {
       reportError("Admin import questions", error, "The questions were not imported. No partial import was saved.");
@@ -1360,11 +1442,11 @@ export default function Admin() {
     setConfirmDialog(config);
   }
 
-  async function runConfirmedAction() {
+  async function runConfirmedAction(values) {
     if (!confirmDialog?.action) return;
     setWorking(true);
     try {
-      await confirmDialog.action();
+      await confirmDialog.action(values ?? {});
       setConfirmDialog(null);
     } catch (error) {
       reportError("Admin confirmed action", error, "We could not complete that action.");
@@ -1390,12 +1472,6 @@ export default function Admin() {
         body: "Candidates with module access will be able to start this set immediately. Sales availability will not change.",
         label: "Publish practice set",
       },
-      archived: {
-        title: "Archive this practice set?",
-        body: "New attempts will stop immediately. Existing attempt reviews will remain available.",
-        label: "Archive practice set",
-        tone: "danger",
-      },
     }[status];
 
     requestConfirmation({
@@ -1409,6 +1485,77 @@ export default function Admin() {
             ? "Practice set published. Use module settings when you are ready to change sales availability."
             : `Practice set ${statusLabel(status).toLowerCase()}.`,
         });
+      },
+    });
+  }
+
+  function handleLifecycleAction(action) {
+    const impact = `${formatCount(selectedSet.in_progress_attempt_count)} in-progress and ${formatCount(selectedSet.completed_attempt_count)} completed attempts are attached to this version.`;
+    const configs = {
+      withdraw: {
+        title: "Withdraw this practice set temporarily?",
+        body: `This will stop new candidates from starting this set. Existing attempts, completed results, and reviews will remain available. You can republish this unchanged version later. ${impact}`,
+        label: "Withdraw temporarily",
+        action: async () => {
+          await withdrawAdminPracticeSet(selectedSetId);
+          setFeedback({ tone: "success", message: "Practice set withdrawn. Candidate access and history are unchanged." });
+        },
+      },
+      republish: {
+        title: "Republish this unchanged version?",
+        body: "New eligible attempts will use this exact version again. No questions or historical results will be changed.",
+        label: "Republish unchanged",
+        action: async () => {
+          await republishAdminPracticeSet(selectedSetId);
+          setFeedback({ tone: "success", message: "The unchanged practice-set version is published again." });
+        },
+      },
+      create_replacement: {
+        title: "Create a corrected replacement?",
+        body: "A new editable version will be created. The current version will remain unchanged until the replacement is reviewed and published.",
+        label: "Create replacement",
+        choiceLabel: "Replacement content",
+        choices: [
+          { value: "copy", label: "Copy existing questions", description: "Start with the current version, then correct only what changed." },
+          { value: "empty", label: "Start empty", description: "Create a blank replacement for a complete reupload." },
+        ],
+        action: async ({ choice }) => {
+          const replacement = await createAdminPracticeSetReplacement(selectedSetId, choice !== "empty");
+          await Promise.all([refreshPracticeSets(), refreshModules(), refreshAudit()]);
+          navigateWithinAdmin(`/admin/modules/${selectedModuleId}/sets/${replacement.id}`);
+          setFeedback({ tone: "success", message: "Replacement draft created. The current candidate version is unchanged." });
+        },
+      },
+      publish_replacement: {
+        title: "Publish this replacement?",
+        body: `This will retire the current version and publish this reviewed replacement. New attempts will use the replacement. Existing attempts and historical reviews will remain attached to the old version. ${impact}`,
+        label: "Publish replacement",
+        action: async () => {
+          await publishAdminPracticeSetReplacement(selectedSetId);
+          setFeedback({ tone: "success", message: "Replacement published. The previous version is preserved as retired history." });
+        },
+      },
+      retire: {
+        title: "Retire this version permanently?",
+        body: `This permanently closes this version to new candidates. Existing attempts and reviews will remain available. This version cannot be restored through the normal admin interface. ${impact}`,
+        label: "Retire permanently",
+        tone: "danger",
+        reasonLabel: "Reason for retirement",
+        reasonRequired: true,
+        action: async ({ reason }) => {
+          await retireAdminPracticeSet(selectedSetId, reason);
+          setFeedback({ tone: "success", message: "Practice-set version retired permanently. Historical attempts remain available." });
+        },
+      },
+    };
+
+    requestConfirmation({
+      ...configs[action],
+      action: async (values) => {
+        await configs[action].action(values);
+        if (action !== "create_replacement") {
+          await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
+        }
       },
     });
   }
@@ -1430,7 +1577,7 @@ export default function Admin() {
   function handleArchiveQuestion(question) {
     requestConfirmation({
       title: "Discard this correction?",
-      body: "The correction will be archived. The currently published question will not change.",
+      body: "This unpublished correction draft will be discarded. The currently published question will not change.",
       label: "Discard correction",
       tone: "danger",
       action: async () => {
@@ -1471,15 +1618,15 @@ export default function Admin() {
 
   function handleDeleteSet() {
     requestConfirmation({
-      title: "Delete this empty practice set?",
-      body: "The unused set number will be removed permanently.",
-      label: "Delete practice set",
+      title: "Delete this unused draft?",
+      body: "This permanently deletes this unpublished and unused set and its questions.",
+      label: "Delete unused draft",
       tone: "danger",
       action: async () => {
         await deleteEmptyAdminPracticeSet(selectedSetId);
         await Promise.all([refreshPracticeSets(), refreshModules(), refreshAudit()]);
         navigateWithinAdmin(`/admin/modules/${selectedModuleId}`);
-        setFeedback({ tone: "success", message: "The empty practice set was deleted." });
+        setFeedback({ tone: "success", message: "The unused draft was deleted." });
       },
     });
   }
@@ -1575,6 +1722,7 @@ export default function Admin() {
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteSet={handleDeleteSet}
                 onImport={handleImport}
+                onLifecycleAction={handleLifecycleAction}
                 onPublishCorrection={handlePublishCorrection}
                 onSaveExpectedCount={handleSaveExpectedCount}
                 onSaveQuestion={handleSaveQuestion}
@@ -1627,9 +1775,14 @@ export default function Admin() {
       )}
 
       <AdminConfirmDialog
+        key={confirmDialog?.title ?? "closed-confirmation"}
         open={Boolean(confirmDialog)}
         title={confirmDialog?.title}
         confirmLabel={confirmDialog?.label}
+        choiceLabel={confirmDialog?.choiceLabel}
+        choices={confirmDialog?.choices}
+        reasonLabel={confirmDialog?.reasonLabel}
+        reasonRequired={confirmDialog?.reasonRequired}
         tone={confirmDialog?.tone}
         busy={working}
         onCancel={() => setConfirmDialog(null)}

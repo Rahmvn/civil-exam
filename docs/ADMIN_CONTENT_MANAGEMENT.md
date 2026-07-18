@@ -49,12 +49,12 @@ Durable workspace URLs are used so an administrator can safely bookmark or retur
 4. Use `Coming soon` only when candidates should see the module before its content is available.
 5. Create and publish at least one complete practice set before making a module active.
 
-Module states:
+Module lifecycle, candidate availability, and sales availability are separate controls:
 
 - `Draft`: private to administrators.
-- `Coming soon`: visible to candidates but not startable or purchasable.
-- `Active`: contains published practice and may be offered for purchase.
-- `Retired`: no longer part of the active catalogue. Retirement is blocked while users still have active access.
+- `Coming soon`, `Available`, `Paused`, and `Hidden` control what candidates can see or start.
+- `Available for purchase` controls new sales only.
+- `Retired` permanently closes the module to new practice and sales while preserving existing access and history.
 
 `Available for purchase` controls new sales only. Turning it off does not remove existing access, receipts, attempts, or reviews. Changing a price affects future purchases only.
 
@@ -63,13 +63,15 @@ Module states:
 Practice-set numbers are assigned automatically within a module. The normal lifecycle is:
 
 ```text
-Draft -> In review -> Published -> Archived
+Draft <-> In review -> Published -> Withdrawn -> Published
+                                  \-> Retired
 ```
 
 - `Draft`: questions can be added, edited, deleted, or imported.
 - `In review`: the complete set is ready for final checking and can still be returned to draft.
 - `Published`: candidates can start it. Existing questions are no longer edited in place.
-- `Archived`: unavailable for new attempts, but retained for historical reviews.
+- `Withdrawn`: temporarily unavailable for new attempts. It can be republished only with unchanged content.
+- `Retired`: permanently unavailable for new attempts and retained for historical reviews.
 
 Before a set can enter review or publish, the server checks:
 
@@ -77,23 +79,23 @@ Before a set can enter review or publish, the server checks:
 - valid and non-repeated question positions
 - four distinct, non-empty answer options
 - a valid correct answer
-- an explanation for every question
+- optional explanation and reference fields that remain valid when supplied
 - no duplicate question text in the set
 
-Publishing the first valid set activates its module content, but it does not start sales. After publication, open module settings and explicitly enable `Available for purchase` when the commercial details have been checked. Archiving the final published set stops new sales and leaves the module in `Coming soon` rather than deleting it.
+Publishing the first valid set makes candidate practice available, but it does not start sales. After publication, open module settings and explicitly enable `Available for purchase` when the commercial details have been checked. Withdrawing or retiring a set never deletes entitlements, attempts, answers, scores, or reviews.
 
 ## Question Workflow
 
 For unpublished sets, use `Add question` or edit an existing draft question. The focused editor replaces the question list while a record is being changed. Select the correct answer using the letter beside the option, and include an explanation before publication. Difficulty and source metadata are under `Additional details`.
 
-Published questions use correction revisions:
+Published questions are immutable. Correct them through a complete replacement set:
 
-1. Select `Correct` on the live question.
-2. Edit and save the correction.
-3. Preview it and select `Publish correction` only after checking it.
-4. PromotionSure archives the previous version and publishes the correction in one transaction.
+1. Select `Create corrected replacement` on the live set.
+2. Copy the existing questions or begin with an empty replacement draft.
+3. Correct or re-import the full set and send it through review.
+4. Publish the replacement to atomically retire the old version and switch new attempts to the new version.
 
-Historical attempts continue to reference the exact question version originally answered. A correction never rewrites an old result or answer review.
+Historical attempts continue to reference the exact practice-set and question versions originally answered. A replacement never rewrites an old result or answer review.
 
 ## CSV, Excel, And JSON Import
 
@@ -116,18 +118,24 @@ difficulty
 
 JSON accepts the equivalent internal names, including `batch_position`, `correct_option`, and `reference_note`.
 
-The browser previews and validates the complete file first. The database validates it again and saves the whole import in one transaction. If one row conflicts or fails, no rows from that import are saved. Successful imports record the filename and SHA-256 checksum in the audit log, and the same file cannot be replayed into one practice set.
+Choose an import intent before selecting the file:
 
-## Archive Versus Delete
+- `Validate only` checks the complete file and performs no database write.
+- `Append` keeps existing questions and adds the imported rows.
+- `Replace all` atomically replaces every question in a draft or review set.
+
+The browser shows current, imported, and final counts. The database validates write operations again and saves the whole import in one transaction. If one row conflicts or fails, the original set remains unchanged.
+
+## Withdraw, Retire, Or Delete
 
 Permanent deletion is deliberately narrow:
 
 - An unused module can be deleted only before it has content, payments, access grants, or attempts.
 - An empty draft practice set can be deleted.
 - An unused draft or review question can be deleted.
-- Published or historically used content is archived, never hard-deleted.
+- Published or historically used content is retired, never hard-deleted.
 
-When uncertain, archive or stop new sales. This preserves receipts, attempts, score calculations, and answer reviews.
+Withdraw only when unchanged content may return. Retire permanently when it must not return, and create a replacement when content needs correction. Stop sales independently when only new purchases should end.
 
 ## Audit Trail
 
@@ -135,7 +143,7 @@ The `Activity` view records recent content changes and the administrator respons
 
 ## Deployment Checklist
 
-The admin interface depends on `20260714160000_admin_content_management.sql` and the count correction in `20260714190000_fix_admin_practice_set_counts.sql`. Before using it on a hosted project:
+The redesigned lifecycle additionally depends on `20260718083101_add_withdrawn_practice_set_status.sql` followed by `20260718083102_admin_content_lifecycle_redesign.sql`. The enum migration must commit before the redesign migration uses the new value. Before using it on a hosted project:
 
 1. Back up the hosted database.
 2. Apply the migration through the normal Supabase migration process.
@@ -150,6 +158,6 @@ Never test destructive admin actions against production content. Use a new priva
 
 - If an import fails, correct the displayed rows and import again; partial rows were not saved.
 - If a set cannot publish, resolve every item in its publication check.
-- If a module cannot retire, stop new sales and allow existing access to expire.
-- If a published question is wrong, create a correction instead of trying to delete or directly edit it.
+- Pausing candidate availability or stopping sales does not alter existing entitlements.
+- If published content is wrong, create a replacement set instead of republishing, deleting, or directly editing it.
 - If an admin loses access, verify the profile role from the Supabase SQL editor rather than weakening the route guard.

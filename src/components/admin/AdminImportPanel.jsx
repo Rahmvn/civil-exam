@@ -4,6 +4,7 @@ import {
   ADMIN_IMPORT_TEMPLATE,
   ADMIN_ORAL_IMPORT_JSON_EXAMPLE,
   ADMIN_ORAL_IMPORT_TEMPLATE,
+  getImportImpact,
   parseAdminImportFile,
 } from "../../lib/adminContent";
 
@@ -85,7 +86,7 @@ function downloadJsonExample(practiceType) {
   URL.revokeObjectURL(url);
 }
 
-export function AdminImportPanel({ questions, importing, onClose, onImport, practiceType = "objective", presentation = "inline" }) {
+export function AdminImportPanel({ expectedQuestionCount, questions, importing, onClose, onImport, practiceType = "objective", presentation = "inline" }) {
   const inputRef = useRef(null);
   const [fileName, setFileName] = useState("");
   const [metadata, setMetadata] = useState(null);
@@ -93,12 +94,25 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
   const [preview, setPreview] = useState([]);
   const [errors, setErrors] = useState([]);
   const [selectedFormat, setSelectedFormat] = useState("csv");
+  const [mode, setMode] = useState("append");
+  const [validated, setValidated] = useState(false);
 
   const currentQuestions = questions.filter((question) => question.status !== "archived");
   const nextPosition = currentQuestions.reduce(
     (highest, question) => Math.max(highest, Number(question.batch_position ?? 0)),
     0,
   ) + 1;
+
+  function selectMode(nextMode) {
+    setMode(nextMode);
+    setFileName("");
+    setMetadata(null);
+    setPage(0);
+    setPreview([]);
+    setErrors([]);
+    setValidated(false);
+    if (inputRef.current) inputRef.current.value = "";
+  }
 
   async function handleFile(event) {
     const file = event.target.files?.[0];
@@ -107,6 +121,7 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
     setPage(0);
     setPreview([]);
     setErrors([]);
+    setValidated(false);
 
     if (!file) return;
 
@@ -118,15 +133,24 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
       const conflictErrors = [];
 
       result.questions.forEach((question, index) => {
-        if (existingPositions.has(question.batch_position)) {
+        if (mode === "append" && existingPositions.has(question.batch_position)) {
           conflictErrors.push(`Row ${index + 2}: position ${question.batch_position} already exists in this practice set.`);
         }
 
         const normalizedText = question.question_text.toLowerCase().replace(/\s+/g, " ").trim();
-        if (existingTexts.has(normalizedText)) {
+        if (mode === "append" && existingTexts.has(normalizedText)) {
           conflictErrors.push(`Row ${index + 2}: this question already exists in the practice set.`);
         }
       });
+
+      const impact = getImportImpact({
+        currentCount: currentQuestions.length,
+        importedCount: result.questions.length,
+        mode,
+      });
+      if (Number(expectedQuestionCount) > 0 && impact.finalCount > Number(expectedQuestionCount)) {
+        conflictErrors.push(`The final question count would be ${impact.finalCount}, above this set's target of ${expectedQuestionCount}.`);
+      }
 
       setPreview(result.questions);
       setMetadata(result.metadata);
@@ -137,7 +161,12 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
   }
 
   async function handleImport() {
-    const imported = await onImport(preview, metadata);
+    if (mode === "validate") {
+      setValidated(true);
+      return;
+    }
+
+    const imported = await onImport(preview, metadata, mode);
     if (!imported) return;
 
     setFileName("");
@@ -154,6 +183,7 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
   const importFormats = getImportFormats(practiceType);
   const activeFormat = importFormats[selectedFormat];
   const isOral = practiceType === "oral";
+  const impact = getImportImpact({ currentCount: currentQuestions.length, importedCount: preview.length, mode });
 
   return (
     <section className={`admin-import-panel${presentation === "dialog" ? " is-dialog" : ""}`}>
@@ -203,6 +233,22 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
       </section>
 
       <section className="admin-import-workspace" aria-label="Upload workspace">
+        <fieldset className="admin-import-mode-picker">
+          <legend>Import action</legend>
+          <label>
+            <input checked={mode === "validate"} name="import-mode" type="radio" onChange={() => selectMode("validate")} />
+            <span><strong>Validate only</strong><small>Check the file without saving anything.</small></span>
+          </label>
+          <label>
+            <input checked={mode === "append"} name="import-mode" type="radio" onChange={() => selectMode("append")} />
+            <span><strong>Append</strong><small>Add these questions after the current draft questions.</small></span>
+          </label>
+          <label>
+            <input checked={mode === "replace"} name="import-mode" type="radio" onChange={() => selectMode("replace")} />
+            <span><strong>Replace all</strong><small>Replace every editable question in one transaction.</small></span>
+          </label>
+        </fieldset>
+
         <label className="admin-file-drop">
           <input ref={inputRef} accept=".csv,.xlsx,.json" type="file" onChange={handleFile} />
           <span className="admin-file-drop-icon" aria-hidden="true">
@@ -254,6 +300,11 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
 
       {preview.length > 0 && (
         <div className="admin-import-preview">
+          <dl className="admin-import-impact" aria-label="Expected import result">
+            <div><dt>Current questions</dt><dd>{impact.currentCount}</dd></div>
+            <div><dt>Imported questions</dt><dd>{impact.importedCount}</dd></div>
+            <div><dt>Expected final count</dt><dd>{impact.finalCount}</dd></div>
+          </dl>
           <div className="admin-import-preview-head">
             <div>
               <strong>{preview.length} questions found</strong>
@@ -283,9 +334,18 @@ export function AdminImportPanel({ questions, importing, onClose, onImport, prac
             </div>
           )}
           <div className="admin-import-commit">
-            <p>The database checks the complete file again. If one row fails, no questions are saved.</p>
+            <p>{mode === "validate"
+              ? "Validation does not save or change any questions."
+              : "The database checks the complete file again. If one row fails, no questions are saved."}</p>
+            {validated && <p role="status">Validation complete. No questions were saved.</p>}
             <button type="button" disabled={errors.length > 0 || importing} onClick={handleImport}>
-              {importing ? "Importing questions..." : `Import ${preview.length} questions`}
+              {importing
+                ? "Importing questions..."
+                : mode === "validate"
+                  ? "Validate file"
+                  : mode === "replace"
+                    ? `Replace with ${preview.length} questions`
+                    : `Import ${preview.length} questions`}
             </button>
           </div>
         </div>

@@ -35,6 +35,10 @@ function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }
 
   if (!targetRow) return null;
 
+  if (module.isPaused) {
+    return { label: "Temporarily paused", disabled: true };
+  }
+
   if (module.isPurchaseUnavailable) {
     return { label: "Not available yet", disabled: true };
   }
@@ -94,6 +98,7 @@ function PracticeLaunchCard({ module, primaryAction, secondaryAction, showProgre
     <article className={`practice-hub-launch-card ${showProgress ? "" : "is-module-choice"}`.trim()}>
       <div className="practice-hub-launch-copy">
         <h2>{module.displayName}</h2>
+        {module.isPaused && <p>This practice set is temporarily unavailable while its content is being updated. Your access and previous results are safe.</p>}
       </div>
 
       {showProgress && (
@@ -213,9 +218,10 @@ export default function PracticeStart() {
         Boolean(catalogEntry?.has_module_access) ||
         rows.some((row) => Boolean(row?.is_paid));
       const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
+      const isPaused = catalogEntry?.candidate_availability === "paused";
       const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
       const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
-      const hasStartableAccess = hasStartablePublishedBatch(rows);
+      const hasStartableAccess = !isPaused && hasStartablePublishedBatch(rows);
 
       return {
         subject,
@@ -230,6 +236,7 @@ export default function PracticeStart() {
         canPurchase,
         hasModuleAccess,
         hasStartableAccess,
+        isPaused,
         isPurchaseUnavailable: isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows }),
         isVisibleInPracticeHub: shouldShowPracticeHubModule({ hasModuleAccess, canPurchase, rows }),
         isComingSoon: isCandidateModuleComingSoon(subject, publishedRows.length),

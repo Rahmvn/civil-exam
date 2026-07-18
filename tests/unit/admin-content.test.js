@@ -2,11 +2,40 @@ import assert from "node:assert/strict";
 import { File } from "node:buffer";
 import test from "node:test";
 import {
+  getImportImpact,
+  getPracticeSetActions,
   parseAdminImportFile,
   parseCsv,
   slugifyModuleName,
   validateAdminImportRows,
 } from "../../src/lib/adminContent.js";
+
+test("practice-set actions follow authoritative server capabilities", () => {
+  const actions = getPracticeSetActions({
+    can_withdraw: true,
+    can_create_replacement: true,
+    can_retire: true,
+    can_edit: false,
+    can_delete: false,
+  });
+  const byKey = Object.fromEntries(actions.map((action) => [action.key, action]));
+
+  assert.equal(byKey.withdraw.allowed, true);
+  assert.equal(byKey.create_replacement.label, "Create corrected replacement");
+  assert.equal(byKey.retire.allowed, true);
+  assert.equal(byKey.edit.allowed, false);
+  assert.equal(byKey.delete.allowed, false);
+});
+
+test("import impact distinguishes append, replace-all, and empty values", () => {
+  assert.deepEqual(getImportImpact({ currentCount: 12, importedCount: 3, mode: "append" }), {
+    currentCount: 12,
+    importedCount: 3,
+    finalCount: 15,
+  });
+  assert.equal(getImportImpact({ currentCount: 12, importedCount: 3, mode: "replace" }).finalCount, 3);
+  assert.equal(getImportImpact().finalCount, 0);
+});
 
 function validQuestion(overrides = {}) {
   return {

@@ -369,6 +369,7 @@ export default function Practice() {
         subjectId: subject.id,
         answers: submittedAnswers,
         batchNumber: batchMeta.batchNumber,
+        practiceSessionId: questions[0]?.practice_session_id,
         submissionToken: submissionTokenRef.current,
       });
 

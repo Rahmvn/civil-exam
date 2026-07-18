@@ -50,9 +50,9 @@ test("admin can create and safely remove unused content", async ({ page }, testI
 
   await expect(page.getByRole("heading", { name: "Practice set 1" })).toBeVisible();
   await expect(page.getByText("Needs attention", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Delete empty set" }).click();
-  await page.getByRole("dialog", { name: "Delete this empty practice set?" })
-    .getByRole("button", { name: "Delete practice set" })
+  await page.getByRole("button", { name: "Delete unused draft" }).click();
+  await page.getByRole("dialog", { name: "Delete this unused draft?" })
+    .getByRole("button", { name: "Delete unused draft" })
     .click();
 
   await expect(page.getByRole("heading", { name: moduleName })).toBeVisible();
@@ -112,6 +112,28 @@ test("admin can bulk upload, review, and publish without silently enabling sales
     .getByRole("button", { name: "Publish practice set" })
     .click();
   await expect(page.getByText(/Practice set published\. Use module settings/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Withdraw temporarily" }).click();
+  await page.getByRole("dialog", { name: "Withdraw this practice set temporarily?" })
+    .getByRole("button", { name: "Withdraw temporarily" }).click();
+  await expect(page.getByText("Withdrawn", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Republish unchanged" }).click();
+  await page.getByRole("dialog", { name: "Republish this unchanged version?" })
+    .getByRole("button", { name: "Republish unchanged" }).click();
+  await expect(page.getByText("Published", { exact: true }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Create corrected replacement" }).click();
+  const replacementDialog = page.getByRole("dialog", { name: "Create a corrected replacement?" });
+  await replacementDialog.getByLabel("Copy existing questions").check();
+  await replacementDialog.getByRole("button", { name: "Create replacement" }).click();
+  await expect(page.getByText("Replacement draft created", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Send for review" }).click();
+  await page.getByRole("dialog", { name: "Send this set to review?" })
+    .getByRole("button", { name: "Send to review" }).click();
+  await page.getByRole("button", { name: "Publish replacement" }).click();
+  await page.getByRole("dialog", { name: "Publish this replacement?" })
+    .getByRole("button", { name: "Publish replacement" }).click();
+  await expect(page.getByText("Replacement published", { exact: false })).toBeVisible();
 
   await page.getByRole("button", { name: moduleName }).click();
   await expect(page.getByText("Not on sale", { exact: true })).toBeVisible();
@@ -246,9 +268,9 @@ test("admin import blocks invalid question files without saving partial content"
   await page.getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog", { name: "Upload questions" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Practice set 1" })).toBeVisible();
-  await page.getByRole("button", { name: "Delete empty set" }).click();
-  await page.getByRole("dialog", { name: "Delete this empty practice set?" })
-    .getByRole("button", { name: "Delete practice set" })
+  await page.getByRole("button", { name: "Delete unused draft" }).click();
+  await page.getByRole("dialog", { name: "Delete this unused draft?" })
+    .getByRole("button", { name: "Delete unused draft" })
     .click();
   await page.getByRole("button", { name: "Delete unused module" }).click();
   await page.getByRole("dialog", { name: "Delete this unused module?" })
@@ -300,9 +322,9 @@ test("admin can add, validate, preview, and remove one question without optional
     .getByRole("button", { name: "Remove question" })
     .click();
   await expect(page.getByText(questionText, { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Delete empty set" }).click();
-  await page.getByRole("dialog", { name: "Delete this empty practice set?" })
-    .getByRole("button", { name: "Delete practice set" })
+  await page.getByRole("button", { name: "Delete unused draft" }).click();
+  await page.getByRole("dialog", { name: "Delete this unused draft?" })
+    .getByRole("button", { name: "Delete unused draft" })
     .click();
   await page.getByRole("button", { name: "Delete unused module" }).click();
   await page.getByRole("dialog", { name: "Delete this unused module?" })
@@ -377,7 +399,7 @@ test("admin catalogue keeps its management layout at each breakpoint", async ({ 
   }
 });
 
-test("published admin questions and correction controls survive durable URL reloads", async ({ page }) => {
+test("published admin questions and replacement controls survive durable URL reloads", async ({ page }) => {
   await page.goto("/admin");
   const moduleRow = page.locator(".admin-module-row").filter({ hasText: "Public Financial Management" });
   await moduleRow.getByRole("button", { name: "Open" }).click();
@@ -390,7 +412,8 @@ test("published admin questions and correction controls survive durable URL relo
   await expect(questionRows.first()).toBeVisible();
   await expect(page.getByText("Checking", { exact: true })).toHaveCount(0);
   await expect(questionRows.first().getByRole("button", { name: "Preview" })).toBeVisible();
-  await expect(questionRows.first().getByRole("button", { name: "Correct" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create corrected replacement" })).toBeVisible();
+  await expect(questionRows.first().getByRole("button", { name: "Edit" })).toHaveCount(0);
   await expect(questionRows.first().getByRole("button", { name: "Remove" })).toHaveCount(0);
 
   const setUrl = page.url();
@@ -398,7 +421,7 @@ test("published admin questions and correction controls survive durable URL relo
   await expect(page).toHaveURL(setUrl);
   await expect(questionRows.first()).toBeVisible();
   await expect(page.getByText("Checking", { exact: true })).toHaveCount(0);
-  await expect(questionRows.first().getByRole("button", { name: "Correct" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create corrected replacement" })).toBeVisible();
 });
 
 test("admin sessions stay outside the candidate experience", async ({ page }) => {
