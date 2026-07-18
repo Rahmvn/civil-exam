@@ -71,6 +71,10 @@ function formatCount(value) {
   return COUNT_FORMATTER.format(Number(value ?? 0));
 }
 
+function isReplacementPublishError(error) {
+  return String(error?.message ?? error?.details ?? error ?? "").toLowerCase().includes("replacement action");
+}
+
 function adminErrorMessage(error, fallback) {
   const rawMessage = String(error?.message ?? error?.details ?? "").trim();
 
@@ -520,6 +524,7 @@ function PracticeSetWorkspace({
   onBack,
   onDeleteQuestion,
   onDeleteSet,
+  forceReplacementPublish = false,
   onImport,
   onLifecycleAction,
   onPublishCorrection,
@@ -536,9 +541,10 @@ function PracticeSetWorkspace({
   const practiceType = practiceSet.practice_type ?? module.practice_type ?? "objective";
   const capabilities = practiceSet.capabilities ?? {};
   const isReplacementVersion = Boolean(practiceSet.replaces_practice_set_id);
-  const canPublishSet = Boolean(capabilities.can_publish) && !isReplacementVersion;
+  const shouldUseReplacementPublish = isReplacementVersion || forceReplacementPublish;
+  const canPublishSet = Boolean(capabilities.can_publish) && !shouldUseReplacementPublish;
   const canPublishReplacement = Boolean(capabilities.can_publish_replacement)
-    || (practiceSet.status === "review" && isReplacementVersion);
+    || (practiceSet.status === "review" && shouldUseReplacementPublish);
 
   const normalizedQuery = query.trim().toLowerCase();
   const visibleQuestions = questions.filter((question) => {
@@ -1138,6 +1144,7 @@ export default function Admin() {
   const [sectionLoading, setSectionLoading] = useState(false);
   const [working, setWorking] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [replacementPublishHints, setReplacementPublishHints] = useState(() => new Set());
   const [moduleEditor, setModuleEditor] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [shellSearch, setShellSearch] = useState("");
@@ -1481,7 +1488,16 @@ export default function Admin() {
     requestConfirmation({
       ...copy,
       action: async () => {
-        await transitionAdminPracticeSet(selectedSetId, status);
+        try {
+          await transitionAdminPracticeSet(selectedSetId, status);
+        } catch (error) {
+          if (status === "published" && isReplacementPublishError(error)) {
+            setReplacementPublishHints((current) => new Set(current).add(selectedSetId));
+            setFeedback({ tone: "error", message: "This reviewed set is a replacement version. Use Publish replacement to retire the old version atomically." });
+            return;
+          }
+          throw error;
+        }
         await Promise.all([refreshSetContent(), refreshPracticeSets(), refreshModules(), refreshAudit()]);
         setFeedback({
           tone: "success",
@@ -1536,6 +1552,11 @@ export default function Admin() {
         label: "Publish replacement",
         action: async () => {
           await publishAdminPracticeSetReplacement(selectedSetId);
+          setReplacementPublishHints((current) => {
+            const next = new Set(current);
+            next.delete(selectedSetId);
+            return next;
+          });
           setFeedback({ tone: "success", message: "Replacement published. The previous version is preserved as retired history." });
         },
       },
@@ -1725,6 +1746,7 @@ export default function Admin() {
                 onBack={() => navigateWithinAdmin(`/admin/modules/${selectedModuleId}`)}
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteSet={handleDeleteSet}
+                forceReplacementPublish={replacementPublishHints.has(selectedSetId)}
                 onImport={handleImport}
                 onLifecycleAction={handleLifecycleAction}
                 onPublishCorrection={handlePublishCorrection}
