@@ -3,12 +3,28 @@ import { File } from "node:buffer";
 import test from "node:test";
 import {
   getImportImpact,
+  getNextPracticeSetNumber,
   getPracticeSetActions,
+  getRetiredPracticeSetVersionOptions,
   parseAdminImportFile,
   parseCsv,
   slugifyModuleName,
   validateAdminImportRows,
 } from "../../src/lib/adminContent.js";
+
+test("retired practice-set slots can be offered before the next new number", () => {
+  const practiceSets = [
+    { practice_set_id: "published-1", set_number: 1, version_number: 2, status: "published", capabilities: {} },
+    { practice_set_id: "retired-1", set_number: 1, version_number: 1, status: "archived", capabilities: { can_create_replacement: false } },
+    { practice_set_id: "retired-2", set_number: 2, version_number: 1, status: "archived", capabilities: { can_create_replacement: true } },
+  ];
+
+  assert.deepEqual(
+    getRetiredPracticeSetVersionOptions(practiceSets).map((practiceSet) => practiceSet.practice_set_id),
+    ["retired-2"],
+  );
+  assert.equal(getNextPracticeSetNumber(practiceSets), 3);
+});
 
 test("practice-set actions follow authoritative server capabilities", () => {
   const actions = getPracticeSetActions({

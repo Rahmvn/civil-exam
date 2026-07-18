@@ -17,6 +17,25 @@ export const PRACTICE_SET_STATUS_LABELS = {
   withdrawn: "Withdrawn",
 };
 
+export function getRetiredPracticeSetVersionOptions(practiceSets = []) {
+  return practiceSets
+    .filter((practiceSet) => (
+      practiceSet.status === "archived"
+      && Boolean(practiceSet.capabilities?.can_create_replacement)
+    ))
+    .sort((left, right) => (
+      Number(left.set_number) - Number(right.set_number)
+      || Number(right.version_number) - Number(left.version_number)
+    ));
+}
+
+export function getNextPracticeSetNumber(practiceSets = []) {
+  return practiceSets.reduce(
+    (highest, practiceSet) => Math.max(highest, Number(practiceSet.set_number) || 0),
+    0,
+  ) + 1;
+}
+
 export function getPracticeSetActions(capabilities = {}) {
   return [
     ["edit", "Edit details", capabilities.can_edit],

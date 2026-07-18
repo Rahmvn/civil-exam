@@ -20,7 +20,7 @@ Module lifecycle and visibility were coupled through `subjects.is_active` and `s
 | In review | No | Yes | Edit, append, replace all, validate, return to draft, publish, delete if unused | No published history |
 | Published | Yes | No | View, withdraw, create replacement, retire | Existing sessions and reviews remain pinned |
 | Withdrawn | No | No | View, republish unchanged, create replacement, retire | Existing sessions can finish; reviews remain available |
-| Retired (`archived` in the compatibility enum) | No | No | View, inspect replacement, audit | Permanent historical version; no normal reopening |
+| Retired (`archived` in the compatibility enum) | No | No | View, create a later version if none exists, inspect lineage, audit | Permanent historical version; the retired row is never reopened |
 
 Allowed transitions:
 
@@ -30,9 +30,12 @@ published <-> withdrawn
 published -> retired
 withdrawn -> retired
 published/withdrawn -> replacement draft -> review -> publish replacement
+retired -> separate new-version draft -> review -> publish replacement
 ```
 
 Publishing a replacement locks the logical slot, validates both versions, retires the source, publishes the replacement, links both rows, and writes the audit event in one transaction. A partial unique index permits only one published version for an exam pack, module, set number, and practice type.
+
+`Add practice set` distinguishes between continuing an eligible retired numbered slot and adding the next new number. Continuing a retired slot creates an empty successor draft with the same `set_number` and a higher `version_number`; it never edits or reopens the retired source.
 
 ## Version and history model
 

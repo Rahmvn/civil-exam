@@ -39,7 +39,12 @@ import {
   updateSupportRequest,
   withdrawAdminPracticeSet,
 } from "../lib/appApi";
-import { formatAdminCurrency, PRACTICE_SET_STATUS_LABELS } from "../lib/adminContent";
+import {
+  formatAdminCurrency,
+  getNextPracticeSetNumber,
+  getRetiredPracticeSetVersionOptions,
+  PRACTICE_SET_STATUS_LABELS,
+} from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { supabase } from "../lib/supabaseClient";
 
@@ -325,6 +330,7 @@ function ModuleWorkspace({
 }) {
   const [showSetCreator, setShowSetCreator] = useState(false);
   const [expectedCount, setExpectedCount] = useState(module.batch_size ?? 30);
+  const [creationTarget, setCreationTarget] = useState("new");
   const isUnused = Number(module.question_count) === 0
     && Number(module.attempt_count) === 0
     && Number(module.payment_count) === 0;
@@ -339,6 +345,15 @@ function ModuleWorkspace({
     if (!normalizedQuery) return true;
     return `practice set ${practiceSet.set_number}`.toLowerCase().includes(normalizedQuery);
   });
+  const retiredVersionOptions = getRetiredPracticeSetVersionOptions(practiceSets);
+  const nextSetNumber = getNextPracticeSetNumber(practiceSets);
+
+  function openSetCreator() {
+    const retiredSet = retiredVersionOptions[0];
+    setCreationTarget(retiredSet?.practice_set_id ?? "new");
+    setExpectedCount(retiredSet?.expected_question_count ?? module.batch_size ?? 30);
+    setShowSetCreator(true);
+  }
 
   return (
     <>
@@ -360,7 +375,7 @@ function ModuleWorkspace({
           <p>{formatAdminCurrency(module.price_kobo, module.currency)} per module</p>
         </div>
         <div className="admin-overview-actions">
-          <button type="button" onClick={() => setShowSetCreator(true)}>Add practice set</button>
+          <button type="button" onClick={openSetCreator}>Add practice set</button>
           <button className="ghost-button" type="button" onClick={() => onEdit(module)}>Settings</button>
         </div>
       </section>
@@ -380,24 +395,70 @@ function ModuleWorkspace({
           className="admin-inline-creator"
           onSubmit={(event) => {
             event.preventDefault();
-            onCreateSet(expectedCount, () => setShowSetCreator(false));
+            onCreateSet({
+              expectedCount,
+              sourceSetId: creationTarget === "new" ? null : creationTarget,
+            }, () => setShowSetCreator(false));
           }}
         >
           <div>
             <h2>Add practice set</h2>
-            <p>The next number is assigned automatically.</p>
+            <p>Continue a retired numbered slot or add the next new slot.</p>
           </div>
-          <label>
-            Questions required
-            <input
-              min="1"
-              max="200"
-              required
-              type="number"
-              value={expectedCount}
-              onChange={(event) => setExpectedCount(event.target.value)}
-            />
-          </label>
+          {retiredVersionOptions.length > 0 && (
+            <fieldset className="admin-creation-targets">
+              <legend>Practice-set slot</legend>
+              {retiredVersionOptions.map((practiceSet) => (
+                <label key={practiceSet.practice_set_id}>
+                  <input
+                    checked={creationTarget === practiceSet.practice_set_id}
+                    name="creation-target"
+                    type="radio"
+                    value={practiceSet.practice_set_id}
+                    onChange={() => {
+                      setCreationTarget(practiceSet.practice_set_id);
+                      setExpectedCount(practiceSet.expected_question_count);
+                    }}
+                  />
+                  <span>
+                    <strong>New version of Practice set {practiceSet.set_number}</strong>
+                    <small>Keeps the retired version as history and starts an empty draft with the same number.</small>
+                  </span>
+                </label>
+              ))}
+              <label>
+                <input
+                  checked={creationTarget === "new"}
+                  name="creation-target"
+                  type="radio"
+                  value="new"
+                  onChange={() => {
+                    setCreationTarget("new");
+                    setExpectedCount(module.batch_size ?? 30);
+                  }}
+                />
+                <span>
+                  <strong>New Practice set {nextSetNumber}</strong>
+                  <small>Adds a separate numbered slot after the existing sets.</small>
+                </span>
+              </label>
+            </fieldset>
+          )}
+          {creationTarget === "new" ? (
+            <label>
+              Questions required
+              <input
+                min="1"
+                max="200"
+                required
+                type="number"
+                value={expectedCount}
+                onChange={(event) => setExpectedCount(event.target.value)}
+              />
+            </label>
+          ) : (
+            <p className="admin-inherited-count">Question target: <strong>{expectedCount}</strong>, inherited from the retired version.</p>
+          )}
           <div className="admin-inline-actions">
             <button className="ghost-button" type="button" onClick={() => setShowSetCreator(false)}>Cancel</button>
             <button type="submit" disabled={loading}>{loading ? "Adding..." : "Add draft set"}</button>
@@ -687,7 +748,7 @@ function PracticeSetWorkspace({
           {canPublishReplacement && <button disabled={!validation?.ready || working} type="button" onClick={() => onLifecycleAction("publish_replacement")}>Publish replacement</button>}
           {capabilities.can_withdraw && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("withdraw")}>Withdraw temporarily</button>}
           {capabilities.can_republish && <button disabled={working} type="button" onClick={() => onLifecycleAction("republish")}>Republish unchanged</button>}
-          {capabilities.can_create_replacement && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("create_replacement")}>Create corrected replacement</button>}
+          {capabilities.can_create_replacement && <button className="ghost-button" disabled={working} type="button" onClick={() => onLifecycleAction("create_replacement")}>{practiceSet.status === "archived" ? "Create new version" : "Create corrected replacement"}</button>}
           {capabilities.can_retire && <button className="admin-danger-outline" disabled={working} type="button" onClick={() => onLifecycleAction("retire")}>Retire permanently</button>}
         </div>
       </section>
@@ -1390,13 +1451,20 @@ export default function Admin() {
     }
   }
 
-  async function handleCreateSet(expectedCount, closeCreator) {
+  async function handleCreateSet({ expectedCount, sourceSetId }, closeCreator) {
     setSectionLoading(true);
     try {
-      const createdSet = await createAdminPracticeSet(selectedModuleId, expectedCount);
+      const createdSet = sourceSetId
+        ? await createAdminPracticeSetReplacement(sourceSetId, false)
+        : await createAdminPracticeSet(selectedModuleId, expectedCount);
       await Promise.all([refreshModules(), refreshPracticeSets(), refreshAudit()]);
       closeCreator();
-      setFeedback({ tone: "success", message: `Practice set ${createdSet.set_number} was created as a draft.` });
+      setFeedback({
+        tone: "success",
+        message: sourceSetId
+          ? `A new empty version of Practice set ${createdSet.set_number} was created as a draft.`
+          : `Practice set ${createdSet.set_number} was created as a draft.`,
+      });
       navigateWithinAdmin(`/admin/modules/${selectedModuleId}/sets/${createdSet.id}`);
     } catch (error) {
       reportError("Admin create practice set", error, "We could not create the practice set.");
@@ -1531,9 +1599,11 @@ export default function Admin() {
         },
       },
       create_replacement: {
-        title: "Create a corrected replacement?",
-        body: "A new editable version will be created. The current version will remain unchanged until the replacement is reviewed and published.",
-        label: "Create replacement",
+        title: selectedSet.status === "archived" ? "Create a new version of this retired set?" : "Create a corrected replacement?",
+        body: selectedSet.status === "archived"
+          ? `A new editable Practice set ${selectedSet.set_number} will be created. This retired version and all historical attempts remain unchanged.`
+          : "A new editable version will be created. The current version will remain unchanged until the replacement is reviewed and published.",
+        label: selectedSet.status === "archived" ? "Create new version" : "Create replacement",
         choiceLabel: "Replacement content",
         choices: [
           { value: "copy", label: "Copy existing questions", description: "Start with the current version, then correct only what changed." },
@@ -1543,7 +1613,12 @@ export default function Admin() {
           const replacement = await createAdminPracticeSetReplacement(selectedSetId, choice !== "empty");
           await Promise.all([refreshPracticeSets(), refreshModules(), refreshAudit()]);
           navigateWithinAdmin(`/admin/modules/${selectedModuleId}/sets/${replacement.id}`);
-          setFeedback({ tone: "success", message: "Replacement draft created. The current candidate version is unchanged." });
+          setFeedback({
+            tone: "success",
+            message: selectedSet.status === "archived"
+              ? `A new version of Practice set ${selectedSet.set_number} was created as a draft.`
+              : "Replacement draft created. The current candidate version is unchanged.",
+          });
         },
       },
       publish_replacement: {

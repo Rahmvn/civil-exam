@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(40);
+select plan(47);
 
 update public.exam_packs set is_active = false;
 insert into public.exam_packs (
@@ -217,6 +217,36 @@ select throws_ok(
   $$ select public.admin_republish_practice_set((select (payload->>'id')::uuid from lifecycle_replacement)) $$,
   'P0001', 'Only a withdrawn practice set can be republished',
   'retired versions cannot be republished');
+
+select ok(
+  (public.admin_get_practice_set_capabilities((select (payload->>'id')::uuid from lifecycle_replacement))->>'can_create_replacement')::boolean,
+  'an unreplaced retired set can start a later version in the same slot');
+
+create temporary table lifecycle_retired_successor as
+select public.admin_create_practice_set_replacement(
+  (select (payload->>'id')::uuid from lifecycle_replacement),
+  false
+) as payload;
+grant select on lifecycle_retired_successor to authenticated;
+
+select is((select (payload->>'copied_question_count')::integer from lifecycle_retired_successor), 0,
+  'a retired slot can start with an empty draft');
+select is((select (payload->>'set_number')::integer from lifecycle_retired_successor), 1,
+  'the successor keeps the retired practice-set number');
+select is((select (payload->>'version_number')::integer from lifecycle_retired_successor), 3,
+  'the successor advances the logical version number');
+select is(
+  (select status::text from public.practice_sets where id = (select (payload->>'id')::uuid from lifecycle_replacement)),
+  'archived',
+  'creating a successor does not reopen the retired source');
+select is(
+  (select status::text from public.practice_sets where id = (select (payload->>'id')::uuid from lifecycle_retired_successor)),
+  'draft',
+  'the retired slot successor is independently editable');
+select isnt(
+  (public.admin_get_practice_set_capabilities((select (payload->>'id')::uuid from lifecycle_replacement))->>'can_create_replacement')::boolean,
+  true,
+  'a second pending successor cannot be created for the same retired version');
 
 reset role;
 insert into public.practice_sets (
