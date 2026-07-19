@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Landing from "./pages/Landing";
+import { PrivacyPolicy, TermsOfService } from "./pages/Legal";
 import ModuleDetail from "./pages/ModuleDetail";
 import OralPractice from "./pages/OralPractice";
 import OralReview from "./pages/OralReview";
@@ -39,6 +40,8 @@ const router = createBrowserRouter([
     errorElement: <RouteState isError />,
     children: [
       { path: "/", element: <Landing /> },
+      { path: "/privacy", element: <PrivacyPolicy /> },
+      { path: "/terms", element: <TermsOfService /> },
       { path: "/profile-setup", element: <RequireCandidate><ProfileSetup /></RequireCandidate> },
       { path: "/practice-preview", element: <PracticePreview /> },
       { path: "/auth", element: <Auth /> },

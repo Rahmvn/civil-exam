@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { PublicNav } from "../components/AppFrame";
+import { PublicFooter, PublicNav } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { getPublicModuleCatalog } from "../lib/appApi";
 import { logAppError } from "../lib/errors";
@@ -135,6 +135,7 @@ export default function Landing() {
           )}
         </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

@@ -4,7 +4,7 @@ const baseURL = "http://127.0.0.1:4174";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch: /auth-mocked\.spec\.js/,
+  testMatch: /(auth-mocked|legal-mocked)\.spec\.js/,
   fullyParallel: false,
   workers: 1,
   reporter: "list",

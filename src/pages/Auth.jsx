@@ -386,6 +386,11 @@ export default function Auth() {
           )}
         </form>
       </section>
+      <nav aria-label="Legal" className="auth-legal-links">
+        <Link to="/privacy">Privacy</Link>
+        <Link to="/terms">Terms</Link>
+        <a href="mailto:promotionsureapp@gmail.com">Contact</a>
+      </nav>
     </main>
   );
 }
