@@ -5,7 +5,7 @@ import { PublicFooter, PublicNav } from "../components/AppFrame";
 const EFFECTIVE_DATE = "19 July 2026";
 const CONTACT_EMAIL = "promotionsureapp@gmail.com";
 
-function LegalPage({ children, eyebrow, title }) {
+function LegalPage({ children, title }) {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = `${title} | PromotionSure`;
@@ -19,12 +19,8 @@ function LegalPage({ children, eyebrow, title }) {
       <PublicNav sticky={false} />
       <article className="legal-document">
         <header className="legal-document-header">
-          <p>{eyebrow}</p>
           <h1>{title}</h1>
-          <div className="legal-document-meta">
-            <span>{`Effective ${EFFECTIVE_DATE}`}</span>
-            <span>PromotionSure</span>
-          </div>
+          <p className="legal-document-meta">{`Effective ${EFFECTIVE_DATE}`}</p>
         </header>
         <div className="legal-document-body">{children}</div>
       </article>
@@ -39,7 +35,7 @@ function ContactLink() {
 
 export function PrivacyPolicy() {
   return (
-    <LegalPage eyebrow="Your information" title="Privacy Policy">
+    <LegalPage title="Privacy Policy">
       <section>
         <h2>1. Who we are</h2>
         <p>
@@ -188,7 +184,7 @@ export function PrivacyPolicy() {
 
 export function TermsOfService() {
   return (
-    <LegalPage eyebrow="Using PromotionSure" title="Terms of Service">
+    <LegalPage title="Terms of Service">
       <section>
         <h2>1. Agreement and operator</h2>
         <p>
