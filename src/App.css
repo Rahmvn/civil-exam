@@ -7346,6 +7346,37 @@ button.auth-google-button:disabled {
   padding-left: 20px;
 }
 
+.legal-controller-card {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 16px 18px;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 12px 12px 0;
+  background: var(--color-primary-soft);
+}
+
+.legal-controller-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.legal-controller-card dt {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.legal-controller-card dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .legal-document-body a {
   color: var(--color-primary-dark);
   font-weight: 750;
