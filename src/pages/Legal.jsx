@@ -200,7 +200,7 @@ export function TermsOfService() {
         <p>
           You must be at least 18 and legally able to enter this agreement. Provide accurate account information,
           keep your credentials secure, and promptly tell us about suspected unauthorised use. Your account is
-          personal and may not be sold, transferred, or shared. Google authentication and email authentication are
+          personal and must not be sold, transferred, or shared. Google authentication and email authentication are
           alternative ways to access the same account where the verified email matches.
         </p>
       </section>
