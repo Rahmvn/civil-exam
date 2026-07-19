@@ -8,8 +8,11 @@ test("landing page gives a clear public entry point", async ({ page }) => {
   await expect(page.getByRole("link", { name: "PromotionSure" })).toBeVisible();
   await expect(page).toHaveTitle("PromotionSure | Public Service Promotion Exam Practice");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Practise for your 2026 public service promotion exam.",
+    "PromotionSure helps you prepare for public service promotion exams.",
   );
+  await expect(page.getByText(/Practise objective questions and oral responses by module/)).toBeVisible();
+  await expect(page.getByText(/uses your Google account name and email only/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Read the Privacy Policy" })).toHaveAttribute("href", "/privacy");
   await expect(page.getByRole("link", { name: "Start free practice" })).toBeVisible();
   await expect(page.getByText("Public Financial Management (Financial Regulations)", { exact: true })).toBeVisible();
   await expect(page.getByText("Public Service Rules", { exact: true })).toBeVisible();

@@ -105,12 +105,17 @@ export default function Landing() {
 
       <section className="landing-experience-hero">
         <div className="landing-experience-copy">
-          <h1>Practise for your 2026 public service promotion exam.</h1>
+          <h1>PromotionSure helps you prepare for public service promotion exams.</h1>
           <p className="landing-experience-summary">
-            Choose a module and build steady progress from one practice test to the next.
+            Practise objective questions and oral responses by module, complete timed practice sets, and review your
+            scores and answers as you prepare for the 2026 examination.
           </p>
           <Link className="primary-action landing-experience-action" to="/auth?mode=sign-up">Start free practice</Link>
           <p className="landing-experience-free-note"><span aria-hidden="true">✓</span> Your first practice test in one module is free. No payment required.</p>
+          <p className="landing-google-purpose">
+            If you choose Google sign-in, PromotionSure uses your Google account name and email only to create or
+            access your PromotionSure account. <Link to="/privacy">Read the Privacy Policy</Link>.
+          </p>
         </div>
 
         <PracticeExperiencePreview />

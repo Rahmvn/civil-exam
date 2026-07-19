@@ -14586,6 +14586,19 @@ button.account-edit-open {
   font-weight: 900;
 }
 
+.landing-google-purpose {
+  max-width: 590px;
+  margin: 17px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.landing-google-purpose a {
+  color: var(--color-primary-dark);
+  font-weight: 750;
+}
+
 .landing-experience-preview {
   min-width: 0;
   padding: 28px;
@@ -14926,6 +14939,10 @@ button.account-edit-open {
 
   .landing-experience-free-note {
     font-size: 0.8rem;
+  }
+
+  .landing-google-purpose {
+    font-size: 0.75rem;
   }
 
   .landing-experience-preview {
