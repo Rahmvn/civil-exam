@@ -7,6 +7,7 @@ import {
   validateModulePaymentData,
 } from "./payment-validation.js";
 import { resolveSupabaseKey } from "./supabase-keys.js";
+import { sanitizePaymentPayload } from "./payment-sanitization.js";
 
 function getSupabasePublishableKey() {
   return resolveSupabaseKey({
@@ -264,7 +265,7 @@ export async function recordModulePaymentStatus(
   const isUnsuccessful = isFinalUnsuccessfulPaystackPayment(paymentPayload);
   const alreadyFulfilled = order.status === "active" || order.fulfillment_status === "fulfilled";
   const updates: Record<string, unknown> = {
-    provider_payload: paymentPayload ?? {},
+    provider_payload: sanitizePaymentPayload(paymentPayload),
     provider_checked_at: new Date().toISOString(),
     provider_message: getPaystackTransactionMessage(paymentPayload) || null,
     gateway_response_code: getPaystackGatewayResponseCode(paymentPayload) || null,
@@ -333,7 +334,7 @@ export async function activateModulePurchase(
   const adminClient = getAdminClient();
   const { data, error } = await adminClient.rpc("activate_module_purchase", {
     requested_reference: reference,
-    payment_payload: paymentData,
+    payment_payload: sanitizePaymentPayload(paymentData),
   });
 
   if (error) throw error;
@@ -406,7 +407,7 @@ export async function activateEntitlement(
         amount_kobo: paymentData.amount,
         currency: paymentData.currency ?? "NGN",
         expires_at: expiresAt,
-        metadata: paymentData,
+        metadata: sanitizePaymentPayload(paymentData),
       },
       { onConflict: "paystack_reference" },
     );

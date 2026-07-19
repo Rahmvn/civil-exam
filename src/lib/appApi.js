@@ -168,7 +168,7 @@ export async function getSubjects() {
   const rows = await readWithPolicy("subjects", async () => requireData(
     await supabase
       .from("subjects")
-      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type, lifecycle_status, candidate_availability")
+      .select("id, slug, name, description, sort_order, batch_size, pass_mark_percent, practice_type, lifecycle_status, candidate_availability, objective_time_limit_minutes, oral_allowed_durations_seconds")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ));
@@ -215,7 +215,7 @@ export async function getActiveOralAttempt(subjectSlug, setNumber = 1) {
 }
 
 export async function startOrResumeOralAttempt({ subjectSlug, setNumber = 1, secondsPerQuestion }) {
-  return requireData(await supabase.rpc("start_or_resume_oral_attempt", {
+  return requireData(await supabase.rpc("start_or_resume_oral_attempt_v2", {
     requested_subject_slug: subjectSlug,
     requested_set_number: setNumber,
     requested_seconds_per_question: secondsPerQuestion,
@@ -326,10 +326,10 @@ export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber 
 
   return readWithPolicy(
     `practice-questions:${subjectId}:${batchNumber ?? "next"}:${limit ?? "all"}`,
-    async () => ensureArray(requireData(await supabase.rpc("start_objective_practice_session", {
+    async () => decorateObjectiveSessionQuestions(requireData(await supabase.rpc("start_objective_practice_session_v2", {
       ...payload,
       requested_allow_free_lock: false,
-    }))?.questions),
+    }))),
   );
 }
 
@@ -344,11 +344,26 @@ export async function startPracticeBatch(subjectSlug, batchNumber = null) {
     payload.requested_batch_number = batchNumber;
   }
 
-  const session = requireData(await supabase.rpc("start_objective_practice_session", {
+  const session = requireData(await supabase.rpc("start_objective_practice_session_v2", {
     ...payload,
     requested_allow_free_lock: true,
   }));
-  return ensureArray(session?.questions);
+  return decorateObjectiveSessionQuestions(session);
+}
+
+function decorateObjectiveSessionQuestions(session) {
+  const serverNow = Date.parse(session?.server_now);
+  const serverDeadline = Date.parse(session?.deadline_at);
+  const remainingMilliseconds = Number.isFinite(serverNow) && Number.isFinite(serverDeadline)
+    ? Math.max(0, serverDeadline - serverNow)
+    : Number(session?.time_limit_seconds ?? 1800) * 1000;
+  const clientDeadline = Date.now() + remainingMilliseconds;
+
+  return ensureArray(session?.questions).map((question) => ({
+    ...question,
+    session_deadline_at: clientDeadline,
+    time_limit_seconds: Number(session?.time_limit_seconds ?? 1800),
+  }));
 }
 
 export async function submitAttempt({ mode, subjectId, answers, batchNumber = null, practiceSessionId, submissionToken }) {
@@ -428,9 +443,18 @@ export async function getAdminQuestions(practiceSetId = null, practiceType = "ob
 }
 
 export async function getAdminContentModules() {
-  return readWithPolicy("admin-content-modules", async () => ensureArray(requireData(
-    await supabase.rpc("get_admin_content_modules_v3"),
-  )));
+  return readWithPolicy("admin-content-modules", async () => {
+    const [modulesResult, timingResult] = await Promise.all([
+      supabase.rpc("get_admin_content_modules_v3"),
+      supabase.from("subjects").select("id, objective_time_limit_minutes, oral_allowed_durations_seconds"),
+    ]);
+    const timingBySubject = new Map(ensureArray(requireData(timingResult)).map((row) => [row.id, row]));
+    return ensureArray(requireData(modulesResult)).map((module) => ({
+      ...module,
+      objective_time_limit_minutes: Number(timingBySubject.get(module.subject_id)?.objective_time_limit_minutes ?? 30),
+      oral_allowed_durations_seconds: timingBySubject.get(module.subject_id)?.oral_allowed_durations_seconds ?? [180, 300],
+    }));
+  });
 }
 
 export async function getAdminPracticeSets(subjectId) {
@@ -451,7 +475,7 @@ export async function getAdminPracticeSetValidation(practiceSetId) {
 }
 
 export async function createAdminModule(module) {
-  return requireData(await supabase.rpc("admin_create_module_typed", {
+  return requireData(await supabase.rpc("admin_create_module_typed_v2", {
     requested_name: module.name.trim(),
     requested_slug: module.slug.trim(),
     requested_sort_order: Number(module.sort_order),
@@ -461,11 +485,13 @@ export async function createAdminModule(module) {
     requested_pass_mark_percent: Number(module.pass_mark_percent),
     requested_lifecycle_status: module.lifecycle_status,
     requested_practice_type: module.practice_type || "objective",
+    requested_objective_time_limit_minutes: Number(module.objective_time_limit_minutes),
+    requested_oral_allowed_durations_seconds: module.oral_allowed_durations_seconds,
   }));
 }
 
 export async function updateAdminModule(module) {
-  return requireData(await supabase.rpc("admin_update_module_v2", {
+  return requireData(await supabase.rpc("admin_update_module_v3", {
     requested_subject_id: module.subject_id,
     requested_name: module.subject_name.trim(),
     requested_sort_order: Number(module.sort_order),
@@ -475,6 +501,8 @@ export async function updateAdminModule(module) {
     requested_pass_mark_percent: Number(module.pass_mark_percent),
     requested_lifecycle_status: module.lifecycle_status,
     requested_available_for_purchase: Boolean(module.available_for_purchase),
+    requested_objective_time_limit_minutes: Number(module.objective_time_limit_minutes),
+    requested_oral_allowed_durations_seconds: module.oral_allowed_durations_seconds,
   }));
 }
 

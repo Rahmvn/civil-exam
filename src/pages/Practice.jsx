@@ -299,7 +299,7 @@ export default function Practice() {
           const preparedQuestions = preparePracticeQuestions(launchedBatch, launchedBatchNumber);
           setQuestions(preparedQuestions);
           markActivePractice(nextSubject.slug, { batch_number: launchedBatchNumber });
-          setDeadlineAt(Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
+          setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
           return;
         }
 
@@ -322,9 +322,10 @@ export default function Practice() {
         }
 
         const activeBatchNumber = requestedBatchNumber ?? nextQuestions[0]?.batch_number;
-        setQuestions(preparePracticeQuestions(nextQuestions, activeBatchNumber));
+        const preparedQuestions = preparePracticeQuestions(nextQuestions, activeBatchNumber);
+        setQuestions(preparedQuestions);
         markActivePractice(nextSubject.slug, { batch_number: activeBatchNumber });
-        setDeadlineAt(Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
+        setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
         logAppError(`Practice load:${subjectSlug}`, loadError);

@@ -7,6 +7,7 @@ import {
   getAuthedUser,
   getModuleOffering,
 } from "../_shared/paystack.ts";
+import { sanitizePaymentPayload } from "../_shared/payment-sanitization.js";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -162,7 +163,7 @@ Deno.serve(async (request) => {
           status: "failed",
           provider_status: "failed",
           provider_message: payload?.message ?? "Payment initialization failed",
-          provider_payload: payload,
+          provider_payload: sanitizePaymentPayload(payload),
           provider_checked_at: new Date().toISOString(),
         })
         .eq("id", order.id);
@@ -177,7 +178,7 @@ Deno.serve(async (request) => {
       .update({
         provider_status: "initialized",
         provider_message: payload?.message ?? null,
-        provider_payload: payload,
+        provider_payload: sanitizePaymentPayload(payload),
         provider_checked_at: new Date().toISOString(),
       })
       .eq("id", order.id);

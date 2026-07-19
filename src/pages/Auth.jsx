@@ -389,7 +389,7 @@ export default function Auth() {
       <nav aria-label="Legal" className="auth-legal-links">
         <Link to="/privacy">Privacy</Link>
         <Link to="/terms">Terms</Link>
-        <a href="mailto:promotionsureapp@gmail.com">Contact</a>
+        <Link to="/support">Support</Link>
       </nav>
     </main>
   );

@@ -225,7 +225,7 @@ select throws_ok(
 select ok(
   not has_function_privilege(
     'anon',
-    'public.start_or_resume_oral_attempt(text,integer,integer)',
+    'public.start_or_resume_oral_attempt_v2(text,integer,integer)',
     'EXECUTE'
   ),
   'anonymous clients cannot start oral practice'
@@ -300,10 +300,10 @@ select ok(
 );
 
 select throws_ok(
-  $$ select public.start_or_resume_oral_attempt('oral-questions-test', 1, 240) $$,
+  $$ select public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 240) $$,
   'P0001',
-  'Choose either 3 or 5 minutes per question',
-  'only the supported three- and five-minute choices are accepted'
+  'Choose one of the response times configured for this module',
+  'only response times configured for the module are accepted'
 );
 
 create temporary table oral_attempt_fixture (
@@ -319,7 +319,7 @@ select
   (payload->>'attempt_id')::uuid,
   (payload->'current_question'->>'id')::uuid
 from (
-  select public.start_or_resume_oral_attempt('oral-questions-test', 1, 180) as payload
+  select public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 180) as payload
 ) as started;
 
 select is(
@@ -346,7 +346,7 @@ select ok(
 
 select is(
   (
-    select (public.start_or_resume_oral_attempt('oral-questions-test', 1, 300)->>'attempt_id')::uuid
+    select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 300)->>'attempt_id')::uuid
   ),
   (select attempt_id from oral_attempt_fixture),
   'starting the same active set resumes instead of duplicating it'
@@ -354,7 +354,7 @@ select is(
 
 select is(
   (
-    select (public.start_or_resume_oral_attempt('oral-questions-test', 1, 300)->>'seconds_per_question')::integer
+    select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 300)->>'seconds_per_question')::integer
   ),
   180,
   'resuming cannot silently change the attempt duration'
@@ -362,7 +362,7 @@ select is(
 
 select is(
   (
-    select (public.start_or_resume_oral_attempt('oral-questions-test', 2, 300)->>'attempt_id')::uuid
+    select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 2, 300)->>'attempt_id')::uuid
   ),
   (select attempt_id from oral_attempt_fixture),
   'starting a different oral set resumes the current active attempt'
@@ -370,7 +370,7 @@ select is(
 
 select is(
   (
-    select (public.start_or_resume_oral_attempt('oral-questions-test', 2, 300)->>'set_number')::integer
+    select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 2, 300)->>'set_number')::integer
   ),
   1,
   'resuming from another set keeps the candidate in the active set'
@@ -585,7 +585,7 @@ select is(
 );
 
 select lives_ok(
-  $$ select public.start_or_resume_oral_attempt('oral-questions-test', 1, 180) $$,
+  $$ select public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 180) $$,
   'paid candidate can begin a fresh rehearsal after completion'
 );
 

@@ -129,6 +129,15 @@ async function startMockPaystack() {
               currency: initializedPayment.currency,
               gateway_response: "Declined",
               metadata: initializedPayment.metadata,
+              authorization: {
+                authorization_code: "AUTH_sensitive_test_value",
+                last4: "4081",
+                card_type: "visa",
+              },
+              customer: {
+                email: initializedPayment.email,
+                customer_code: "CUS_sensitive_test_value",
+              },
             },
           }));
           return;
@@ -286,6 +295,15 @@ async function main() {
       declinedOrder.data.fulfillment_status !== "not_started"
     ) {
       fail("Declined module payment was not persisted as failed.");
+    }
+    const declinedPayload = JSON.stringify(declinedOrder.data.provider_payload ?? {}).toLowerCase();
+    if (
+      declinedPayload.includes("authorization") ||
+      declinedPayload.includes("last4") ||
+      declinedPayload.includes("customer") ||
+      declinedPayload.includes("4081")
+    ) {
+      fail("Sensitive provider payment fields were persisted.");
     }
     const declinedHistory = await candidate.rpc("get_payment_history", { requested_limit: 20 });
     if (

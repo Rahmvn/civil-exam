@@ -53,7 +53,7 @@ function OralExitConfirmModal({ busy, onCancel, onConfirm }) {
   );
 }
 
-function OralStart({ accessRow, canPurchase, duration, error, onDurationChange, onStart, starting, subject }) {
+function OralStart({ accessRow, canPurchase, duration, durationOptions, error, onDurationChange, onStart, starting, subject }) {
   const questionCount = Number(accessRow?.published_question_count ?? 0);
   const hasAccess = Boolean(accessRow?.can_start);
   const purchaseUnavailable = isModulePurchaseUnavailable({
@@ -81,7 +81,7 @@ function OralStart({ accessRow, canPurchase, duration, error, onDurationChange, 
           {hasAccess ? (
             <fieldset className="oral-duration-picker">
               <legend>Time for each question</legend>
-              {ORAL_DURATION_OPTIONS.map((option) => (
+              {durationOptions.map((option) => (
                 <label className={duration === option.seconds ? "is-selected" : ""} key={option.seconds}>
                   <input
                     checked={duration === option.seconds}
@@ -154,6 +154,10 @@ export default function OralPractice() {
   const allowExitRef = useRef(false);
   const questionHeadingRef = useRef(null);
   const hasActiveSession = session?.status === "active";
+  const durationOptions = ORAL_DURATION_OPTIONS.filter((option) => (
+    !Array.isArray(subject?.oral_allowed_durations_seconds)
+    || subject.oral_allowed_durations_seconds.includes(option.seconds)
+  ));
   const blocker = useBlocker(({ currentLocation, nextLocation }) => (
     hasActiveSession
     && !allowExitRef.current
@@ -207,6 +211,10 @@ export default function OralPractice() {
 
         const nextSubject = subjects.find((item) => item.slug === subjectSlug) ?? null;
         setSubject(nextSubject);
+        const allowedDurations = Array.isArray(nextSubject?.oral_allowed_durations_seconds)
+          ? nextSubject.oral_allowed_durations_seconds
+          : ORAL_DURATION_OPTIONS.map((option) => option.seconds);
+        setDuration((current) => allowedDurations.includes(current) ? current : (allowedDurations[0] ?? 180));
         const accessEntry = catalog.find((item) => item?.subject_slug === subjectSlug);
         setCanPurchase(accessEntry ? Boolean(accessEntry.can_purchase) : true);
         setAccessRow(rows.find((row) => Number(row.batch_number ?? 1) === setNumber) ?? null);
@@ -461,6 +469,7 @@ export default function OralPractice() {
         accessRow={accessRow}
         canPurchase={canPurchase}
         duration={duration}
+        durationOptions={durationOptions}
         error={error}
         onDurationChange={setDuration}
         onStart={() => void beginPractice()}
