@@ -7242,7 +7242,7 @@ button.auth-google-button:disabled {
 }
 
 .legal-page-shell {
-  width: min(900px, calc(100% - 40px));
+  width: calc(100% - 48px);
   min-height: 100dvh;
   margin: 0 auto;
   padding: 10px 0 28px;
@@ -7259,9 +7259,15 @@ button.auth-google-button:disabled {
   box-shadow: none;
 }
 
+.legal-page-shell .public-top-nav .brand-logo {
+  width: 210px;
+}
+
 .legal-document {
   display: block;
-  padding: clamp(38px, 7vw, 68px) 0 18px;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 48px 0 18px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -7269,7 +7275,7 @@ button.auth-google-button:disabled {
 
 .legal-document-header {
   position: static;
-  padding-bottom: 30px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -7277,15 +7283,15 @@ button.auth-google-button:disabled {
   margin: 0;
   color: var(--color-text);
   font-family: var(--font-display);
-  font-size: clamp(2.15rem, 5vw, 3.25rem);
-  line-height: 1.08;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.9rem, 4vw, 2.4rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
 }
 
 .legal-document-meta {
-  margin: 11px 0 0;
+  margin: 9px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
 }
 
 .legal-document-body {
@@ -7293,7 +7299,7 @@ button.auth-google-button:disabled {
 }
 
 .legal-document-body section {
-  padding: 34px 0;
+  padding: 27px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
 }
 
@@ -7303,9 +7309,9 @@ button.auth-google-button:disabled {
 }
 
 .legal-document-body h2 {
-  margin: 0 0 14px;
+  margin: 0 0 11px;
   color: var(--color-text);
-  font-size: clamp(1.08rem, 2vw, 1.22rem);
+  font-size: clamp(1rem, 2vw, 1.1rem);
   line-height: 1.35;
   letter-spacing: -0.015em;
 }
@@ -7313,8 +7319,8 @@ button.auth-google-button:disabled {
 .legal-document-body p,
 .legal-document-body li {
   color: var(--color-text-soft);
-  font-size: 0.94rem;
-  line-height: 1.72;
+  font-size: 0.88rem;
+  line-height: 1.65;
 }
 
 .legal-document-body p {
@@ -7322,21 +7328,21 @@ button.auth-google-button:disabled {
 }
 
 .legal-document-body p + p {
-  margin-top: 13px;
+  margin-top: 11px;
 }
 
 .legal-document-body ul {
   display: grid;
-  gap: 8px;
-  margin: 12px 0 0;
+  gap: 7px;
+  margin: 10px 0 0;
   padding-left: 20px;
 }
 
 .legal-controller-card {
   display: grid;
   gap: 10px;
-  margin: 22px 0 0;
-  padding: 16px 0 0;
+  margin: 18px 0 0;
+  padding: 14px 0 0;
   border-top: 1px solid var(--color-border);
   border-radius: 0;
   background: transparent;
@@ -7349,7 +7355,7 @@ button.auth-google-button:disabled {
 
 .legal-controller-card dt {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -7358,7 +7364,7 @@ button.auth-google-button:disabled {
 .legal-controller-card dd {
   margin: 0;
   color: var(--color-text);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -7371,18 +7377,64 @@ button.auth-google-button:disabled {
 
 @media (max-width: 760px) {
   .legal-page-shell {
-    width: min(100% - 28px, 900px);
+    width: calc(100% - 32px);
     padding-top: 4px;
   }
 
+  .legal-page-shell .public-top-nav {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .legal-page-shell .public-top-nav .brand-lockup {
+    min-width: 0;
+  }
+
+  .legal-page-shell .public-top-nav .brand-logo {
+    width: 178px;
+  }
+
+  .legal-page-shell .public-top-nav .nav-actions,
+  .legal-page-shell .public-top-nav .nav-actions > * {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
   .legal-document {
-    padding: 32px 0 12px;
+    padding: 28px 0 12px;
+  }
+
+  .legal-document-header {
+    padding-bottom: 21px;
+  }
+
+  .legal-document-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .legal-document-body section {
+    padding: 24px 0;
+  }
+
+  .legal-document-body p,
+  .legal-document-body li {
+    font-size: 0.86rem;
+    line-height: 1.62;
   }
 
   .public-legal-footer {
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+.legal-page-shell .public-legal-footer {
+  width: min(760px, 100%);
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .support-page {
