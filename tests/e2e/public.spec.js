@@ -11,16 +11,17 @@ test("landing page gives a clear public entry point", async ({ page }) => {
     "Practise for your 2026 public service promotion exam.",
   );
   await expect(page.getByRole("link", { name: "Start free practice" })).toBeVisible();
-  await expect(page.getByText("Public Financial Management", { exact: true })).toBeVisible();
+  await expect(page.getByText("Public Financial Management (Financial Regulations)", { exact: true })).toBeVisible();
   await expect(page.getByText("Public Service Rules", { exact: true })).toBeVisible();
   await expect(page.getByText(/Current Affairs/)).toBeVisible();
   const publicFooter = page.locator(".public-legal-footer");
   await expect(publicFooter.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
   await expect(publicFooter.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+  await expect(publicFooter.getByRole("link", { name: "Support" })).toHaveAttribute("href", "/support");
   await expectNoHorizontalOverflow(page);
 });
 
-test("public legal pages identify the operator and describe real service providers", async ({ page }) => {
+test("public legal pages identify the operator and explain data handling", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page).toHaveTitle("Privacy Policy | PromotionSure");
@@ -28,7 +29,7 @@ test("public legal pages identify the operator and describe real service provide
   await expect(page.getByText(/operated by Saheed Imran/)).toBeVisible();
   await expect(page.getByText("Saheed Imran, trading as PromotionSure, Abuja, Nigeria.")).toBeVisible();
   await expect(page.getByText(/use it to train general-purpose artificial-intelligence models/)).toBeVisible();
-  await expect(page.getByText(/Paystack processes card and bank details/)).toBeVisible();
+  await expect(page.getByText(/PromotionSure does not receive or store card numbers/).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "promotionsureapp@gmail.com" }).first()).toHaveAttribute(
     "href",
     "mailto:promotionsureapp@gmail.com",

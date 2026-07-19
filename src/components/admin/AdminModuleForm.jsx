@@ -11,6 +11,8 @@ const DEFAULT_MODULE = {
   candidate_availability: "hidden",
   batch_size: 30,
   pass_mark_percent: 70,
+  objective_time_limit_minutes: 30,
+  oral_allowed_durations_seconds: [180, 300],
   price_kobo: 500000,
   currency: "NGN",
   available_for_purchase: false,
@@ -23,6 +25,10 @@ function toFormState(module) {
     ...source,
     lifecycle_status: source.lifecycle_status === "coming_soon" ? "draft" : source.lifecycle_status,
     price_naira: Number(source.price_kobo ?? DEFAULT_MODULE.price_kobo) / 100,
+    objective_time_limit_minutes: Number(source.objective_time_limit_minutes ?? 30),
+    oral_allowed_durations_seconds: Array.isArray(source.oral_allowed_durations_seconds)
+      ? source.oral_allowed_durations_seconds
+      : [180, 300],
   };
 }
 
@@ -62,6 +68,21 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
       price_kobo: Math.round(Number(form.price_naira) * 100),
       batch_size: Number(form.batch_size),
       pass_mark_percent: Number(form.pass_mark_percent),
+      objective_time_limit_minutes: Number(form.objective_time_limit_minutes),
+      oral_allowed_durations_seconds: form.oral_allowed_durations_seconds,
+    });
+  }
+
+  function toggleOralDuration(seconds) {
+    setForm((current) => {
+      const selected = current.oral_allowed_durations_seconds.includes(seconds);
+      if (selected && current.oral_allowed_durations_seconds.length === 1) return current;
+      return {
+        ...current,
+        oral_allowed_durations_seconds: selected
+          ? current.oral_allowed_durations_seconds.filter((value) => value !== seconds)
+          : [...current.oral_allowed_durations_seconds, seconds].sort((left, right) => left - right),
+      };
     });
   }
 
@@ -202,7 +223,39 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
               />
             </label>
           )}
+
+          {form.practice_type === "objective" ? (
+            <label>
+              Time per practice set (minutes)
+              <input
+                min="5"
+                max="180"
+                required
+                type="number"
+                value={form.objective_time_limit_minutes}
+                onChange={(event) => updateField("objective_time_limit_minutes", event.target.value)}
+              />
+            </label>
+          ) : (
+            <fieldset className="admin-duration-options">
+              <legend>Time allowed per oral question</legend>
+              {[180, 300].map((seconds) => (
+                <label key={seconds}>
+                  <input
+                    checked={form.oral_allowed_durations_seconds.includes(seconds)}
+                    onChange={() => toggleOralDuration(seconds)}
+                    type="checkbox"
+                  />
+                  {seconds / 60} minutes
+                </label>
+              ))}
+              <small>At least one option must remain available. Changes affect new attempts only.</small>
+            </fieldset>
+          )}
         </div>
+        {form.practice_type === "objective" && (
+          <p className="admin-field-note">Duration changes affect new attempts only. Active attempts keep the time they started with.</p>
+        )}
       </div>
 
       <div className="admin-form-section">

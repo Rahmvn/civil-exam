@@ -140,7 +140,7 @@ const ADMIN_GUIDE_SECTIONS = [
       "Choose Oral practice only for open-response prompts. The module type cannot be changed after practice sets are created.",
       "Oral questions do not use answer options, correct-answer letters, explanations, pass marks, or automatic scores.",
       "Every prompt needs a complete model answer and at least one distinct key point. Add a reliable reference whenever one is available.",
-      "Candidates choose three or five minutes per question before starting the set.",
+      "Admins choose whether candidates may use three minutes, five minutes, or either option per oral question.",
       "A candidate can submit early or let the timer expire. Either action moves to the next question, and earlier questions cannot be reopened.",
       "Model answers and key points stay hidden until the candidate completes the full set, then support self-review.",
       "Use the oral CSV, Excel, or JSON structure. Never upload the objective A-D template into an oral set.",

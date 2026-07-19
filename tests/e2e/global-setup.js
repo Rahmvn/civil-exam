@@ -203,6 +203,31 @@ async function seedPracticeContent(client, packId, subjects) {
   rows[0].reference_note = "";
 
   requireResult(await client.from("questions").upsert(rows), "Seed practice fixtures");
+
+  const fixtureQuestions = requireResult(
+    await client.from("questions").select("practice_set_id").eq("source_note", FIXTURE_SOURCE),
+    "Load seeded practice-set counts",
+  );
+  const questionCounts = fixtureQuestions.reduce((counts, row) => {
+    if (row.practice_set_id) counts.set(row.practice_set_id, (counts.get(row.practice_set_id) ?? 0) + 1);
+    return counts;
+  }, new Map());
+
+  for (const [practiceSetId, expectedQuestionCount] of questionCounts) {
+    const allPublishedQuestions = await client.from("questions").select("id", { count: "exact", head: true })
+      .eq("practice_set_id", practiceSetId)
+      .eq("status", "published");
+    if (allPublishedQuestions.error) {
+      throw new Error(`Count all fixture practice-set questions for ${practiceSetId}: ${allPublishedQuestions.error.message}`);
+    }
+    requireResult(
+      await client.from("practice_sets").update({
+        expected_question_count: allPublishedQuestions.count ?? expectedQuestionCount,
+        status: "published",
+      }).eq("id", practiceSetId),
+      `Set fixture practice-set count for ${practiceSetId}`,
+    );
+  }
 }
 
 async function seedOralPracticeContent(client, packId) {
@@ -349,6 +374,7 @@ export default async function globalSetup() {
     await client.from("subjects").update({
       lifecycle_status: "active",
       is_active: true,
+      candidate_availability: "available",
     }).in("id", allTestSubjects.map((subject) => subject.id)),
     "Activate published test modules",
   );

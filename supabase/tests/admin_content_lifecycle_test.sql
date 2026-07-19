@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(47);
+select plan(51);
 
 update public.exam_packs set is_active = false;
 insert into public.exam_packs (
@@ -109,15 +109,34 @@ select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000002
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
 create temporary table lifecycle_session as
-select public.start_objective_practice_session(
+select public.start_objective_practice_session_v2(
   null, 'lifecycle-objective', 1, false
 ) as payload;
 grant select on lifecycle_session to authenticated;
 
 select is((select payload->>'practice_set_id' from lifecycle_session), 'd3000000-0000-4000-8000-000000000001',
   'new objective session is pinned to the published version');
+select is((select (payload->>'time_limit_seconds')::integer from lifecycle_session), 1800,
+  'new objective sessions snapshot the configured module duration');
 
 reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select lives_ok(
+  $$ select public.admin_update_module_timing('d2000000-0000-4000-8000-000000000001', 45, array[180,300]) $$,
+  'an admin can change the duration for future attempts'
+);
+
+reset role;
+select is(
+  (select time_limit_seconds from public.objective_practice_sessions
+   where id = (select (payload->>'practice_session_id')::uuid from lifecycle_session)),
+  1800,
+  'an admin timing change does not alter an active attempt'
+);
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -212,7 +231,13 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000002', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
-select is((public.start_objective_practice_session(null, 'lifecycle-objective', 1, false)->>'practice_set_id'),
+select is(
+  (public.start_objective_practice_session_v2(null, 'lifecycle-objective', 1, false)->>'time_limit_seconds')::integer,
+  2700,
+  'a later objective attempt receives the updated module duration'
+);
+
+select is((public.start_objective_practice_session_v2(null, 'lifecycle-objective', 1, false)->>'practice_set_id'),
   (select payload->>'id' from lifecycle_replacement), 'new attempts use the replacement version');
 
 reset role;

@@ -147,8 +147,9 @@ export default function Profile() {
             </section>
 
             <section className="account-support-card">
-              <h2>Your account, your progress</h2>
-              <p>These optional details do not change your questions, modules, or access.</p>
+              <h2>Need help?</h2>
+              <p>Send a support request and follow its resolution from your account.</p>
+              <Link className="account-action-link" to="/help">Open support</Link>
             </section>
           </aside>
         </div>

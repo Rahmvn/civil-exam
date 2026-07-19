@@ -24,6 +24,7 @@ import ProfileSetup from "./pages/ProfileSetup";
 import RouteState from "./pages/RouteState";
 import ResetPassword from "./pages/ResetPassword";
 import Support from "./pages/Support";
+import PublicSupport from "./pages/PublicSupport";
 
 function AppProviders() {
   return (
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
       { path: "/", element: <Landing /> },
       { path: "/privacy", element: <PrivacyPolicy /> },
       { path: "/terms", element: <TermsOfService /> },
+      { path: "/support", element: <PublicSupport /> },
       { path: "/profile-setup", element: <RequireCandidate><ProfileSetup /></RequireCandidate> },
       { path: "/practice-preview", element: <PracticePreview /> },
       { path: "/auth", element: <Auth /> },

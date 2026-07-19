@@ -56,14 +56,14 @@ export function PrivacyPolicy() {
       </section>
 
       <section>
-        <h2>2. Information we collect</h2>
+        <h2>2. Information PromotionSure collects</h2>
         <ul>
           <li><strong>Account information:</strong> your name, email address, authentication method, and account identifiers.</li>
           <li><strong>Optional profile information:</strong> your phone number, state, organisation, and public service level when you choose to provide them.</li>
           <li><strong>Practice activity:</strong> selected modules, answers, oral-response drafts, scores, attempts, progress, timing, reviews, and free-module choices.</li>
-          <li><strong>Payment and access records:</strong> module, amount, currency, payment reference, payment status, access status, and access expiry. Paystack processes card and bank details; we do not receive or store your full card details.</li>
+          <li><strong>Payment and access records:</strong> module, amount, currency, payment reference, payment status, payment channel, access status, and access expiry. PromotionSure does not receive or store card numbers, card expiry dates, PINs, or security codes. Payment information entered during checkout is handled by the payment provider.</li>
           <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to support.</li>
-          <li><strong>Technical information:</strong> our hosting, authentication, security and payment providers may process limited technical information such as IP address, browser, device, response status, page path and security logs where necessary to operate, secure and troubleshoot the service.</li>
+          <li><strong>Technical information:</strong> PromotionSure's hosting, authentication, security and payment providers may process limited technical information such as IP address, browser, device, response status, page path and security logs where necessary to operate, secure and troubleshoot the service.</li>
         </ul>
       </section>
 
@@ -71,15 +71,15 @@ export function PrivacyPolicy() {
         <h2>3. Google sign-in data</h2>
         <p>
           If you continue with Google, PromotionSure receives your Google account name, email address, profile image
-          where available, and Google account identifier through Google and Supabase. We use this information only
-          to authenticate you, create or link your PromotionSure account, prevent duplicate accounts, and maintain
-          account security.
+          where available, and Google account identifier through Google and PromotionSure's authentication service.
+          PromotionSure uses this information only to authenticate you, create or link your PromotionSure account,
+          prevent duplicate accounts, and maintain account security.
         </p>
         <p>
-          We do not request access to your Gmail messages, Google Drive, contacts, calendar, or other Google
-          services. We do not sell Google user data, use it for advertising, or use it to train general-purpose
-          artificial-intelligence models. Google sign-in data is shared only with service providers such as Supabase
-          where necessary to provide authentication and account-management services.
+          PromotionSure does not request access to your Gmail messages, Google Drive, contacts, calendar, or other
+          Google services. PromotionSure does not sell Google user data, use it for advertising, or use it to train
+          general-purpose artificial-intelligence models. Google sign-in data is shared only with authentication
+          and account-management providers where necessary to provide those services.
         </p>
         <p>
           You may revoke PromotionSure's Google access through your Google Account permissions. Revoking Google
@@ -89,8 +89,8 @@ export function PrivacyPolicy() {
       </section>
 
       <section>
-        <h2>4. How we use information</h2>
-        <p>We use personal information to:</p>
+        <h2>4. How PromotionSure uses information</h2>
+        <p>PromotionSure uses personal information to:</p>
         <ul>
           <li>create and secure accounts, verify email ownership, and provide password recovery;</li>
           <li>deliver practice modules, preserve progress, score attempts, and show reviews;</li>
@@ -100,25 +100,25 @@ export function PrivacyPolicy() {
           <li>comply with accounting, legal, regulatory, and dispute-resolution obligations.</li>
         </ul>
         <p>
-          We process this information as necessary to provide the service you request, with your consent where
-          applicable, for our legitimate interests in operating a secure service, and to meet legal obligations.
+          PromotionSure processes this information as necessary to provide the service you request, with your
+          consent where applicable, for legitimate interests in operating a secure service, and to meet legal
+          obligations.
         </p>
       </section>
 
       <section>
         <h2>5. Service providers and disclosures</h2>
-        <p>We use specialist providers only where needed to operate PromotionSure:</p>
+        <p>PromotionSure uses specialist providers only where needed to operate the service, including:</p>
         <ul>
-          <li><strong>Supabase</strong> for authentication, database, storage, and backend services;</li>
-          <li><strong>Vercel</strong> for website hosting and delivery;</li>
-          <li><strong>Resend</strong> for account verification and password recovery email;</li>
-          <li><strong>Paystack</strong> for payment processing and verification; and</li>
-          <li><strong>Google</strong> when you choose Google authentication.</li>
+          <li>authentication and account-management providers;</li>
+          <li>database, storage, hosting, email-delivery, security, and support providers;</li>
+          <li>a payment provider for payment processing and verification; and</li>
+          <li>Google when you choose Google sign-in.</li>
         </ul>
         <p>
-          These providers may process information in other countries under their own safeguards. We may also
-          disclose information where required by law, to protect users or the service, or in connection with a
-          legitimate business transfer. We do not sell personal information.
+          These providers may process information in other countries under their own safeguards. PromotionSure may
+          also disclose information where required by law, to protect users or the service, or in connection with a
+          legitimate business transfer. PromotionSure does not sell personal information.
         </p>
       </section>
 
@@ -127,20 +127,21 @@ export function PrivacyPolicy() {
         <p>
           PromotionSure and its authentication providers use cookies or browser storage to keep you signed in,
           protect authentication flows, preserve an active practice session, and temporarily retain unsent work.
-          We do not currently use third-party advertising cookies. Google, Paystack, Supabase, and Vercel may use
-          essential cookies when providing their parts of the service.
+          PromotionSure does not currently use third-party advertising cookies. Google and other authentication,
+          hosting, security, and payment providers may use essential cookies when providing their parts of the
+          service.
         </p>
       </section>
 
       <section>
         <h2>7. Retention and deletion</h2>
         <p>
-          We retain account and practice information while your account is active and for a reasonable period
+          PromotionSure retains account and practice information while your account is active and for a reasonable period
           afterward where needed to provide records, resolve disputes, prevent fraud, or meet legal and accounting
           obligations. Payment and support records may be retained after account deletion where required for those
           purposes. Temporary browser data is removed when it expires, is cleared, or the relevant flow ends.
         </p>
-        <p>You may request account deletion by contacting <ContactLink />. We will explain any records we must retain.</p>
+        <p>You may request account deletion by contacting <ContactLink />. PromotionSure will explain any records that must be retained.</p>
       </section>
 
       <section>
@@ -155,7 +156,7 @@ export function PrivacyPolicy() {
       <section>
         <h2>9. Security</h2>
         <p>
-          We use access controls, encrypted connections, restricted administrative operations, and service-provider
+          PromotionSure uses access controls, encrypted connections, restricted administrative operations, and service-provider
           safeguards designed to protect information. No online service can guarantee absolute security. Keep your
           account credentials private and contact us if you suspect unauthorised access.
         </p>
@@ -165,16 +166,16 @@ export function PrivacyPolicy() {
         <h2>10. Children</h2>
         <p>
           PromotionSure is intended for adults preparing for public service promotion examinations. It is not
-          directed to children under 18, and we do not knowingly create accounts for them.
+          directed to children under 18, and PromotionSure does not knowingly create accounts for them.
         </p>
       </section>
 
       <section>
         <h2>11. Changes and contact</h2>
         <p>
-          We may update this policy as the service or legal requirements change. We will post the revised effective
-          date and provide additional notice where a change materially affects users. Questions and privacy requests
-          can be sent to <ContactLink />.
+          PromotionSure may update this policy as the service or legal requirements change. PromotionSure will post
+          the revised effective date and provide additional notice where a change materially affects users. Questions
+          and privacy requests can be sent to <ContactLink />.
         </p>
         <p>For the rules governing use and purchases, read our <Link to="/terms">Terms of Service</Link>.</p>
       </section>
@@ -209,13 +210,13 @@ export function TermsOfService() {
         <p>
           PromotionSure provides independent practice questions, oral rehearsal, progress tools, and answer review.
           It is not a government agency and is not affiliated with, endorsed by, or an official representative of
-          any examination body or public service authority. Content is for preparation and educational use only. We
-          do not guarantee examination questions, promotion, employment, scores, or results.
+          any examination body or public service authority. Content is for preparation and educational use only.
+          PromotionSure does not guarantee examination questions, promotion, employment, scores, or results.
         </p>
         <p>
-          We review and update content, but mistakes or outdated references may occur. Please report suspected
-          errors through Help. We may correct, replace, withdraw, or retire content while preserving legitimate
-          payment and attempt records.
+          PromotionSure reviews and updates content, but mistakes or outdated references may occur. Please report
+          suspected errors through Help. PromotionSure may correct, replace, withdraw, or retire content while
+          preserving legitimate payment and attempt records.
         </p>
       </section>
 
@@ -228,18 +229,20 @@ export function TermsOfService() {
           the questions or platform.
         </p>
         <p>
-          We may pause new attempts or sales for maintenance, safety, legal, or content-quality reasons. Existing
-          access and completed records will be handled according to the status shown in your account and applicable
-          law.
+          PromotionSure may pause new attempts or sales for maintenance, safety, legal, or content-quality reasons.
+          Existing access and completed records will be handled according to the status shown in your account and
+          applicable law.
         </p>
       </section>
 
       <section>
         <h2>5. Payments</h2>
         <p>
-          Paystack processes payments. Access is activated only after PromotionSure verifies a successful payment
-          for the correct account, module, amount, and currency. Your bank or payment provider may apply separate
-          terms or charges. Keep the payment reference shown in your access history when requesting assistance.
+          A specialist payment provider processes payments and the payment details entered at checkout. PromotionSure
+          does not receive or store card numbers, card expiry dates, PINs, or security codes. Access is activated only
+          after PromotionSure verifies a successful payment for the correct account, module, amount, and currency.
+          Your bank or payment provider may apply separate terms or charges. Keep the payment reference shown in your
+          access history when requesting assistance.
         </p>
       </section>
 
@@ -250,7 +253,7 @@ export function TermsOfService() {
           be delivered or restored. Completed purchases are otherwise non-refundable once digital module access has
           been activated, except where applicable law requires a refund. Send requests with the account email and
           payment reference to <ContactLink />. We may verify the transaction and access history before deciding a
-          request.
+          request. PromotionSure does not require card details to investigate a refund.
         </p>
       </section>
 
@@ -272,17 +275,17 @@ export function TermsOfService() {
           PromotionSure's software, branding, interface, original explanations, content selection, arrangement and
           presentation are protected by applicable intellectual-property laws. Rights in third-party, government or
           publicly sourced materials remain with their respective owners. You retain rights in original text you
-          submit. You permit us to process your answers and support messages only as needed to provide, secure,
-          support, and improve the service under the Privacy Policy.
+          submit. You permit PromotionSure to process your answers and support messages only as needed to provide,
+          secure, support, and improve the service under the Privacy Policy.
         </p>
       </section>
 
       <section>
         <h2>9. Availability, suspension, and termination</h2>
         <p>
-          We aim to keep PromotionSure available but do not promise uninterrupted or error-free operation. We may
-          suspend or restrict an account to investigate fraud, security threats, chargebacks, illegal activity, or a
-          material breach of these Terms. You may stop using the service or request account deletion at any time.
+          PromotionSure aims to keep the service available but does not promise uninterrupted or error-free operation.
+          PromotionSure may suspend or restrict an account to investigate fraud, security threats, chargebacks,
+          illegal activity, or a material breach of these Terms. You may stop using the service or request account deletion at any time.
           Deletion does not automatically erase records that must be retained or create a refund right.
         </p>
       </section>
@@ -290,7 +293,7 @@ export function TermsOfService() {
       <section>
         <h2>10. Responsibility and liability</h2>
         <p>
-          To the extent permitted by law, PromotionSure is provided on an "as available" basis. We are not liable for
+          To the extent permitted by law, PromotionSure is provided on an "as available" basis. PromotionSure is not liable for
           an examination body's decisions, your examination outcome, or losses caused solely by third-party networks,
           devices, banks, or services outside our reasonable control. Nothing in these Terms excludes liability or
           consumer rights that cannot lawfully be excluded.
@@ -300,9 +303,9 @@ export function TermsOfService() {
       <section>
         <h2>11. Changes, governing law, and disputes</h2>
         <p>
-          We may update these Terms as the service changes. Material changes will apply prospectively after notice or
-          publication of a revised effective date. These Terms are governed by the laws of the Federal Republic of
-          Nigeria. Please contact us first at <ContactLink /> so we can try to resolve a complaint or dispute promptly.
+          PromotionSure may update these Terms as the service changes. Material changes will apply prospectively after
+          notice or publication of a revised effective date. These Terms are governed by the laws of the Federal
+          Republic of Nigeria. Please contact PromotionSure first at <ContactLink /> so the matter can be reviewed promptly.
         </p>
       </section>
     </LegalPage>

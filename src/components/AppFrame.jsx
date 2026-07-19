@@ -35,7 +35,7 @@ export function PublicFooter() {
       <nav aria-label="Legal">
         <Link to="/privacy">Privacy</Link>
         <Link to="/terms">Terms</Link>
-        <a href="mailto:promotionsureapp@gmail.com">Contact</a>
+        <Link to="/support">Support</Link>
       </nav>
     </footer>
   );
@@ -257,6 +257,14 @@ export function AppFrame({
                 to="/profile"
               >
                 Account
+              </Link>
+              <Link
+                className="authenticated-account-link"
+                onClick={closeAccountMenu}
+                role="menuitem"
+                to="/help"
+              >
+                Help and support
               </Link>
               {isAdmin && (
                 <Link
