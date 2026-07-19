@@ -47,6 +47,16 @@ export function PrivacyPolicy() {
           trading as PromotionSure ("PromotionSure", "we", "us", or "our"). This policy explains how we handle
           personal information when you visit or use promotionsure.com.ng and related PromotionSure services.
         </p>
+        <dl className="legal-controller-card">
+          <div>
+            <dt>Data controller</dt>
+            <dd>Saheed Imran, trading as PromotionSure, Abuja, Nigeria.</dd>
+          </div>
+          <div>
+            <dt>Privacy contact</dt>
+            <dd><ContactLink /></dd>
+          </div>
+        </dl>
       </section>
 
       <section>
@@ -57,17 +67,28 @@ export function PrivacyPolicy() {
           <li><strong>Practice activity:</strong> selected modules, answers, oral-response drafts, scores, attempts, progress, timing, reviews, and free-module choices.</li>
           <li><strong>Payment and access records:</strong> module, amount, currency, payment reference, payment status, access status, and access expiry. Paystack processes card and bank details; we do not receive or store your full card details.</li>
           <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to support.</li>
-          <li><strong>Technical information:</strong> limited error category, page path, response status, IP address, browser, device, and service logs needed to secure and operate the platform.</li>
+          <li><strong>Technical information:</strong> our hosting, authentication, security and payment providers may process limited technical information such as IP address, browser, device, response status, page path and security logs where necessary to operate, secure and troubleshoot the service.</li>
         </ul>
       </section>
 
       <section>
         <h2>3. Google sign-in data</h2>
         <p>
-          If you continue with Google, we use the name, email address, profile information, and provider identifier
-          Google and Supabase return to authenticate you and create or link your PromotionSure account. We do not
-          request access to your Google Drive, contacts, messages, or calendar. We do not sell Google user data or
-          use it for advertising.
+          If you continue with Google, PromotionSure receives your Google account name, email address, profile image
+          where available, and Google account identifier through Google and Supabase. We use this information only
+          to authenticate you, create or link your PromotionSure account, prevent duplicate accounts, and maintain
+          account security.
+        </p>
+        <p>
+          We do not request access to your Gmail messages, Google Drive, contacts, calendar, or other Google
+          services. We do not sell Google user data, use it for advertising, or use it to train general-purpose
+          artificial-intelligence models. Google sign-in data is shared only with service providers such as Supabase
+          where necessary to provide authentication and account-management services.
+        </p>
+        <p>
+          You may revoke PromotionSure's Google access through your Google Account permissions. Revoking Google
+          access does not automatically delete your PromotionSure account or records. To request account deletion,
+          contact <ContactLink />.
         </p>
       </section>
 
@@ -252,10 +273,11 @@ export function TermsOfService() {
       <section>
         <h2>8. Intellectual property and your responses</h2>
         <p>
-          PromotionSure's software, branding, question presentation, explanations, and original content are protected
-          by applicable intellectual property laws. You retain rights in original text you submit. You permit us to
-          process your answers and support messages only as needed to provide, secure, support, and improve the
-          service under the Privacy Policy.
+          PromotionSure's software, branding, interface, original explanations, content selection, arrangement and
+          presentation are protected by applicable intellectual-property laws. Rights in third-party, government or
+          publicly sourced materials remain with their respective owners. You retain rights in original text you
+          submit. You permit us to process your answers and support messages only as needed to provide, secure,
+          support, and improve the service under the Privacy Policy.
         </p>
       </section>
 
