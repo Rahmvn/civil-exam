@@ -14,6 +14,26 @@ test("landing page gives a clear public entry point", async ({ page }) => {
   await expect(page.getByText("Public Financial Management", { exact: true })).toBeVisible();
   await expect(page.getByText("Public Service Rules", { exact: true })).toBeVisible();
   await expect(page.getByText(/Current Affairs/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
+  await expect(page.getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+  await expectNoHorizontalOverflow(page);
+});
+
+test("public legal pages identify the operator and describe real service providers", async ({ page }) => {
+  await page.goto("/privacy");
+  await expect(page).toHaveTitle("Privacy Policy | PromotionSure");
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
+  await expect(page.getByText(/operated by Saheed Imran/)).toBeVisible();
+  await expect(page.getByText(/Paystack processes card and bank details/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "promotionsureapp@gmail.com" }).first()).toHaveAttribute(
+    "href",
+    "mailto:promotionsureapp@gmail.com",
+  );
+
+  await page.goto("/terms");
+  await expect(page).toHaveTitle("Terms of Service | PromotionSure");
+  await expect(page.getByRole("heading", { level: 1, name: "Terms of Service" })).toBeVisible();
+  await expect(page.getByText(/Refunds are available for duplicate charges/)).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 

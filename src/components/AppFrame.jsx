@@ -28,6 +28,19 @@ export function PublicNav({ showBrand = true, sticky = true }) {
   );
 }
 
+export function PublicFooter() {
+  return (
+    <footer className="public-legal-footer">
+      <span>PromotionSure</span>
+      <nav aria-label="Legal">
+        <Link to="/privacy">Privacy</Link>
+        <Link to="/terms">Terms</Link>
+        <a href="mailto:promotionsureapp@gmail.com">Contact</a>
+      </nav>
+    </footer>
+  );
+}
+
 export function AppFrame({
   children,
   showBottomNav = true,
@@ -274,6 +287,8 @@ export function AppFrame({
               <div className="authenticated-footer-links">
                 <Link onClick={closeAccountMenu} to="/access">Access and payment</Link>
                 <Link onClick={closeAccountMenu} to="/help">Help</Link>
+                <Link onClick={closeAccountMenu} to="/privacy">Privacy</Link>
+                <Link onClick={closeAccountMenu} to="/terms">Terms</Link>
               </div>
             </footer>
           )}
