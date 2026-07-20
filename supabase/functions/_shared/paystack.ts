@@ -7,7 +7,7 @@ import {
   validateModulePaymentData,
 } from "./payment-validation.js";
 import { resolveSupabaseKey } from "./supabase-keys.js";
-import { sanitizePaymentPayload } from "./payment-sanitization.js";
+import { sanitizePaymentPayload, sanitizePaystackPostPaymentEvent } from "./payment-sanitization.js";
 
 function getSupabasePublishableKey() {
   return resolveSupabaseKey({
@@ -292,6 +292,23 @@ export async function recordModulePaymentStatus(
 
   if (error) throw error;
   return order;
+}
+
+export async function applyPaystackPostPaymentEvent(
+  eventKey: string,
+  eventPayload: Record<string, unknown>,
+) {
+  const adminClient = getAdminClient();
+  const sanitizedPayload = sanitizePaystackPostPaymentEvent(eventPayload);
+  if (!sanitizedPayload.event) throw new Error("Unsupported Paystack post-payment event");
+
+  const { data, error } = await adminClient.rpc("apply_paystack_post_payment_event", {
+    requested_event_key: eventKey,
+    requested_payload: sanitizedPayload,
+  });
+
+  if (error) throw error;
+  return data?.[0] ?? null;
 }
 
 export async function markModulePaymentFulfillmentFailed(

@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createPaystackEventKey,
   createPaystackSignature,
   getPaystackEnvironment,
+  getPaystackEventReference,
   getPaymentUserId,
   getPublishedContentTable,
+  isPaystackPostPaymentEvent,
   isValidPaystackSignature,
   validatePaystackEnvironment,
   validateLegacyPaymentData,
@@ -92,6 +95,24 @@ test("Paystack transactions must match the configured key environment", () => {
     /does not match/,
   );
   assert.throws(() => validatePaystackEnvironment({}, "sk_test_local-key"), /does not match/);
+});
+
+test("Paystack post-payment helpers recognize references and stable event fingerprints", async () => {
+  assert.equal(getPaystackEventReference({ data: { reference: " PS-CHARGE " } }), "PS-CHARGE");
+  assert.equal(getPaystackEventReference({ data: { transaction_reference: "PS-REFUND" } }), "PS-REFUND");
+  assert.equal(getPaystackEventReference({ data: { transaction: { reference: "PS-DISPUTE" } } }), "PS-DISPUTE");
+  assert.equal(getPaystackEventReference({ data: {} }), null);
+  assert.equal(isPaystackPostPaymentEvent("refund.processed"), true);
+  assert.equal(isPaystackPostPaymentEvent("charge.dispute.create"), true);
+  assert.equal(isPaystackPostPaymentEvent("charge.success"), false);
+
+  const body = JSON.stringify({ event: "refund.processed", data: { transaction_reference: "PS-1" } });
+  const key = await createPaystackEventKey(body);
+  assert.match(key, /^[0-9a-f]{64}$/);
+  assert.equal(await createPaystackEventKey(body), key);
+  assert.notEqual(await createPaystackEventKey(`${body} `), key);
+  await assert.rejects(() => createPaystackEventKey(""), /required/);
+  await assert.rejects(() => createPaystackEventKey(body, {}), /required/);
 });
 
 test("Paystack signatures use SHA-512 HMAC and reject malformed or modified values", async () => {

@@ -42,3 +42,37 @@ export function sanitizePaymentPayload(payload) {
 
   return safeTransaction;
 }
+
+export function sanitizePaystackPostPaymentEvent(payload) {
+  const event = typeof payload?.event === "string" ? payload.event.trim().toLowerCase() : "";
+  const data = payload?.data;
+  if (!event || !data || typeof data !== "object" || Array.isArray(data)) return {};
+
+  if (event.startsWith("refund.")) {
+    return {
+      event,
+      data: pick(data, [
+        "id",
+        "status",
+        "transaction_reference",
+        "refund_reference",
+        "amount",
+        "currency",
+        "domain",
+        "processor",
+      ]),
+    };
+  }
+
+  if (event.startsWith("charge.dispute.")) {
+    return {
+      event,
+      data: {
+        ...pick(data, ["id", "status", "resolution", "domain", "reason", "dispute_code"]),
+        transaction: pick(data.transaction, ["id", "domain", "status", "reference", "amount", "currency"]),
+      },
+    };
+  }
+
+  return {};
+}

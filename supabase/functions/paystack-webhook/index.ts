@@ -2,6 +2,7 @@ import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
 import {
   activateEntitlement,
   activateModulePurchase,
+  applyPaystackPostPaymentEvent,
   getModulePaymentOrder,
   isFinalUnsuccessfulPaystackPayment,
   markModulePaymentFulfillmentFailed,
@@ -9,7 +10,13 @@ import {
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
-import { isValidPaystackSignature, validatePaystackEnvironment } from "../_shared/payment-validation.js";
+import {
+  createPaystackEventKey,
+  getPaystackEventReference,
+  isPaystackPostPaymentEvent,
+  isValidPaystackSignature,
+  validatePaystackEnvironment,
+} from "../_shared/payment-validation.js";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -33,7 +40,18 @@ Deno.serve(async (request) => {
     }
 
     const event = JSON.parse(body);
-    if (event.data?.reference) validatePaystackEnvironment(event, paystackSecret);
+    const reference = getPaystackEventReference(event);
+    if (reference) validatePaystackEnvironment(event, paystackSecret);
+
+    if (isPaystackPostPaymentEvent(event.event)) {
+      const result = await applyPaystackPostPaymentEvent(await createPaystackEventKey(body), event);
+      console.log("Processed Paystack post-payment event", {
+        event: event.event,
+        matched: Boolean(result?.payment_order_id),
+        applied: Boolean(result?.event_applied),
+      });
+      return jsonResponse({ received: true });
+    }
 
     if (event.event === "charge.success" && event.data?.status === "success") {
       const order = await getModulePaymentOrder(event.data.reference);

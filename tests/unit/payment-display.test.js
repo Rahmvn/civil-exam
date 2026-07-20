@@ -38,6 +38,33 @@ test("provider processing is not described as awaiting customer payment", () => 
   assert.equal(meta.description, "Paystack is still processing this payment.");
 });
 
+test("post-payment reviews explain refunds and disputes without offering stale receipts", () => {
+  const cases = [
+    ["refunded", "Refunded"],
+    ["partially_refunded", "Partially refunded"],
+    ["refund_pending", "Refund pending"],
+    ["disputed", "Under dispute"],
+  ];
+
+  cases.forEach(([reviewStatus, label]) => {
+    const meta = getPaymentStatusMeta({
+      review_status: reviewStatus,
+      provider_status: "success",
+      fulfillment_status: "fulfilled",
+      status: "active",
+    });
+    assert.equal(meta.label, label);
+    assert.equal(meta.canViewReceipt, false);
+  });
+
+  assert.equal(getPaymentStatusMeta({
+    review_status: "dispute_resolved",
+    provider_status: "success",
+    fulfillment_status: "revoked",
+    status: "expired",
+  }).label, "Dispute resolved");
+});
+
 test("payment records are separated by the database record type", () => {
   const result = partitionPaymentRecords([
     { id: "paid", record_type: "history" },

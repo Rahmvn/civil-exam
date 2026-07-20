@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sanitizePaymentPayload } from "../../supabase/functions/_shared/payment-sanitization.js";
+import {
+  sanitizePaymentPayload,
+  sanitizePaystackPostPaymentEvent,
+} from "../../supabase/functions/_shared/payment-sanitization.js";
 
 test("payment payload sanitization retains reconciliation fields and removes instrument data", () => {
   const payload = {
@@ -62,4 +65,69 @@ test("payment initialization data remains recoverable without unrelated fields",
       access_code: "access-code",
     },
   });
+});
+
+test("refund and dispute events retain reconciliation fields without customer data", () => {
+  assert.deepEqual(sanitizePaystackPostPaymentEvent({
+    event: "refund.processed",
+    data: {
+      status: "processed",
+      transaction_reference: "PS-1",
+      refund_reference: "RF-1",
+      amount: "10000",
+      currency: "NGN",
+      domain: "live",
+      customer: { email: "candidate@example.test" },
+      merchant_note: "private note",
+    },
+  }), {
+    event: "refund.processed",
+    data: {
+      status: "processed",
+      transaction_reference: "PS-1",
+      refund_reference: "RF-1",
+      amount: "10000",
+      currency: "NGN",
+      domain: "live",
+    },
+  });
+
+  assert.deepEqual(sanitizePaystackPostPaymentEvent({
+    event: "charge.dispute.create",
+    data: {
+      id: 42,
+      status: "pending",
+      resolution: null,
+      reason: "not recognized",
+      domain: "test",
+      customer: { email: "candidate@example.test" },
+      transaction: {
+        id: 9,
+        domain: "test",
+        status: "success",
+        reference: "PS-1",
+        amount: 250000,
+        currency: "NGN",
+        authorization: { last4: "4081" },
+      },
+    },
+  }), {
+    event: "charge.dispute.create",
+    data: {
+      id: 42,
+      status: "pending",
+      reason: "not recognized",
+      domain: "test",
+      transaction: {
+        id: 9,
+        domain: "test",
+        status: "success",
+        reference: "PS-1",
+        amount: 250000,
+        currency: "NGN",
+      },
+    },
+  });
+
+  assert.deepEqual(sanitizePaystackPostPaymentEvent({ event: "charge.success", data: {} }), {});
 });

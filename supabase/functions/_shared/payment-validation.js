@@ -21,6 +21,26 @@ export function validatePaystackEnvironment(payload, secret) {
   return expectedEnvironment;
 }
 
+export function getPaystackEventReference(payload) {
+  const data = payload?.data;
+  const candidates = [data?.reference, data?.transaction_reference, data?.transaction?.reference];
+  const reference = candidates.find((value) => typeof value === "string" && value.trim());
+  return reference?.trim() ?? null;
+}
+
+export function isPaystackPostPaymentEvent(eventType) {
+  return [
+    "refund.pending",
+    "refund.processing",
+    "refund.needs-attention",
+    "refund.failed",
+    "refund.processed",
+    "charge.dispute.create",
+    "charge.dispute.remind",
+    "charge.dispute.resolve",
+  ].includes(String(eventType ?? "").trim().toLowerCase());
+}
+
 export function getPublishedContentTable(practiceType) {
   return practiceType === "oral" ? "oral_questions" : "questions";
 }
@@ -110,6 +130,17 @@ export async function createPaystackSignature(body, secret, cryptoApi = globalTh
   );
   const signed = await cryptoApi.subtle.sign("HMAC", key, encoder.encode(body));
   return [...new Uint8Array(signed)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+export async function createPaystackEventKey(body, cryptoApi = globalThis.crypto) {
+  if (typeof body !== "string" || !body || !cryptoApi?.subtle) {
+    throw new Error("A webhook body and Web Crypto implementation are required");
+  }
+
+  const digest = await cryptoApi.subtle.digest("SHA-256", new TextEncoder().encode(body));
+  return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }

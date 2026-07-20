@@ -246,6 +246,11 @@ async function main() {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: WebSocket },
     });
+    async function sendPaystackEvent(payload) {
+      const body = JSON.stringify(payload);
+      const signature = await createPaystackSignature(body, "sk_test_local-edge-payment-secret");
+      return invoke(apiUrl, "paystack-webhook", null, body, { "x-paystack-signature": signature });
+    }
     const login = await candidate.auth.signInWithPassword({ email: TEST_USERS.free.email, password: TEST_PASSWORD });
     if (login.error || !login.data.session) fail(`Payment test sign-in failed: ${login.error?.message ?? "no session"}`);
     const token = login.data.session.access_token;
@@ -450,7 +455,206 @@ async function main() {
     const webhook = await invoke(apiUrl, "paystack-webhook", null, event, { "x-paystack-signature": signature });
     if (!webhook.ok) fail(`Valid webhook replay failed: ${await webhook.text()}`);
 
-    console.log("Edge payment integration passed: authentication, lifecycle, oral readiness, verification, replay, and webhook signatures.");
+    const invalidRefundWebhook = await sendPaystackEvent({
+      event: "refund.processed",
+      data: {
+        status: "processed",
+        domain: "test",
+        transaction_reference: initializedBody.reference,
+        refund_reference: "RF-INVALID",
+        amount: "250001",
+        currency: "USD",
+      },
+    });
+    if (invalidRefundWebhook.status !== 400) fail("An invalid refund amount and currency were accepted.");
+
+    const pendingRefundWebhook = await sendPaystackEvent({
+      event: "refund.pending",
+      data: {
+        status: "pending",
+        domain: "test",
+        transaction_reference: initializedBody.reference,
+        refund_reference: "RF-PARTIAL-1",
+        amount: "100000",
+        currency: "NGN",
+      },
+    });
+    if (!pendingRefundWebhook.ok) fail(`Pending refund webhook failed: ${await pendingRefundWebhook.text()}`);
+    const pendingRefundOrder = await service.from("payment_orders")
+      .select("review_status")
+      .eq("provider_reference", initializedBody.reference)
+      .single();
+    if (pendingRefundOrder.data?.review_status !== "refund_pending") {
+      fail("A pending refund was not surfaced for review.");
+    }
+
+    const partialRefund = {
+      event: "refund.processed",
+      data: {
+        status: "processed",
+        domain: "test",
+        transaction_reference: initializedBody.reference,
+        refund_reference: "RF-PARTIAL-1",
+        amount: "100000",
+        currency: "NGN",
+        customer: { email: "must-not-be-stored@example.test" },
+      },
+    };
+    const partialRefundWebhook = await sendPaystackEvent(partialRefund);
+    if (!partialRefundWebhook.ok) fail(`Partial refund webhook failed: ${await partialRefundWebhook.text()}`);
+    const partialOrder = await service.from("payment_orders")
+      .select("id, user_id, exam_pack_id, subject_id, module_offering_id, review_status, refunded_amount_kobo")
+      .eq("provider_reference", initializedBody.reference)
+      .single();
+    const partialAccess = await service.from("module_entitlements")
+      .select("status")
+      .eq("payment_order_id", partialOrder.data.id)
+      .single();
+    if (
+      partialOrder.error ||
+      partialOrder.data.review_status !== "partially_refunded" ||
+      partialOrder.data.refunded_amount_kobo !== 100000 ||
+      partialAccess.error ||
+      partialAccess.data.status !== "active"
+    ) {
+      fail("A partial refund did not preserve access and record the refunded amount.");
+    }
+
+    const partialReplay = await sendPaystackEvent(partialRefund);
+    if (!partialReplay.ok) fail(`Partial refund replay failed: ${await partialReplay.text()}`);
+    const replayedRefund = await service.from("payment_orders")
+      .select("refunded_amount_kobo")
+      .eq("id", partialOrder.data.id)
+      .single();
+    if (replayedRefund.error || replayedRefund.data.refunded_amount_kobo !== 100000) {
+      fail("A repeated refund webhook was counted more than once.");
+    }
+
+    const finalRefundWebhook = await sendPaystackEvent({
+      event: "refund.processed",
+      data: {
+        status: "processed",
+        domain: "test",
+        transaction_reference: initializedBody.reference,
+        refund_reference: "RF-PARTIAL-2",
+        amount: "150000",
+        currency: "NGN",
+      },
+    });
+    if (!finalRefundWebhook.ok) fail(`Final refund webhook failed: ${await finalRefundWebhook.text()}`);
+    const fullyRefundedOrder = await service.from("payment_orders")
+      .select("status, provider_status, fulfillment_status, review_status, refunded_amount_kobo")
+      .eq("id", partialOrder.data.id)
+      .single();
+    const revokedAccess = await service.from("module_entitlements")
+      .select("status")
+      .eq("payment_order_id", partialOrder.data.id)
+      .single();
+    if (
+      fullyRefundedOrder.error ||
+      fullyRefundedOrder.data.status !== "expired" ||
+      fullyRefundedOrder.data.provider_status !== "reversed" ||
+      fullyRefundedOrder.data.fulfillment_status !== "revoked" ||
+      fullyRefundedOrder.data.review_status !== "refunded" ||
+      fullyRefundedOrder.data.refunded_amount_kobo !== 250000 ||
+      revokedAccess.error ||
+      revokedAccess.data.status !== "expired"
+    ) {
+      fail("Cumulative full refunds did not revoke access atomically.");
+    }
+    const storedRefundEvent = await service.from("payment_provider_events")
+      .select("payload")
+      .eq("payment_order_id", partialOrder.data.id)
+      .eq("event_type", "refund.processed")
+      .eq("provider_object_key", "RF-PARTIAL-1")
+      .single();
+    if (storedRefundEvent.error || JSON.stringify(storedRefundEvent.data.payload).includes("must-not-be-stored")) {
+      fail("Refund event persistence retained customer information.");
+    }
+
+    const disputeReference = `PS-DISPUTE-${crypto.randomUUID()}`;
+    const disputeOrder = await service.from("payment_orders").insert({
+      user_id: partialOrder.data.user_id,
+      exam_pack_id: partialOrder.data.exam_pack_id,
+      subject_id: partialOrder.data.subject_id,
+      module_offering_id: partialOrder.data.module_offering_id,
+      provider_reference: disputeReference,
+      status: "active",
+      amount_kobo: 250000,
+      currency: "NGN",
+      provider_status: "success",
+      fulfillment_status: "fulfilled",
+      paid_at: new Date().toISOString(),
+    }).select("id").single();
+    if (disputeOrder.error) fail(`Dispute fixture order failed: ${disputeOrder.error.message}`);
+    const disputeEntitlement = await service.from("module_entitlements").insert({
+      user_id: partialOrder.data.user_id,
+      exam_pack_id: partialOrder.data.exam_pack_id,
+      subject_id: partialOrder.data.subject_id,
+      payment_order_id: disputeOrder.data.id,
+      status: "active",
+      expires_at: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+    if (disputeEntitlement.error) fail(`Dispute fixture entitlement failed: ${disputeEntitlement.error.message}`);
+
+    const disputeData = {
+      id: 7001,
+      status: "pending",
+      domain: "test",
+      reason: "not recognized",
+      transaction: {
+        domain: "test",
+        status: "success",
+        reference: disputeReference,
+        amount: 250000,
+        currency: "NGN",
+      },
+    };
+    const disputeOpened = await sendPaystackEvent({ event: "charge.dispute.create", data: disputeData });
+    if (!disputeOpened.ok) fail(`Dispute webhook failed: ${await disputeOpened.text()}`);
+    const suspendedOrder = await service.from("payment_orders").select("review_status").eq("id", disputeOrder.data.id).single();
+    const suspendedAccess = await service.from("module_entitlements").select("status").eq("payment_order_id", disputeOrder.data.id).single();
+    if (suspendedOrder.data?.review_status !== "disputed" || suspendedAccess.data?.status !== "pending") {
+      fail("An open dispute did not suspend module access.");
+    }
+
+    const disputeDeclined = await sendPaystackEvent({
+      event: "charge.dispute.resolve",
+      data: { ...disputeData, status: "resolved", resolution: "declined" },
+    });
+    if (!disputeDeclined.ok) fail(`Resolved dispute webhook failed: ${await disputeDeclined.text()}`);
+    const restoredOrder = await service.from("payment_orders").select("review_status").eq("id", disputeOrder.data.id).single();
+    const restoredAccess = await service.from("module_entitlements").select("status").eq("payment_order_id", disputeOrder.data.id).single();
+    if (restoredOrder.data?.review_status !== "dispute_resolved" || restoredAccess.data?.status !== "active") {
+      fail("A declined dispute did not restore valid module access.");
+    }
+
+    const acceptedDisputeData = { ...disputeData, id: 7002 };
+    const secondDisputeOpened = await sendPaystackEvent({ event: "charge.dispute.create", data: acceptedDisputeData });
+    if (!secondDisputeOpened.ok) fail(`Second dispute webhook failed: ${await secondDisputeOpened.text()}`);
+    const disputeAccepted = await sendPaystackEvent({
+      event: "charge.dispute.resolve",
+      data: { ...acceptedDisputeData, status: "resolved", resolution: "merchant-accepted" },
+    });
+    if (!disputeAccepted.ok) fail(`Accepted dispute webhook failed: ${await disputeAccepted.text()}`);
+    const acceptedOrder = await service.from("payment_orders")
+      .select("status, fulfillment_status, review_status")
+      .eq("id", disputeOrder.data.id)
+      .single();
+    const acceptedAccess = await service.from("module_entitlements")
+      .select("status")
+      .eq("payment_order_id", disputeOrder.data.id)
+      .single();
+    if (
+      acceptedOrder.data?.status !== "expired" ||
+      acceptedOrder.data?.fulfillment_status !== "revoked" ||
+      acceptedOrder.data?.review_status !== "dispute_resolved" ||
+      acceptedAccess.data?.status !== "expired"
+    ) {
+      fail("An accepted dispute did not revoke module access.");
+    }
+
+    console.log("Edge payment integration passed: payment, refund, dispute, replay, and webhook security lifecycles.");
   } finally {
     stopProcessTree(edge);
     mock.server.closeAllConnections?.();
