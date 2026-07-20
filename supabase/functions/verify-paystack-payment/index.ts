@@ -11,6 +11,7 @@ import {
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
+import { validatePaystackEnvironment } from "../_shared/payment-validation.js";
 import { getPaymentUserId } from "../_shared/payment-validation.js";
 
 Deno.serve(async (request) => {
@@ -33,16 +34,18 @@ Deno.serve(async (request) => {
 
     console.log("Verifying Paystack payment", { reference });
 
+    const paystackSecret = requireEnv("PAYSTACK_SECRET_KEY");
     const paystackApiUrl = Deno.env.get("PAYSTACK_API_URL") ?? "https://api.paystack.co";
     const paystackResponse = await fetch(
       `${paystackApiUrl}/transaction/verify/${encodeURIComponent(reference)}`,
       {
         headers: {
-          Authorization: `Bearer ${requireEnv("PAYSTACK_SECRET_KEY")}`,
+          Authorization: `Bearer ${paystackSecret}`,
         },
       },
     );
     const payload = await paystackResponse.json();
+    if (paystackResponse.ok && payload?.status) validatePaystackEnvironment(payload, paystackSecret);
 
     console.log("Paystack verify response", {
       ok: paystackResponse.ok,

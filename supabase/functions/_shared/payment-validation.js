@@ -2,6 +2,25 @@ function normalizedCurrency(value) {
   return String(value ?? "").trim().toUpperCase();
 }
 
+export function getPaystackEnvironment(secret) {
+  if (typeof secret !== "string") throw new Error("A valid Paystack secret key is required");
+  if (secret.startsWith("sk_live_")) return "live";
+  if (secret.startsWith("sk_test_")) return "test";
+  throw new Error("The Paystack secret key environment could not be determined");
+}
+
+export function validatePaystackEnvironment(payload, secret) {
+  const expectedEnvironment = getPaystackEnvironment(secret);
+  const transaction = payload?.data && typeof payload.data === "object" ? payload.data : payload;
+  const receivedEnvironment = String(transaction?.domain ?? "").trim().toLowerCase();
+
+  if (receivedEnvironment !== expectedEnvironment) {
+    throw new Error("The Paystack transaction environment does not match the configured account");
+  }
+
+  return expectedEnvironment;
+}
+
 export function getPublishedContentTable(practiceType) {
   return practiceType === "oral" ? "oral_questions" : "questions";
 }

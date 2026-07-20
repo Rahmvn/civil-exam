@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createPaystackSignature,
+  getPaystackEnvironment,
   getPaymentUserId,
   getPublishedContentTable,
   isValidPaystackSignature,
+  validatePaystackEnvironment,
   validateLegacyPaymentData,
   validateModulePaymentData,
 } from "../../supabase/functions/_shared/payment-validation.js";
@@ -77,6 +79,19 @@ test("payment helpers normalize user ownership and content tables", () => {
   assert.equal(getPublishedContentTable("objective"), "questions");
   assert.equal(getPublishedContentTable("unknown"), "questions");
   assert.equal(getPublishedContentTable(), "questions");
+});
+
+test("Paystack transactions must match the configured key environment", () => {
+  assert.equal(getPaystackEnvironment("sk_test_local-key"), "test");
+  assert.equal(getPaystackEnvironment("sk_live_local-key"), "live");
+  assert.equal(validatePaystackEnvironment({ data: { domain: "live" } }, "sk_live_local-key"), "live");
+  assert.equal(validatePaystackEnvironment({ domain: "test" }, "sk_test_local-key"), "test");
+  assert.throws(() => getPaystackEnvironment("local-key"), /could not be determined/);
+  assert.throws(
+    () => validatePaystackEnvironment({ data: { domain: "test" } }, "sk_live_local-key"),
+    /does not match/,
+  );
+  assert.throws(() => validatePaystackEnvironment({}, "sk_test_local-key"), /does not match/);
 });
 
 test("Paystack signatures use SHA-512 HMAC and reject malformed or modified values", async () => {

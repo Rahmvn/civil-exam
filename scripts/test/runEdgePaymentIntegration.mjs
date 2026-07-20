@@ -124,6 +124,7 @@ async function startMockPaystack() {
             status: true,
             data: {
               status: "failed",
+              domain: "test",
               reference,
               amount: initializedPayment.amount,
               currency: initializedPayment.currency,
@@ -146,6 +147,7 @@ async function startMockPaystack() {
           status: true,
           data: {
             status: "success",
+            domain: "test",
           reference,
           amount: initializedPayment.testScenario === 2
             ? initializedPayment.amount + 100
@@ -218,7 +220,7 @@ async function main() {
   await writeFile(envPath, [
     `SUPABASE_PUBLISHABLE_KEYS=${JSON.stringify({ default: publicKey })}`,
     `SUPABASE_SECRET_KEYS=${JSON.stringify({ default: secretKey })}`,
-    "PAYSTACK_SECRET_KEY=local-edge-payment-secret",
+    "PAYSTACK_SECRET_KEY=sk_test_local-edge-payment-secret",
     `PAYSTACK_API_URL=http://host.docker.internal:${mock.port}`,
     "APP_URL=http://127.0.0.1:4173",
   ].join("\n"), "utf8");
@@ -410,16 +412,30 @@ async function main() {
     if (missingSignatureWebhook.status !== 401) fail("Missing webhook signature was not rejected.");
 
     const harmlessEvent = JSON.stringify({ event: "test.webhook", data: {} });
-    const harmlessSignature = await createPaystackSignature(harmlessEvent, "local-edge-payment-secret");
+    const harmlessSignature = await createPaystackSignature(harmlessEvent, "sk_test_local-edge-payment-secret");
     const harmlessWebhook = await invoke(apiUrl, "paystack-webhook", null, harmlessEvent, {
       "x-paystack-signature": harmlessSignature,
     });
     if (!harmlessWebhook.ok) fail(`Valid harmless webhook was rejected: ${await harmlessWebhook.text()}`);
 
+    const wrongEnvironmentEvent = JSON.stringify({
+      event: "charge.success",
+      data: { status: "success", domain: "live", reference: "PS-WRONG-ENVIRONMENT" },
+    });
+    const wrongEnvironmentSignature = await createPaystackSignature(
+      wrongEnvironmentEvent,
+      "sk_test_local-edge-payment-secret",
+    );
+    const wrongEnvironmentWebhook = await invoke(apiUrl, "paystack-webhook", null, wrongEnvironmentEvent, {
+      "x-paystack-signature": wrongEnvironmentSignature,
+    });
+    if (wrongEnvironmentWebhook.status !== 400) fail("Mismatched Paystack environment was not rejected.");
+
     const event = JSON.stringify({
       event: "charge.success",
       data: {
         status: "success",
+        domain: "test",
         reference: initializedBody.reference,
         amount: 250000,
         currency: "NGN",
@@ -430,7 +446,7 @@ async function main() {
         },
       },
     });
-    const signature = await createPaystackSignature(event, "local-edge-payment-secret");
+    const signature = await createPaystackSignature(event, "sk_test_local-edge-payment-secret");
     const webhook = await invoke(apiUrl, "paystack-webhook", null, event, { "x-paystack-signature": signature });
     if (!webhook.ok) fail(`Valid webhook replay failed: ${await webhook.text()}`);
 

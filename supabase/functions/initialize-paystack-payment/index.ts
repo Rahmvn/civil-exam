@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
 import { getPaymentCallbackUrl } from "../_shared/payment-callback.js";
+import { getPaystackEnvironment } from "../_shared/payment-validation.js";
 import {
   getActiveModuleAccess,
   getActivePack,
@@ -86,6 +87,8 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: "Payment setup is already in progress. Please try again in a moment." }, 409);
     }
 
+    const paystackSecret = requireEnv("PAYSTACK_SECRET_KEY");
+    getPaystackEnvironment(paystackSecret);
     const callbackUrl = getPaymentCallbackUrl(Deno.env.get("APP_URL"));
     const reference = `PS-${crypto.randomUUID()}`;
     const { data: order, error: orderError } = await adminClient
@@ -142,7 +145,7 @@ Deno.serve(async (request) => {
     const paystackResponse = await fetch(`${paystackApiUrl}/transaction/initialize`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${requireEnv("PAYSTACK_SECRET_KEY")}`,
+        Authorization: `Bearer ${paystackSecret}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(initBody),

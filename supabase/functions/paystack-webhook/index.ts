@@ -9,7 +9,7 @@ import {
   validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
-import { isValidPaystackSignature } from "../_shared/payment-validation.js";
+import { isValidPaystackSignature, validatePaystackEnvironment } from "../_shared/payment-validation.js";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -26,12 +26,14 @@ Deno.serve(async (request) => {
 
     console.log("Received Paystack webhook", { signature: Boolean(signature) });
 
-    if (!(await isValidPaystackSignature(body, signature, requireEnv("PAYSTACK_SECRET_KEY")))) {
+    const paystackSecret = requireEnv("PAYSTACK_SECRET_KEY");
+    if (!(await isValidPaystackSignature(body, signature, paystackSecret))) {
       console.warn("Invalid Paystack webhook signature");
       return jsonResponse({ error: "Invalid signature" }, 401);
     }
 
     const event = JSON.parse(body);
+    if (event.data?.reference) validatePaystackEnvironment(event, paystackSecret);
 
     if (event.event === "charge.success" && event.data?.status === "success") {
       const order = await getModulePaymentOrder(event.data.reference);
