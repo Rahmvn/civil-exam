@@ -21,6 +21,8 @@ class MemoryStorage {
 }
 
 globalThis.window = { sessionStorage: new MemoryStorage() };
+const USER_A = "user-a";
+const USER_B = "user-b";
 
 test("question preparation preserves batch one and randomizes later batches safely", () => {
   const source = [
@@ -41,30 +43,33 @@ test("question preparation preserves batch one and randomizes later batches safe
 });
 
 test("launch batches are consumed once and malformed storage is discarded", () => {
-  storePracticeBatch("psr", [{ id: "q1" }]);
-  assert.deepEqual(consumePracticeBatch("psr"), [{ id: "q1" }]);
-  assert.equal(consumePracticeBatch("psr"), null);
+  storePracticeBatch("psr", [{ id: "q1" }], USER_A);
+  assert.equal(consumePracticeBatch("psr", USER_B), null);
+  assert.deepEqual(consumePracticeBatch("psr", USER_A), [{ id: "q1" }]);
+  assert.equal(consumePracticeBatch("psr", USER_A), null);
 
   window.sessionStorage.setItem("practice-launch:psr", "{broken");
-  assert.equal(consumePracticeBatch("psr"), null);
-  storePracticeBatch("", [{ id: "q1" }]);
-  assert.equal(consumePracticeBatch(""), null);
+  assert.equal(consumePracticeBatch("psr", USER_A), null);
+  assert.equal(window.sessionStorage.getItem("practice-launch:psr"), null);
+  storePracticeBatch("", [{ id: "q1" }], USER_A);
+  assert.equal(consumePracticeBatch("", USER_A), null);
 });
 
 test("active practice markers are durable, timestamped, and safely cleared", () => {
-  markActivePractice("pfm", { batch_number: 2, question_count: 30 });
-  const active = readActivePractice("pfm");
+  markActivePractice("pfm", { batch_number: 2, question_count: 30 }, USER_A);
+  const active = readActivePractice("pfm", USER_A);
 
   assert.equal(active.batch_number, 2);
   assert.equal(active.question_count, 30);
   assert.equal(Number.isNaN(Date.parse(active.started_at)), false);
+  assert.equal(readActivePractice("pfm", USER_B), null);
 
-  window.sessionStorage.setItem("practice-active:broken", "not-json");
-  assert.equal(readActivePractice("broken"), null);
-  assert.equal(window.sessionStorage.getItem("practice-active:broken"), null);
+  window.sessionStorage.setItem(`practice-active:${USER_A}:broken`, "not-json");
+  assert.equal(readActivePractice("broken", USER_A), null);
+  assert.equal(window.sessionStorage.getItem(`practice-active:${USER_A}:broken`), null);
 
-  clearActivePractice("pfm");
-  assert.equal(readActivePractice("pfm"), null);
+  clearActivePractice("pfm", USER_A);
+  assert.equal(readActivePractice("pfm", USER_A), null);
 });
 
 test("practice drafts preserve answers and reject corrupt recovery data", () => {
@@ -74,16 +79,17 @@ test("practice drafts preserve answers and reject corrupt recovery data", () => 
     flagged: ["q1"],
     current_index: 0,
     deadline_at: Date.now() + 60_000,
-  }), true);
+  }, USER_A), true);
 
-  const draft = readPracticeDraft("pfm");
+  const draft = readPracticeDraft("pfm", USER_A);
   assert.equal(draft.answers.q1, "B");
   assert.deepEqual(draft.flagged, ["q1"]);
+  assert.equal(readPracticeDraft("pfm", USER_B), null);
 
-  window.sessionStorage.setItem("practice-draft:broken", JSON.stringify({ questions: [] }));
-  assert.equal(readPracticeDraft("broken"), null);
-  assert.equal(window.sessionStorage.getItem("practice-draft:broken"), null);
+  window.sessionStorage.setItem(`practice-draft:${USER_A}:broken`, JSON.stringify({ questions: [] }));
+  assert.equal(readPracticeDraft("broken", USER_A), null);
+  assert.equal(window.sessionStorage.getItem(`practice-draft:${USER_A}:broken`), null);
 
-  clearPracticeDraft("pfm");
-  assert.equal(readPracticeDraft("pfm"), null);
+  clearPracticeDraft("pfm", USER_A);
+  assert.equal(readPracticeDraft("pfm", USER_A), null);
 });

@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(58);
+select plan(61);
 
 select ok(
   has_table_privilege('service_role', 'public.objective_practice_sessions', 'SELECT')
@@ -162,6 +162,7 @@ set payload = public.start_objective_practice_session_v2(
   null, 'lifecycle-objective', 1, false
 );
 
+reset role;
 select isnt(
   (select payload->>'practice_session_id' from lifecycle_session),
   (select payload->>'practice_session_id' from lifecycle_abandoned_session),
@@ -175,7 +176,44 @@ select ok(
   'the replacement session receives a full fresh timer allocation'
 );
 
+create temporary table lifecycle_elapsed_session as
+select payload from lifecycle_session;
+grant select on lifecycle_elapsed_session to authenticated;
+
 reset role;
+update public.objective_practice_sessions
+set started_at = elapsed.now_at - interval '33 minutes',
+    deadline_at = elapsed.now_at - interval '3 minutes'
+from (select clock_timestamp() as now_at) elapsed
+where id = (select (payload->>'practice_session_id')::uuid from lifecycle_elapsed_session);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+update lifecycle_session
+set payload = public.start_objective_practice_session_v2(
+  null, 'lifecycle-objective', 1, false
+);
+
+select isnt(
+  (select payload->>'practice_session_id' from lifecycle_session),
+  (select payload->>'practice_session_id' from lifecycle_elapsed_session),
+  'an elapsed timer is never resumed while its longer allocation expiry remains active'
+);
+select is(
+  (select count(*)::integer from public.objective_practice_sessions
+   where id = (select (payload->>'practice_session_id')::uuid from lifecycle_elapsed_session)
+     and status = 'active'),
+  0,
+  'the elapsed server session is no longer active when a replacement is allocated'
+);
+select ok(
+  (select (payload->>'deadline_at')::timestamptz from lifecycle_session)
+    > (select (payload->>'server_now')::timestamptz from lifecycle_session),
+  'the elapsed-session replacement opens with time remaining'
+);
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);

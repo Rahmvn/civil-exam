@@ -22,6 +22,7 @@ import {
   storePracticeDraft,
 } from "../lib/practiceSession";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
+import { useAuth } from "../lib/useAuth";
 
 const EXAM_DURATION_MINUTES = 30;
 const OPTION_KEYS = ["A", "B", "C", "D"];
@@ -174,6 +175,8 @@ function PracticeRestartNotice({ onLeave, onResume }) {
 }
 
 export default function Practice() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const location = useLocation();
   const navigate = useNavigate();
   const { subjectSlug } = useParams();
@@ -194,8 +197,11 @@ export default function Practice() {
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [deadlineAt, setDeadlineAt] = useState(null);
-  const [restartPending, setRestartPending] = useState(() => Boolean(readPracticeDraft(subjectSlug) || readActivePractice(subjectSlug)));
+  const [restartPending, setRestartPending] = useState(() => Boolean(
+    readPracticeDraft(subjectSlug, userId) || readActivePractice(subjectSlug, userId),
+  ));
   const allowExitRef = useRef(false);
+  const autoSubmittedSessionRef = useRef(null);
   const submissionTokenRef = useRef(crypto.randomUUID());
 
   useLayoutEffect(() => {
@@ -252,6 +258,7 @@ export default function Practice() {
       setExitConfirmOpen(false);
       setDeadlineAt(null);
       allowExitRef.current = false;
+      autoSubmittedSessionRef.current = null;
       submissionTokenRef.current = crypto.randomUUID();
 
       try {
@@ -274,7 +281,7 @@ export default function Practice() {
           return;
         }
 
-        const savedDraft = readPracticeDraft(nextSubject.slug);
+        const savedDraft = readPracticeDraft(nextSubject.slug, userId);
         const savedBatchNumber = Number(savedDraft?.questions?.[0]?.batch_number ?? 0) || null;
         if (
           savedDraft &&
@@ -287,11 +294,11 @@ export default function Practice() {
           setCurrentIndex(Math.min(Math.max(Number(savedDraft.current_index) || 0, 0), savedDraft.questions.length - 1));
           setDeadlineAt(Number(savedDraft.deadline_at));
           if (savedDraft.submission_token) submissionTokenRef.current = savedDraft.submission_token;
-          markActivePractice(nextSubject.slug, { batch_number: savedBatchNumber });
+          markActivePractice(nextSubject.slug, { batch_number: savedBatchNumber }, userId);
           return;
         }
 
-        const launchedBatch = consumePracticeBatch(nextSubject.slug);
+        const launchedBatch = consumePracticeBatch(nextSubject.slug, userId);
         const launchedBatchNumber = Number(launchedBatch?.[0]?.batch_number ?? 0) || null;
 
         if (
@@ -300,7 +307,7 @@ export default function Practice() {
         ) {
           const preparedQuestions = preparePracticeQuestions(launchedBatch, launchedBatchNumber);
           setQuestions(preparedQuestions);
-          markActivePractice(nextSubject.slug, { batch_number: launchedBatchNumber });
+          markActivePractice(nextSubject.slug, { batch_number: launchedBatchNumber }, userId);
           setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
           return;
         }
@@ -326,7 +333,7 @@ export default function Practice() {
         const activeBatchNumber = requestedBatchNumber ?? nextQuestions[0]?.batch_number;
         const preparedQuestions = preparePracticeQuestions(nextQuestions, activeBatchNumber);
         setQuestions(preparedQuestions);
-        markActivePractice(nextSubject.slug, { batch_number: activeBatchNumber });
+        markActivePractice(nextSubject.slug, { batch_number: activeBatchNumber }, userId);
         setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
@@ -347,7 +354,7 @@ export default function Practice() {
     return () => {
       active = false;
     };
-  }, [requestedBatchNumber, restartPending, subjectSlug]);
+  }, [requestedBatchNumber, restartPending, subjectSlug, userId]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -376,9 +383,9 @@ export default function Practice() {
         submissionToken: submissionTokenRef.current,
       });
 
-      clearPracticeBatch(subject.slug);
-      clearActivePractice(subject.slug);
-      clearPracticeDraft(subject.slug);
+      clearPracticeBatch(subject.slug, userId);
+      clearActivePractice(subject.slug, userId);
+      clearPracticeDraft(subject.slug, userId);
       allowExitRef.current = true;
       navigate(`/result?attempt=${nextResult.attempt_id}`, {
         state: {
@@ -399,7 +406,7 @@ export default function Practice() {
     } finally {
       setSubmitting(false);
     }
-  }, [answers, batchMeta.batchNumber, batchMeta.passMarkPercent, navigate, questions, subject, submitting, timeSpent]);
+  }, [answers, batchMeta.batchNumber, batchMeta.passMarkPercent, navigate, questions, subject, submitting, timeSpent, userId]);
 
   useEffect(() => {
     if (!subject?.slug || questions.length === 0 || !deadlineAt || allowExitRef.current) return;
@@ -411,8 +418,8 @@ export default function Practice() {
       current_index: currentIndex,
       deadline_at: deadlineAt,
       submission_token: submissionTokenRef.current,
-    });
-  }, [answers, currentIndex, deadlineAt, flagged, questions, subject?.slug, timeSpent]);
+    }, userId);
+  }, [answers, currentIndex, deadlineAt, flagged, questions, subject?.slug, timeSpent, userId]);
 
   useEffect(() => {
     if (questions.length === 0 || submitting || !deadlineAt) return undefined;
@@ -425,6 +432,9 @@ export default function Practice() {
 
     const initialRemaining = syncRemaining();
     if (initialRemaining <= 0) {
+      const sessionKey = questions[0]?.practice_session_id ?? `${subject?.slug ?? "practice"}:${deadlineAt}`;
+      if (autoSubmittedSessionRef.current === sessionKey) return undefined;
+      autoSubmittedSessionRef.current = sessionKey;
       const submitTimeoutId = window.setTimeout(() => {
         void submitCurrentSession();
       }, 0);
@@ -452,7 +462,7 @@ export default function Practice() {
     }, 1000);
 
     return () => window.clearInterval(timerId);
-  }, [currentQuestion, deadlineAt, questions.length, submitting, submitCurrentSession]);
+  }, [currentQuestion, deadlineAt, questions, subject?.slug, submitting, submitCurrentSession]);
 
   const hasActiveSession = questions.length > 0;
 
@@ -529,9 +539,9 @@ export default function Practice() {
 
       allowExitRef.current = true;
       if (subject?.slug) {
-        clearPracticeBatch(subject.slug);
-        clearActivePractice(subject.slug);
-        clearPracticeDraft(subject.slug);
+        clearPracticeBatch(subject.slug, userId);
+        clearActivePractice(subject.slug, userId);
+        clearPracticeDraft(subject.slug, userId);
       }
       setExitConfirmOpen(false);
       if (blocker.state === "blocked") {
@@ -562,9 +572,9 @@ export default function Practice() {
   }
 
   function leaveRestartNotice() {
-    clearPracticeBatch(subjectSlug);
-    clearActivePractice(subjectSlug);
-    clearPracticeDraft(subjectSlug);
+    clearPracticeBatch(subjectSlug, userId);
+    clearActivePractice(subjectSlug, userId);
+    clearPracticeDraft(subjectSlug, userId);
     allowExitRef.current = true;
     navigate("/dashboard#modules", { replace: true });
   }

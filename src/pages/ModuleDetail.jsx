@@ -28,8 +28,10 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { useAuth } from "../lib/useAuth";
 
 export default function ModuleDetail() {
+  const { user } = useAuth();
   const { subjectSlug = "" } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
@@ -287,7 +289,7 @@ export default function ModuleDetail() {
       }
 
       const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, batch);
+      storePracticeBatch(startConfirmSubject.slug, batch, user?.id);
       setStartConfirmSubject(null);
       navigate(`/practice/${startConfirmSubject.slug}?batch=1`, {
         state: { batchStarted: true },

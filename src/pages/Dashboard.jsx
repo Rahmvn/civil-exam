@@ -39,7 +39,7 @@ import { getPracticeRoute } from "../lib/oralPractice";
 import { useAuth } from "../lib/useAuth";
 
 export default function Dashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
@@ -393,7 +393,7 @@ export default function Dashboard() {
       }
 
       const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, batch);
+      storePracticeBatch(startConfirmSubject.slug, batch, user?.id);
       setStartConfirmSubject(null);
       navigate(`/practice/${startConfirmSubject.slug}?batch=1`, { state: { batchStarted: true } });
     } catch (error) {

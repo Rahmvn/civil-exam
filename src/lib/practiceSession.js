@@ -3,16 +3,26 @@ const ACTIVE_PRACTICE_PREFIX = "practice-active:";
 const PRACTICE_DRAFT_PREFIX = "practice-draft:";
 const OPTION_KEYS = ["A", "B", "C", "D"];
 
-function getLaunchKey(subjectSlug) {
-  return `${PRACTICE_LAUNCH_PREFIX}${subjectSlug}`;
+function getScopedKey(prefix, subjectSlug, userId) {
+  if (!subjectSlug || !userId) return null;
+  return `${prefix}${userId}:${subjectSlug}`;
 }
 
-function getActivePracticeKey(subjectSlug) {
-  return `${ACTIVE_PRACTICE_PREFIX}${subjectSlug}`;
+function getLaunchKey(subjectSlug, userId) {
+  return getScopedKey(PRACTICE_LAUNCH_PREFIX, subjectSlug, userId);
 }
 
-function getPracticeDraftKey(subjectSlug) {
-  return `${PRACTICE_DRAFT_PREFIX}${subjectSlug}`;
+function getActivePracticeKey(subjectSlug, userId) {
+  return getScopedKey(ACTIVE_PRACTICE_PREFIX, subjectSlug, userId);
+}
+
+function getPracticeDraftKey(subjectSlug, userId) {
+  return getScopedKey(PRACTICE_DRAFT_PREFIX, subjectSlug, userId);
+}
+
+function removeLegacyValue(prefix, subjectSlug) {
+  if (!subjectSlug) return;
+  removeSessionValue(`${prefix}${subjectSlug}`);
 }
 
 function readSessionValue(key) {
@@ -81,19 +91,22 @@ export function preparePracticeQuestions(questions, batchNumber) {
   }));
 }
 
-export function storePracticeBatch(subjectSlug, questions) {
-  if (!subjectSlug || !Array.isArray(questions) || questions.length === 0) return;
+export function storePracticeBatch(subjectSlug, questions, userId) {
+  const key = getLaunchKey(subjectSlug, userId);
+  if (!key || !Array.isArray(questions) || questions.length === 0) return;
 
+  removeLegacyValue(PRACTICE_LAUNCH_PREFIX, subjectSlug);
   writeSessionValue(
-    getLaunchKey(subjectSlug),
+    key,
     JSON.stringify({ questions }),
   );
 }
 
-export function consumePracticeBatch(subjectSlug) {
-  if (!subjectSlug) return null;
+export function consumePracticeBatch(subjectSlug, userId) {
+  const key = getLaunchKey(subjectSlug, userId);
+  if (!key) return null;
 
-  const key = getLaunchKey(subjectSlug);
+  removeLegacyValue(PRACTICE_LAUNCH_PREFIX, subjectSlug);
   const raw = readSessionValue(key);
   removeSessionValue(key);
   if (!raw) return null;
@@ -106,30 +119,35 @@ export function consumePracticeBatch(subjectSlug) {
   }
 }
 
-export function clearPracticeBatch(subjectSlug) {
-  if (!subjectSlug) return;
-  removeSessionValue(getLaunchKey(subjectSlug));
+export function clearPracticeBatch(subjectSlug, userId) {
+  const key = getLaunchKey(subjectSlug, userId);
+  removeLegacyValue(PRACTICE_LAUNCH_PREFIX, subjectSlug);
+  if (key) removeSessionValue(key);
 }
 
-export function readActivePractice(subjectSlug) {
-  if (!subjectSlug) return null;
+export function readActivePractice(subjectSlug, userId) {
+  const key = getActivePracticeKey(subjectSlug, userId);
+  if (!key) return null;
 
-  const raw = readSessionValue(getActivePracticeKey(subjectSlug));
+  removeLegacyValue(ACTIVE_PRACTICE_PREFIX, subjectSlug);
+  const raw = readSessionValue(key);
   if (!raw) return null;
 
   try {
     return JSON.parse(raw);
   } catch {
-    removeSessionValue(getActivePracticeKey(subjectSlug));
+    removeSessionValue(key);
     return null;
   }
 }
 
-export function markActivePractice(subjectSlug, details = {}) {
-  if (!subjectSlug) return;
+export function markActivePractice(subjectSlug, details = {}, userId) {
+  const key = getActivePracticeKey(subjectSlug, userId);
+  if (!key) return;
 
+  removeLegacyValue(ACTIVE_PRACTICE_PREFIX, subjectSlug);
   writeSessionValue(
-    getActivePracticeKey(subjectSlug),
+    key,
     JSON.stringify({
       ...details,
       started_at: new Date().toISOString(),
@@ -137,22 +155,26 @@ export function markActivePractice(subjectSlug, details = {}) {
   );
 }
 
-export function clearActivePractice(subjectSlug) {
-  if (!subjectSlug) return;
-  removeSessionValue(getActivePracticeKey(subjectSlug));
+export function clearActivePractice(subjectSlug, userId) {
+  const key = getActivePracticeKey(subjectSlug, userId);
+  removeLegacyValue(ACTIVE_PRACTICE_PREFIX, subjectSlug);
+  if (key) removeSessionValue(key);
 }
 
-export function storePracticeDraft(subjectSlug, draft) {
-  if (!subjectSlug || !Array.isArray(draft?.questions) || draft.questions.length === 0) return false;
+export function storePracticeDraft(subjectSlug, draft, userId) {
+  const key = getPracticeDraftKey(subjectSlug, userId);
+  if (!key || !Array.isArray(draft?.questions) || draft.questions.length === 0) return false;
+  removeLegacyValue(PRACTICE_DRAFT_PREFIX, subjectSlug);
   return writeSessionValue(
-    getPracticeDraftKey(subjectSlug),
+    key,
     JSON.stringify({ ...draft, saved_at: new Date().toISOString() }),
   );
 }
 
-export function readPracticeDraft(subjectSlug) {
-  if (!subjectSlug) return null;
-  const key = getPracticeDraftKey(subjectSlug);
+export function readPracticeDraft(subjectSlug, userId) {
+  const key = getPracticeDraftKey(subjectSlug, userId);
+  if (!key) return null;
+  removeLegacyValue(PRACTICE_DRAFT_PREFIX, subjectSlug);
   const raw = readSessionValue(key);
   if (!raw) return null;
 
@@ -167,7 +189,8 @@ export function readPracticeDraft(subjectSlug) {
   }
 }
 
-export function clearPracticeDraft(subjectSlug) {
-  if (!subjectSlug) return;
-  removeSessionValue(getPracticeDraftKey(subjectSlug));
+export function clearPracticeDraft(subjectSlug, userId) {
+  const key = getPracticeDraftKey(subjectSlug, userId);
+  removeLegacyValue(PRACTICE_DRAFT_PREFIX, subjectSlug);
+  if (key) removeSessionValue(key);
 }

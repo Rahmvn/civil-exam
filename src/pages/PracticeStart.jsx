@@ -27,6 +27,7 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { useAuth } from "../lib/useAuth";
 
 function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }) {
   const targetRow = module.progression.recommendedRow;
@@ -140,6 +141,7 @@ function LockedModuleRow({ module }) {
 }
 
 export default function PracticeStart() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
@@ -330,7 +332,7 @@ export default function PracticeStart() {
       }
 
       const practiceQuestions = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, practiceQuestions);
+      storePracticeBatch(startConfirmSubject.slug, practiceQuestions, user?.id);
       const subjectSlug = startConfirmSubject.slug;
       setStartConfirmSubject(null);
       navigate(`/practice/${subjectSlug}?batch=1`, { state: { batchStarted: true } });
