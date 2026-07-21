@@ -197,11 +197,28 @@ export function hasStartablePublishedBatch(rows = []) {
   return (rows ?? []).some((row) => isPublishedBatchRow(row) && Boolean(row?.can_start));
 }
 
+function isCandidateModuleHidden(subject) {
+  return (
+    subject?.candidate_availability === "hidden"
+    || subject?.lifecycle_status === "draft"
+    || subject?.lifecycle_status === "retired"
+  );
+}
+
 export function shouldShowPracticeHubModule({
+  subject = null,
+  publishedCount = null,
   hasModuleAccess = false,
   canPurchase = false,
   rows = [],
 } = {}) {
+  const resolvedPublishedCount = publishedCount === null
+    ? (rows ?? []).filter(isPublishedBatchRow).length
+    : Number(publishedCount ?? 0);
+
+  if (isCandidateModuleHidden(subject) || isCandidateModuleComingSoon(subject, resolvedPublishedCount)) return false;
+  if (["available", "paused"].includes(subject?.candidate_availability)) return true;
+
   return Boolean(hasModuleAccess) || Boolean(canPurchase) || hasStartablePublishedBatch(rows);
 }
 
@@ -212,10 +229,11 @@ export function shouldShowCandidateModule({
   canPurchase = false,
   rows = [],
 } = {}) {
-  return (
-    isCandidateModuleComingSoon(subject, publishedCount) ||
-    shouldShowPracticeHubModule({ hasModuleAccess, canPurchase, rows })
-  );
+  if (isCandidateModuleHidden(subject)) return false;
+  if (isCandidateModuleComingSoon(subject, publishedCount)) return true;
+  if (["available", "paused"].includes(subject?.candidate_availability)) return true;
+
+  return shouldShowPracticeHubModule({ subject, publishedCount, hasModuleAccess, canPurchase, rows });
 }
 
 export function isModulePurchaseUnavailable({

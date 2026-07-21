@@ -3,7 +3,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(51);
+select plan(58);
+
+select ok(
+  has_table_privilege('service_role', 'public.objective_practice_sessions', 'SELECT')
+    and has_table_privilege('service_role', 'public.objective_practice_sessions', 'DELETE'),
+  'trusted backend maintenance can clear objective practice sessions'
+);
 
 update public.exam_packs set is_active = false;
 insert into public.exam_packs (
@@ -73,7 +79,8 @@ insert into public.questions (
 
 -- Assertions below inspect persisted state directly. Keep this test-only grant
 -- inside the transaction; rollback removes it before the next test file.
-grant select on public.practice_sets, public.questions, public.attempts, public.entitlements
+grant select on public.practice_sets, public.questions, public.attempts, public.entitlements,
+  public.objective_practice_sessions
 to authenticated;
 
 set local role authenticated;
@@ -119,10 +126,68 @@ select is((select payload->>'practice_set_id' from lifecycle_session), 'd3000000
 select is((select (payload->>'time_limit_seconds')::integer from lifecycle_session), 1800,
   'new objective sessions snapshot the configured module duration');
 
+create temporary table lifecycle_abandoned_session as
+select payload from lifecycle_session;
+grant select on lifecycle_abandoned_session to authenticated;
+
+select is(
+  public.abandon_objective_practice_session(
+    (select (payload->>'practice_session_id')::uuid from lifecycle_abandoned_session)
+  )->>'status',
+  'abandoned',
+  'explicit exit abandons the active objective session'
+);
+select is(
+  public.abandon_objective_practice_session(
+    (select (payload->>'practice_session_id')::uuid from lifecycle_abandoned_session)
+  )->>'status',
+  'abandoned',
+  'objective session abandonment is idempotent'
+);
+
+reset role;
+select is(
+  (select status from public.objective_practice_sessions
+   where id = (select (payload->>'practice_session_id')::uuid from lifecycle_abandoned_session)),
+  'abandoned',
+  'explicit exit persists the abandoned terminal state'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+update lifecycle_session
+set payload = public.start_objective_practice_session_v2(
+  null, 'lifecycle-objective', 1, false
+);
+
+select isnt(
+  (select payload->>'practice_session_id' from lifecycle_session),
+  (select payload->>'practice_session_id' from lifecycle_abandoned_session),
+  'starting after explicit exit creates a new server session'
+);
+select ok(
+  (select (payload->>'deadline_at')::timestamptz from lifecycle_session)
+    = (select (payload->>'started_at')::timestamptz from lifecycle_session) + interval '30 minutes'
+  and (select (payload->>'deadline_at')::timestamptz from lifecycle_session)
+    > (select (payload->>'server_now')::timestamptz from lifecycle_session),
+  'the replacement session receives a full fresh timer allocation'
+);
+
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select throws_ok(
+  format(
+    'select public.abandon_objective_practice_session(%L::uuid)',
+    (select payload->>'practice_session_id' from lifecycle_session)
+  ),
+  'P0001', 'This practice session could not be found',
+  'another authenticated user cannot abandon the candidate session'
+);
 
 select lives_ok(
   $$ select public.admin_update_module_timing('d2000000-0000-4000-8000-000000000001', 45, array[180,300]) $$,

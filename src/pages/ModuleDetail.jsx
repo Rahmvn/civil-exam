@@ -18,7 +18,6 @@ import {
 } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
-  FALLBACK_SUBJECTS,
   getBatchProgressionGuidance,
   getLockReason,
   getModuleDisplayName,
@@ -87,7 +86,7 @@ export default function ModuleDetail() {
     });
 
     setSummary(next.summary ?? null);
-    setSubjects(Array.isArray(next.subjects) && next.subjects.length > 0 ? next.subjects : FALLBACK_SUBJECTS);
+    setSubjects(Array.isArray(next.subjects) ? next.subjects : []);
     setModuleAccessCatalog(Array.isArray(next.catalog) ? next.catalog : []);
     setRows(Array.isArray(next.batchAccess) ? next.batchAccess : []);
     setAttempts(Array.isArray(next.attempts) ? next.attempts : []);
@@ -103,8 +102,7 @@ export default function ModuleDetail() {
     };
   }, [loadModuleData]);
 
-  const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
-  const subject = subjectsForDisplay.find((item) => item.slug === subjectSlug) ?? null;
+  const subject = subjects.find((item) => item.slug === subjectSlug) ?? null;
   const catalogEntry = moduleAccessCatalog.find((item) => item?.subject_slug === subjectSlug) ?? null;
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
@@ -114,7 +112,7 @@ export default function ModuleDetail() {
   const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
   const isPaused = catalogEntry?.candidate_availability === "paused";
   const selectedModuleName = getModuleDisplayName(
-    subjectsForDisplay.find((item) => item.slug === freeModuleSlug)?.name ?? "",
+    subjects.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
   const liveRows = rows.filter(isPublishedBatchRow);
   const isComingSoon = isCandidateModuleComingSoon(subject, liveRows.length);
@@ -154,7 +152,7 @@ export default function ModuleDetail() {
     }
 
     if (purchaseUnavailable) {
-      return { label: "Not available yet", disabled: true };
+      return { label: "Not currently for sale", disabled: true };
     }
 
     if (row.state === "locked_requires_payment" || !row.can_start) {

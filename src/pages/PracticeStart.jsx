@@ -17,7 +17,6 @@ import {
 } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import {
-  FALLBACK_SUBJECTS,
   getModuleDisplayName,
   getProgressionRecommendation,
   hasStartablePublishedBatch,
@@ -40,7 +39,7 @@ function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }
   }
 
   if (module.isPurchaseUnavailable) {
-    return { label: "Not available yet", disabled: true };
+    return { label: "Not currently for sale", disabled: true };
   }
 
   if (module.isComplete && module.hasModuleAccess) {
@@ -122,14 +121,18 @@ function PracticeLaunchCard({ module, primaryAction, secondaryAction, showProgre
 }
 
 function LockedModuleRow({ module }) {
+  const action = module.isPurchaseUnavailable
+    ? { label: "Not currently for sale", disabled: true }
+    : {
+        label: "Unlock module",
+        to: `/access?module=${encodeURIComponent(module.subject.slug)}`,
+      };
+
   return (
     <article className="practice-hub-locked-row">
       <h3>{module.displayName}</h3>
       <DashboardActionButton
-        action={{
-          label: "Unlock module",
-          to: `/access?module=${encodeURIComponent(module.subject.slug)}`,
-        }}
+        action={action}
         className="practice-hub-row-action"
       />
     </article>
@@ -188,7 +191,7 @@ export default function PracticeStart() {
 
   const freeModuleSlug = summary?.free_module_subject_slug ?? null;
   const hasSelectedFreeModule = Boolean(freeModuleSlug);
-  const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
+  const subjectsForDisplay = subjects;
   const catalogBySubject = useMemo(() => {
     const entries = new Map();
 
@@ -238,7 +241,13 @@ export default function PracticeStart() {
         hasStartableAccess,
         isPaused,
         isPurchaseUnavailable: isModulePurchaseUnavailable({ hasModuleAccess, canPurchase, rows }),
-        isVisibleInPracticeHub: shouldShowPracticeHubModule({ hasModuleAccess, canPurchase, rows }),
+        isVisibleInPracticeHub: shouldShowPracticeHubModule({
+          subject,
+          publishedCount: publishedRows.length,
+          hasModuleAccess,
+          canPurchase,
+          rows,
+        }),
         isComingSoon: isCandidateModuleComingSoon(subject, publishedRows.length),
         isComplete: publishedRows.length > 0 && completedCount === publishedRows.length,
       };
@@ -362,6 +371,12 @@ export default function PracticeStart() {
               <button className="primary-action" onClick={retryPracticeHub} type="button">Try again</button>
               <Link className="secondary-action" to="/dashboard#modules">View modules</Link>
             </div>
+          </article>
+        ) : publishedModules.length === 0 ? (
+          <article className="practice-hub-error">
+            <h2>No practice modules are available</h2>
+            <p>Please check again later or return to your dashboard.</p>
+            <Link className="secondary-action" to="/dashboard#modules">View modules</Link>
           </article>
         ) : isChoosingFirstModule ? (
           <div className="practice-hub-choice-grid">

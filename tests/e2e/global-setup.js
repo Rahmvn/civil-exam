@@ -49,6 +49,10 @@ async function findOrCreateUser(client, details) {
 async function resetCandidateData(client, user) {
   const testDetails = Object.values(TEST_USERS).find((details) => details.email === user.email);
   requireResult(
+    await client.from("objective_practice_sessions").delete().eq("user_id", user.id),
+    `Clear objective practice sessions for ${user.email}`,
+  );
+  requireResult(
     await client.from("oral_attempts").delete().eq("user_id", user.id),
     `Clear oral attempts for ${user.email}`,
   );
@@ -311,6 +315,7 @@ async function seedComingSoonModule(client, packId) {
       batch_size: 5,
       pass_mark_percent: 70,
       lifecycle_status: "coming_soon",
+      candidate_availability: "coming_soon",
       practice_type: "objective",
     }).select("id, slug, name, practice_type").single(),
     "Create coming-soon module fixture",

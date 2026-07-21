@@ -3,6 +3,7 @@ import { Link, Navigate, useBlocker, useLocation, useNavigate, useParams, useSea
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import {
+  abandonObjectivePracticeSession,
   getCandidateSummary,
   getPracticeQuestions,
   getSubjects,
@@ -136,7 +137,7 @@ function PracticeSubmitConfirmModal({
 
 function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
   return (
-    <div className="auth-modal-backdrop" role="presentation" onClick={onCancel}>
+    <div className="auth-modal-backdrop" role="presentation" onClick={busy ? undefined : onCancel}>
       <section
         aria-labelledby="practice-exit-confirm-title"
         aria-modal="true"
@@ -148,9 +149,9 @@ function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
         <h2 id="practice-exit-confirm-title">Exit this practice?</h2>
         <p>Your answers will be cleared. Opening this practice set again will start it from the beginning.</p>
         <div className="auth-modal-actions">
-          <button className="primary-action" onClick={onCancel} type="button">Continue practice</button>
+          <button className="primary-action" disabled={busy} onClick={onCancel} type="button">Continue practice</button>
           <button className="ghost-button practice-confirm-exit" disabled={busy} onClick={onConfirm} type="button">
-            {busy ? "Submitting..." : "Exit practice"}
+            {busy ? "Exiting..." : "Exit practice"}
           </button>
         </div>
       </section>
@@ -186,6 +187,7 @@ export default function Practice() {
   const [remainingSeconds, setRemainingSeconds] = useState(EXAM_DURATION_MINUTES * 60);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [exiting, setExiting] = useState(false);
   const [error, setError] = useState("");
   const [emptyMessage, setEmptyMessage] = useState("");
   const [questionMapOpen, setQuestionMapOpen] = useState(false);
@@ -514,20 +516,40 @@ export default function Practice() {
     setExitConfirmOpen(true);
   }
 
-  function confirmExit() {
-    if (submitting) return;
-    allowExitRef.current = true;
-    if (subject?.slug) {
-      clearPracticeBatch(subject.slug);
-      clearActivePractice(subject.slug);
-      clearPracticeDraft(subject.slug);
+  async function confirmExit() {
+    if (submitting || exiting) return;
+    setExiting(true);
+    setError("");
+
+    try {
+      const practiceSessionId = questions[0]?.practice_session_id;
+      if (practiceSessionId) {
+        await abandonObjectivePracticeSession(practiceSessionId);
+      }
+
+      allowExitRef.current = true;
+      if (subject?.slug) {
+        clearPracticeBatch(subject.slug);
+        clearActivePractice(subject.slug);
+        clearPracticeDraft(subject.slug);
+      }
+      setExitConfirmOpen(false);
+      if (blocker.state === "blocked") {
+        blocker.proceed();
+        return;
+      }
+      navigate("/dashboard#modules", { replace: true });
+    } catch (exitError) {
+      logAppError(`Practice exit:${subject?.slug ?? "unknown"}`, exitError);
+      setExitConfirmOpen(false);
+      if (blocker.state === "blocked") blocker.reset();
+      setError(friendlyErrorMessage(
+        exitError,
+        "We could not close this practice session. Your answers and remaining time are still saved.",
+      ));
+    } finally {
+      setExiting(false);
     }
-    setExitConfirmOpen(false);
-    if (blocker.state === "blocked") {
-      blocker.proceed();
-      return;
-    }
-    navigate("/dashboard#modules", { replace: true });
   }
 
   function cancelExit() {
@@ -754,7 +776,7 @@ export default function Practice() {
 
             {(exitConfirmOpen || blocker.state === "blocked") && (
               <PracticeExitConfirmModal
-                busy={submitting}
+                busy={submitting || exiting}
                 onCancel={cancelExit}
                 onConfirm={confirmExit}
               />

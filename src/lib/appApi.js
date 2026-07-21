@@ -1,5 +1,5 @@
 import { supabase } from "./supabaseClient";
-import { EXAM_MODULES, NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
+import { NIGERIA_STATES, SERVICE_LEVELS } from "./catalog";
 import { readWithPolicy } from "./requestPolicy";
 
 export const DIFFICULTIES = ["easy", "medium", "hard"];
@@ -173,7 +173,7 @@ export async function getSubjects() {
       .order("sort_order", { ascending: true }),
   ));
 
-  return ensureArray(rows).length > 0 ? rows : EXAM_MODULES;
+  return ensureArray(rows);
 }
 
 export async function getModuleProgress() {
@@ -349,6 +349,14 @@ export async function startPracticeBatch(subjectSlug, batchNumber = null) {
     requested_allow_free_lock: true,
   }));
   return decorateObjectiveSessionQuestions(session);
+}
+
+export async function abandonObjectivePracticeSession(practiceSessionId) {
+  if (!practiceSessionId) return null;
+
+  return requireData(await supabase.rpc("abandon_objective_practice_session", {
+    requested_session_id: practiceSessionId,
+  }));
 }
 
 function decorateObjectiveSessionQuestions(session) {

@@ -110,7 +110,7 @@ function OralStart({ accessRow, canPurchase, duration, durationOptions, error, o
               </button>
             ) : purchaseUnavailable ? (
               <button className="primary-action" disabled type="button">
-                Not available yet
+                Not currently for sale
               </button>
             ) : (
               <Link className="primary-action" to={`/access?module=${encodeURIComponent(subject.slug)}`}>

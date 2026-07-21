@@ -135,7 +135,7 @@ test("module recommendations prioritize recent unfinished usable modules", () =>
   assert.equal(result.allComplete, false);
 });
 
-test("practice hub visibility respects startable access and sale availability", () => {
+test("candidate module visibility follows availability independently from sales", () => {
   const completedFreeOralRows = [
     batch(1, "completed_passed", { can_start: false }),
     batch(2, "locked_requires_payment", { can_start: false }),
@@ -180,11 +180,43 @@ test("practice hub visibility respects startable access and sale availability", 
   );
   assert.equal(
     shouldShowCandidateModule({
-      subject: { slug: "oral-questions", lifecycle_status: "active" },
+      subject: {
+        slug: "oral-questions",
+        lifecycle_status: "active",
+        candidate_availability: "available",
+      },
       publishedCount: 2,
       hasModuleAccess: false,
       canPurchase: false,
       rows: completedFreeOralRows,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldShowPracticeHubModule({
+      subject: {
+        slug: "oral-questions",
+        lifecycle_status: "active",
+        candidate_availability: "available",
+      },
+      publishedCount: 2,
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: completedFreeOralRows,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldShowCandidateModule({
+      subject: {
+        slug: "hidden-module",
+        lifecycle_status: "active",
+        candidate_availability: "hidden",
+      },
+      publishedCount: 2,
+      hasModuleAccess: true,
+      canPurchase: true,
+      rows: startableFreeRows,
     }),
     false,
   );
@@ -197,5 +229,19 @@ test("practice hub visibility respects startable access and sale availability", 
       rows: [],
     }),
     true,
+  );
+  assert.equal(
+    shouldShowPracticeHubModule({
+      subject: {
+        slug: "future-module",
+        lifecycle_status: "coming_soon",
+        candidate_availability: "coming_soon",
+      },
+      publishedCount: 0,
+      hasModuleAccess: false,
+      canPurchase: false,
+      rows: [],
+    }),
+    false,
   );
 });

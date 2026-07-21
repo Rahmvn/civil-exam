@@ -21,7 +21,6 @@ import {
 } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
-  FALLBACK_SUBJECTS,
   formatAttemptPercent,
   formatDate,
   formatPercent,
@@ -140,7 +139,7 @@ export default function Dashboard() {
     };
   }, [loadDashboardData]);
 
-  const subjectsForDisplay = subjects.length > 0 ? subjects : FALLBACK_SUBJECTS;
+  const subjectsForDisplay = subjects;
   const batchAccessBySubject = useMemo(() => {
     const grouped = {};
 
@@ -248,7 +247,7 @@ export default function Dashboard() {
     }
 
     if (purchaseUnavailable) {
-      return { label: "Not available yet", disabled: true };
+      return { label: "Not currently for sale", disabled: true };
     }
 
     if (hasModuleAccess && completedCount === publishedCount) {
@@ -452,6 +451,10 @@ export default function Dashboard() {
             <div className="dashboard-module-load-error" role="alert">
               <p>{moduleDataError}</p>
               <button className="text-action" onClick={() => void loadDashboardData({ showLoading: false })} type="button">Try again</button>
+            </div>
+          ) : moduleCards.length === 0 ? (
+            <div className="dashboard-module-load-error">
+              <p>No modules are currently visible. Please check again later.</p>
             </div>
           ) : <div className="dashboard-module-grid-v3">
             {moduleCards.map((card) => (
