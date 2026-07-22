@@ -360,6 +360,46 @@ test("admin help queue is directly accessible", async ({ page }) => {
   await expectNoHorizontalOverflow(page);
 });
 
+test("admin payment attention queue identifies paid access mismatches", async ({ page }) => {
+  await page.route("**/rest/v1/rpc/get_admin_payment_attention", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([{
+        payment_order_id: "payment-attention-e2e",
+        user_id: "candidate-attention-e2e",
+        requester_name: "Affected Candidate",
+        requester_email: "affected@example.test",
+        subject_id: "subject-attention-e2e",
+        subject_name: "Public Service Rules",
+        subject_slug: "public-service-rules",
+        provider_reference: "PS-ATTENTION-E2E",
+        amount_kobo: 250000,
+        currency: "NGN",
+        paid_at: "2026-07-22T04:00:00.000Z",
+        created_at: "2026-07-22T03:55:00.000Z",
+        provider_status: "success",
+        fulfillment_status: "failed",
+        fulfillment_error: "Access activation must be retried",
+        review_status: "clear",
+        attention_type: "access_issue",
+        entitlement_status: null,
+        access_expires_at: null,
+        support_request_id: "support-attention-e2e",
+        support_request_status: "received",
+      }]),
+    });
+  });
+
+  await page.goto("/admin/payments");
+  await expect(page.getByRole("heading", { name: "Payment attention", exact: true })).toBeVisible();
+  await expect(page.getByText("PS-ATTENTION-E2E", { exact: true })).toBeVisible();
+  await expect(page.getByText("Affected Candidate", { exact: true })).toBeVisible();
+  await expect(page.getByText("Access issue", { exact: true })).toBeVisible();
+  await expect(page.getByText("Access activation must be retried", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open help request" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
 test("admin catalogue has no serious automated accessibility violations", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Content", exact: true })).toBeVisible();

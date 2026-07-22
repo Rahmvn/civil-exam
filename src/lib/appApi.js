@@ -677,6 +677,12 @@ export async function getAdminSupportRequests(limit = 100) {
   )));
 }
 
+export async function getAdminPaymentAttention(limit = 100) {
+  return readWithPolicy(`admin-payment-attention:${limit}`, async () => ensureArray(requireData(
+    await supabase.rpc("get_admin_payment_attention", { requested_limit: limit }),
+  )));
+}
+
 export async function updateSupportRequest(requestId, status, resolutionNote) {
   return requireData(await supabase.rpc("update_support_request", {
     requested_id: requestId,

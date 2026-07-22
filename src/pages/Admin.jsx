@@ -22,6 +22,7 @@ import {
   getAdminPracticeSets,
   getAdminPracticeSetValidation,
   getAdminQuestions,
+  getAdminPaymentAttention,
   getAdminSupportRequests,
   importAdminQuestions,
   publishAdminPracticeSetReplacement,
@@ -114,6 +115,13 @@ function AdminChromeIcon({ name }) {
         <path d="M17 14v-3" />
       </>
     ),
+    payments: (
+      <>
+        <rect x="4" y="6" width="16" height="12" rx="2" />
+        <path d="M4 10h16" />
+        <path d="M8 15h3" />
+      </>
+    ),
     guide: (
       <>
         <path d="M7 5.5A2.5 2.5 0 0 1 9.5 3H19v16h-9.5A2.5 2.5 0 0 0 7 21" />
@@ -169,6 +177,14 @@ function AdminRail({ currentView, navigate }) {
         >
           <AdminChromeIcon name="activity" />
           <strong>Activity</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "payments" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/payments")}
+        >
+          <AdminChromeIcon name="payments" />
+          <strong>Payments</strong>
         </button>
         <button
           className={`admin-rail-link${currentView === "guide" ? " is-active" : ""}`}
@@ -1152,6 +1168,89 @@ function SupportRequestDetail({ onUpdate, request, working }) {
   );
 }
 
+const PAYMENT_ATTENTION_LABELS = {
+  access_issue: "Access issue",
+  dispute: "Under dispute",
+  refund_pending: "Refund pending",
+  processing_delayed: "Processing delayed",
+};
+
+function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefresh, query, refreshing }) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleItems = items.filter((item) => [
+    item.requester_name,
+    item.requester_email,
+    item.subject_name,
+    item.provider_reference,
+    item.attention_type,
+    item.fulfillment_error,
+  ].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery));
+
+  return (
+    <>
+      <section className="admin-page-heading admin-payment-heading">
+        <div>
+          <h1>Payment attention</h1>
+          <p>Confirmed payments without usable access, delayed processing, refunds, and disputes appear here automatically.</p>
+        </div>
+        <button disabled={refreshing} onClick={onRefresh} type="button">
+          {refreshing ? "Refreshing..." : "Refresh queue"}
+        </button>
+      </section>
+      <AdminSummaryStrip items={[
+        { label: "Needs attention", value: items.length, tone: items.length > 0 ? "attention" : "success" },
+        { label: "Access issues", value: items.filter((item) => item.attention_type === "access_issue").length },
+        { label: "Provider reviews", value: items.filter((item) => ["dispute", "refund_pending"].includes(item.attention_type)).length },
+      ]} />
+      <section className="admin-payment-board">
+        <div className="admin-list-toolbar">
+          <label className="admin-inline-search">
+            <span className="sr-only">Search payment attention</span>
+            <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search payment reference, candidate, or module..." type="search" value={query} />
+          </label>
+          <span>{visibleItems.length} records</span>
+        </div>
+        {visibleItems.length === 0 ? (
+          <div className="admin-empty-state">
+            <h2>{items.length === 0 ? "No payment problems detected" : "No matching payments"}</h2>
+            <p>{items.length === 0 ? "Confirmed payments and module access are currently aligned." : "Try a different reference, candidate, or module."}</p>
+          </div>
+        ) : (
+          <div className="admin-payment-list">
+            {visibleItems.map((item) => (
+              <article className={`admin-payment-attention-row is-${item.attention_type}`} key={item.payment_order_id}>
+                <header>
+                  <div>
+                    <span className="admin-payment-attention-type">{PAYMENT_ATTENTION_LABELS[item.attention_type] ?? "Needs attention"}</span>
+                    <h2>{item.subject_name}</h2>
+                    <p>{item.requester_name || item.requester_email || "Candidate"}</p>
+                  </div>
+                  <strong>{formatAdminCurrency(item.amount_kobo, item.currency)}</strong>
+                </header>
+                <dl>
+                  <div><dt>Reference</dt><dd className="is-technical">{item.provider_reference}</dd></div>
+                  <div><dt>Candidate</dt><dd>{item.requester_email || "Email unavailable"}</dd></div>
+                  <div><dt>Provider</dt><dd>{item.provider_status || "Unknown"}</dd></div>
+                  <div><dt>Access</dt><dd>{item.fulfillment_status || "Not started"}</dd></div>
+                  <div><dt>Paid</dt><dd>{item.paid_at ? new Date(item.paid_at).toLocaleString("en-NG") : "Not confirmed"}</dd></div>
+                </dl>
+                {item.fulfillment_error && <p className="admin-payment-diagnostic">{item.fulfillment_error}</p>}
+                <footer>
+                  {item.support_request_id ? (
+                    <button onClick={() => onOpenSupport(item.provider_reference)} type="button">Open help request</button>
+                  ) : (
+                    <span>No linked help request</span>
+                  )}
+                </footer>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
 function AdminSupportView({ onQueryChange, onUpdate, query, requests, working }) {
   const [selectedId, setSelectedId] = useState(null);
   const normalizedQuery = query.trim().toLowerCase();
@@ -1207,6 +1306,8 @@ export default function Admin() {
   const selectedSetId = routeSetId ?? searchParams.get("set");
   const currentView = location.pathname === "/admin/activity" || searchParams.get("view") === "activity"
     ? "activity"
+    : location.pathname === "/admin/payments" || searchParams.get("view") === "payments"
+      ? "payments"
     : location.pathname === "/admin/help" || searchParams.get("view") === "support"
       ? "support"
     : location.pathname === "/admin/guide" || searchParams.get("view") === "guide"
@@ -1219,6 +1320,8 @@ export default function Admin() {
   const [validation, setValidation] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [paymentAttention, setPaymentAttention] = useState([]);
+  const [paymentAttentionLoading, setPaymentAttentionLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
   const [contentKey, setContentKey] = useState(null);
   const [validationKey, setValidationKey] = useState(null);
@@ -1281,6 +1384,26 @@ export default function Admin() {
         if (!active) return;
         logAppError("Admin support requests load", error);
         setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Help requests could not be loaded.") });
+      });
+
+    return () => { active = false; };
+  }, [currentView]);
+
+  useEffect(() => {
+    if (currentView !== "payments") return undefined;
+    let active = true;
+
+    getAdminPaymentAttention(100)
+      .then((rows) => {
+        if (active) setPaymentAttention(rows);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin payment attention load", error);
+        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "The payment attention queue could not be loaded.") });
+      })
+      .finally(() => {
+        if (active) setPaymentAttentionLoading(false);
       });
 
     return () => { active = false; };
@@ -1356,6 +1479,8 @@ export default function Admin() {
   const setContentLoading = Boolean(routeContentKey && contentKey !== routeContentKey);
   const shellSearchPlaceholder = currentView === "activity"
     ? "Search activity..."
+    : currentView === "payments"
+      ? "Search payment attention..."
     : currentView === "support"
       ? "Search help requests..."
     : currentView === "guide"
@@ -1387,6 +1512,23 @@ export default function Admin() {
     } finally {
       setWorking(false);
     }
+  }
+
+  async function refreshPaymentAttention() {
+    setPaymentAttentionLoading(true);
+    try {
+      setPaymentAttention(await getAdminPaymentAttention(100));
+      setFeedback({ tone: "success", message: "Payment attention queue refreshed." });
+    } catch (error) {
+      reportError("Admin payment attention refresh", error, "The payment attention queue could not be refreshed.");
+    } finally {
+      setPaymentAttentionLoading(false);
+    }
+  }
+
+  function openLinkedPaymentSupport(reference) {
+    navigate("/admin/help");
+    setShellSearch(reference);
   }
 
   async function refreshModules() {
@@ -1815,6 +1957,15 @@ export default function Admin() {
           <div className="admin-page">
             {currentView === "activity" ? (
               <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
+            ) : currentView === "payments" ? (
+              <AdminPaymentAttentionView
+                items={paymentAttention}
+                onOpenSupport={openLinkedPaymentSupport}
+                onQueryChange={setShellSearch}
+                onRefresh={() => void refreshPaymentAttention()}
+                query={shellSearch}
+                refreshing={paymentAttentionLoading}
+              />
             ) : currentView === "support" ? (
               <AdminSupportView onQueryChange={setShellSearch} onUpdate={(...args) => void handleSupportUpdate(...args)} query={shellSearch} requests={supportRequests} working={working} />
             ) : currentView === "guide" ? (

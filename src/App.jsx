@@ -115,6 +115,10 @@ const router = createBrowserRouter([
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
       {
+        path: "/admin/payments",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
         path: "/admin/modules/:moduleId",
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },

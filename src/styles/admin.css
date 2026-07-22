@@ -2795,3 +2795,106 @@ button.admin-danger-link {
   background: #fff0cf;
   border-color: #e4c27e;
 }
+
+.admin-payment-heading {
+  align-items: center;
+}
+
+.admin-payment-board,
+.admin-payment-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-payment-attention-row {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-left: 4px solid #b2782f;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-payment-attention-row.is-access_issue {
+  border-left-color: #b23b3b;
+}
+
+.admin-payment-attention-row header,
+.admin-payment-attention-row footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-payment-attention-row h2,
+.admin-payment-attention-row p {
+  margin: 0;
+}
+
+.admin-payment-attention-row header p,
+.admin-payment-attention-row footer span {
+  color: var(--admin-muted, #667067);
+}
+
+.admin-payment-attention-type {
+  color: #8d2e2e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-payment-attention-row dl {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-payment-attention-row dl > div {
+  min-width: 0;
+}
+
+.admin-payment-attention-row dt {
+  color: var(--admin-muted, #667067);
+  font-size: 0.76rem;
+}
+
+.admin-payment-attention-row dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.admin-payment-attention-row dd.is-technical {
+  text-transform: none;
+}
+
+.admin-payment-diagnostic {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff4f1;
+  color: #7d2929;
+}
+
+@media (max-width: 900px) {
+  .admin-payment-attention-row dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-payment-heading,
+  .admin-payment-attention-row header,
+  .admin-payment-attention-row footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-payment-attention-row dl {
+    grid-template-columns: 1fr;
+  }
+}
