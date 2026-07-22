@@ -406,6 +406,15 @@ test("admin help queue is directly accessible", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Help requests", exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Search subject, candidate, email, or reference")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Help request status" })).toHaveValue("open");
+  await page.getByRole("button", { name: "Support procedures" }).click();
+  const procedures = page.getByRole("dialog", { name: "Support procedures" });
+  await expect(procedures).toBeVisible();
+  await expect(procedures.getByRole("heading", { name: "Triage every request the same way" })).toBeVisible();
+  await procedures.getByLabel("Procedure", { exact: true }).selectOption("payment");
+  await expect(procedures.getByRole("heading", { name: "Payment and paid access" })).toBeVisible();
+  await expect(procedures.getByText(/Do not ask the candidate to pay again/)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(procedures).toHaveCount(0);
   await expect(page.locator(".admin-support-table tbody tr")).toHaveCount(1);
   await expect(page.locator(".admin-support-table thead")).toContainText("Request");
   await expect(page.locator(".admin-support-table thead")).toContainText("Candidate");

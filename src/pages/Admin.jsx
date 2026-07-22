@@ -5,6 +5,7 @@ import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
+import { AdminSupportProcedures } from "../components/admin/AdminSupportProcedures";
 import { BrandLogo } from "../components/BrandLogo";
 import { LoadingState } from "../components/LoadingState";
 import "../styles/admin.css";
@@ -1365,6 +1366,7 @@ function formatSupportAge(createdAt) {
 
 function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange, onUpdate, query, queue, status, working }) {
   const [selectedId, setSelectedId] = useState(null);
+  const [proceduresOpen, setProceduresOpen] = useState(false);
   const requests = queue.items;
   const selected = selectedId ? requests.find((request) => request.id === selectedId) ?? null : null;
   const firstResult = queue.total === 0 ? 0 : queue.offset + 1;
@@ -1374,6 +1376,7 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
     <>
       <section className="admin-page-heading">
         <div><h1>Help requests</h1></div>
+        <button className="ghost-button" onClick={() => setProceduresOpen(true)} type="button">Support procedures</button>
       </section>
       <section className="admin-support-board">
         <div className="admin-support-toolbar">
@@ -1439,6 +1442,7 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
           working={working}
         />
       )}
+      {proceduresOpen && <AdminSupportProcedures onClose={() => setProceduresOpen(false)} />}
     </>
   );
 }
