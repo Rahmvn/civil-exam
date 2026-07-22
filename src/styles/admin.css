@@ -2562,7 +2562,7 @@ button.admin-danger-link {
 .admin-support-board {
   display: grid;
   gap: 12px;
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .admin-support-toolbar {

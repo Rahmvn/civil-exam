@@ -1322,12 +1322,12 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
   return (
     <>
       <section className="admin-page-heading">
-        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Review and resolve candidate requests.</p></div>
+        <div><h1>Help requests</h1></div>
       </section>
       <section className="admin-support-board">
         <div className="admin-support-toolbar">
           <label className="admin-support-filter">
-            <span>Status</span>
+            <span className="sr-only">Status</span>
             <select aria-label="Help request status" onChange={(event) => onStatusChange(event.target.value)} value={status}>
               <option value="open">Open ({queue.counts.open})</option>
               <option value="received">Received ({queue.counts.received})</option>
