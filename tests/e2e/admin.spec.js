@@ -404,25 +404,25 @@ test("admin help queue is directly accessible", async ({ page }) => {
 
   await page.goto("/admin/help");
   await expect(page.getByRole("heading", { name: "Help requests", exact: true })).toBeVisible();
-  await expect(page.getByPlaceholder("Search help requests...").first()).toBeVisible();
+  await expect(page.getByPlaceholder("Search subject, candidate, email, or reference")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Help request status" })).toHaveValue("open");
-  await expect(page.locator(".admin-support-request-card")).toHaveCount(1);
-
-  const selectedCardStyle = await page.locator(".admin-support-request-card").first().evaluate((element) => {
-    const style = window.getComputedStyle(element);
-    return { backgroundColor: style.backgroundColor, borderRadius: style.borderRadius };
-  });
-  expect(selectedCardStyle.backgroundColor).toBe("rgb(240, 248, 244)");
-  expect(selectedCardStyle.borderRadius).toBe("14px");
+  await expect(page.locator(".admin-support-table tbody tr")).toHaveCount(1);
+  await expect(page.locator(".admin-support-table thead")).toContainText("Request");
+  await expect(page.locator(".admin-support-table thead")).toContainText("Candidate");
+  await expect(page.locator(".admin-support-layout")).toHaveCount(0);
 
   await page.getByRole("combobox", { name: "Help request status" }).selectOption("all");
-  await expect(page.locator(".admin-support-request-card")).toHaveCount(2);
+  await expect(page.locator(".admin-support-table tbody tr")).toHaveCount(2);
   await page.getByRole("button", { name: /Module access restored/ }).click();
-  await expect(page.locator(".admin-support-detail").getByRole("heading", { name: "Module access restored" })).toBeVisible();
-  await expect(page.locator(".admin-support-detail").getByText("Access was restored after reconciliation.")).toBeVisible();
+  const requestDrawer = page.getByRole("dialog", { name: "Module access restored" });
+  await expect(requestDrawer).toBeVisible();
+  await expect(requestDrawer.getByText("Access was restored after reconciliation.")).toBeVisible();
+  await expect(requestDrawer.getByRole("button", { name: "Save changes" })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(accessibility.violations.filter((violation) =>
     ["serious", "critical"].includes(violation.impact))).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(requestDrawer).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
 

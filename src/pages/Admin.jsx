@@ -1125,47 +1125,72 @@ function ActivityView({ auditLogs, onQueryChange, query }) {
   );
 }
 
-function SupportRequestDetail({ onUpdate, request, working }) {
+function SupportRequestDetail({ onClose, onUpdate, request, working }) {
   const [status, setStatus] = useState(request.status);
   const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
 
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape" && !working) onClose();
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose, working]);
+
   return (
-    <section className="admin-support-detail">
-      <header>
-        <div>
-          <span className="admin-support-category">{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</span>
-          <h2>{request.subject}</h2>
-          <p>{request.requester_name || request.requester_email || "Candidate"}</p>
+    <div className="admin-support-drawer-backdrop" onMouseDown={working ? undefined : onClose} role="presentation">
+      <aside aria-labelledby="admin-support-drawer-title" aria-modal="true" className="admin-support-drawer" onMouseDown={(event) => event.stopPropagation()} role="dialog">
+        <header className="admin-support-drawer-header">
+          <div>
+            <span>Request #{String(request.id).slice(0, 8).toUpperCase()}</span>
+            <h2 id="admin-support-drawer-title">{request.subject}</h2>
+            <p><span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span><span>{new Date(request.created_at).toLocaleString("en-NG")}</span></p>
+          </div>
+          <button autoFocus className="admin-support-drawer-close" disabled={working} onClick={onClose} type="button" aria-label="Close request details">×</button>
+        </header>
+
+        <div aria-label="Request content" className="admin-support-drawer-body" role="region" tabIndex="0">
+          <section className="admin-support-message">
+            <h3>Candidate message</h3>
+            <p>{request.description}</p>
+          </section>
+          <section className="admin-support-request-details">
+            <h3>Request details</h3>
+            <dl>
+              <div><dt>Candidate</dt><dd>{request.requester_name || "Not provided"}</dd></div>
+              {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
+              <div><dt>Category</dt><dd>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</dd></div>
+              {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
+              {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
+            </dl>
+          </section>
         </div>
-        <strong className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</strong>
-      </header>
-      <div className="admin-support-description"><span>Candidate’s message</span><p>{request.description}</p></div>
-      <dl className="admin-support-metadata">
-        {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
-        {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
-        {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
-        <div><dt>Received</dt><dd>{new Date(request.created_at).toLocaleString("en-NG")}</dd></div>
-      </dl>
-      <div className="admin-support-resolution">
-        <div className="admin-support-resolution-heading"><span aria-hidden="true">✓</span><div><h3>Resolve request</h3><p>Update the status and leave a clear note for the candidate.</p></div></div>
-        <label>
-          <span>Status</span>
-          <select disabled={working} onChange={(event) => setStatus(event.target.value)} value={status}>
-            <option value="received">Received</option>
-            <option value="in_review">In review</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
-          </select>
-        </label>
-        <label>
-          <span>Resolution note</span>
-          <textarea disabled={working} maxLength={2000} onChange={(event) => setResolutionNote(event.target.value)} rows={4} value={resolutionNote} />
-        </label>
-        <button disabled={working || (status === request.status && resolutionNote === (request.resolution_note ?? ""))} onClick={() => onUpdate(request.id, status, resolutionNote)} type="button">
-          {working ? "Saving..." : "Save update"}
-        </button>
-      </div>
-    </section>
+
+        <footer className="admin-support-drawer-action">
+          <label>
+            <span>Status</span>
+            <select disabled={working} onChange={(event) => setStatus(event.target.value)} value={status}>
+              <option value="received">Received</option>
+              <option value="in_review">In review</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </label>
+          <label>
+            <span>Resolution note</span>
+            <textarea disabled={working} maxLength={2000} onChange={(event) => setResolutionNote(event.target.value)} placeholder="What was done for the candidate?" rows={3} value={resolutionNote} />
+          </label>
+          <button disabled={working || (status === request.status && resolutionNote === (request.resolution_note ?? ""))} onClick={() => onUpdate(request.id, status, resolutionNote)} type="button">
+            {working ? "Saving..." : "Save changes"}
+          </button>
+        </footer>
+      </aside>
+    </div>
   );
 }
 
@@ -1277,26 +1302,32 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
   );
 }
 
+function formatSupportAge(createdAt) {
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000));
+  if (elapsedMinutes < 1) return "Just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m`;
+  const hours = Math.floor(elapsedMinutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
 function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange, onUpdate, query, queue, status, working }) {
   const [selectedId, setSelectedId] = useState(null);
   const requests = queue.items;
-  const selected = requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
+  const selected = selectedId ? requests.find((request) => request.id === selectedId) ?? null : null;
   const firstResult = queue.total === 0 ? 0 : queue.offset + 1;
   const lastResult = Math.min(queue.offset + requests.length, queue.total);
 
   return (
     <>
       <section className="admin-page-heading">
-        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Work through unresolved requests without loading the entire support history.</p></div>
+        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Review and resolve candidate requests.</p></div>
       </section>
       <section className="admin-support-board">
-        <div className="admin-list-toolbar">
-          <label className="admin-inline-search">
-            <span className="sr-only">Search help requests</span>
-            <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search help requests..." type="search" value={query} />
-          </label>
+        <div className="admin-support-toolbar">
           <label className="admin-support-filter">
-            <span className="sr-only">Filter help requests by status</span>
+            <span>Status</span>
             <select aria-label="Help request status" onChange={(event) => onStatusChange(event.target.value)} value={status}>
               <option value="open">Open ({queue.counts.open})</option>
               <option value="received">Received ({queue.counts.received})</option>
@@ -1306,35 +1337,57 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
               <option value="all">All ({queue.counts.all})</option>
             </select>
           </label>
-          <span>{loading ? "Loading..." : `${firstResult}–${lastResult} of ${queue.total}`}</span>
+          <label className="admin-support-search">
+            <span className="sr-only">Search help requests</span>
+            <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search subject, candidate, email, or reference" type="search" value={query} />
+          </label>
+          <span className="admin-support-result-count">{loading ? "Loading..." : `${queue.total} request${queue.total === 1 ? "" : "s"}`}</span>
         </div>
         {loading && requests.length === 0 ? <LoadingState /> : requests.length === 0 ? (
           <div className="admin-empty-state"><h2>No matching requests</h2><p>Try another status or search term. New candidate requests will appear here automatically.</p></div>
         ) : (
-          <>
-            <div className="admin-support-layout">
-              <div className="admin-support-list">
+          <div className={`admin-support-table-shell${loading ? " is-loading" : ""}`}>
+            <table className="admin-support-table">
+              <thead>
+                <tr><th>Request</th><th>Candidate</th><th>Category</th><th>Status</th><th>Waiting</th></tr>
+              </thead>
+              <tbody>
                 {requests.map((request) => (
-                  <button className={`admin-support-request-card${selected?.id === request.id ? " is-active" : ""}`} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
-                    <span className="admin-support-request-icon" aria-hidden="true">{String(request.category || "?").charAt(0).toUpperCase()}</span>
-                    <span className="admin-support-request-copy">
-                      <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
-                      <span><small>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</small><small>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</small></span>
-                    </span>
-                    <span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span>
-                  </button>
+                  <tr key={request.id}>
+                    <td>
+                      <button className="admin-support-open-request" onClick={() => setSelectedId(request.id)} type="button">
+                        <strong>{request.subject}</strong>
+                        <span className="admin-support-request-preview">{request.description}</span>
+                        <span className="admin-support-request-mobile-meta">{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category} · {formatSupportAge(request.created_at)}</span>
+                      </button>
+                    </td>
+                    <td><strong>{request.requester_name || "Candidate"}</strong><span>{request.requester_email || "Email unavailable"}</span></td>
+                    <td>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</td>
+                    <td><span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span></td>
+                    <td title={new Date(request.created_at).toLocaleString("en-NG")}>{formatSupportAge(request.created_at)}</td>
+                  </tr>
                 ))}
-              </div>
-              {selected && <SupportRequestDetail key={`${selected.id}:${selected.updated_at}`} onUpdate={onUpdate} request={selected} working={working} />}
-            </div>
-            <nav className="admin-support-pagination" aria-label="Help request pages">
-              <button disabled={loading || queue.offset === 0} onClick={() => onPageChange(-1)} type="button">Previous</button>
+              </tbody>
+            </table>
+            <footer className="admin-support-table-footer">
               <span>{firstResult}–{lastResult} of {queue.total}</span>
-              <button disabled={loading || !queue.hasMore} onClick={() => onPageChange(1)} type="button">Next</button>
-            </nav>
-          </>
+              <nav className="admin-support-pagination" aria-label="Help request pages">
+                <button disabled={loading || queue.offset === 0} onClick={() => onPageChange(-1)} type="button">Previous</button>
+                <button disabled={loading || !queue.hasMore} onClick={() => onPageChange(1)} type="button">Next</button>
+              </nav>
+            </footer>
+          </div>
         )}
       </section>
+      {selected && (
+        <SupportRequestDetail
+          key={`${selected.id}:${selected.updated_at}`}
+          onClose={() => setSelectedId(null)}
+          onUpdate={onUpdate}
+          request={selected}
+          working={working}
+        />
+      )}
     </>
   );
 }
@@ -1992,15 +2045,19 @@ export default function Admin() {
 
         <div className="admin-stage">
           <header className="admin-topbar">
-            <label className="admin-shell-search">
-              <span className="sr-only">Search current admin view</span>
-              <input
-                type="search"
-                value={shellSearch}
-                onChange={(event) => setShellSearch(event.target.value)}
-                placeholder={shellSearchPlaceholder}
-              />
-            </label>
+            {currentView === "support" ? (
+              <span className="admin-topbar-section">Support operations</span>
+            ) : (
+              <label className="admin-shell-search">
+                <span className="sr-only">Search current admin view</span>
+                <input
+                  type="search"
+                  value={shellSearch}
+                  onChange={(event) => setShellSearch(event.target.value)}
+                  placeholder={shellSearchPlaceholder}
+                />
+              </label>
+            )}
             <div className="admin-topbar-context">
               <span className="admin-topbar-avatar" aria-hidden="true">A</span>
               <span className="admin-topbar-label">Admin</span>
