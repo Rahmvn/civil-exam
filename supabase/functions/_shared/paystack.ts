@@ -99,7 +99,7 @@ export async function getModuleOffering(
 ) {
   const { data: subject, error: subjectError } = await adminClient
     .from("subjects")
-    .select("id, name, slug, lifecycle_status, practice_type")
+    .select("id, name, slug, lifecycle_status, candidate_availability, practice_type")
     .eq("slug", subjectSlug)
     .eq("is_active", true)
     .eq("lifecycle_status", "active")
@@ -107,6 +107,10 @@ export async function getModuleOffering(
 
   if (subjectError || !subject) {
     throw new Error("This module is not available");
+  }
+
+  if (subject.candidate_availability !== "available") {
+    throw new Error("This module is not currently available for purchase");
   }
 
   const hasPublishedContent = subject.practice_type === "oral"

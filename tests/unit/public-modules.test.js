@@ -16,6 +16,12 @@ test("public module rows preserve current availability in server order", () => {
       practice_type: "oral",
       availability_status: "coming_soon",
     },
+    {
+      name: "Temporarily Paused Module",
+      slug: "paused-module",
+      practice_type: "objective",
+      availability_status: "paused",
+    },
   ]), [
     {
       name: "Public Financial Management",
@@ -28,6 +34,12 @@ test("public module rows preserve current availability in server order", () => {
       slug: "oral-questions",
       practiceType: "oral",
       status: "coming_soon",
+    },
+    {
+      name: "Temporarily Paused Module",
+      slug: "paused-module",
+      practiceType: "objective",
+      status: "paused",
     },
   ]);
 });

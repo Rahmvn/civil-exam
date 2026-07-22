@@ -294,8 +294,9 @@ export default function Dashboard() {
     const hasModuleAccess =
       Boolean(catalogEntry?.has_module_access) ||
       rows.some((row) => Boolean(row?.is_paid));
-    const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
-    const isPaused = catalogEntry?.candidate_availability === "paused";
+    const canPurchase = Boolean(catalogEntry?.can_purchase);
+    const candidateAvailability = catalogEntry?.candidate_availability ?? subject.candidate_availability;
+    const isPaused = candidateAvailability === "paused";
     const completedCount = publishedRows.filter((row) => row.state === "completed_passed").length;
     const progression = getProgressionRecommendation(rows, { isPaidUser: hasModuleAccess });
     const progressPercent = publishedRows.length > 0

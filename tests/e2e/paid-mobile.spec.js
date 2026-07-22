@@ -65,3 +65,35 @@ test("oral practice start and answer controls fit a mobile viewport", async ({ p
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
+
+test("mobile refresh recovery can exit without reusing the stale timer", async ({ page }) => {
+  const sessionPayloads = [];
+  page.on("response", async (response) => {
+    if (!response.url().includes("/rest/v1/rpc/start_objective_practice_session_v2") || !response.ok()) return;
+    sessionPayloads.push(await response.json());
+  });
+
+  await page.goto("/practice/public-financial-management?batch=2");
+  await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
+  await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(1);
+  const firstSession = sessionPayloads.at(-1);
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Continue your practice?" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.getByRole("button", { name: "Exit practice" }).click();
+  await page.waitForURL(/\/dashboard#modules$/);
+
+  await page.goto("/practice/public-financial-management?batch=2");
+  await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
+  await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(2);
+  const secondSession = sessionPayloads.at(-1);
+  expect(secondSession.practice_session_id).not.toBe(firstSession.practice_session_id);
+  await expect(page.locator(".practice-header-timer strong")).not.toHaveText("00:00");
+
+  await page.getByRole("button", { name: "Exit" }).click();
+  await page.getByRole("dialog", { name: "Exit this practice?" })
+    .getByRole("button", { name: "Exit practice" })
+    .click();
+  await page.waitForURL(/\/dashboard#modules$/);
+});

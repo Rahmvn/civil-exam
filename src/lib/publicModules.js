@@ -1,4 +1,4 @@
-const PUBLIC_MODULE_STATUSES = new Set(["available", "coming_soon"]);
+const PUBLIC_MODULE_STATUSES = new Set(["available", "coming_soon", "paused"]);
 
 export function normalizePublicModules(rows) {
   if (!Array.isArray(rows)) return [];

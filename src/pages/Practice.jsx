@@ -160,15 +160,17 @@ function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
   );
 }
 
-function PracticeRestartNotice({ onLeave, onResume }) {
+function PracticeRestartNotice({ busy, onLeave, onResume }) {
   return (
     <section className="practice-restart-card" aria-labelledby="practice-restart-title">
       <p className="eyebrow">Practice paused</p>
       <h1 id="practice-restart-title">Continue your practice?</h1>
       <p>Your answers and remaining time were saved on this device.</p>
       <div className="practice-restart-actions">
-        <button className="primary-action" onClick={onResume} type="button">Resume practice</button>
-        <button className="ghost-button" onClick={onLeave} type="button">Back to modules</button>
+        <button className="primary-action" disabled={busy} onClick={onResume} type="button">Resume practice</button>
+        <button className="ghost-button" disabled={busy} onClick={onLeave} type="button">
+          {busy ? "Exiting..." : "Exit practice"}
+        </button>
       </div>
     </section>
   );
@@ -294,7 +296,10 @@ export default function Practice() {
           setCurrentIndex(Math.min(Math.max(Number(savedDraft.current_index) || 0, 0), savedDraft.questions.length - 1));
           setDeadlineAt(Number(savedDraft.deadline_at));
           if (savedDraft.submission_token) submissionTokenRef.current = savedDraft.submission_token;
-          markActivePractice(nextSubject.slug, { batch_number: savedBatchNumber }, userId);
+          markActivePractice(nextSubject.slug, {
+            batch_number: savedBatchNumber,
+            practice_session_id: savedDraft.questions[0]?.practice_session_id ?? null,
+          }, userId);
           return;
         }
 
@@ -307,7 +312,10 @@ export default function Practice() {
         ) {
           const preparedQuestions = preparePracticeQuestions(launchedBatch, launchedBatchNumber);
           setQuestions(preparedQuestions);
-          markActivePractice(nextSubject.slug, { batch_number: launchedBatchNumber }, userId);
+          markActivePractice(nextSubject.slug, {
+            batch_number: launchedBatchNumber,
+            practice_session_id: preparedQuestions[0]?.practice_session_id ?? null,
+          }, userId);
           setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
           return;
         }
@@ -333,7 +341,10 @@ export default function Practice() {
         const activeBatchNumber = requestedBatchNumber ?? nextQuestions[0]?.batch_number;
         const preparedQuestions = preparePracticeQuestions(nextQuestions, activeBatchNumber);
         setQuestions(preparedQuestions);
-        markActivePractice(nextSubject.slug, { batch_number: activeBatchNumber }, userId);
+        markActivePractice(nextSubject.slug, {
+          batch_number: activeBatchNumber,
+          practice_session_id: preparedQuestions[0]?.practice_session_id ?? null,
+        }, userId);
         setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
@@ -571,12 +582,46 @@ export default function Practice() {
     setRestartPending(false);
   }
 
-  function leaveRestartNotice() {
-    clearPracticeBatch(subjectSlug, userId);
-    clearActivePractice(subjectSlug, userId);
-    clearPracticeDraft(subjectSlug, userId);
-    allowExitRef.current = true;
-    navigate("/dashboard#modules", { replace: true });
+  async function leaveRestartNotice() {
+    if (exiting) return;
+    setExiting(true);
+    setError("");
+
+    try {
+      const savedDraft = readPracticeDraft(subjectSlug, userId);
+      const activePractice = readActivePractice(subjectSlug, userId);
+      let practiceSessionId =
+        savedDraft?.questions?.[0]?.practice_session_id
+        ?? activePractice?.practice_session_id
+        ?? null;
+
+      if (!practiceSessionId && subject?.id) {
+        const resumedQuestions = await getPracticeQuestions({
+          subjectId: subject.id,
+          batchNumber: Number(activePractice?.batch_number ?? requestedBatchNumber ?? 0) || null,
+          limit: undefined,
+        });
+        practiceSessionId = resumedQuestions[0]?.practice_session_id ?? null;
+      }
+
+      if (practiceSessionId) {
+        await abandonObjectivePracticeSession(practiceSessionId);
+      }
+
+      clearPracticeBatch(subjectSlug, userId);
+      clearActivePractice(subjectSlug, userId);
+      clearPracticeDraft(subjectSlug, userId);
+      allowExitRef.current = true;
+      navigate("/dashboard#modules", { replace: true });
+    } catch (exitError) {
+      logAppError(`Practice restart exit:${subjectSlug}`, exitError);
+      setError(friendlyErrorMessage(
+        exitError,
+        "We could not close this practice session. Your answers and remaining time are still saved.",
+      ));
+    } finally {
+      setExiting(false);
+    }
   }
 
   if (!loading && !subject) {
@@ -594,7 +639,7 @@ export default function Practice() {
         {error && <p className="action-error practice-action-error" role="alert">{error}</p>}
 
         {restartPending ? (
-          <PracticeRestartNotice onLeave={leaveRestartNotice} onResume={resumePractice} />
+          <PracticeRestartNotice busy={exiting} onLeave={() => void leaveRestartNotice()} onResume={resumePractice} />
         ) : questions.length === 0 ? (
           <section className="empty-panel">
             <h2>{emptyMessage || "Questions for this module are not available yet."}</h2>

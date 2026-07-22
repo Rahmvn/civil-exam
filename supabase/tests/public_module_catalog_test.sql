@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(4);
+select plan(7);
 
 do $$
 declare
@@ -24,6 +24,7 @@ begin
     sort_order,
     is_active,
     lifecycle_status,
+    candidate_availability,
     practice_type
   ) values (
     'Public catalogue fixture',
@@ -32,6 +33,7 @@ begin
     999,
     true,
     'active',
+    'available',
     'objective'
   )
   returning id into target_subject_id;
@@ -97,13 +99,42 @@ select ok(
   'an active module with a published set is publicly listed as available'
 );
 
+update public.subjects
+set candidate_availability = 'coming_soon'
+where slug = 'public-catalogue-fixture';
+
 select ok(
   exists (
     select 1
     from public.get_public_module_catalog()
-    where availability_status = 'coming_soon'
+    where slug = 'public-catalogue-fixture'
+      and availability_status = 'coming_soon'
   ),
-  'explicit coming-soon modules are publicly listed'
+  'candidate coming-soon state is publicly listed accurately'
+);
+
+update public.subjects
+set candidate_availability = 'paused'
+where slug = 'public-catalogue-fixture';
+
+select ok(
+  exists (
+    select 1
+    from public.get_public_module_catalog()
+    where slug = 'public-catalogue-fixture'
+      and availability_status = 'paused'
+  ),
+  'candidate paused state is never advertised as available'
+);
+
+update public.subjects
+set candidate_availability = 'hidden', is_active = false
+where slug = 'public-catalogue-fixture';
+
+select is(
+  (select count(*)::integer from public.get_public_module_catalog() where slug = 'public-catalogue-fixture'),
+  0,
+  'candidate hidden state removes the module from the public catalogue'
 );
 
 select is(
@@ -122,10 +153,16 @@ select is(
   (
     select count(*)::integer
     from public.get_public_module_catalog()
-    where availability_status not in ('available', 'coming_soon')
+    where availability_status not in ('available', 'coming_soon', 'paused')
   ),
   0,
   'the public catalogue returns only supported availability states'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.get_public_module_catalog()', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_public_module_catalog()', 'EXECUTE'),
+  'public and signed-in visitors can read the sanitized module catalogue'
 );
 
 select * from finish();

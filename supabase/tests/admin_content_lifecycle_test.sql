@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(61);
+select plan(65);
 
 select ok(
   has_table_privilege('service_role', 'public.objective_practice_sessions', 'SELECT')
@@ -97,6 +97,19 @@ select lives_ok($$ select public.admin_transition_practice_set_v2('d3000000-0000
   'returned draft can re-enter review');
 select lives_ok($$ select public.admin_transition_practice_set_v2('d3000000-0000-4000-8000-000000000001', 'published') $$,
   'review can publish');
+select lives_ok($$ select public.admin_update_module_sales_availability('d2000000-0000-4000-8000-000000000001', false) $$,
+  'sales can close while candidate availability remains open');
+select ok(
+  exists (
+    select 1
+    from public.get_module_access_catalog()
+    where subject_id = 'd2000000-0000-4000-8000-000000000001'
+      and candidate_availability = 'available'
+      and can_purchase = false
+  ),
+  'an available module remains in the candidate catalogue when it is not for sale'
+);
+select public.admin_update_module_sales_availability('d2000000-0000-4000-8000-000000000001', true);
 select ok((public.admin_get_practice_set_capabilities('d3000000-0000-4000-8000-000000000001')->>'can_withdraw')::boolean,
   'published capabilities allow temporary withdrawal');
 select throws_ok(
@@ -464,6 +477,16 @@ select set_config('request.jwt.claim.sub', 'd1000000-0000-4000-8000-000000000001
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select lives_ok($$ select public.admin_update_module_availability('d2000000-0000-4000-8000-000000000001', 'paused', 'Content maintenance') $$,
   'module candidate practice can be paused independently');
+select is(
+  (select candidate_availability::text from public.get_module_access_catalog() where subject_id = 'd2000000-0000-4000-8000-000000000001'),
+  'paused',
+  'candidate catalogue preserves the explicit paused state'
+);
+select is(
+  (select can_purchase from public.get_module_access_catalog() where subject_id = 'd2000000-0000-4000-8000-000000000001'),
+  false,
+  'a paused module cannot begin a new purchase even when its sales switch remains enabled'
+);
 select is((select status::text from public.entitlements where paystack_reference = 'lifecycle-entitlement'), 'active',
   'pausing a module preserves candidate entitlement');
 select lives_ok($$ select public.admin_update_module_sales_availability('d2000000-0000-4000-8000-000000000001', false) $$,

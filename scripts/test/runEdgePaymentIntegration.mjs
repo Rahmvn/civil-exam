@@ -286,6 +286,26 @@ async function main() {
     const comingSoon = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-coming-soon" });
     if (comingSoon.ok) fail("A coming-soon module was accepted for payment.");
 
+    const pausedSubject = await service.from("subjects")
+      .select("id")
+      .eq("slug", "public-service-rules")
+      .single();
+    if (pausedSubject.error || !pausedSubject.data) fail("The payment pause fixture module is missing.");
+    let pausedPayment;
+    try {
+      const pauseResult = await service.from("subjects")
+        .update({ candidate_availability: "paused" })
+        .eq("id", pausedSubject.data.id);
+      if (pauseResult.error) fail(`Could not pause the payment fixture: ${pauseResult.error.message}`);
+      pausedPayment = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "public-service-rules" });
+    } finally {
+      const restoreResult = await service.from("subjects")
+        .update({ candidate_availability: "available" })
+        .eq("id", pausedSubject.data.id);
+      if (restoreResult.error) fail(`Could not restore the payment fixture: ${restoreResult.error.message}`);
+    }
+    if (pausedPayment?.ok) fail("A paused module was accepted for payment.");
+
     const oral = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-oral-questions" });
     if (!oral.ok) fail(`Published oral module payment initialization failed: ${await oral.text()}`);
     const oralBody = await oral.json();

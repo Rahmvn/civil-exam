@@ -131,9 +131,10 @@ export default function Landing() {
           ) : (
             <div>
               {modules.map((module) => (
-                <span className={module.status === "coming_soon" ? "is-coming-soon" : ""} key={module.slug}>
+                <span className={module.status !== "available" ? "is-coming-soon" : ""} key={module.slug}>
                   {module.name}
                   {module.status === "coming_soon" && <small>Coming soon</small>}
+                  {module.status === "paused" && <small>Temporarily paused</small>}
                 </span>
               ))}
             </div>

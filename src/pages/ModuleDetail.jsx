@@ -111,8 +111,9 @@ export default function ModuleDetail() {
   const hasModuleAccess =
     Boolean(catalogEntry?.has_module_access) ||
     rows.some((row) => Boolean(row?.is_paid));
-  const canPurchase = catalogEntry ? Boolean(catalogEntry.can_purchase) : true;
-  const isPaused = catalogEntry?.candidate_availability === "paused";
+  const canPurchase = Boolean(catalogEntry?.can_purchase);
+  const candidateAvailability = catalogEntry?.candidate_availability ?? subject?.candidate_availability;
+  const isPaused = candidateAvailability === "paused";
   const selectedModuleName = getModuleDisplayName(
     subjects.find((item) => item.slug === freeModuleSlug)?.name ?? "",
   );
