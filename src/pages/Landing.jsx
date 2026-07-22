@@ -22,23 +22,28 @@ function PracticeExperiencePreview() {
         </div>
         <div className="landing-experience-progress"><i aria-hidden="true" /></div>
         <div className="landing-experience-question">
-          <p>Which record helps an office account for money received and spent?</p>
+          <p>Which core document provides the foundational policy direction for the rollout of the modern PMS across the Nigerian Federal Civil Service?</p>
           <div className="landing-experience-options" aria-label="Example answer choices">
             <div className="is-selected">
               <i aria-hidden="true" />
               <b>A</b>
-              <span>A financial record</span>
+              <span>The Federal Civil Service Strategy and Implementation Plan (FCSSIP)</span>
               <small>Selected</small>
             </div>
             <div>
               <i aria-hidden="true" />
               <b>B</b>
-              <span>A leave roster</span>
+              <span>The 1999 Constitution of the Federal Republic of Nigeria</span>
             </div>
             <div>
               <i aria-hidden="true" />
               <b>C</b>
-              <span>A staff identity card</span>
+              <span>The National Civil Service Reform Plan (NCSRP)</span>
+            </div>
+             <div>
+              <i aria-hidden="true" />
+              <b>D</b>
+              <span>The Public Service Treasury Circulars (PSTC).</span>
             </div>
           </div>
         </div>
