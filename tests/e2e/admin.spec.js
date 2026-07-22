@@ -417,6 +417,8 @@ test("admin help queue is directly accessible", async ({ page }) => {
   const requestDrawer = page.getByRole("dialog", { name: "Module access restored" });
   await expect(requestDrawer).toBeVisible();
   await expect(requestDrawer.getByText("Access was restored after reconciliation.")).toBeVisible();
+  await requestDrawer.getByText("Handling checklist").click();
+  await expect(requestDrawer.getByText(/Do not ask the candidate to pay again/)).toBeVisible();
   await expect(requestDrawer.getByRole("button", { name: "Save changes" })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(accessibility.violations.filter((violation) =>

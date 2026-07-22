@@ -134,7 +134,15 @@ test("WhatsApp payment context preserves a delayed-access reference", async ({ p
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
   await expect(page.getByRole("heading", { name: "Help & support" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Find an answer" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
+
+  await page.getByPlaceholder("Search help...").fill("00:00");
+  await page.getByRole("button", { name: "The timer stays at 00:00 or the page keeps blinking" }).click();
+  await expect(page.getByText(/Do not repeatedly tap Start/)).toBeVisible();
+  await page.getByRole("button", { name: "Send a request about this" }).click();
+  await expect(page.getByLabel("What do you need help with?")).toHaveValue("technical");
+  await expect(page.getByLabel("Issue")).toHaveValue("Practice timer is stuck or page is blinking");
 
   await page.getByLabel("What do you need help with?").selectOption("technical");
   await page.getByLabel("Issue").fill("Practice page did not respond");

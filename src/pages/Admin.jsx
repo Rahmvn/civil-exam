@@ -47,6 +47,7 @@ import {
   PRACTICE_SET_STATUS_LABELS,
 } from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { getAdminSupportGuidance } from "../lib/supportKnowledge";
 import { supabase } from "../lib/supabaseClient";
 
 const STATUS_LABELS = {
@@ -1129,6 +1130,7 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
   const [status, setStatus] = useState(request.status);
   const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
   const emailHref = buildSupportEmailComposeHref(request);
+  const handlingGuidance = getAdminSupportGuidance(request.category);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -1170,6 +1172,16 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
               {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
             </dl>
           </section>
+          <details className="admin-support-triage">
+            <summary>Handling checklist</summary>
+            <div>
+              <p className="admin-support-triage-safety">{handlingGuidance.safety}</p>
+              <ol>
+                {handlingGuidance.checks.map((check) => <li key={check}>{check}</li>)}
+              </ol>
+              <p><strong>Escalate:</strong> {handlingGuidance.escalate}</p>
+            </div>
+          </details>
         </div>
 
         <footer className="admin-support-drawer-action">

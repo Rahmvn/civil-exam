@@ -4,11 +4,14 @@ import { expectNoHorizontalOverflow } from "./helpers.js";
 test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
   await page.goto("/help");
   await expect(page.getByRole("heading", { name: "Help & support" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Find an answer" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your requests" })).toBeVisible();
 
+  const faqBox = await page.locator(".support-faq").boundingBox();
   const formBox = await page.locator(".support-form").boundingBox();
   const historyBox = await page.locator(".support-history").boundingBox();
+  expect(formBox.y).toBeGreaterThan(faqBox.y + faqBox.height);
   expect(historyBox.y).toBeGreaterThan(formBox.y + formBox.height);
   expect(Math.abs(historyBox.x - formBox.x)).toBeLessThanOrEqual(1);
   await expectNoHorizontalOverflow(page);

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { createSupportRequest, getMySupportRequests } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { findSupportFaqs, SUPPORT_FAQS, SUPPORT_TOPICS } from "../lib/supportKnowledge";
 
 const CATEGORIES = [
   ["account", "Account details or sign-in"],
@@ -23,7 +24,10 @@ const STATUS_LABELS = {
 
 export default function Support() {
   const [searchParams] = useSearchParams();
-  const initialCategory = searchParams.get("category") === "payment" ? "payment" : "access";
+  const requestedCategory = searchParams.get("category");
+  const initialCategory = CATEGORIES.some(([value]) => value === requestedCategory) ? requestedCategory : "access";
+  const requestedFaq = searchParams.get("faq");
+  const initialFaq = SUPPORT_FAQS.find((item) => item.id === requestedFaq) ?? null;
   const initialPaymentReference = initialCategory === "payment"
     ? String(searchParams.get("reference") ?? "").trim().slice(0, 120)
     : "";
@@ -39,6 +43,27 @@ export default function Support() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");
+  const [faqQuery, setFaqQuery] = useState("");
+  const [faqTopic, setFaqTopic] = useState(initialFaq?.category ?? (initialCategory === requestedCategory ? requestedCategory : "popular"));
+  const [openFaqId, setOpenFaqId] = useState(initialFaq?.id ?? "");
+  const requestFormRef = useRef(null);
+  const subjectInputRef = useRef(null);
+  const visibleFaqs = useMemo(() => findSupportFaqs({ query: faqQuery, topic: faqTopic }), [faqQuery, faqTopic]);
+
+  useEffect(() => {
+    if (!initialPaymentReference) return;
+    window.requestAnimationFrame(() => requestFormRef.current?.scrollIntoView({ block: "start" }));
+  }, [initialPaymentReference]);
+
+  function prepareRequest(faq) {
+    setCategory(faq.category);
+    setSubject(faq.requestTitle);
+    setMessage("");
+    window.requestAnimationFrame(() => {
+      requestFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      subjectInputRef.current?.focus({ preventScroll: true });
+    });
+  }
 
   async function loadRequests() {
     try {
@@ -105,8 +130,66 @@ export default function Support() {
       <section className="support-page">
         <h1 className="sr-only">Help &amp; support</h1>
 
+        <section className="support-faq" aria-labelledby="support-faq-title">
+          <header className="support-faq-heading">
+            <div>
+              <h2 id="support-faq-title">Find an answer</h2>
+              <p>Start with a quick answer. Send a request if the problem continues.</p>
+            </div>
+            <label className="support-faq-search">
+              <span className="sr-only">Search help answers</span>
+              <input onChange={(event) => setFaqQuery(event.target.value)} placeholder="Search help..." type="search" value={faqQuery} />
+            </label>
+          </header>
+          <nav className="support-faq-topics" aria-label="Help topics">
+            {SUPPORT_TOPICS.map((topic) => (
+              <button
+                aria-pressed={!faqQuery && faqTopic === topic.id}
+                className={!faqQuery && faqTopic === topic.id ? "is-active" : ""}
+                key={topic.id}
+                onClick={() => { setFaqQuery(""); setFaqTopic(topic.id); setOpenFaqId(""); }}
+                type="button"
+              >
+                {topic.label}
+              </button>
+            ))}
+          </nav>
+          <div className="support-faq-results">
+            {visibleFaqs.length === 0 ? (
+              <div className="support-faq-empty">
+                <strong>No matching answer</strong>
+                <p>Try a shorter search, or send us a request below.</p>
+              </div>
+            ) : visibleFaqs.map((faq) => {
+              const isOpen = openFaqId === faq.id;
+              return (
+                <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
+                  <h3>
+                    <button
+                      aria-controls={`support-faq-answer-${faq.id}`}
+                      aria-expanded={isOpen}
+                      onClick={() => setOpenFaqId(isOpen ? "" : faq.id)}
+                      type="button"
+                    >
+                      <span>{faq.question}</span>
+                      <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
+                    </button>
+                  </h3>
+                  {isOpen && (
+                    <div className="support-faq-answer" id={`support-faq-answer-${faq.id}`}>
+                      <p>{faq.answer}</p>
+                      <p><strong>Contact support when:</strong> {faq.escalation}</p>
+                      <button className="support-faq-request" onClick={() => prepareRequest(faq)} type="button">Send a request about this</button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="support-layout">
-          <form className="support-form" onSubmit={submitRequest}>
+          <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
             <header className="support-panel-heading">
               <span className="support-panel-icon" aria-hidden="true">?</span>
               <div><h2>Send a request</h2><p>Give us enough detail to investigate without sharing sensitive information.</p></div>
@@ -121,7 +204,7 @@ export default function Support() {
                 </label>
                 <label>
                   <span>Short title</span>
-                  <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" required value={subject} />
+                  <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" ref={subjectInputRef} required value={subject} />
                 </label>
               </div>
               <label>

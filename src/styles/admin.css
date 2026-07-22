@@ -2896,6 +2896,46 @@ button.admin-danger-link {
   font-size: 0.82rem;
 }
 
+.admin-support-triage {
+  border-top: 1px solid #e6e9e7;
+  border-bottom: 1px solid #e6e9e7;
+}
+
+.admin-support-triage summary {
+  padding: 12px 0;
+  color: #29443a;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.admin-support-triage > div {
+  display: grid;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+
+.admin-support-triage p,
+.admin-support-triage ol {
+  margin: 0;
+  color: #536159;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.admin-support-triage ol {
+  display: grid;
+  gap: 7px;
+  padding-left: 20px;
+}
+
+.admin-support-triage-safety {
+  padding: 10px 11px;
+  border-left: 3px solid #b98513;
+  background: #fff9eb;
+  color: #5f4a1c !important;
+}
+
 .admin-support-drawer-action {
   display: grid;
   gap: 10px;
