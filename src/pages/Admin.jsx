@@ -1128,7 +1128,7 @@ function ActivityView({ auditLogs, onQueryChange, query }) {
 function SupportRequestDetail({ onClose, onUpdate, request, working }) {
   const [status, setStatus] = useState(request.status);
   const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
-  const emailHref = buildSupportEmailHref(request);
+  const emailHref = buildSupportEmailComposeHref(request);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -1188,7 +1188,7 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
           </label>
           <div className="admin-support-drawer-actions">
             {emailHref && (
-              <a className="admin-support-email-action" href={emailHref}>
+              <a className="admin-support-email-action" href={emailHref} rel="noreferrer" target="_blank">
                 Email candidate
               </a>
             )}
@@ -1225,7 +1225,7 @@ const SUPPORT_STATUS_LABELS = {
   closed: "Closed",
 };
 
-function buildSupportEmailHref(request) {
+function buildSupportEmailComposeHref(request) {
   const email = String(request.requester_email ?? "").trim();
   if (!email) return "";
 
@@ -1257,7 +1257,15 @@ function buildSupportEmailHref(request) {
     "PromotionSure Support",
   ].join("\n");
 
-  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const params = new URLSearchParams({
+    view: "cm",
+    fs: "1",
+    to: email,
+    su: subject,
+    body,
+  });
+
+  return `https://mail.google.com/mail/?${params.toString()}`;
 }
 
 const EMPTY_SUPPORT_QUEUE = {
