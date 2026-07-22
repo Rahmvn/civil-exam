@@ -4,6 +4,42 @@ import { expectNoHorizontalOverflow } from "./helpers.js";
 test("mobile navigation and practice controls fit the viewport", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
+  const interactionStyles = await page.evaluate(() => {
+    const button = document.querySelector("button");
+    const link = document.querySelector("a[href]");
+    const readingText = document.querySelector("main p");
+    const summarize = (element) => {
+      const style = getComputedStyle(element);
+      return {
+        tapHighlight: style.webkitTapHighlightColor,
+        touchAction: style.touchAction,
+        userSelect: style.userSelect,
+      };
+    };
+    return {
+      button: summarize(button),
+      link: summarize(link),
+      readingText: summarize(readingText),
+    };
+  });
+  expect(interactionStyles.button).toEqual({
+    tapHighlight: "rgba(0, 0, 0, 0)",
+    touchAction: "manipulation",
+    userSelect: "none",
+  });
+  expect(interactionStyles.link).toEqual({
+    tapHighlight: "rgba(0, 0, 0, 0)",
+    touchAction: "manipulation",
+    userSelect: "none",
+  });
+  expect(interactionStyles.readingText.userSelect).not.toBe("none");
+  await page.locator("button").first().focus();
+  const focusStyles = await page.locator("button").first().evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth };
+  });
+  expect(focusStyles.outlineStyle).not.toBe("none");
+  expect(Number.parseFloat(focusStyles.outlineWidth)).toBeGreaterThan(0);
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/practice/public-financial-management?batch=1");

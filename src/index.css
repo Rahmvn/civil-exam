@@ -91,6 +91,49 @@ a {
     color 160ms ease;
 }
 
+/* Mobile browsers should not paint a second, platform-default highlight over
+   controls that already provide their own pressed and focus states. Keep this
+   scoped to interactive semantics so reading content remains selectable. */
+:where(
+  button,
+  a,
+  summary,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"]
+) {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+:where(label:has(input[type="radio"]), label:has(input[type="checkbox"])) {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  :where(
+    button:not(:disabled),
+    a[href],
+    summary,
+    input[type="button"]:not(:disabled),
+    input[type="submit"]:not(:disabled),
+    input[type="reset"]:not(:disabled),
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"]
+  ):active {
+    opacity: 0.88;
+  }
+}
+
 .primary-action:hover,
 .secondary-action:hover,
 .nav-chip:hover,
