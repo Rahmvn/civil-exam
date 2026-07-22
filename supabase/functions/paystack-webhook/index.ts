@@ -1,13 +1,11 @@
 import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
 import {
-  activateEntitlement,
   activateModulePurchase,
   applyPaystackPostPaymentEvent,
   getModulePaymentOrder,
   isFinalUnsuccessfulPaystackPayment,
   markModulePaymentFulfillmentFailed,
   recordModulePaymentStatus,
-  validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
 import {
@@ -66,9 +64,11 @@ Deno.serve(async (request) => {
           throw fulfillmentError;
         }
       } else {
-        // Preserve in-flight transactions initialized before module payments.
-        await validateLegacyPayment(event.data);
-        await activateEntitlement(event.data.reference, event.data);
+        // A signed provider event is not sufficient to grant access. Every
+        // launch payment must also match an order created by this application.
+        console.warn("Ignoring successful Paystack webhook without a local payment order", {
+          reference: event.data.reference,
+        });
       }
     }
 

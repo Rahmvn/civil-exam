@@ -60,6 +60,15 @@ test("problem classification gives recovery behavior independently from display 
   const declined = resolveAppProblem(new Error("Payment was declined"));
   assert.equal(declined.code, PROBLEM_CODES.PAYMENT_DECLINED);
   assert.equal(declined.retryable, false);
+
+  const accessIssue = resolveAppProblem(Object.assign(
+    new Error("Payment was received, but module access still needs attention. Please check again."),
+    { code: "PAYMENT_FULFILLMENT_FAILED", status: 409 },
+  ));
+  assert.equal(accessIssue.code, PROBLEM_CODES.PAYMENT_ACCESS_ISSUE);
+  assert.equal(accessIssue.title, "Payment received — access needs attention");
+  assert.equal(accessIssue.action, "check-access");
+  assert.equal(accessIssue.status, 409);
 });
 
 test("abort detection accepts browser cancellation variants only", () => {

@@ -168,6 +168,7 @@ export const PROBLEM_CODES = Object.freeze({
   ACCESS: "access_denied",
   ACTIVE_ORAL: "active_oral_conflict",
   PAYMENT_DECLINED: "payment_declined",
+  PAYMENT_ACCESS_ISSUE: "payment_access_issue",
   PAYMENT_UNCONFIRMED: "payment_unconfirmed",
   CONTENT_UNAVAILABLE: "content_unavailable",
   CLIENT_VERSION: "client_version_mismatch",
@@ -251,6 +252,19 @@ export function resolveAppProblem(error, options = {}) {
       "Payment declined",
       "This payment was declined. No access was unlocked.",
       "new-payment",
+    );
+  }
+
+  if (
+    error?.code === "PAYMENT_FULFILLMENT_FAILED"
+    || message.includes("payment was received, but module access still needs attention")
+  ) {
+    return problem(
+      PROBLEM_CODES.PAYMENT_ACCESS_ISSUE,
+      "Payment received — access needs attention",
+      "Your payment was received, but the module has not unlocked yet. Check again, or send the payment reference to support.",
+      "check-access",
+      true,
     );
   }
 

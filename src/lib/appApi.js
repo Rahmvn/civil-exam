@@ -18,31 +18,40 @@ function requireData({ data, error }) {
   return data;
 }
 
-async function getFunctionErrorMessage(error, fallbackData = null) {
-  if (fallbackData?.error) return fallbackData.error;
-  if (fallbackData?.message) return fallbackData.message;
+async function getFunctionErrorDetails(error, fallbackData = null) {
+  let payload = fallbackData && typeof fallbackData === "object" ? fallbackData : null;
 
   const response = error?.context;
-  if (response && typeof response.clone === "function") {
+  if (!payload && response && typeof response.clone === "function") {
     try {
-      const payload = await response.clone().json();
-      if (payload?.error) return payload.error;
-      if (payload?.message) return payload.message;
+      payload = await response.clone().json();
     } catch {
       // Supabase wraps non-JSON Edge Function failures too; fall back below.
     }
   }
 
-  return error?.message ?? "The request could not be completed.";
+  return {
+    message: payload?.error ?? payload?.message ?? error?.message ?? "The request could not be completed.",
+    code: payload?.code ?? error?.code ?? null,
+    status: Number(response?.status ?? error?.status ?? 0) || null,
+  };
 }
 
 async function requireFunctionData({ data, error }) {
   if (error) {
-    throw new Error(await getFunctionErrorMessage(error, data));
+    const details = await getFunctionErrorDetails(error, data);
+    throw Object.assign(new Error(details.message), {
+      code: details.code,
+      status: details.status,
+    });
   }
 
   if (data?.error || data?.message) {
-    throw new Error(await getFunctionErrorMessage(null, data));
+    const details = await getFunctionErrorDetails(null, data);
+    throw Object.assign(new Error(details.message), {
+      code: details.code,
+      status: details.status,
+    });
   }
 
   return data;

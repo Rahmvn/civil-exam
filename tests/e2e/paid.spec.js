@@ -88,6 +88,37 @@ test("payment return stays on the receipt until the candidate opens the purchase
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toHaveCount(0);
 });
 
+test("paid payment with delayed access is never described as unconfirmed", async ({ page }) => {
+  const reference = "PS-e2e-access-issue";
+
+  await page.route("**/functions/v1/verify-paystack-payment", async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({
+        code: "PAYMENT_FULFILLMENT_FAILED",
+        error: "Payment was received, but module access still needs attention. Please check again.",
+      }),
+    });
+  });
+
+  await page.goto(`/payment/verify?reference=${reference}`);
+  await expect(page.getByRole("heading", { name: "Payment received — access needs attention" })).toBeVisible();
+  await expect(page.getByText(/Your payment was received, but the module has not unlocked yet/)).toBeVisible();
+  await expect(page.getByText("Payment not confirmed yet", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
+
+  const helpLink = page.getByRole("link", { name: "Get payment help" });
+  await expect(helpLink).toHaveAttribute(
+    "href",
+    `/help?category=payment&reference=${reference}`,
+  );
+  await helpLink.click();
+  await expect(page.getByLabel("What do you need help with?")).toHaveValue("payment");
+  await expect(page.getByLabel("Payment reference optional")).toHaveValue(reference);
+  await expect(page.getByLabel("Issue")).toHaveValue("Payment received but module did not unlock");
+});
+
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
   await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();

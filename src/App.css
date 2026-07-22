@@ -6473,6 +6473,7 @@ button.access-unlock-close:focus-visible {
 }
 
 .payment-verification-card.is-unconfirmed .payment-verification-mark,
+.payment-verification-card.is-access-issue .payment-verification-mark,
 .payment-verification-card.is-missing .payment-verification-mark {
   border-color: var(--color-border);
   background: var(--color-bg);

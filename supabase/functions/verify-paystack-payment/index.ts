@@ -1,6 +1,5 @@
 import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
 import {
-  activateEntitlement,
   activateModulePurchase,
   getPaystackTransactionMessage,
   getPaystackTransactionStatus,
@@ -8,7 +7,6 @@ import {
   getModulePaymentOrder,
   markModulePaymentFulfillmentFailed,
   recordModulePaymentStatus,
-  validateLegacyPayment,
   validateModulePayment,
 } from "../_shared/paystack.ts";
 import { validatePaystackEnvironment } from "../_shared/payment-validation.js";
@@ -112,24 +110,11 @@ Deno.serve(async (request) => {
       }
     }
 
-    const paidUserId = getPaymentUserId(payload.data);
-    if (paidUserId !== user.id) {
-      return jsonResponse(
-        { error: "This payment reference does not belong to your account" },
-        403,
-      );
-    }
-
-    // Preserve verification for transactions initialized immediately before
-    // the module-specific payment release.
-    await validateLegacyPayment(payload.data);
-    const entitlement = await activateEntitlement(reference, payload.data);
-
+    console.warn("Successful Paystack reference has no local payment order", { reference });
     return jsonResponse({
-      status: "active",
-      expires_at: entitlement.expires_at,
-      legacy_full_access: true,
-    });
+      code: "UNKNOWN_PAYMENT_REFERENCE",
+      error: "This payment reference was not created by PromotionSure",
+    }, 404);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payment verification failed";
     return jsonResponse({ error: message }, 400);

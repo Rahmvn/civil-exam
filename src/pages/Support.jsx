@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { createSupportRequest, getMySupportRequests } from "../lib/appApi";
@@ -21,13 +22,20 @@ const STATUS_LABELS = {
 };
 
 export default function Support() {
+  const [searchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category") === "payment" ? "payment" : "access";
+  const initialPaymentReference = initialCategory === "payment"
+    ? String(searchParams.get("reference") ?? "").trim().slice(0, 120)
+    : "";
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingError, setLoadingError] = useState("");
-  const [category, setCategory] = useState("access");
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [paymentReference, setPaymentReference] = useState("");
+  const [category, setCategory] = useState(initialCategory);
+  const [subject, setSubject] = useState(initialPaymentReference ? "Payment received but module did not unlock" : "");
+  const [description, setDescription] = useState(initialPaymentReference
+    ? "My payment was confirmed, but the module access has not been unlocked."
+    : "");
+  const [paymentReference, setPaymentReference] = useState(initialPaymentReference);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");

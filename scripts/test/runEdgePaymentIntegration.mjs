@@ -283,6 +283,50 @@ async function main() {
     const unauthenticatedVerification = await invoke(apiUrl, "verify-paystack-payment", null, { reference: "PS-unauthenticated" });
     if (unauthenticatedVerification.ok) fail("Unauthenticated payment verification was accepted.");
 
+    const activePack = await service.from("exam_packs")
+      .select("id, price_kobo, currency")
+      .eq("is_active", true)
+      .single();
+    if (activePack.error || !activePack.data) fail("The active payment pack fixture is missing.");
+    const untrackedReference = `PS-UNTRACKED-${crypto.randomUUID()}`;
+    mock.initialized.set(untrackedReference, {
+      amount: activePack.data.price_kobo,
+      currency: activePack.data.currency,
+      metadata: { user_id: userId, exam_pack_id: activePack.data.id },
+    });
+    const untrackedVerification = await invoke(
+      apiUrl,
+      "verify-paystack-payment",
+      token,
+      { reference: untrackedReference },
+    );
+    if (untrackedVerification.status !== 404) {
+      fail("A successful provider transaction without a local order was accepted by verification.");
+    }
+    const untrackedVerificationBody = await untrackedVerification.json();
+    if (untrackedVerificationBody.code !== "UNKNOWN_PAYMENT_REFERENCE") {
+      fail("An untracked provider transaction did not return the expected safe error code.");
+    }
+    const untrackedWebhook = await sendPaystackEvent({
+      event: "charge.success",
+      data: {
+        status: "success",
+        domain: "test",
+        reference: untrackedReference,
+        amount: activePack.data.price_kobo,
+        currency: activePack.data.currency,
+        metadata: { user_id: userId, exam_pack_id: activePack.data.id },
+      },
+    });
+    if (!untrackedWebhook.ok) fail(`An untracked signed webhook was not safely acknowledged: ${await untrackedWebhook.text()}`);
+    const untrackedLegacyAccess = await service.from("entitlements")
+      .select("id")
+      .eq("paystack_reference", untrackedReference)
+      .maybeSingle();
+    if (untrackedLegacyAccess.error || untrackedLegacyAccess.data) {
+      fail("An untracked successful provider event created legacy full access.");
+    }
+
     const comingSoon = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-coming-soon" });
     if (comingSoon.ok) fail("A coming-soon module was accepted for payment.");
 

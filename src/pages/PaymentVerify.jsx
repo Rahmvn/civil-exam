@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyPayment } from "../lib/appApi";
-import { friendlyErrorMessage, logAppError } from "../lib/errors";
+import { logAppError, PROBLEM_CODES, resolveAppProblem } from "../lib/errors";
 
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
@@ -32,8 +32,11 @@ export default function PaymentVerify() {
       } catch (error) {
         if (!active) return;
         logAppError("Payment verification", error);
-        setState("unconfirmed");
-        setMessage(friendlyErrorMessage(error, "Your payment has not been confirmed yet. You can check again shortly."));
+        const problem = resolveAppProblem(error, {
+          fallback: "Your payment has not been confirmed yet. You can check again shortly.",
+        });
+        setState(problem.code === PROBLEM_CODES.PAYMENT_ACCESS_ISSUE ? "access-issue" : "unconfirmed");
+        setMessage(problem.message);
       }
     }
 
@@ -47,6 +50,8 @@ export default function PaymentVerify() {
     ? "Access unlocked"
     : state === "missing"
       ? "Payment reference missing"
+      : state === "access-issue"
+        ? "Payment received — access needs attention"
       : state === "unconfirmed"
         ? "Payment not confirmed yet"
         : "Checking your payment";
@@ -73,10 +78,17 @@ export default function PaymentVerify() {
               <Link className="primary-action" to={continuePath}>Continue practice</Link>
               <Link className="secondary-action" to="/access">View access</Link>
             </>
-          ) : state === "unconfirmed" ? (
+          ) : state === "unconfirmed" || state === "access-issue" ? (
             <>
               <button className="primary-action" onClick={() => setVerificationRun((value) => value + 1)} type="button">Check again</button>
-              <Link className="secondary-action" to="/access">Return to access</Link>
+              {state === "access-issue" ? (
+                <Link
+                  className="secondary-action"
+                  to={`/help?category=payment&reference=${encodeURIComponent(reference)}`}
+                >Get payment help</Link>
+              ) : (
+                <Link className="secondary-action" to="/access">Return to access</Link>
+              )}
             </>
           ) : state === "missing" ? (
             <Link className="primary-action" to="/access">Return to access</Link>
