@@ -7854,7 +7854,7 @@ button.auth-google-button:disabled {
   border: 1px solid #efcaca;
   border-radius: 11px;
   background: #fff8f8;
-  color: var(--color-danger);
+  color: #a93232;
   font-size: 0.84rem;
   line-height: 1.5;
 }

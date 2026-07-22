@@ -1128,6 +1128,7 @@ function ActivityView({ auditLogs, onQueryChange, query }) {
 function SupportRequestDetail({ onClose, onUpdate, request, working }) {
   const [status, setStatus] = useState(request.status);
   const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
+  const emailHref = buildSupportEmailHref(request);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -1185,9 +1186,16 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
             <span>Resolution note</span>
             <textarea disabled={working} maxLength={2000} onChange={(event) => setResolutionNote(event.target.value)} placeholder="What was done for the candidate?" rows={3} value={resolutionNote} />
           </label>
-          <button disabled={working || (status === request.status && resolutionNote === (request.resolution_note ?? ""))} onClick={() => onUpdate(request.id, status, resolutionNote)} type="button">
-            {working ? "Saving..." : "Save changes"}
-          </button>
+          <div className="admin-support-drawer-actions">
+            {emailHref && (
+              <a className="admin-support-email-action" href={emailHref}>
+                Email candidate
+              </a>
+            )}
+            <button disabled={working || (status === request.status && resolutionNote === (request.resolution_note ?? ""))} onClick={() => onUpdate(request.id, status, resolutionNote)} type="button">
+              {working ? "Saving..." : "Save changes"}
+            </button>
+          </div>
         </footer>
       </aside>
     </div>
@@ -1216,6 +1224,41 @@ const SUPPORT_STATUS_LABELS = {
   resolved: "Resolved",
   closed: "Closed",
 };
+
+function buildSupportEmailHref(request) {
+  const email = String(request.requester_email ?? "").trim();
+  if (!email) return "";
+
+  const candidateName = String(request.requester_name ?? "").trim();
+  const greetingName = candidateName ? candidateName.split(/\s+/)[0] : "there";
+  const subject = `PromotionSure support: ${request.subject || "Your request"}`;
+  const summaryLines = [
+    `- Category: ${SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}`,
+    `- Status: ${SUPPORT_STATUS_LABELS[request.status] ?? request.status}`,
+    request.payment_reference ? `- Payment reference: ${request.payment_reference}` : null,
+    request.page_path ? `- Reported from: ${request.page_path}` : null,
+    `- Received: ${new Date(request.created_at).toLocaleString("en-NG")}`,
+  ].filter(Boolean);
+  const candidateMessage = String(request.description ?? "").trim();
+  const body = [
+    `Hello ${greetingName},`,
+    "",
+    `We are contacting you about your PromotionSure support request: "${request.subject || "Your request"}".`,
+    "",
+    "To help us resolve this, please reply with any extra detail you have. Do not send your password, OTP, PIN, or card details.",
+    "",
+    "Request summary:",
+    ...summaryLines,
+    "",
+    "Your message:",
+    candidateMessage.length > 1200 ? `${candidateMessage.slice(0, 1200)}...` : candidateMessage || "No message provided.",
+    "",
+    "Regards,",
+    "PromotionSure Support",
+  ].join("\n");
+
+  return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 const EMPTY_SUPPORT_QUEUE = {
   items: [],

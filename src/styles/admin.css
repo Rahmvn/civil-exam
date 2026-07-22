@@ -2927,8 +2927,34 @@ button.admin-danger-link {
   resize: vertical;
 }
 
+.admin-support-drawer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-support-email-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid var(--admin-border, #cbd4d0);
+  border-radius: 8px;
+  background: #fff;
+  color: #163d31;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.admin-support-email-action:hover {
+  border-color: #9bb2a8;
+  background: #f6f8f7;
+}
+
 .admin-support-drawer-action button {
-  justify-self: end;
   min-height: 38px;
   padding: 8px 14px;
   border-radius: 8px;
