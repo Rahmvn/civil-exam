@@ -199,20 +199,21 @@
 }
 
 .admin-feedback {
-  position: sticky;
-  top: 58px;
-  z-index: 19;
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  width: min(680px, 100%);
-  margin: 10px 0 0;
-  padding: 8px 12px;
+  width: min(390px, calc(100vw - 36px));
+  margin: 0;
+  padding: 12px 14px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
-  box-shadow: none;
+  box-shadow: 0 16px 38px rgb(24 47 37 / 14%);
   color: var(--color-text-soft);
 }
 
@@ -2554,57 +2555,159 @@ button.admin-danger-link {
 }
 .admin-support-board {
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  margin-top: 2px;
 }
 
 .admin-support-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
-  gap: 22px;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.4fr);
+  gap: 18px;
   align-items: start;
 }
 
 .admin-support-list {
-  border-top: 1px solid var(--admin-border, #d9dfdc);
+  display: grid;
+  gap: 9px;
+  min-width: 0;
 }
 
-.admin-support-list > button {
+button.admin-support-request-card {
+  appearance: none;
   width: 100%;
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 10px;
-  border: 0;
-  border-bottom: 1px solid var(--admin-border, #d9dfdc);
-  background: transparent;
-  color: inherit;
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+  color: #14241c;
   text-align: left;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
-.admin-support-list > button.is-active {
-  background: #f4f7f5;
+button.admin-support-request-card:hover:not(:disabled) {
+  border-color: #a9c9b8;
+  background: #f8fbf9;
 }
 
-.admin-support-list > button > span {
+button.admin-support-request-card:focus-visible {
+  outline: 3px solid rgb(18 104 69 / 16%);
+  outline-offset: 2px;
+}
+
+button.admin-support-request-card.is-active {
+  border-color: #8ab99f;
+  border-radius: 14px;
+  background: #f0f8f4;
+  box-shadow: inset 3px 0 #126845;
+  color: #14241c;
+}
+
+.admin-support-request-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #e5f2eb;
+  color: #0f5c3c;
+  font-size: 0.8rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-support-request-copy {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  gap: 9px;
 }
 
-.admin-support-list small {
+.admin-support-request-copy > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-support-request-copy strong {
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-support-request-copy small {
+  overflow: hidden;
   color: #65716b;
-  font-size: 0.78rem;
-  text-transform: capitalize;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-support-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef1ef;
+  color: #536159;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.admin-support-status.is-received {
+  background: #e7f0fa;
+  color: #244f77;
+}
+
+.admin-support-status.is-in_review {
+  background: #fff1cc;
+  color: #6b4b00;
+}
+
+.admin-support-status.is-resolved {
+  background: #dff1e7;
+  color: #105a3b;
+}
+
+.admin-support-status.is-closed {
+  background: #eef0ef;
+  color: #56625c;
+}
+
+.admin-support-filter select {
+  min-height: 42px;
+  padding: 8px 34px 8px 11px;
+  border: 1px solid var(--admin-border, #cbd4d0);
+  border-radius: 10px;
+  background: #fff;
+  color: #1a2b23;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .admin-support-detail {
   display: grid;
-  gap: 20px;
-  padding: 22px;
+  gap: 18px;
+  min-width: 0;
+  padding: 23px;
   border: 1px solid var(--admin-border, #d9dfdc);
-  border-radius: 12px;
+  border-radius: 18px;
   background: #fff;
+  box-shadow: 0 12px 34px rgb(24 47 37 / 5%);
 }
 
 .admin-support-detail header {
@@ -2614,13 +2717,12 @@ button.admin-danger-link {
   gap: 20px;
 }
 
-.admin-support-detail header span,
-.admin-support-detail header > strong {
+.admin-support-category {
   color: #52625a;
-  font-size: 0.78rem;
-  font-weight: 750;
+  font-size: 0.7rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
 .admin-support-detail h2,
@@ -2631,7 +2733,8 @@ button.admin-danger-link {
 
 .admin-support-detail h2 {
   margin-top: 5px;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.025em;
 }
 
 .admin-support-detail header p {
@@ -2640,37 +2743,98 @@ button.admin-danger-link {
 }
 
 .admin-support-description {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 13px;
+  background: #f6f8f7;
   line-height: 1.6;
   white-space: pre-wrap;
 }
 
-.admin-support-detail dl {
-  display: grid;
-  gap: 9px;
-  margin: 0;
-  padding: 15px 0;
-  border-top: 1px solid var(--admin-border, #d9dfdc);
-  border-bottom: 1px solid var(--admin-border, #d9dfdc);
+.admin-support-description > span {
+  color: #52625a;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.admin-support-detail dl > div {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr);
-  gap: 14px;
-}
-
-.admin-support-detail dt {
-  color: #65716b;
-}
-
-.admin-support-detail dd {
+.admin-support-description p {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.admin-support-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-support-metadata > div {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  min-width: 0;
+  padding: 12px 13px;
+  border: 1px solid #e2e7e4;
+  border-radius: 11px;
+}
+
+.admin-support-metadata dt {
+  color: #65716b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-support-metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
 }
 
 .admin-support-resolution {
   display: grid;
   gap: 14px;
+  padding: 18px;
+  border: 1px solid #d8e8df;
+  border-radius: 14px;
+  background: #f8fcfa;
+}
+
+.admin-support-resolution-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.admin-support-resolution-heading > span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  background: #dff1e7;
+  color: #105a3b;
+  font-weight: 900;
+}
+
+.admin-support-resolution-heading h3,
+.admin-support-resolution-heading p {
+  margin: 0;
+}
+
+.admin-support-resolution-heading h3 {
+  font-size: 0.98rem;
+}
+
+.admin-support-resolution-heading p {
+  margin-top: 2px;
+  color: #65716b;
+  font-size: 0.76rem;
 }
 
 .admin-support-resolution label {
@@ -2684,7 +2848,7 @@ button.admin-danger-link {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--admin-border, #cbd4d0);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   font: inherit;
 }
@@ -2700,6 +2864,44 @@ button.admin-danger-link {
 @media (max-width: 900px) {
   .admin-support-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-feedback {
+    top: 10px;
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  button.admin-support-request-card {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .admin-support-request-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  button.admin-support-request-card > .admin-support-status {
+    grid-column: 2;
+  }
+
+  .admin-support-detail {
+    padding: 17px;
+  }
+
+  .admin-support-detail header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-support-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-support-resolution {
+    padding: 15px;
   }
 }
 .admin-import-mode-picker,

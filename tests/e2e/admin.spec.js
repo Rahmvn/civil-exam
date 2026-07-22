@@ -354,9 +354,61 @@ test("admin guide and activity remain directly accessible and searchable", async
 });
 
 test("admin help queue is directly accessible", async ({ page }) => {
+  await page.route("**/rest/v1/rpc/get_admin_support_requests", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        {
+          id: "support-open-e2e",
+          category: "technical",
+          subject: "Practice page did not respond",
+          description: "The timer stopped and the page did not respond when the candidate selected an answer.",
+          requester_name: "Test Candidate",
+          requester_email: "candidate@example.test",
+          payment_reference: null,
+          page_path: "/practice/mock-module",
+          status: "received",
+          resolution_note: null,
+          created_at: "2026-07-22T09:10:00.000Z",
+          updated_at: "2026-07-22T09:10:00.000Z",
+        },
+        {
+          id: "support-resolved-e2e",
+          category: "payment",
+          subject: "Module access restored",
+          description: "Payment succeeded but access was initially unavailable.",
+          requester_name: "Resolved Candidate",
+          requester_email: "resolved@example.test",
+          payment_reference: "PS-E2E-SUPPORT",
+          page_path: "/access",
+          status: "resolved",
+          resolution_note: "Access was restored after reconciliation.",
+          created_at: "2026-07-21T08:00:00.000Z",
+          updated_at: "2026-07-21T09:00:00.000Z",
+        },
+      ]),
+    });
+  });
+
   await page.goto("/admin/help");
   await expect(page.getByRole("heading", { name: "Help requests", exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Search help requests...").first()).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Help request status" })).toHaveValue("all");
+  await expect(page.locator(".admin-support-request-card")).toHaveCount(2);
+
+  const selectedCardStyle = await page.locator(".admin-support-request-card").first().evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return { backgroundColor: style.backgroundColor, borderRadius: style.borderRadius };
+  });
+  expect(selectedCardStyle.backgroundColor).toBe("rgb(240, 248, 244)");
+  expect(selectedCardStyle.borderRadius).toBe("14px");
+
+  await page.getByRole("button", { name: /Module access restored/ }).click();
+  await expect(page.locator(".admin-support-detail").getByRole("heading", { name: "Module access restored" })).toBeVisible();
+  await expect(page.locator(".admin-support-detail").getByText("Access was restored after reconciliation.")).toBeVisible();
+  const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(accessibility.violations.filter((violation) =>
+    ["serious", "critical"].includes(violation.impact))).toEqual([]);
   await expectNoHorizontalOverflow(page);
 });
 

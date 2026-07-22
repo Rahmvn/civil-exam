@@ -24,7 +24,7 @@ test("WhatsApp support stays disabled until both launch settings are valid", () 
 });
 
 test("WhatsApp support appears only on approved non-practice routes", () => {
-  for (const pathname of ["/auth", "/dashboard", "/access", "/profile", "/payment/verify", "/modules/example"]) {
+  for (const pathname of ["/auth", "/dashboard", "/access", "/profile", "/payment/verify", "/modules/example", "/support"]) {
     assert.equal(isWhatsAppSupportRoute(pathname), true, pathname);
   }
   for (const pathname of ["/", "/practice", "/practice/example", "/oral-practice/example", "/review", "/admin", "/help"]) {

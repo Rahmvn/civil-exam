@@ -16,6 +16,7 @@ export function resolveWhatsAppSupportConfig(env) {
 
 export function isWhatsAppSupportRoute(pathname) {
   return pathname === "/auth"
+    || pathname === "/support"
     || pathname === "/dashboard"
     || pathname === "/access"
     || pathname === "/profile"

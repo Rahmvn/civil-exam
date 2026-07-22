@@ -133,7 +133,7 @@ test("WhatsApp payment context preserves a delayed-access reference", async ({ p
 
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Help & support" })).toBeVisible();
 
   await page.getByLabel("What do you need help with?").selectOption("technical");
   await page.getByLabel("Issue").fill("Practice page did not respond");
@@ -145,6 +145,9 @@ test("candidate can submit and track a help request", async ({ page }) => {
   if (await page.getByText("Your request has been received. You can follow its status below.").isVisible()) {
     await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
   }
+  const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(accessibility.violations.filter((violation) =>
+    ["serious", "critical"].includes(violation.impact))).toEqual([]);
 });
 
 test("coming-soon lifecycle is never presented as unlocked", async ({ page }) => {

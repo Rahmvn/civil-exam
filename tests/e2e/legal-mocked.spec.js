@@ -20,8 +20,9 @@ test("privacy and terms are public, responsive, and accessible", async ({ page }
   await page.goto("/support");
   await expect(page).toHaveURL(/\/support$/);
   await expect(page).toHaveTitle("Support | PromotionSure");
-  await expect(page.getByRole("heading", { level: 1, name: "Support" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open help requests" })).toHaveAttribute("href", "/help");
+  await expect(page.getByRole("heading", { level: 1, name: "How can we help?" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open help centre/ })).toHaveAttribute("href", "/help");
+  await expect(page.getByRole("link", { name: /Email support/ })).toHaveAttribute("href", /^mailto:/);
   await expectNoHorizontalOverflow(page);
 
   const privacyA11y = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

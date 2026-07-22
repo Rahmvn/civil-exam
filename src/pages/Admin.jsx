@@ -1133,20 +1133,21 @@ function SupportRequestDetail({ onUpdate, request, working }) {
     <section className="admin-support-detail">
       <header>
         <div>
-          <span>{request.category}</span>
+          <span className="admin-support-category">{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</span>
           <h2>{request.subject}</h2>
           <p>{request.requester_name || request.requester_email || "Candidate"}</p>
         </div>
-        <strong>{request.status.replace("_", " ")}</strong>
+        <strong className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</strong>
       </header>
-      <p className="admin-support-description">{request.description}</p>
-      <dl>
+      <div className="admin-support-description"><span>Candidate’s message</span><p>{request.description}</p></div>
+      <dl className="admin-support-metadata">
         {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
         {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
-        {request.page_path && <div><dt>Page</dt><dd>{request.page_path}</dd></div>}
+        {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
         <div><dt>Received</dt><dd>{new Date(request.created_at).toLocaleString("en-NG")}</dd></div>
       </dl>
       <div className="admin-support-resolution">
+        <div className="admin-support-resolution-heading"><span aria-hidden="true">✓</span><div><h3>Resolve request</h3><p>Update the status and leave a clear note for the candidate.</p></div></div>
         <label>
           <span>Status</span>
           <select disabled={working} onChange={(event) => setStatus(event.target.value)} value={status}>
@@ -1173,6 +1174,22 @@ const PAYMENT_ATTENTION_LABELS = {
   dispute: "Under dispute",
   refund_pending: "Refund pending",
   processing_delayed: "Processing delayed",
+};
+
+const SUPPORT_CATEGORY_LABELS = {
+  account: "Account",
+  access: "Module access",
+  payment: "Payment",
+  practice: "Practice",
+  content: "Content",
+  technical: "Technical",
+};
+
+const SUPPORT_STATUS_LABELS = {
+  received: "Received",
+  in_review: "In review",
+  resolved: "Resolved",
+  closed: "Closed",
 };
 
 function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefresh, query, refreshing }) {
@@ -1253,39 +1270,68 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
 
 function AdminSupportView({ onQueryChange, onUpdate, query, requests, working }) {
   const [selectedId, setSelectedId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleRequests = requests.filter((request) => [
-    request.subject,
-    request.description,
-    request.requester_name,
-    request.requester_email,
-    request.payment_reference,
-    request.status,
-  ].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery));
+  const visibleRequests = requests.filter((request) => {
+    const matchesStatus = statusFilter === "all"
+      || (statusFilter === "open" && ["received", "in_review"].includes(request.status))
+      || request.status === statusFilter;
+    const matchesQuery = [
+      request.subject,
+      request.description,
+      request.requester_name,
+      request.requester_email,
+      request.payment_reference,
+      request.status,
+    ].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery);
+    return matchesStatus && matchesQuery;
+  });
   const selected = visibleRequests.find((request) => request.id === selectedId) ?? visibleRequests[0] ?? null;
+  const openCount = requests.filter((request) => ["received", "in_review"].includes(request.status)).length;
+  const resolvedCount = requests.filter((request) => ["resolved", "closed"].includes(request.status)).length;
 
   return (
     <>
       <section className="admin-page-heading">
-        <div><h1>Help requests</h1><p>Resolve account, access, payment, practice, and technical problems reported by candidates.</p></div>
+        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Review candidate problems, record what was done, and keep every resolution traceable.</p></div>
       </section>
+      <AdminSummaryStrip items={[
+        { label: "Open", value: openCount, tone: openCount > 0 ? "attention" : "success" },
+        { label: "Resolved", value: resolvedCount },
+        { label: "All requests", value: requests.length },
+      ]} />
       <section className="admin-support-board">
         <div className="admin-list-toolbar">
           <label className="admin-inline-search">
             <span className="sr-only">Search help requests</span>
             <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search help requests..." type="search" value={query} />
           </label>
-          <span>{visibleRequests.length} requests</span>
+          <label className="admin-support-filter">
+            <span className="sr-only">Filter help requests by status</span>
+            <select aria-label="Help request status" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
+              <option value="all">All requests</option>
+              <option value="open">Open requests</option>
+              <option value="received">Received</option>
+              <option value="in_review">In review</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </label>
+          <span>{visibleRequests.length} shown</span>
         </div>
         {visibleRequests.length === 0 ? (
-          <div className="admin-empty-state"><h2>No help requests</h2><p>New candidate requests will appear here.</p></div>
+          <div className="admin-empty-state"><h2>No matching requests</h2><p>Try another status or search term. New candidate requests will appear here automatically.</p></div>
         ) : (
           <div className="admin-support-layout">
             <div className="admin-support-list">
               {visibleRequests.map((request) => (
-                <button className={selected?.id === request.id ? "is-active" : ""} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
-                  <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
-                  <small>{request.status.replace("_", " ")}</small>
+                <button className={`admin-support-request-card${selected?.id === request.id ? " is-active" : ""}`} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
+                  <span className="admin-support-request-icon" aria-hidden="true">{String(request.category || "?").charAt(0).toUpperCase()}</span>
+                  <span className="admin-support-request-copy">
+                    <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
+                    <span><small>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</small><small>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</small></span>
+                  </span>
+                  <span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span>
                 </button>
               ))}
             </div>
