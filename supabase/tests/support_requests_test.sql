@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(18);
+select plan(23);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -34,6 +34,9 @@ insert into auth.users (
 
 update public.profiles set role = 'admin' where id = 'e1000000-0000-4000-8000-000000000003';
 
+insert into public.subjects (id, name, slug, lifecycle_status, candidate_availability)
+values ('e2000000-0000-4000-8000-000000000001', 'Support Test Module', 'support-test-module', 'active', 'available');
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'e1000000-0000-4000-8000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -59,6 +62,34 @@ select is(
   (select payment_reference from public.support_requests where user_id = 'e1000000-0000-4000-8000-000000000001' limit 1),
   'PS-support-test',
   'the payment reference is retained for reconciliation'
+);
+
+select lives_ok(
+  $$ select public.create_support_request_v2(
+    'practice',
+    'Practice timer did not start',
+    'The page opened but the timer stayed at zero and did not begin.',
+    null,
+    '/practice/support-test-module',
+    'e2000000-0000-4000-8000-000000000001'
+  ) $$,
+  'a candidate can identify the affected module in a support request'
+);
+
+select is(
+  (select subject_id from public.support_requests where subject = 'Practice timer did not start'),
+  'e2000000-0000-4000-8000-000000000001'::uuid,
+  'the affected module is retained for automated diagnosis'
+);
+
+select throws_ok(
+  $$ select public.create_support_request_v2(
+    'practice', 'Practice timer did not start',
+    'The page opened but the timer stayed at zero and did not begin.', null, '/practice', null
+  ) $$,
+  'P0001',
+  'Choose the affected module',
+  'diagnosable categories require an affected module'
 );
 
 select throws_ok(
@@ -95,6 +126,14 @@ select throws_ok(
   'Admin access is required',
   'a candidate cannot read the admin support queue'
 );
+select throws_ok(
+  $$ select public.get_admin_support_diagnostics(
+    (select id from public.support_requests where subject = 'Practice timer did not start')
+  ) $$,
+  'P0001',
+  'Admin access is required',
+  'a candidate cannot run privileged support diagnostics'
+);
 
 select set_config('request.jwt.claim.sub', 'e1000000-0000-4000-8000-000000000003', true);
 select is(
@@ -112,6 +151,13 @@ select is(
   0,
   'the admin queue honors a server-side page offset'
 );
+select is(
+  public.get_admin_support_diagnostics(
+    (select id from public.support_requests where subject = 'Practice timer did not start')
+  ) ->> 'category',
+  'practice',
+  'an administrator receives a category-specific system diagnosis'
+);
 
 select lives_ok(
   $$ select public.update_support_request(
@@ -128,8 +174,8 @@ select is(
 );
 select is(
   (public.get_admin_support_queue('open', null, 25, 0) ->> 'total')::integer,
-  0,
-  'resolved requests leave the default open queue'
+  1,
+  'resolved requests leave the default open queue while other open requests remain'
 );
 select is(
   (select count(*)::integer

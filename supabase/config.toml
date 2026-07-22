@@ -26,6 +26,10 @@ verify_jwt = false
 enabled = true
 verify_jwt = false
 
+[functions.admin-reconcile-support-payment]
+enabled = true
+verify_jwt = false
+
 # Authentication is enforced inside the candidate functions so publishable
 # API keys work with current JWT signing keys. Paystack authenticates webhooks
 # with the signature over the raw request body.

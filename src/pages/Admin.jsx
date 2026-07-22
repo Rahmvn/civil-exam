@@ -5,7 +5,6 @@ import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
-import { AdminSupportProcedures } from "../components/admin/AdminSupportProcedures";
 import { BrandLogo } from "../components/BrandLogo";
 import { LoadingState } from "../components/LoadingState";
 import "../styles/admin.css";
@@ -25,9 +24,11 @@ import {
   getAdminQuestions,
   getAdminPaymentAttention,
   getAdminSupportQueue,
+  getAdminSupportDiagnostics,
   importAdminQuestions,
   publishAdminPracticeSetReplacement,
   publishAdminQuestionRevision,
+  reconcileAdminSupportPayment,
   saveAdminQuestion,
   republishAdminPracticeSet,
   retireAdminPracticeSet,
@@ -48,7 +49,6 @@ import {
   PRACTICE_SET_STATUS_LABELS,
 } from "../lib/adminContent";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
-import { getAdminSupportGuidance } from "../lib/supportKnowledge";
 import { supabase } from "../lib/supabaseClient";
 
 const STATUS_LABELS = {
@@ -1127,11 +1127,71 @@ function ActivityView({ auditLogs, onQueryChange, query }) {
   );
 }
 
-function SupportRequestDetail({ onClose, onUpdate, request, working }) {
+function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, working }) {
   const [status, setStatus] = useState(request.status);
   const [resolutionNote, setResolutionNote] = useState(request.resolution_note ?? "");
+  const [diagnostics, setDiagnostics] = useState(null);
+  const [diagnosticsError, setDiagnosticsError] = useState("");
+  const [checking, setChecking] = useState(true);
+  const [acting, setActing] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
   const emailHref = buildSupportEmailComposeHref(request);
-  const handlingGuidance = getAdminSupportGuidance(request.category);
+
+  async function runSystemCheck() {
+    setChecking(true);
+    setDiagnosticsError("");
+    try {
+      setDiagnostics(await getAdminSupportDiagnostics(request.id));
+    } catch (error) {
+      logAppError("Admin support diagnostics", error);
+      setDiagnosticsError(friendlyErrorMessage(error, "The system check could not be completed."));
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+    getAdminSupportDiagnostics(request.id)
+      .then((result) => {
+        if (active) setDiagnostics(result);
+      })
+      .catch((error) => {
+        if (!active) return;
+        logAppError("Admin support diagnostics", error);
+        setDiagnosticsError(friendlyErrorMessage(error, "The system check could not be completed."));
+      })
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [request.id]);
+
+  async function runRecommendedAction() {
+    const action = diagnostics?.recommended_action;
+    if (!action) return;
+    if (action.type === "open_module") {
+      onOpenModule(action.subject_id);
+      return;
+    }
+    if (action.type !== "reconcile_payment") return;
+
+    setActing(true);
+    setActionMessage("");
+    try {
+      await reconcileAdminSupportPayment(request.id);
+      setActionMessage("Payment verified and access restored. The system check has been refreshed.");
+      await runSystemCheck();
+    } catch (error) {
+      logAppError("Admin support payment reconciliation", error);
+      setActionMessage(friendlyErrorMessage(error, "No access was changed. The payment could not be safely restored."));
+    } finally {
+      setActing(false);
+    }
+  }
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -1159,6 +1219,37 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
         </header>
 
         <div aria-label="Request content" className="admin-support-drawer-body" role="region" tabIndex="0">
+          <section className={`admin-support-diagnostics${diagnostics ? ` is-${diagnostics.state}` : ""}`}>
+            <header>
+              <h3>System check</h3>
+              <button disabled={checking || acting} onClick={() => void runSystemCheck()} type="button">{checking ? "Checking..." : "Refresh"}</button>
+            </header>
+            {diagnosticsError ? <p className="admin-support-diagnostics-error" role="alert">{diagnosticsError}</p> : checking && !diagnostics ? (
+              <p className="admin-support-diagnostics-loading">Checking this candidate’s account and module…</p>
+            ) : diagnostics && (
+              <>
+                <strong className="admin-support-diagnostics-summary">{diagnostics.summary}</strong>
+                <dl>
+                  {diagnostics.checks?.map((check) => (
+                    <div key={check.key}>
+                      <dt><span className={`is-${check.status}`} aria-hidden="true" />{check.label}</dt>
+                      <dd>{check.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="admin-support-next-step">
+                  <span>What to do next</span>
+                  <p>{diagnostics.candidate_next_step}</p>
+                  {diagnostics.recommended_action && (
+                    <button disabled={acting || checking} onClick={() => void runRecommendedAction()} type="button">
+                      {acting ? "Working..." : diagnostics.recommended_action.label}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+            {actionMessage && <p className="admin-support-action-message" role="status">{actionMessage}</p>}
+          </section>
           <section className="admin-support-message">
             <h3>Candidate message</h3>
             <p>{request.description}</p>
@@ -1169,31 +1260,23 @@ function SupportRequestDetail({ onClose, onUpdate, request, working }) {
               <div><dt>Candidate</dt><dd>{request.requester_name || "Not provided"}</dd></div>
               {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
               <div><dt>Category</dt><dd>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</dd></div>
+              {request.subject_name && <div><dt>Module</dt><dd>{request.subject_name}</dd></div>}
               {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
               {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
             </dl>
           </section>
-          <details className="admin-support-triage">
-            <summary>Handling checklist</summary>
-            <div>
-              <p className="admin-support-triage-safety">{handlingGuidance.safety}</p>
-              <ol>
-                {handlingGuidance.checks.map((check) => <li key={check}>{check}</li>)}
-              </ol>
-              <p><strong>Escalate:</strong> {handlingGuidance.escalate}</p>
-            </div>
-          </details>
         </div>
 
         <footer className="admin-support-drawer-action">
           <label>
             <span>Status</span>
-            <select disabled={working} onChange={(event) => setStatus(event.target.value)} value={status}>
+            <select disabled={working || acting} onChange={(event) => setStatus(event.target.value)} value={status}>
               <option value="received">Received</option>
               <option value="in_review">In review</option>
-              <option value="resolved">Resolved</option>
+              <option disabled={diagnostics?.blocks_resolution && request.status !== "resolved"} value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </select>
+            {diagnostics?.blocks_resolution && <small>Resolve becomes available after the system confirms the repair.</small>}
           </label>
           <label>
             <span>Resolution note</span>
@@ -1364,9 +1447,8 @@ function formatSupportAge(createdAt) {
   return `${days}d`;
 }
 
-function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange, onUpdate, query, queue, status, working }) {
+function AdminSupportView({ loading, onOpenModule, onPageChange, onQueryChange, onStatusChange, onUpdate, query, queue, status, working }) {
   const [selectedId, setSelectedId] = useState(null);
-  const [proceduresOpen, setProceduresOpen] = useState(false);
   const requests = queue.items;
   const selected = selectedId ? requests.find((request) => request.id === selectedId) ?? null : null;
   const firstResult = queue.total === 0 ? 0 : queue.offset + 1;
@@ -1376,7 +1458,6 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
     <>
       <section className="admin-page-heading">
         <div><h1>Help requests</h1></div>
-        <button className="ghost-button" onClick={() => setProceduresOpen(true)} type="button">Support procedures</button>
       </section>
       <section className="admin-support-board">
         <div className="admin-support-toolbar">
@@ -1437,12 +1518,12 @@ function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange
         <SupportRequestDetail
           key={`${selected.id}:${selected.updated_at}`}
           onClose={() => setSelectedId(null)}
+          onOpenModule={onOpenModule}
           onUpdate={onUpdate}
           request={selected}
           working={working}
         />
       )}
-      {proceduresOpen && <AdminSupportProcedures onClose={() => setProceduresOpen(false)} />}
     </>
   );
 }
@@ -2139,6 +2220,7 @@ export default function Admin() {
             ) : currentView === "support" ? (
               <AdminSupportView
                 loading={supportLoading}
+                onOpenModule={(moduleId) => navigateWithinAdmin(`/admin/modules/${moduleId}`)}
                 onPageChange={(direction) => setSupportPage((current) => Math.max(0, current + direction))}
                 onQueryChange={(value) => { setSupportPage(0); setShellSearch(value); }}
                 onStatusChange={(value) => { setSupportPage(0); setSupportStatus(value); }}

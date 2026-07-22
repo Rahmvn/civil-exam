@@ -157,13 +157,14 @@ export async function getPublicModuleCatalog() {
   )));
 }
 
-export async function createSupportRequest({ category, subject, description, paymentReference, pagePath }) {
-  return requireData(await supabase.rpc("create_support_request", {
+export async function createSupportRequest({ category, subject, description, paymentReference, pagePath, subjectId }) {
+  return requireData(await supabase.rpc("create_support_request_v2", {
     requested_category: category,
     requested_subject: subject,
     requested_description: description,
     requested_payment_reference: paymentReference || null,
     requested_page_path: pagePath || null,
+    requested_subject_id: subjectId || null,
   }));
 }
 
@@ -703,6 +704,18 @@ export async function getAdminSupportQueue({ status = "open", query = "", limit 
     offset: Number(data?.offset) || 0,
     hasMore: Boolean(data?.has_more),
   };
+}
+
+export async function getAdminSupportDiagnostics(requestId) {
+  return requireData(await supabase.rpc("get_admin_support_diagnostics", {
+    requested_request_id: requestId,
+  }));
+}
+
+export async function reconcileAdminSupportPayment(requestId) {
+  return requireFunctionData(await supabase.functions.invoke("admin-reconcile-support-payment", {
+    body: { support_request_id: requestId },
+  }));
 }
 
 export async function getAdminPaymentAttention(limit = 100) {

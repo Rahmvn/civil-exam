@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
-import { createSupportRequest, getMySupportRequests } from "../lib/appApi";
+import { createSupportRequest, getModuleAccessCatalog, getMySupportRequests } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { findSupportFaqs, SUPPORT_FAQS, SUPPORT_TOPICS } from "../lib/supportKnowledge";
 
@@ -22,6 +22,8 @@ const STATUS_LABELS = {
   closed: "Closed",
 };
 
+const MODULE_CATEGORIES = new Set(["access", "practice", "content"]);
+
 export default function Support() {
   const [searchParams] = useSearchParams();
   const requestedCategory = searchParams.get("category");
@@ -40,6 +42,9 @@ export default function Support() {
     ? "My payment was confirmed, but the module access has not been unlocked."
     : "");
   const [paymentReference, setPaymentReference] = useState(initialPaymentReference);
+  const [moduleId, setModuleId] = useState("");
+  const [modules, setModules] = useState([]);
+  const [moduleError, setModuleError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");
@@ -79,14 +84,21 @@ export default function Support() {
   useEffect(() => {
     let active = true;
 
-    getMySupportRequests(10)
-      .then((nextRequests) => {
-        if (active) setRequests(nextRequests);
-      })
-      .catch((error) => {
+    Promise.allSettled([getMySupportRequests(10), getModuleAccessCatalog()])
+      .then(([requestResult, moduleResult]) => {
         if (!active) return;
-        logAppError("Support requests load", error);
-        setLoadingError(friendlyErrorMessage(error, "Your previous requests could not be loaded."));
+        if (requestResult.status === "fulfilled") {
+          setRequests(requestResult.value);
+        } else {
+          logAppError("Support requests load", requestResult.reason);
+          setLoadingError(friendlyErrorMessage(requestResult.reason, "Your previous requests could not be loaded."));
+        }
+        if (moduleResult.status === "fulfilled") {
+          setModules(moduleResult.value);
+        } else {
+          logAppError("Support module list load", moduleResult.reason);
+          setModuleError("Modules could not be loaded. Refresh the page before sending this request.");
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -110,11 +122,13 @@ export default function Support() {
         description,
         paymentReference: category === "payment" ? paymentReference : "",
         pagePath: window.location.pathname,
+        subjectId: MODULE_CATEGORIES.has(category) ? moduleId : null,
       });
       setRequests((current) => [created, ...current].slice(0, 10));
       setSubject("");
       setDescription("");
       setPaymentReference("");
+      setModuleId("");
       setMessageTone("success");
       setMessage("Your request has been received. You can follow its status below.");
     } catch (error) {
@@ -207,6 +221,16 @@ export default function Support() {
                   <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" ref={subjectInputRef} required value={subject} />
                 </label>
               </div>
+              {MODULE_CATEGORIES.has(category) && (
+                <label>
+                  <span>Affected module</span>
+                  <select aria-label="Affected module" disabled={submitting} onChange={(event) => setModuleId(event.target.value)} required value={moduleId}>
+                    <option value="">Choose a module</option>
+                    {modules.map((module) => <option key={module.subject_id} value={module.subject_id}>{module.subject_name}</option>)}
+                  </select>
+                  {moduleError && <small className="support-field-error" role="alert">{moduleError}</small>}
+                </label>
+              )}
               <label>
                 <span>What happened?</span>
                 <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder="What were you trying to do, what did you expect, and what happened instead?" required rows={6} value={description} />

@@ -401,20 +401,31 @@ test("admin help queue is directly accessible", async ({ page }) => {
       }),
     });
   });
+  await page.route("**/rest/v1/rpc/get_admin_support_diagnostics", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        request_id: route.request().postDataJSON()?.requested_request_id,
+        category: "payment",
+        checked_at: "2026-07-22T10:00:00.000Z",
+        state: "ok",
+        summary: "Payment and module access are aligned.",
+        checks: [
+          { key: "recent_errors", label: "Recent app errors", status: "good", value: "None detected" },
+          { key: "payment", label: "Payment record", status: "good", value: "Confirmed by saved provider status" },
+        ],
+        recommended_action: null,
+        candidate_next_step: "Ask the candidate to sign out and back in. Resolve the request after they confirm access.",
+        blocks_resolution: false,
+      }),
+    });
+  });
 
   await page.goto("/admin/help");
   await expect(page.getByRole("heading", { name: "Help requests", exact: true })).toBeVisible();
   await expect(page.getByPlaceholder("Search subject, candidate, email, or reference")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Help request status" })).toHaveValue("open");
-  await page.getByRole("button", { name: "Support procedures" }).click();
-  const procedures = page.getByRole("dialog", { name: "Support procedures" });
-  await expect(procedures).toBeVisible();
-  await expect(procedures.getByRole("heading", { name: "Triage every request the same way" })).toBeVisible();
-  await procedures.getByLabel("Procedure", { exact: true }).selectOption("payment");
-  await expect(procedures.getByRole("heading", { name: "Payment and paid access" })).toBeVisible();
-  await expect(procedures.getByText(/Do not ask the candidate to pay again/)).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(procedures).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Support procedures" })).toHaveCount(0);
   await expect(page.locator(".admin-support-table tbody tr")).toHaveCount(1);
   await expect(page.locator(".admin-support-table thead")).toContainText("Request");
   await expect(page.locator(".admin-support-table thead")).toContainText("Candidate");
@@ -426,8 +437,10 @@ test("admin help queue is directly accessible", async ({ page }) => {
   const requestDrawer = page.getByRole("dialog", { name: "Module access restored" });
   await expect(requestDrawer).toBeVisible();
   await expect(requestDrawer.getByText("Access was restored after reconciliation.")).toBeVisible();
-  await requestDrawer.getByText("Handling checklist").click();
-  await expect(requestDrawer.getByText(/Do not ask the candidate to pay again/)).toBeVisible();
+  await expect(requestDrawer.getByRole("heading", { name: "System check" })).toBeVisible();
+  await expect(requestDrawer.getByText("Payment and module access are aligned.")).toBeVisible();
+  await expect(requestDrawer.getByText("What to do next")).toBeVisible();
+  await expect(requestDrawer.getByText(/sign out and back in/)).toBeVisible();
   await expect(requestDrawer.getByRole("button", { name: "Save changes" })).toBeVisible();
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(accessibility.violations.filter((violation) =>
