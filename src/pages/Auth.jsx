@@ -62,6 +62,7 @@ export default function Auth() {
   const [otp, setOtp] = useState("");
   const [pending, setPending] = useState(initialPending);
   const [showPassword, setShowPassword] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [signUpStep, setSignUpStep] = useState(1);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");
@@ -120,6 +121,7 @@ export default function Auth() {
     setConfirmPassword("");
     setOtp("");
     setShowPassword(false);
+    setLegalAccepted(false);
     setSignUpStep(1);
     setMessage("");
     setMessageTone("error");
@@ -167,8 +169,17 @@ export default function Auth() {
   }
 
   async function createAccount() {
+    if (!legalAccepted) {
+      throw Object.assign(new Error("Legal acceptance is required"), { code: "legal_acceptance_required" });
+    }
     const normalizedEmail = normalizeAuthEmail(email);
-    const options = { data: { full_name: fullName.trim() } };
+    const options = {
+      data: {
+        full_name: fullName.trim(),
+        legal_acceptance: true,
+        legal_acceptance_source: "email_signup",
+      },
+    };
     if (captchaToken) options.captchaToken = captchaToken;
     const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password, options });
     if (error) throw error;
@@ -275,6 +286,10 @@ export default function Auth() {
       setMessage("Passwords do not match.");
       return;
     }
+    if (mode === "sign-up" && !legalAccepted) {
+      setMessage("Accept the Terms of Service and acknowledge the Privacy Policy to create your account.");
+      return;
+    }
 
     setBusyMethod("email");
     try {
@@ -357,6 +372,18 @@ export default function Auth() {
             <>
               <label><span>Password</span><div className="auth-password-field"><input aria-label="Password" autoComplete="new-password" disabled={isBusy} minLength={8} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Create a password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><small>Use 8 or more characters.</small></label>
               <label><span>Confirm password</span><input aria-label="Confirm password" autoComplete="new-password" disabled={isBusy} minLength={8} name="confirm-password" onChange={(event) => updateField(setConfirmPassword, event.target.value)} placeholder="Enter your password again" required type={showPassword ? "text" : "password"} value={confirmPassword} /></label>
+              <label className="auth-legal-consent">
+                <input
+                  checked={legalAccepted}
+                  disabled={isBusy}
+                  onChange={(event) => updateField(setLegalAccepted, event.target.checked)}
+                  required
+                  type="checkbox"
+                />
+                <span>
+                  I agree to the <Link onClick={(event) => event.stopPropagation()} rel="noopener noreferrer" target="_blank" to="/terms">Terms of Service</Link> and acknowledge the <Link onClick={(event) => event.stopPropagation()} rel="noopener noreferrer" target="_blank" to="/privacy">Privacy Policy</Link>.
+                </span>
+              </label>
             </>
           ) : (
             <>
@@ -378,7 +405,7 @@ export default function Auth() {
               </div>
             </>
           ) : isSignUpPasswordStep ? (
-            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button></div>
+            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || !legalAccepted || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button></div>
           ) : isForgotPassword ? (
             <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => switchMode("sign-in")} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Sending..." : "Send recovery code"}</button></div>
           ) : (

@@ -81,6 +81,8 @@ test("confirmation-required signup transitions to OTP without persisting passwor
   await page.route("**/auth/v1/signup", async (route) => {
     const body = route.request().postDataJSON();
     expect(body.email).toBe("candidate@example.com");
+    expect(body.data.legal_acceptance).toBe(true);
+    expect(body.data.legal_acceptance_source).toBe("email_signup");
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -106,7 +108,22 @@ test("confirmation-required signup transitions to OTP without persisting passwor
   await page.getByRole("button", { name: "Next" }).click();
   await page.getByLabel("Password", { exact: true }).fill("StrongPass123!");
   await page.getByLabel("Confirm password").fill("StrongPass123!");
-  await page.locator("form").getByRole("button", { name: "Create account" }).click();
+  const createAccount = page.locator("form").getByRole("button", { name: "Create account" });
+  await expect(createAccount).toBeDisabled();
+  const termsLink = page.getByRole("link", { name: "Terms of Service" });
+  const legalCheckbox = page.getByRole("checkbox", { name: /I agree to the Terms of Service/i });
+  await expect(termsLink).toHaveAttribute("href", "/terms");
+  await expect(termsLink).toHaveAttribute("target", "_blank");
+  await expect(page.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
+  const termsPagePromise = page.waitForEvent("popup");
+  await termsLink.click();
+  const termsPage = await termsPagePromise;
+  await expect(termsPage).toHaveURL(/\/terms$/);
+  await termsPage.close();
+  await expect(legalCheckbox).not.toBeChecked();
+  await legalCheckbox.check();
+  await expect(createAccount).toBeEnabled();
+  await createAccount.click();
 
   await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
   const stored = await page.evaluate(() => window.sessionStorage.getItem("promotionsure.auth.pending.signup"));
@@ -165,6 +182,7 @@ test("auto-confirm signup skips OTP and clears stale verification state", async 
   await page.getByRole("button", { name: "Next" }).click();
   await page.getByLabel("Password", { exact: true }).fill("StrongPass123!");
   await page.getByLabel("Confirm password").fill("StrongPass123!");
+  await page.getByRole("checkbox", { name: /I agree to the Terms of Service/i }).check();
   await page.locator("form").getByRole("button", { name: "Create account" }).click();
 
   await expect(page.getByRole("heading", { name: "Verify your email" })).toHaveCount(0);

@@ -6778,6 +6778,36 @@ button.auth-google-button:focus-visible {
   font-size: 0.72rem;
 }
 
+.auth-form-v2 label.auth-legal-consent {
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 7px 0 3px;
+  cursor: pointer;
+}
+
+.auth-form-v2 label.auth-legal-consent input[type="checkbox"] {
+  width: 19px;
+  min-height: 19px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--color-primary);
+}
+
+.auth-form-v2 label.auth-legal-consent > span {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.auth-legal-consent a {
+  color: var(--color-primary-dark);
+  font-weight: 750;
+  text-underline-offset: 2px;
+}
+
 .auth-password-field {
   position: relative;
 }
