@@ -1232,28 +1232,16 @@ function buildSupportEmailComposeHref(request) {
   const candidateName = String(request.requester_name ?? "").trim();
   const greetingName = candidateName ? candidateName.split(/\s+/)[0] : "there";
   const subject = `PromotionSure support: ${request.subject || "Your request"}`;
-  const summaryLines = [
-    `- Category: ${SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}`,
-    `- Status: ${SUPPORT_STATUS_LABELS[request.status] ?? request.status}`,
-    request.payment_reference ? `- Payment reference: ${request.payment_reference}` : null,
-    request.page_path ? `- Reported from: ${request.page_path}` : null,
-    `- Received: ${new Date(request.created_at).toLocaleString("en-NG")}`,
-  ].filter(Boolean);
-  const candidateMessage = String(request.description ?? "").trim();
   const body = [
     `Hello ${greetingName},`,
     "",
-    `We are contacting you about your PromotionSure support request: "${request.subject || "Your request"}".`,
+    "Thank you for contacting PromotionSure support.",
     "",
-    "To help us resolve this, please reply with any extra detail you have. Do not send your password, OTP, PIN, or card details.",
+    "We are checking your request and will update you as soon as possible.",
     "",
-    "Request summary:",
-    ...summaryLines,
+    "If you need to send any extra information, please reply to this email. For your safety, do not send your password, OTP, PIN, or card details.",
     "",
-    "Your message:",
-    candidateMessage.length > 1200 ? `${candidateMessage.slice(0, 1200)}...` : candidateMessage || "No message provided.",
-    "",
-    "Regards,",
+    "Kind regards,",
     "PromotionSure Support",
   ].join("\n");
 
