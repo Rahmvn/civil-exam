@@ -22,7 +22,7 @@ function PracticeExperiencePreview() {
         </div>
         <div className="landing-experience-progress"><i aria-hidden="true" /></div>
         <div className="landing-experience-question">
-          <p>Which core document provides the foundational policy direction for the rollout of the modern PMS across the Nigerian Federal Civil Service?</p>
+          <p>Which core document provides the foundational policy direction for the rollout of the current Performance Management System (PMS) across the Nigerian Federal Civil Service?</p>
           <div className="landing-experience-options" aria-label="Example answer choices">
             <div className="is-selected">
               <i aria-hidden="true" />
