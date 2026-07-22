@@ -133,7 +133,8 @@ test("WhatsApp payment context preserves a delayed-access reference", async ({ p
 
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: "Help & support" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Help & support" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
 
   await page.getByLabel("What do you need help with?").selectOption("technical");
   await page.getByLabel("Issue").fill("Practice page did not respond");

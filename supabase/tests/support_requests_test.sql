@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(14);
+select plan(18);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -89,12 +89,28 @@ select is(
   0,
   'another candidate cannot read the request'
 );
+select throws_ok(
+  $$ select public.get_admin_support_queue('open', null, 25, 0) $$,
+  'P0001',
+  'Admin access is required',
+  'a candidate cannot read the admin support queue'
+);
 
 select set_config('request.jwt.claim.sub', 'e1000000-0000-4000-8000-000000000003', true);
 select is(
   (select count(*)::integer from public.support_requests where payment_reference = 'PS-support-test'),
   1,
   'an administrator can read support requests for resolution'
+);
+select is(
+  (public.get_admin_support_queue('open', 'PS-support-test', 25, 0) ->> 'total')::integer,
+  1,
+  'the admin queue searches and counts matching open requests on the server'
+);
+select is(
+  jsonb_array_length(public.get_admin_support_queue('open', null, 25, 25) -> 'items'),
+  0,
+  'the admin queue honors a server-side page offset'
 );
 
 select lives_ok(
@@ -109,6 +125,11 @@ select is(
   (select status from public.support_requests where payment_reference = 'PS-support-test' limit 1),
   'resolved',
   'the resolved status is visible to the requester and administrator'
+);
+select is(
+  (public.get_admin_support_queue('open', null, 25, 0) ->> 'total')::integer,
+  0,
+  'resolved requests leave the default open queue'
 );
 select is(
   (select count(*)::integer

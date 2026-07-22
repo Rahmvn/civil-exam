@@ -677,6 +677,34 @@ export async function getAdminSupportRequests(limit = 100) {
   )));
 }
 
+export async function getAdminSupportQueue({ status = "open", query = "", limit = 25, offset = 0 } = {}) {
+  const data = await readWithPolicy(
+    `admin-support-queue:${status}:${query}:${limit}:${offset}`,
+    async () => requireData(await supabase.rpc("get_admin_support_queue", {
+      requested_status: status,
+      requested_query: query || null,
+      requested_limit: limit,
+      requested_offset: offset,
+    })),
+  );
+
+  return {
+    items: ensureArray(data?.items),
+    total: Number(data?.total) || 0,
+    counts: {
+      open: Number(data?.counts?.open) || 0,
+      received: Number(data?.counts?.received) || 0,
+      in_review: Number(data?.counts?.in_review) || 0,
+      resolved: Number(data?.counts?.resolved) || 0,
+      closed: Number(data?.counts?.closed) || 0,
+      all: Number(data?.counts?.all) || 0,
+    },
+    limit: Number(data?.limit) || limit,
+    offset: Number(data?.offset) || 0,
+    hasMore: Boolean(data?.has_more),
+  };
+}
+
 export async function getAdminPaymentAttention(limit = 100) {
   return readWithPolicy(`admin-payment-attention:${limit}`, async () => ensureArray(requireData(
     await supabase.rpc("get_admin_payment_attention", { requested_limit: limit }),

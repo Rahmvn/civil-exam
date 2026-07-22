@@ -23,7 +23,7 @@ import {
   getAdminPracticeSetValidation,
   getAdminQuestions,
   getAdminPaymentAttention,
-  getAdminSupportRequests,
+  getAdminSupportQueue,
   importAdminQuestions,
   publishAdminPracticeSetReplacement,
   publishAdminQuestionRevision,
@@ -1192,6 +1192,15 @@ const SUPPORT_STATUS_LABELS = {
   closed: "Closed",
 };
 
+const EMPTY_SUPPORT_QUEUE = {
+  items: [],
+  total: 0,
+  counts: { open: 0, received: 0, in_review: 0, resolved: 0, closed: 0, all: 0 },
+  limit: 25,
+  offset: 0,
+  hasMore: false,
+};
+
 function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefresh, query, refreshing }) {
   const normalizedQuery = query.trim().toLowerCase();
   const visibleItems = items.filter((item) => [
@@ -1268,38 +1277,18 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
   );
 }
 
-function AdminSupportView({ onQueryChange, onUpdate, query, requests, working }) {
+function AdminSupportView({ loading, onPageChange, onQueryChange, onStatusChange, onUpdate, query, queue, status, working }) {
   const [selectedId, setSelectedId] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const normalizedQuery = query.trim().toLowerCase();
-  const visibleRequests = requests.filter((request) => {
-    const matchesStatus = statusFilter === "all"
-      || (statusFilter === "open" && ["received", "in_review"].includes(request.status))
-      || request.status === statusFilter;
-    const matchesQuery = [
-      request.subject,
-      request.description,
-      request.requester_name,
-      request.requester_email,
-      request.payment_reference,
-      request.status,
-    ].filter(Boolean).join(" ").toLowerCase().includes(normalizedQuery);
-    return matchesStatus && matchesQuery;
-  });
-  const selected = visibleRequests.find((request) => request.id === selectedId) ?? visibleRequests[0] ?? null;
-  const openCount = requests.filter((request) => ["received", "in_review"].includes(request.status)).length;
-  const resolvedCount = requests.filter((request) => ["resolved", "closed"].includes(request.status)).length;
+  const requests = queue.items;
+  const selected = requests.find((request) => request.id === selectedId) ?? requests[0] ?? null;
+  const firstResult = queue.total === 0 ? 0 : queue.offset + 1;
+  const lastResult = Math.min(queue.offset + requests.length, queue.total);
 
   return (
     <>
       <section className="admin-page-heading">
-        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Review candidate problems, record what was done, and keep every resolution traceable.</p></div>
+        <div><span className="admin-form-step">Candidate care</span><h1>Help requests</h1><p>Work through unresolved requests without loading the entire support history.</p></div>
       </section>
-      <AdminSummaryStrip items={[
-        { label: "Open", value: openCount, tone: openCount > 0 ? "attention" : "success" },
-        { label: "Resolved", value: resolvedCount },
-        { label: "All requests", value: requests.length },
-      ]} />
       <section className="admin-support-board">
         <div className="admin-list-toolbar">
           <label className="admin-inline-search">
@@ -1308,35 +1297,42 @@ function AdminSupportView({ onQueryChange, onUpdate, query, requests, working })
           </label>
           <label className="admin-support-filter">
             <span className="sr-only">Filter help requests by status</span>
-            <select aria-label="Help request status" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
-              <option value="all">All requests</option>
-              <option value="open">Open requests</option>
-              <option value="received">Received</option>
-              <option value="in_review">In review</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
+            <select aria-label="Help request status" onChange={(event) => onStatusChange(event.target.value)} value={status}>
+              <option value="open">Open ({queue.counts.open})</option>
+              <option value="received">Received ({queue.counts.received})</option>
+              <option value="in_review">In review ({queue.counts.in_review})</option>
+              <option value="resolved">Resolved ({queue.counts.resolved})</option>
+              <option value="closed">Closed ({queue.counts.closed})</option>
+              <option value="all">All ({queue.counts.all})</option>
             </select>
           </label>
-          <span>{visibleRequests.length} shown</span>
+          <span>{loading ? "Loading..." : `${firstResult}–${lastResult} of ${queue.total}`}</span>
         </div>
-        {visibleRequests.length === 0 ? (
+        {loading && requests.length === 0 ? <LoadingState /> : requests.length === 0 ? (
           <div className="admin-empty-state"><h2>No matching requests</h2><p>Try another status or search term. New candidate requests will appear here automatically.</p></div>
         ) : (
-          <div className="admin-support-layout">
-            <div className="admin-support-list">
-              {visibleRequests.map((request) => (
-                <button className={`admin-support-request-card${selected?.id === request.id ? " is-active" : ""}`} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
-                  <span className="admin-support-request-icon" aria-hidden="true">{String(request.category || "?").charAt(0).toUpperCase()}</span>
-                  <span className="admin-support-request-copy">
-                    <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
-                    <span><small>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</small><small>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</small></span>
-                  </span>
-                  <span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span>
-                </button>
-              ))}
+          <>
+            <div className="admin-support-layout">
+              <div className="admin-support-list">
+                {requests.map((request) => (
+                  <button className={`admin-support-request-card${selected?.id === request.id ? " is-active" : ""}`} key={request.id} onClick={() => setSelectedId(request.id)} type="button">
+                    <span className="admin-support-request-icon" aria-hidden="true">{String(request.category || "?").charAt(0).toUpperCase()}</span>
+                    <span className="admin-support-request-copy">
+                      <span><strong>{request.subject}</strong><small>{request.requester_name || request.requester_email}</small></span>
+                      <span><small>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</small><small>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</small></span>
+                    </span>
+                    <span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span>
+                  </button>
+                ))}
+              </div>
+              {selected && <SupportRequestDetail key={`${selected.id}:${selected.updated_at}`} onUpdate={onUpdate} request={selected} working={working} />}
             </div>
-            {selected && <SupportRequestDetail key={`${selected.id}:${selected.updated_at}`} onUpdate={onUpdate} request={selected} working={working} />}
-          </div>
+            <nav className="admin-support-pagination" aria-label="Help request pages">
+              <button disabled={loading || queue.offset === 0} onClick={() => onPageChange(-1)} type="button">Previous</button>
+              <span>{firstResult}–{lastResult} of {queue.total}</span>
+              <button disabled={loading || !queue.hasMore} onClick={() => onPageChange(1)} type="button">Next</button>
+            </nav>
+          </>
         )}
       </section>
     </>
@@ -1365,7 +1361,10 @@ export default function Admin() {
   const [questions, setQuestions] = useState([]);
   const [validation, setValidation] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [supportRequests, setSupportRequests] = useState([]);
+  const [supportQueue, setSupportQueue] = useState(EMPTY_SUPPORT_QUEUE);
+  const [supportStatus, setSupportStatus] = useState("open");
+  const [supportPage, setSupportPage] = useState(0);
+  const [supportLoading, setSupportLoading] = useState(false);
   const [paymentAttention, setPaymentAttention] = useState([]);
   const [paymentAttentionLoading, setPaymentAttentionLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
@@ -1421,19 +1420,27 @@ export default function Admin() {
   useEffect(() => {
     if (currentView !== "support") return undefined;
     let active = true;
+    const timer = window.setTimeout(() => {
+      setSupportLoading(true);
+      getAdminSupportQueue({ status: supportStatus, query: shellSearch.trim(), limit: 25, offset: supportPage * 25 })
+        .then((nextQueue) => {
+          if (active) setSupportQueue(nextQueue);
+        })
+        .catch((error) => {
+          if (!active) return;
+          logAppError("Admin support requests load", error);
+          setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Help requests could not be loaded.") });
+        })
+        .finally(() => {
+          if (active) setSupportLoading(false);
+        });
+    }, shellSearch.trim() ? 300 : 0);
 
-    getAdminSupportRequests(100)
-      .then((rows) => {
-        if (active) setSupportRequests(rows);
-      })
-      .catch((error) => {
-        if (!active) return;
-        logAppError("Admin support requests load", error);
-        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Help requests could not be loaded.") });
-      });
-
-    return () => { active = false; };
-  }, [currentView]);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [currentView, shellSearch, supportPage, supportStatus]);
 
   useEffect(() => {
     if (currentView !== "payments") return undefined;
@@ -1550,8 +1557,13 @@ export default function Admin() {
   async function handleSupportUpdate(requestId, status, resolutionNote) {
     setWorking(true);
     try {
-      const updated = await updateSupportRequest(requestId, status, resolutionNote);
-      setSupportRequests((current) => current.map((request) => request.id === requestId ? { ...request, ...updated } : request));
+      await updateSupportRequest(requestId, status, resolutionNote);
+      const nextQueue = await getAdminSupportQueue({ status: supportStatus, query: shellSearch.trim(), limit: 25, offset: supportPage * 25 });
+      if (nextQueue.items.length === 0 && supportPage > 0) {
+        setSupportPage((current) => Math.max(0, current - 1));
+      } else {
+        setSupportQueue(nextQueue);
+      }
       setFeedback({ tone: "success", message: "Help request updated." });
     } catch (error) {
       reportError("Admin support request update", error, "The help request could not be updated.");
@@ -2013,7 +2025,17 @@ export default function Admin() {
                 refreshing={paymentAttentionLoading}
               />
             ) : currentView === "support" ? (
-              <AdminSupportView onQueryChange={setShellSearch} onUpdate={(...args) => void handleSupportUpdate(...args)} query={shellSearch} requests={supportRequests} working={working} />
+              <AdminSupportView
+                loading={supportLoading}
+                onPageChange={(direction) => setSupportPage((current) => Math.max(0, current + direction))}
+                onQueryChange={(value) => { setSupportPage(0); setShellSearch(value); }}
+                onStatusChange={(value) => { setSupportPage(0); setSupportStatus(value); }}
+                onUpdate={(...args) => void handleSupportUpdate(...args)}
+                query={shellSearch}
+                queue={supportQueue}
+                status={supportStatus}
+                working={working}
+              />
             ) : currentView === "guide" ? (
               <AdminGuideView query={shellSearch} />
             ) : selectedSetId && selectedModule && moduleContentLoading ? (

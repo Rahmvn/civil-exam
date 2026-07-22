@@ -2559,6 +2559,17 @@ button.admin-danger-link {
   margin-top: 2px;
 }
 
+.admin-support-board > .admin-list-toolbar {
+  position: sticky;
+  top: 72px;
+  z-index: 5;
+  padding: 10px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 13px;
+  background: rgb(255 255 255 / 96%);
+  backdrop-filter: blur(8px);
+}
+
 .admin-support-layout {
   display: grid;
   grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.4fr);
@@ -2697,6 +2708,27 @@ button.admin-support-request-card.is-active {
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.admin-support-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.admin-support-pagination span {
+  min-width: 90px;
+  color: #65716b;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.admin-support-pagination button {
+  min-height: 38px;
+  padding: 7px 13px;
+  border-radius: 9px;
 }
 
 .admin-support-detail {

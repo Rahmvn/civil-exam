@@ -103,11 +103,7 @@ export default function Support() {
   return (
     <AppFrame>
       <section className="support-page">
-        <header className="support-heading">
-          <span className="support-heading-kicker">Support centre</span>
-          <h1>Help &amp; support</h1>
-          <p>Tell us what went wrong and keep every update in one place.</p>
-        </header>
+        <h1 className="sr-only">Help &amp; support</h1>
 
         <div className="support-layout">
           <form className="support-form" onSubmit={submitRequest}>
