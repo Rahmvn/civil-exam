@@ -33,6 +33,7 @@ test("public legal pages identify the operator and explain data handling", async
   await expect(page.getByText("Saheed Imran, trading as PromotionSure, Abuja, Nigeria.")).toBeVisible();
   await expect(page.getByText(/use it to train general-purpose artificial-intelligence models/)).toBeVisible();
   await expect(page.getByText(/PromotionSure does not receive or store card numbers/).first()).toBeVisible();
+  await expect(page.getByText(/Opening the WhatsApp support link does not automatically send/)).toBeVisible();
   await expect(page.getByRole("link", { name: "promotionsureapp@gmail.com" }).first()).toHaveAttribute(
     "href",
     "mailto:promotionsureapp@gmail.com",
@@ -47,7 +48,7 @@ test("public legal pages identify the operator and explain data handling", async
   await expectNoHorizontalOverflow(page);
 });
 
-test("authentication uses the canonical product descriptor", async ({ page }) => {
+test("WhatsApp support is available beside the canonical authentication experience", async ({ page }) => {
   await page.goto("/auth?mode=sign-in");
 
   const brand = page.getByRole("link", {
@@ -55,6 +56,14 @@ test("authentication uses the canonical product descriptor", async ({ page }) =>
   });
   await expect(brand).toBeVisible();
   await expect(page.getByText("Public Service Promotion Exam Practice", { exact: true })).toHaveCount(1);
+  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  await expect(whatsappSupport).toBeVisible();
+  await expect(whatsappSupport).toHaveAttribute("target", "_blank");
+  await expect(whatsappSupport).toHaveAttribute("rel", "noopener noreferrer");
+  const supportUrl = new URL(await whatsappSupport.getAttribute("href"));
+  expect(supportUrl.origin).toBe("https://wa.me");
+  expect(supportUrl.pathname).toBe("/2348000000000");
+  expect(supportUrl.searchParams.get("text")).toContain("signing in or recovering my account");
 });
 
 test("a user who forgot their password can reach a clear recovery form", async ({ page }) => {

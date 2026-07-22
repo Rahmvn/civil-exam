@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { expectNoHorizontalOverflow } from "./helpers.js";
 
-test("mobile navigation and practice controls fit the viewport", async ({ page }) => {
+test("mobile WhatsApp support, navigation, and practice controls fit the viewport", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
+  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  await expect(whatsappSupport).toBeVisible();
+  const supportBox = await whatsappSupport.boundingBox();
+  const bottomNavBox = await page.getByRole("navigation", { name: "Mobile primary" }).boundingBox();
+  expect(supportBox.y + supportBox.height).toBeLessThan(bottomNavBox.y - 4);
   const interactionStyles = await page.evaluate(() => {
     const button = document.querySelector("button");
     const link = document.querySelector("a[href]");
@@ -48,6 +53,7 @@ test("mobile navigation and practice controls fit the viewport", async ({ page }
   await expect(page.getByRole("button", { name: "Mark for review" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyPayment } from "../lib/appApi";
 import { logAppError, PROBLEM_CODES, resolveAppProblem } from "../lib/errors";
+import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
@@ -97,6 +98,7 @@ export default function PaymentVerify() {
           )}
         </div>
       </section>
+      <WhatsAppSupportButton />
     </main>
   );
 }

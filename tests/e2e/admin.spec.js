@@ -400,9 +400,10 @@ test("admin payment attention queue identifies paid access mismatches", async ({
   await expectNoHorizontalOverflow(page);
 });
 
-test("admin catalogue has no serious automated accessibility violations", async ({ page }) => {
+test("admin catalogue excludes WhatsApp support and has no serious accessibility violations", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Content", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" })).toHaveCount(0);
 
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   const seriousViolations = results.violations.filter((violation) =>

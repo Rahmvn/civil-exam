@@ -8,9 +8,12 @@ test("candidate sessions cannot enter content administration", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
 });
 
-test("paid dashboard, modules, account, and access routes remain connected", async ({ page }) => {
+test("paid dashboard keeps WhatsApp support, modules, account, and access connected", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
+  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  await expect(whatsappSupport).toBeVisible();
+  await expect(whatsappSupport).toContainText("Support");
   await expect(page.getByText("Module access", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Modules" })).toBeVisible();
   const dashboardUnlockedModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
@@ -47,6 +50,12 @@ test("paid dashboard, modules, account, and access routes remain connected", asy
   await expect(unlockDialog.getByText("Public Service Rules", { exact: true })).toBeVisible();
   await expect(unlockDialog.getByRole("button", { name: "Continue" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+});
+
+test("WhatsApp support stays out of active practice", async ({ page }) => {
+  await page.goto("/practice/public-financial-management?batch=1");
+  await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" })).toHaveCount(0);
 });
 
 test("payment return stays on the receipt until the candidate opens the purchased module", async ({ page }) => {
@@ -88,7 +97,7 @@ test("payment return stays on the receipt until the candidate opens the purchase
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toHaveCount(0);
 });
 
-test("paid payment with delayed access is never described as unconfirmed", async ({ page }) => {
+test("WhatsApp payment context preserves a delayed-access reference", async ({ page }) => {
   const reference = "PS-e2e-access-issue";
 
   await page.route("**/functions/v1/verify-paystack-payment", async (route) => {
@@ -107,6 +116,9 @@ test("paid payment with delayed access is never described as unconfirmed", async
   await expect(page.getByText(/Your payment was received, but the module has not unlocked yet/)).toBeVisible();
   await expect(page.getByText("Payment not confirmed yet", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
+  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  const whatsappUrl = new URL(await whatsappSupport.getAttribute("href"));
+  expect(whatsappUrl.searchParams.get("text")).toContain(reference);
 
   const helpLink = page.getByRole("link", { name: "Get payment help" });
   await expect(helpLink).toHaveAttribute(

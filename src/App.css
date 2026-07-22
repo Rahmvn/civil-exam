@@ -6678,6 +6678,66 @@ button.auth-forgot-link {
   transform: none;
 }
 
+.whatsapp-support-button {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 10px 16px 10px 12px;
+  border: 1px solid color-mix(in srgb, #128c4a 72%, #ffffff);
+  border-radius: 999px;
+  background: #128c4a;
+  color: #ffffff;
+  box-shadow: 0 10px 28px rgb(18 75 43 / 24%);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.whatsapp-support-button:hover,
+.whatsapp-support-button:focus-visible {
+  background: #0f7c40;
+  color: #ffffff;
+  box-shadow: 0 13px 32px rgb(18 75 43 / 30%);
+  transform: translateY(-2px);
+}
+
+.whatsapp-support-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, #25d366 42%, transparent);
+  outline-offset: 3px;
+}
+
+.whatsapp-support-button svg {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+@media (max-width: 720px) {
+  .whatsapp-support-button {
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    min-height: 46px;
+    padding: 9px 14px 9px 11px;
+  }
+
+  .whatsapp-support-button.avoid-bottom-nav {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 button.auth-forgot-link:hover,
 button.auth-forgot-link:focus-visible {
   border: 0;

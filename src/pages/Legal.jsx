@@ -62,7 +62,7 @@ export function PrivacyPolicy() {
           <li><strong>Optional profile information:</strong> your phone number, state, organisation, and public service level when you choose to provide them.</li>
           <li><strong>Practice activity:</strong> selected modules, answers, oral-response drafts, scores, attempts, progress, timing, reviews, and free-module choices.</li>
           <li><strong>Payment and access records:</strong> module, amount, currency, payment reference, payment status, payment channel, access status, and access expiry. PromotionSure does not receive or store card numbers, card expiry dates, PINs, or security codes. Payment information entered during checkout is handled by the payment provider.</li>
-          <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to support.</li>
+          <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to support. If you choose WhatsApp support, WhatsApp may also provide PromotionSure with the phone number, profile details, and message information you choose to share through that service.</li>
           <li><strong>Technical information:</strong> PromotionSure's hosting, authentication, security and payment providers may process limited technical information such as IP address, browser, device, response status, page path and security logs where necessary to operate, secure and troubleshoot the service.</li>
         </ul>
       </section>
@@ -112,6 +112,7 @@ export function PrivacyPolicy() {
         <ul>
           <li>authentication and account-management providers;</li>
           <li>database, storage, hosting, email-delivery, security, and support providers;</li>
+          <li>WhatsApp when you choose to open and send a support message through WhatsApp;</li>
           <li>a payment provider for payment processing and verification; and</li>
           <li>Google when you choose Google sign-in.</li>
         </ul>
@@ -119,6 +120,11 @@ export function PrivacyPolicy() {
           These providers may process information in other countries under their own safeguards. PromotionSure may
           also disclose information where required by law, to protect users or the service, or in connection with a
           legitimate business transfer. PromotionSure does not sell personal information.
+        </p>
+        <p>
+          Opening the WhatsApp support link does not automatically send your PromotionSure account information.
+          You control whether to send or edit the prepared message. Never send a password, verification code, PIN,
+          or payment-card information through support.
         </p>
       </section>
 

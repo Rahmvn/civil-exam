@@ -4,6 +4,7 @@ import { AuthCaptcha } from "../components/auth/AuthCaptcha";
 import { OtpInput } from "../components/auth/OtpInput";
 import { BrandLogo } from "../components/BrandLogo";
 import { LoadingState } from "../components/LoadingState";
+import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 import {
   AUTH_PROBLEM_CODES,
   AUTH_PURPOSES,
@@ -418,6 +419,7 @@ export default function Auth() {
         <Link to="/terms">Terms</Link>
         <Link to="/support">Support</Link>
       </nav>
+      <WhatsAppSupportButton />
     </main>
   );
 }

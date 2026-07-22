@@ -4,6 +4,7 @@ import { BrandLogo } from "./BrandLogo";
 import { BRAND_NAME } from "../lib/brand";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/useAuth";
+import { WhatsAppSupportButton } from "./WhatsAppSupportButton";
 
 function appNavClassName(isActive) {
   return `authenticated-nav-link ${isActive ? "active" : ""}`;
@@ -341,6 +342,7 @@ export function AppFrame({
             </Link>
           </nav>
         )}
+        <WhatsAppSupportButton avoidBottomNav={showBottomNav} />
       </main>
 
       {showSignOutConfirm && (
