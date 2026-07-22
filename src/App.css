@@ -1285,7 +1285,7 @@ button {
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -6660,18 +6660,30 @@ button.auth-mode-option.is-active::after {
   color: var(--color-primary);
 }
 
-.auth-forgot-link {
+button.auth-forgot-link {
   width: max-content;
   min-height: 0;
   margin: 2px 0 0 auto;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
-  color: var(--color-text-soft);
+  color: var(--color-text);
   font-size: 0.86rem;
   font-weight: 650;
+  box-shadow: none;
   text-decoration: underline;
   text-underline-offset: 3px;
+  transform: none;
+}
+
+button.auth-forgot-link:hover,
+button.auth-forgot-link:focus-visible {
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  box-shadow: none;
+  transform: none;
 }
 
 .password-reset-card {
