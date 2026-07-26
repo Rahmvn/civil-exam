@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
@@ -713,9 +713,57 @@ function ReviewDetailView({
       : -1;
     return targetIndex >= 0 ? targetIndex : 0;
   });
+  const [questionNavigatorOpen, setQuestionNavigatorOpen] = useState(false);
+  const readerRef = useRef(null);
+  const questionListButtonRef = useRef(null);
+  const navigatorRef = useRef(null);
+  const navigatorCloseRef = useRef(null);
 
   const safeIndex = Math.min(currentIndex, Math.max(rows.length - 1, 0));
   const row = rows[safeIndex] ?? null;
+  const progressPercent = rows.length > 0 ? ((safeIndex + 1) / rows.length) * 100 : 0;
+
+  useEffect(() => {
+    if (!questionNavigatorOpen) return undefined;
+
+    const questionListButton = questionListButtonRef.current;
+    navigatorCloseRef.current?.focus();
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setQuestionNavigatorOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const focusable = [...(navigatorRef.current?.querySelectorAll("button:not([disabled])") ?? [])];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      questionListButton?.focus();
+    };
+  }, [questionNavigatorOpen]);
+
+  function goToQuestion(index) {
+    setCurrentIndex(Math.max(0, Math.min(index, rows.length - 1)));
+    setQuestionNavigatorOpen(false);
+    window.requestAnimationFrame(() => {
+      readerRef.current?.scrollIntoView({ block: "start" });
+    });
+  }
 
   if (error) {
     return (
@@ -753,7 +801,7 @@ function ReviewDetailView({
   const stateLabel = state === "correct" ? "Correct" : state === "unanswered" ? "Unanswered" : "Wrong";
 
   return (
-    <section className="answer-review-reader">
+    <section className="answer-review-reader" ref={readerRef}>
       <header className="answer-review-header">
         <button className="answer-review-back" onClick={onBack} type="button" aria-label="Go back">
           <span aria-hidden="true">‹</span>
@@ -800,31 +848,102 @@ function ReviewDetailView({
         <button
           className="answer-review-nav-button"
           disabled={safeIndex === 0}
-          onClick={() => setCurrentIndex((value) => Math.max(value - 1, 0))}
+          onClick={() => goToQuestion(safeIndex - 1)}
           type="button"
         >
           Previous
         </button>
-        <div className="answer-review-position" aria-label={`Question ${safeIndex + 1} of ${rows.length}`}>
-          {rows.map((item, index) => (
-            <button
-              aria-label={`Go to question ${index + 1}`}
-              className={index === safeIndex ? "is-active" : ""}
-              key={item.question_id}
-              onClick={() => setCurrentIndex(index)}
-              type="button"
-            />
-          ))}
+        <div className="answer-review-progress">
+          <div
+            aria-label={`Question ${safeIndex + 1} of ${rows.length}`}
+            aria-valuemax={rows.length}
+            aria-valuemin="1"
+            aria-valuenow={safeIndex + 1}
+            className="answer-review-progress-track"
+            role="progressbar"
+          >
+            <span style={{ width: `${progressPercent}%` }} />
+          </div>
+          <button
+            className="answer-review-question-list-button"
+            onClick={() => setQuestionNavigatorOpen(true)}
+            ref={questionListButtonRef}
+            type="button"
+          >
+            View all questions
+          </button>
         </div>
         <button
           className="answer-review-nav-button is-next"
           disabled={safeIndex === rows.length - 1}
-          onClick={() => setCurrentIndex((value) => Math.min(value + 1, rows.length - 1))}
+          onClick={() => goToQuestion(safeIndex + 1)}
           type="button"
         >
           Next
         </button>
       </nav>
+
+      {questionNavigatorOpen && (
+        <div
+          className="answer-review-navigator-backdrop"
+          onClick={() => setQuestionNavigatorOpen(false)}
+          role="presentation"
+        >
+          <section
+            aria-labelledby="answer-review-navigator-title"
+            aria-modal="true"
+            className="answer-review-navigator"
+            onClick={(event) => event.stopPropagation()}
+            ref={navigatorRef}
+            role="dialog"
+          >
+            <header>
+              <div>
+                <h2 id="answer-review-navigator-title">Choose a question</h2>
+                <p>Review any answer without losing your place.</p>
+              </div>
+              <button
+                aria-label="Close question list"
+                className="answer-review-navigator-close"
+                onClick={() => setQuestionNavigatorOpen(false)}
+                ref={navigatorCloseRef}
+                type="button"
+              >
+                ×
+              </button>
+            </header>
+            <div className="answer-review-question-grid">
+              {rows.map((item, index) => {
+                const itemState = getQuestionState(item);
+                const itemStateLabel = itemState === "correct"
+                  ? "correct"
+                  : itemState === "unanswered"
+                    ? "unanswered"
+                    : "wrong";
+
+                return (
+                  <button
+                    aria-current={index === safeIndex ? "true" : undefined}
+                    aria-label={`Question ${index + 1}, ${itemStateLabel}`}
+                    className={`is-${itemState}${index === safeIndex ? " is-current" : ""}`}
+                    key={item.question_id}
+                    onClick={() => goToQuestion(index)}
+                    type="button"
+                  >
+                    <span>{index + 1}</span>
+                    <small>{itemState === "correct" ? "✓" : itemState === "unanswered" ? "—" : "×"}</small>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="answer-review-navigator-legend" aria-label="Question status legend">
+              <span><i className="is-correct" /> Correct</span>
+              <span><i className="is-wrong" /> Wrong</span>
+              <span><i className="is-unanswered" /> Unanswered</span>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

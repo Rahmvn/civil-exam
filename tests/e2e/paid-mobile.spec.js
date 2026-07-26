@@ -7,6 +7,10 @@ test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Find an answer" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your requests" })).toBeVisible();
+  const showAllAnswers = page.getByRole("button", { name: /View all \d+ answers/ });
+  await expect(showAllAnswers).toBeVisible();
+  await showAllAnswers.click();
+  await expect(page.getByRole("button", { name: "Show fewer answers" })).toBeVisible();
 
   const faqBox = await page.locator(".support-faq").boundingBox();
   const formBox = await page.locator(".support-form").boundingBox();
@@ -15,6 +19,22 @@ test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
   expect(historyBox.y).toBeGreaterThan(formBox.y + formBox.height);
   expect(Math.abs(historyBox.x - formBox.x)).toBeLessThanOrEqual(1);
   await expectNoHorizontalOverflow(page);
+});
+
+test("module access keeps mobile navigation and compact payment controls", async ({ page }) => {
+  await page.goto("/access");
+  await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
+  await expect(page.getByText("Manage module access and view your payment history.", { exact: true })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  const paymentHistory = page.getByText("Payment history", { exact: true });
+  if (await paymentHistory.isVisible()) {
+    await paymentHistory.click();
+    const referenceButtons = page.getByRole("button", { name: /Copy payment reference/ });
+    if (await referenceButtons.count()) {
+      await expect(referenceButtons.first()).toBeVisible();
+    }
+  }
 });
 
 test("mobile WhatsApp support, navigation, and practice controls fit the viewport", async ({ page }) => {

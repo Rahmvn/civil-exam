@@ -138,6 +138,9 @@ export default function ModuleDetail() {
     isComingSoon ? [] : rows,
     { isPaidUser: hasModuleAccess },
   );
+  const recommendationCopy = progression?.hasOpenRecommendation && progression.recommendedBatchNumber
+    ? `Practice set ${progression.recommendedBatchNumber} is recommended next. You can still choose another set.`
+    : "";
 
   const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
   const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
@@ -357,6 +360,13 @@ export default function ModuleDetail() {
               </div>
             )}
 
+            {recommendationCopy && (
+              <div className="module-progression-guidance" role="note">
+                <strong>Recommended next</strong>
+                <span>{recommendationCopy}</span>
+              </div>
+            )}
+
             {ctaError && <p className="action-error" role="alert">{ctaError}</p>}
             {moduleNotice && <p className="support-copy">{moduleNotice}</p>}
           </article>
@@ -369,7 +379,9 @@ export default function ModuleDetail() {
                 const primaryAction = getBatchPrimaryAction(row);
                 const secondaryAction = getBatchSecondaryAction(row);
                 const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
-                const supportCopy = guidance.note || getLockReason(row, selectedModuleName);
+                const supportCopy = guidance.isSkipAhead
+                  ? ""
+                  : getLockReason(row, selectedModuleName);
                 const attemptCount = Number(row.attempt_count ?? 0);
                 let stateLabel = null;
                 let stateTone = "muted";

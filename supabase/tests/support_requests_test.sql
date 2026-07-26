@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(23);
+select plan(24);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -62,6 +62,12 @@ select is(
   (select payment_reference from public.support_requests where user_id = 'e1000000-0000-4000-8000-000000000001' limit 1),
   'PS-support-test',
   'the payment reference is retained for reconciliation'
+);
+
+select is(
+  (select description from public.support_requests where payment_reference = 'PS-support-test'),
+  'The payment completed but the module still appears locked.',
+  'the requester can read their submitted description in request history'
 );
 
 select lives_ok(

@@ -51,9 +51,11 @@ export default function Support() {
   const [faqQuery, setFaqQuery] = useState("");
   const [faqTopic, setFaqTopic] = useState(initialFaq?.category ?? (initialCategory === requestedCategory ? requestedCategory : "popular"));
   const [openFaqId, setOpenFaqId] = useState(initialFaq?.id ?? "");
+  const [showAllFaqs, setShowAllFaqs] = useState(Boolean(initialFaq));
   const requestFormRef = useRef(null);
   const subjectInputRef = useRef(null);
   const visibleFaqs = useMemo(() => findSupportFaqs({ query: faqQuery, topic: faqTopic }), [faqQuery, faqTopic]);
+  const faqsToShow = faqQuery || showAllFaqs ? visibleFaqs : visibleFaqs.slice(0, 5);
 
   useEffect(() => {
     if (!initialPaymentReference) return;
@@ -142,7 +144,10 @@ export default function Support() {
   return (
     <AppFrame>
       <section className="support-page">
-        <h1 className="sr-only">Help &amp; support</h1>
+        <header className="support-page-intro">
+          <h1>Help &amp; support</h1>
+          <p>Search for a quick answer or send us enough detail to investigate.</p>
+        </header>
 
         <section className="support-faq" aria-labelledby="support-faq-title">
           <header className="support-faq-heading">
@@ -152,7 +157,15 @@ export default function Support() {
             </div>
             <label className="support-faq-search">
               <span className="sr-only">Search help answers</span>
-              <input onChange={(event) => setFaqQuery(event.target.value)} placeholder="Search help..." type="search" value={faqQuery} />
+              <input
+                onChange={(event) => {
+                  setFaqQuery(event.target.value);
+                  setShowAllFaqs(true);
+                }}
+                placeholder="Search help..."
+                type="search"
+                value={faqQuery}
+              />
             </label>
           </header>
           <nav className="support-faq-topics" aria-label="Help topics">
@@ -161,7 +174,12 @@ export default function Support() {
                 aria-pressed={!faqQuery && faqTopic === topic.id}
                 className={!faqQuery && faqTopic === topic.id ? "is-active" : ""}
                 key={topic.id}
-                onClick={() => { setFaqQuery(""); setFaqTopic(topic.id); setOpenFaqId(""); }}
+                onClick={() => {
+                  setFaqQuery("");
+                  setFaqTopic(topic.id);
+                  setOpenFaqId("");
+                  setShowAllFaqs(false);
+                }}
                 type="button"
               >
                 {topic.label}
@@ -174,7 +192,7 @@ export default function Support() {
                 <strong>No matching answer</strong>
                 <p>Try a shorter search, or send us a request below.</p>
               </div>
-            ) : visibleFaqs.map((faq) => {
+            ) : faqsToShow.map((faq) => {
               const isOpen = openFaqId === faq.id;
               return (
                 <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
@@ -200,6 +218,15 @@ export default function Support() {
               );
             })}
           </div>
+          {!faqQuery && visibleFaqs.length > 5 && (
+            <button
+              className="support-faq-more"
+              onClick={() => setShowAllFaqs((value) => !value)}
+              type="button"
+            >
+              {showAllFaqs ? "Show fewer answers" : `View all ${visibleFaqs.length} answers`}
+            </button>
+          )}
         </section>
 
         <div className="support-layout">
@@ -234,6 +261,7 @@ export default function Support() {
               <label>
                 <span>What happened?</span>
                 <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder="What were you trying to do, what did you expect, and what happened instead?" required rows={6} value={description} />
+                <small className="support-character-count">{`${description.length} / 2,000`}</small>
               </label>
               {category === "payment" && (
                 <label>
@@ -260,15 +288,32 @@ export default function Support() {
             ) : (
               <div className="support-request-list">
                 {requests.map((request) => (
-                  <article key={request.id} className="support-request-row">
-                    <div className="support-request-copy">
-                      <span className="support-request-category">{CATEGORIES.find(([value]) => value === request.category)?.[1] ?? request.category}</span>
-                      <strong>{request.subject}</strong>
-                      <span>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  <details key={request.id} className="support-request-row">
+                    <summary>
+                      <div className="support-request-copy">
+                        <span className="support-request-category">{CATEGORIES.find(([value]) => value === request.category)?.[1] ?? request.category}</span>
+                        <strong>{request.subject}</strong>
+                        <span>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      </div>
+                      <span className={`support-request-status is-${request.status}`}>{STATUS_LABELS[request.status] ?? "Received"}</span>
+                    </summary>
+                    <div className="support-request-detail">
+                      {request.description && (
+                        <div>
+                          <strong>Your request</strong>
+                          <p>{request.description}</p>
+                        </div>
+                      )}
+                      {request.resolution_note ? (
+                        <div className="support-resolution-note">
+                          <strong>Resolution</strong>
+                          <p>{request.resolution_note}</p>
+                        </div>
+                      ) : (
+                        <p className="support-request-next-step">We have received this request. Any resolution or next step will appear here.</p>
+                      )}
                     </div>
-                    <span className={`support-request-status is-${request.status}`}>{STATUS_LABELS[request.status] ?? "Received"}</span>
-                    {request.resolution_note && <div className="support-resolution-note"><strong>Resolution</strong><p>{request.resolution_note}</p></div>}
-                  </article>
+                  </details>
                 ))}
               </div>
             )}

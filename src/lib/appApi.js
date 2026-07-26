@@ -144,7 +144,7 @@ export async function getMySupportRequests(limit = 10) {
   return readWithPolicy(`support-requests:${userId}:${limit}`, async () => ensureArray(requireData(
     await supabase
       .from("support_requests")
-      .select("id, category, subject, payment_reference, status, resolution_note, created_at, updated_at")
+      .select("id, category, subject, description, payment_reference, status, resolution_note, created_at, updated_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(limit),

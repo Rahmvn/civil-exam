@@ -302,6 +302,12 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await page.getByRole("link", { name: "Review answers" }).click();
   await expect(page.getByRole("heading", { name: "Answer review" })).toBeVisible();
   await expect(page.getByText("1 of 4", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "View all questions" }).click();
+  const questionNavigator = page.getByRole("dialog", { name: "Choose a question" });
+  await expect(questionNavigator).toBeVisible();
+  await expect(questionNavigator.getByRole("button", { name: /Question 2, correct/ })).toBeVisible();
+  await questionNavigator.getByRole("button", { name: /Question 2, correct/ }).click();
+  await expect(page.getByText("2 of 4", { exact: true })).toBeVisible();
   await expect(page.locator(".answer-review-explanation")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
 });

@@ -53,6 +53,40 @@ function getPaymentAccessName(payment) {
   return "Module access";
 }
 
+function compactReference(reference) {
+  const value = String(reference ?? "").trim();
+  if (!value) return "Reference unavailable";
+  if (value.length <= 16) return value;
+  return `${value.slice(0, 7)}…${value.slice(-5)}`;
+}
+
+function PaymentReference({ value }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!value) {
+    return <span className="access-payment-reference is-empty">Reference unavailable</span>;
+  }
+
+  async function copyReference() {
+    await navigator.clipboard?.writeText(value);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  return (
+    <button
+      aria-label={`Copy payment reference ${value}`}
+      className="access-payment-reference"
+      onClick={() => void copyReference()}
+      title={value}
+      type="button"
+    >
+      <code>{compactReference(value)}</code>
+      <span>{copied ? "Copied" : "Copy"}</span>
+    </button>
+  );
+}
+
 function ReceiptModal({ payment, profile, onClose }) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -323,7 +357,7 @@ export default function Access() {
   }
 
   return (
-    <AppFrame showBottomNav={false}>
+    <AppFrame>
       <section className="access-page access-page-v2">
         <header className="access-page-intro">
           <p>Manage module access and view your payment history.</p>
@@ -400,11 +434,11 @@ export default function Access() {
                   <article className="access-payment-row is-attention" key={payment.id}>
                     <div className="access-payment-main">
                       <strong>{getPaymentAccessName(payment)}</strong>
-                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} • ${formatDate(payment.paid_at || payment.created_at)}`}</span>
                       <p>{statusMeta.description}</p>
                     </div>
                     <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
-                    <code>{payment.paystack_reference || "Reference unavailable"}</code>
+                    <PaymentReference value={payment.paystack_reference} />
                     {statusMeta.canCheck && (
                       <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>
                         {payment.provider_status === "success" ? "Check access" : "Check status"}
@@ -431,10 +465,10 @@ export default function Access() {
                     <article className={`access-payment-row ${statusMeta.canViewReceipt ? "is-verified" : ""}`} key={payment.id}>
                       <div className="access-payment-main">
                         <strong>{getPaymentAccessName(payment)}</strong>
-                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} • ${formatDate(payment.paid_at || payment.created_at)}`}</span>
                       </div>
                       <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
-                      <code>{payment.paystack_reference || "Reference unavailable"}</code>
+                      <PaymentReference value={payment.paystack_reference} />
                       {statusMeta.canViewReceipt ? (
                         <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
                       ) : null}
