@@ -280,6 +280,10 @@ export default function Auth() {
     setMessageTone("error");
 
     if (mode === "sign-up" && signUpStep === 1) {
+      if (fullName.trim().length < 2) {
+        setMessage("Enter your full name.");
+        return;
+      }
       setSignUpStep(2);
       return;
     }
@@ -388,7 +392,7 @@ export default function Auth() {
             </>
           ) : (
             <>
-              {mode === "sign-up" && <label><span>Full name</span><input autoComplete="name" disabled={isBusy} name="name" onChange={(event) => updateField(setFullName, event.target.value)} placeholder="Your full name" required value={fullName} /></label>}
+              {mode === "sign-up" && <label><span>Full name</span><input autoComplete="name" disabled={isBusy} maxLength={120} minLength={2} name="name" onChange={(event) => updateField(setFullName, event.target.value)} placeholder="Your full name" required value={fullName} /></label>}
               <label><span>Email address</span><input autoCapitalize="none" autoComplete="email" disabled={isBusy} inputMode="email" name="email" onChange={(event) => updateField(setEmail, event.target.value)} placeholder="you@example.com" required type="email" value={email} /></label>
               {mode === "sign-in" && <label><span>Password</span><div className="auth-password-field"><input aria-label="Password" autoComplete="current-password" disabled={isBusy} minLength={6} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Your password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><button className="auth-forgot-link" onClick={() => switchMode("forgot")} type="button">Forgot password?</button></label>}
             </>

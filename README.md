@@ -61,6 +61,10 @@ Hosted Supabase Edge Functions receive Supabase publishable and secret keys from
 - Auth site URL must be the production app URL.
 - Auth redirect URLs must include the production `/auth/callback` URL.
 - Email confirmations must remain enabled.
+- Custom SMTP is required for public launch; Supabase's default mailer is
+  testing-only and too restricted for real candidates.
+- Turnstile and reviewed Auth rate limits are required for public signup and
+  recovery.
 - Email templates should use the PromotionSure confirmation and recovery copy.
 - RLS must stay enabled on exposed public tables.
 

@@ -1,4 +1,10 @@
-import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
+import {
+  corsHeaders,
+  getRequestErrorStatus,
+  jsonResponse,
+  readTextBody,
+  requireEnv,
+} from "../_shared/http.ts";
 import {
   activateModulePurchase,
   applyPaystackPostPaymentEvent,
@@ -26,7 +32,7 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const body = await request.text();
+    const body = await readTextBody(request, 262_144);
     const signature = request.headers.get("x-paystack-signature");
 
     console.log("Received Paystack webhook", { signature: Boolean(signature) });
@@ -79,6 +85,6 @@ Deno.serve(async (request) => {
     return jsonResponse({ received: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Webhook handling failed";
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: message }, getRequestErrorStatus(error));
   }
 });

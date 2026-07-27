@@ -1,4 +1,10 @@
-import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
+import {
+  corsHeaders,
+  getRequestErrorStatus,
+  jsonResponse,
+  readJsonBody,
+  requireEnv,
+} from "../_shared/http.ts";
 import { getPaymentCallbackUrl } from "../_shared/payment-callback.js";
 import { getPaystackEnvironment } from "../_shared/payment-validation.js";
 import {
@@ -6,6 +12,7 @@ import {
   getActivePack,
   getAdminClient,
   getAuthedUser,
+  enforceEdgeRateLimit,
   getModuleOffering,
 } from "../_shared/paystack.ts";
 import { sanitizePaymentPayload } from "../_shared/payment-sanitization.js";
@@ -22,10 +29,16 @@ Deno.serve(async (request) => {
   try {
     const user = await getAuthedUser(request);
     const adminClient = getAdminClient();
+    await enforceEdgeRateLimit(adminClient, user.id, "payment_initialize", 12, 600);
     const pack = await getActivePack(adminClient);
-    const { subject_slug: subjectSlug } = await request.json();
+    const requestBody = await readJsonBody(request, 2_048) as Record<string, unknown>;
+    const subjectSlug = requestBody?.subject_slug;
 
-    if (!subjectSlug || typeof subjectSlug !== "string") {
+    if (
+      typeof subjectSlug !== "string"
+      || subjectSlug.length > 80
+      || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(subjectSlug)
+    ) {
       return jsonResponse({ error: "Choose a module to unlock" }, 400);
     }
 
@@ -198,7 +211,9 @@ Deno.serve(async (request) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payment initialization failed";
-    const status = message.startsWith("Payment callback configuration error:") ? 500 : 400;
+    const status = message.startsWith("Payment callback configuration error:")
+      ? 500
+      : getRequestErrorStatus(error);
     return jsonResponse({ error: message }, status);
   }
 });

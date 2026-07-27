@@ -3,12 +3,14 @@ import process from "node:process";
 
 const isWindows = process.platform === "win32";
 const npmCommand = isWindows ? "npm.cmd" : "npm";
+const npmCliPath = process.env.npm_execpath;
 const full = process.argv.includes("--full");
 
 const baseStages = [
   ["Lint", ["run", "lint"]],
   ["Production build", ["run", "build"]],
   ["Tracked-secret scan", ["run", "test:secrets"]],
+  ["Production configuration contract", ["run", "test:config"]],
   ["Unit tests", ["run", "test:unit"]],
   ["Database tests", ["run", "test:db"]],
   ["Payment edge tests", ["run", "test:edge"]],
@@ -16,7 +18,9 @@ const baseStages = [
 ];
 
 const fullStages = [
+  ["Authentication E2E", ["run", "test:e2e:auth-mock"]],
   ["Candidate/admin E2E regression", ["run", "test:e2e"]],
+  ["Performance E2E", ["run", "test:e2e:performance"]],
   ["Visual regression", ["run", "test:e2e:visual"]],
   ["Standard load smoke", ["run", "test:load"]],
 ];
@@ -38,10 +42,12 @@ function runStage(name, args) {
   console.log(`  npm ${args.join(" ")}`);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(npmCommand, args, {
+    const command = npmCliPath ? process.execPath : npmCommand;
+    const commandArgs = npmCliPath ? [npmCliPath, ...args] : args;
+    const child = spawn(command, commandArgs, {
       cwd: process.cwd(),
       env: process.env,
-      shell: isWindows,
+      shell: isWindows && !npmCliPath,
       stdio: "inherit",
       windowsHide: true,
     });

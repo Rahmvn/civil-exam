@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.108.2";
-import { requireEnv } from "./http.ts";
+import { RequestBodyError, requireEnv } from "./http.ts";
 import {
   getPaymentUserId,
   getPublishedContentTable,
@@ -35,6 +35,26 @@ export function getAdminClient() {
       },
     },
   );
+}
+
+export async function enforceEdgeRateLimit(
+  adminClient: ReturnType<typeof getAdminClient>,
+  userId: string,
+  action: "payment_initialize" | "payment_verify" | "admin_payment_reconcile",
+  maxRequests: number,
+  windowSeconds: number,
+) {
+  const { data, error } = await adminClient.rpc("consume_edge_rate_limit", {
+    requested_user_id: userId,
+    requested_action: action,
+    requested_max_requests: maxRequests,
+    requested_window_seconds: windowSeconds,
+  });
+
+  if (error) throw error;
+  if (data !== true) {
+    throw new RequestBodyError("Too many requests. Please wait a few minutes and try again.", 429);
+  }
 }
 
 export async function getAuthedUser(request: Request) {

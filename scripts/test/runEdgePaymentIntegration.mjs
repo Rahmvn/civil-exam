@@ -283,6 +283,16 @@ async function main() {
     const unauthenticatedVerification = await invoke(apiUrl, "verify-paystack-payment", null, { reference: "PS-unauthenticated" });
     if (unauthenticatedVerification.ok) fail("Unauthenticated payment verification was accepted.");
 
+    const oversizedInitialization = await invoke(
+      apiUrl,
+      "initialize-paystack-payment",
+      token,
+      { subject_slug: "x".repeat(4_096) },
+    );
+    if (oversizedInitialization.status !== 413) {
+      fail("An oversized candidate payment request was not rejected with HTTP 413.");
+    }
+
     const activePack = await service.from("exam_packs")
       .select("id, price_kobo, currency")
       .eq("is_active", true)

@@ -1,6 +1,13 @@
-import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
+import {
+  corsHeaders,
+  getRequestErrorStatus,
+  jsonResponse,
+  readJsonBody,
+  requireEnv,
+} from "../_shared/http.ts";
 import {
   activateModulePurchase,
+  enforceEdgeRateLimit,
   getAdminClient,
   getAuthedUser,
   getModulePaymentOrder,
@@ -27,9 +34,14 @@ Deno.serve(async (request) => {
     if (profileError || adminProfile?.role !== "admin") {
       return jsonResponse({ error: "Admin access is required" }, 403);
     }
+    await enforceEdgeRateLimit(adminClient, adminUser.id, "admin_payment_reconcile", 20, 600);
 
-    const { support_request_id: supportRequestId } = await request.json();
-    if (!supportRequestId || typeof supportRequestId !== "string") {
+    const requestBody = await readJsonBody(request, 2_048) as Record<string, unknown>;
+    const supportRequestId = requestBody?.support_request_id;
+    if (
+      typeof supportRequestId !== "string"
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(supportRequestId)
+    ) {
       return jsonResponse({ error: "Support request is required" }, 400);
     }
 
@@ -107,6 +119,6 @@ Deno.serve(async (request) => {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : "The payment could not be rechecked";
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: message }, getRequestErrorStatus(error));
   }
 });

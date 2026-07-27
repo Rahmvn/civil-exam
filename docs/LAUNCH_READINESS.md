@@ -4,20 +4,24 @@ This is the working launch gate for PromotionSure. It should stay short, factual
 
 ## Launch decision
 
-Status: **not ready for public launch yet**
+Status: **code-ready; production configuration must still be confirmed**
 
-The product is close, but public launch should wait until the remaining verification and production-configuration gates are cleared.
+The complete local product gate is green. Public launch should proceed only
+after the production SMTP, Auth abuse protection, migrations, Edge Functions,
+payments, backups, and live smoke checks are confirmed.
 
 ## Release gates
 
 | Gate | Status | Evidence / action |
 | --- | --- | --- |
 | Product UI direction | In progress | Core pages have been heavily refined. Final pass should focus only on launch-blocking clarity issues, not broad redesign. |
-| Local launch check | Passing | `npm run launch:check` passes. This covers lint, build, tracked-secret scan, unit tests, database tests, payment edge tests, and operator read-only access. |
+| Local launch check | Passing | `npm run launch:check` passes. This covers lint, build, tracked-secret scan, the production-config contract, unit tests, database tests, payment edge tests, and operator read-only access. |
+| Full local launch check | Passing | `npm run launch:check:full` passes on Node 22: mocked Auth flows, 79 browser tests, 3 performance tests, 4 visual tests, the standard load profile, and every base gate. The final run completed in 10 minutes. |
 | Frontend build | Passing | Covered by `npm run launch:check`. Vite reports large chunks, but this is not a launch blocker. |
 | Lint | Passing | Covered by `npm run launch:check`. |
 | Unit tests | Passing | `npm run test:unit` passes: 94 tests. |
-| Database tests | Passing | `npm run test:db` passes. |
+| Database tests | Passing | `npm run test:db` passes: 326 assertions. |
+| Database advisors | Passing | Supabase database advisors report no security or performance issues after redundant permissive policies were removed. |
 | Payment edge tests | Passing | `npm run test:edge` passes. |
 | Security scan | Accepted with documented exception | Tracked-secret scan passes. `npm audit --audit-level=high` reports the React Router RSC advisory, but the current app is a Vite client-side SPA with no React Router RSC/server API usage. Do not force-downgrade; monitor for a clean patched upgrade path. |
 | Candidate E2E regression | Passing | `npm run test:e2e -- --project=public-desktop --project=public-mobile --project=paid-desktop --project=paid-mobile` passes: 34 tests. |
@@ -34,6 +38,8 @@ The product is close, but public launch should wait until the remaining verifica
 | Operator/admin access check | Passing locally | `npm run test:operator-access` passes. The script now loads local `.env` when shell env vars are not already present. |
 | Legal operator consistency | Passing | Privacy and Terms use Muraina Rasheedah as operator/data controller. |
 | User-input abuse hardening | Passing locally | User-controlled text limits are enforced in the database and UI. Support requests remain capped and rate-limited; profile optional fields now have format/length constraints; oral answers are capped at 5,000 characters and late timeout submissions cannot overwrite the saved answer. |
+| Payment/Edge abuse hardening | Passing locally | Candidate/admin payment bodies are capped at 2 KiB, signed webhooks at 256 KiB, payment references are format-limited and ownership-checked before provider calls, and trusted payment endpoints use atomic per-user rate limits. |
+| Browser response hardening | Passing locally | `vercel.json` carries a tested CSP, anti-framing, MIME, referrer, permissions, HSTS, and OAuth-compatible opener policies. |
 | Production environment | Needs final confirmation | Required settings are documented in `docs/PRODUCTION_CONFIG_CHECKLIST.md`; Vercel/Supabase/Paystack/WhatsApp/Auth email dashboard values still need to be confirmed against production. |
 | Launch documentation | Passing | README now contains the PromotionSure production runbook, required environment settings, launch commands, and manual smoke checks. |
 
@@ -53,9 +59,10 @@ The product is close, but public launch should wait until the remaining verifica
      - `rg "unstable_.*RSC|RSC|react-server|ServerRouter|createCallServer|RSCHydratedRouter|react-router/dom/server|createStaticHandler" src package.json vite.config.js` returns no matches.
      - `npm audit --audit-level=high` still fails only on this React Router RSC advisory.
 
-2. **Full E2E suite is not fully cleared**
-   - Candidate-facing public/paid desktop and mobile flows are now green.
-   - Remaining launch pass should cover staging-capacity validation if a large launch spike is expected.
+2. **Production configuration remains external**
+   - The complete local browser gate is green.
+   - Dashboard values and one live production smoke cannot be proven from the
+     repository.
 
 3. **Full local stress load limit**
    - Standard load smoke is green.
@@ -71,7 +78,7 @@ The product is close, but public launch should wait until the remaining verifica
 5. **Node version**
    - Production/build environments should use Node 22+.
    - `package.json` now declares `engines.node >=22`.
-   - Local verification currently runs on Node `v20.20.2`, so production/staging must not inherit this local runtime.
+   - Final verification ran on Node `v22.23.1`; `.nvmrc` and `package.json` pin the supported major version.
 
 6. **Input/resource abuse controls**
    - Server-side limits are required because browser-only `maxLength` can be bypassed.
@@ -83,14 +90,31 @@ The product is close, but public launch should wait until the remaining verifica
      - Profile phone: 7-20 phone-safe characters.
      - Profile state: approved Nigerian state/FCT values only.
      - Profile organisation: 2-120 non-control characters.
+     - Profile full name: at most 120 non-control characters.
      - Oral answer draft/final text: 5,000 characters.
-   - Production still needs infrastructure controls for request rate, request body size, bot/abuse filtering, and edge logging.
+   - Current Edge controls:
+     - Candidate/admin payment JSON bodies: 2 KiB maximum.
+     - Signed Paystack webhook body: 256 KiB maximum.
+     - Payment initialization: 12 requests per user per 10 minutes.
+     - Payment verification: 30 requests per user per 5 minutes.
+     - Admin payment reconciliation: 20 requests per admin per 10 minutes.
+     - Unknown and foreign references are rejected before contacting Paystack.
+   - Production still requires Turnstile, reviewed Auth rate limits, custom
+     SMTP, and active launch monitoring.
+
+7. **Production email is a hard launch dependency**
+   - Supabase's default SMTP is testing-only, restricts recipients, and is
+     currently capped at two messages per hour.
+   - Configure custom SMTP and verify signup/recovery to a non-team email
+     before public launch.
 
 ## Clearance order
 
-1. Run the remaining non-candidate Playwright launch gates:
-   - staging-capacity check if expecting a large launch spike
-2. Run the critical launch smoke flows:
+1. Complete every required production-dashboard item in
+   `docs/PRODUCTION_CONFIG_CHECKLIST.md`, especially custom SMTP, Turnstile,
+   Auth rate limits, redirects, backups, and live Paystack settings.
+2. Apply production migrations and deploy the four payment Edge Functions.
+3. Run the critical production smoke flows:
    - landing → sign up/sign in
    - module access → view practice sets
    - objective practice → submit → review
@@ -98,8 +122,9 @@ The product is close, but public launch should wait until the remaining verifica
    - payment initialize → verify → receipt
    - support request → request history
    - WhatsApp support on allowed routes only
-3. Confirm production environment variables and dashboard settings.
-4. Make the final launch/no-launch call.
+4. If expecting a large announcement, repeat the full load profile against a
+   production-like staging environment.
+5. Make the final launch/no-launch call and monitor the first hour.
 
 ## Repeatable commands
 

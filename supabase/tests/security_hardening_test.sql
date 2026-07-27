@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(36);
+select plan(43);
 
 create table public.security_acl_table_probe (id integer);
 create function public.security_acl_function_probe()
@@ -164,6 +164,17 @@ select is(
 
 reset role;
 
+select throws_ok(
+  $$
+    update public.profiles
+    set full_name = repeat('x', 121)
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  '23514',
+  null,
+  'profile names originating from auth metadata are length-limited'
+);
+
 select ok(has_table_privilege('authenticated', 'public.attempts', 'SELECT'),
   'authenticated users can read their attempt history through RLS');
 select ok(has_table_privilege('authenticated', 'public.questions', 'SELECT'),
@@ -180,6 +191,43 @@ select ok(not has_function_privilege('authenticated', 'public.activate_module_pu
   'browser clients cannot activate payment entitlements');
 select ok(has_function_privilege('service_role', 'public.activate_module_purchase(text,jsonb)', 'EXECUTE'),
   'verified server payment flow can activate an entitlement');
+select ok(not has_function_privilege('anon', 'public.consume_edge_rate_limit(uuid,text,integer,integer)', 'EXECUTE'),
+  'anonymous users cannot call the Edge rate limiter');
+select ok(not has_function_privilege('authenticated', 'public.consume_edge_rate_limit(uuid,text,integer,integer)', 'EXECUTE'),
+  'browser clients cannot call the Edge rate limiter');
+select ok(has_function_privilege('service_role', 'public.consume_edge_rate_limit(uuid,text,integer,integer)', 'EXECUTE'),
+  'trusted Edge Functions can call the rate limiter');
+
+set local role service_role;
+select ok(
+  public.consume_edge_rate_limit(
+    'c1000000-0000-4000-8000-000000000001',
+    'payment_verify',
+    2,
+    300
+  ),
+  'the first payment verification request is allowed'
+);
+select ok(
+  public.consume_edge_rate_limit(
+    'c1000000-0000-4000-8000-000000000001',
+    'payment_verify',
+    2,
+    300
+  ),
+  'the last request inside the payment verification allowance is allowed'
+);
+select ok(
+  not public.consume_edge_rate_limit(
+    'c1000000-0000-4000-8000-000000000001',
+    'payment_verify',
+    2,
+    300
+  ),
+  'payment verification requests over the allowance are rejected'
+);
+reset role;
+
 select is(
   (
     select count(*)::integer

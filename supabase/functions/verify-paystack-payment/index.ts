@@ -1,9 +1,17 @@
-import { corsHeaders, jsonResponse, requireEnv } from "../_shared/http.ts";
+import {
+  corsHeaders,
+  getRequestErrorStatus,
+  jsonResponse,
+  readJsonBody,
+  requireEnv,
+} from "../_shared/http.ts";
 import {
   activateModulePurchase,
+  enforceEdgeRateLimit,
   getPaystackTransactionMessage,
   getPaystackTransactionStatus,
   getAuthedUser,
+  getAdminClient,
   getModulePaymentOrder,
   markModulePaymentFulfillmentFailed,
   recordModulePaymentStatus,
@@ -23,11 +31,32 @@ Deno.serve(async (request) => {
 
   try {
     const user = await getAuthedUser(request);
+    const adminClient = getAdminClient();
+    await enforceEdgeRateLimit(adminClient, user.id, "payment_verify", 30, 300);
 
-    const { reference } = await request.json();
+    const requestBody = await readJsonBody(request, 2_048) as Record<string, unknown>;
+    const reference = requestBody?.reference;
 
-    if (!reference) {
+    if (
+      typeof reference !== "string"
+      || reference.length > 120
+      || !/^[A-Za-z0-9._-]+$/.test(reference)
+    ) {
       return jsonResponse({ error: "Payment reference is required" }, 400);
+    }
+
+    const order = await getModulePaymentOrder(reference);
+    if (!order) {
+      return jsonResponse({
+        code: "UNKNOWN_PAYMENT_REFERENCE",
+        error: "This payment reference was not created by PromotionSure",
+      }, 404);
+    }
+    if (order.user_id !== user.id) {
+      return jsonResponse(
+        { error: "This payment reference does not belong to your account" },
+        403,
+      );
     }
 
     console.log("Verifying Paystack payment", { reference });
@@ -51,21 +80,10 @@ Deno.serve(async (request) => {
       dataStatus: payload?.data?.status ?? null,
     });
 
-    const order = await getModulePaymentOrder(reference);
-
     const providerStatus = getPaystackTransactionStatus(payload);
 
     if (!paystackResponse.ok || !payload.status || providerStatus !== "success") {
-      if (order) {
-        if (order.user_id !== user.id) {
-          return jsonResponse(
-            { error: "This payment reference does not belong to your account" },
-            403,
-          );
-        }
-
-        if (providerStatus) await recordModulePaymentStatus(reference, payload);
-      }
+      if (providerStatus) await recordModulePaymentStatus(reference, payload);
 
       const providerMessage = getPaystackTransactionMessage(payload);
       const errorMessage = ["declined", "failed"].includes(providerStatus)
@@ -77,46 +95,31 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: errorMessage }, 400);
     }
 
-    if (order) {
-      if (order.user_id !== user.id) {
-        return jsonResponse(
-          { error: "This payment reference does not belong to your account" },
-          403,
-        );
+    await recordModulePaymentStatus(reference, payload);
+
+    try {
+      const paidUserId = getPaymentUserId(payload.data);
+      if (paidUserId !== user.id) {
+        throw new Error("Payment metadata does not match the payment order");
       }
+      validateModulePayment(order, payload.data);
+      const entitlement = await activateModulePurchase(reference, payload.data);
 
-      await recordModulePaymentStatus(reference, payload);
-
-      try {
-        const paidUserId = getPaymentUserId(payload.data);
-        if (paidUserId !== user.id) {
-          throw new Error("Payment metadata does not match the payment order");
-        }
-        validateModulePayment(order, payload.data);
-        const entitlement = await activateModulePurchase(reference, payload.data);
-
-        return jsonResponse({
-          status: "active",
-          expires_at: entitlement.expires_at,
-          subject_name: entitlement.subject_name,
-          subject_slug: entitlement.subject_slug,
-        });
-      } catch (fulfillmentError) {
-        await markModulePaymentFulfillmentFailed(reference, fulfillmentError);
-        return jsonResponse({
-          code: "PAYMENT_FULFILLMENT_FAILED",
-          error: "Payment was received, but module access still needs attention. Please check again.",
-        }, 409);
-      }
+      return jsonResponse({
+        status: "active",
+        expires_at: entitlement.expires_at,
+        subject_name: entitlement.subject_name,
+        subject_slug: entitlement.subject_slug,
+      });
+    } catch (fulfillmentError) {
+      await markModulePaymentFulfillmentFailed(reference, fulfillmentError);
+      return jsonResponse({
+        code: "PAYMENT_FULFILLMENT_FAILED",
+        error: "Payment was received, but module access still needs attention. Please check again.",
+      }, 409);
     }
-
-    console.warn("Successful Paystack reference has no local payment order", { reference });
-    return jsonResponse({
-      code: "UNKNOWN_PAYMENT_REFERENCE",
-      error: "This payment reference was not created by PromotionSure",
-    }, 404);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Payment verification failed";
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: message }, getRequestErrorStatus(error));
   }
 });
