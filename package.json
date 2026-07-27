@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,6 +15,7 @@
     "test:db": "supabase test db",
     "test:edge": "node scripts/test/runEdgePaymentIntegration.mjs",
     "test:edge:compat": "node scripts/test/runPreMigrationPaymentSecurity.mjs",
+    "test:secrets": "node scripts/test/checkTrackedSecrets.mjs",
     "test:operator-access": "node scripts/test/checkOperatorAccess.mjs",
     "test:e2e": "node scripts/test/runPlaywright.mjs",
     "test:e2e:auth-mock": "playwright test --config=playwright.auth-mock.config.js",
@@ -22,7 +26,9 @@
     "test:load:full": "node scripts/test/runLoadTest.mjs --full",
     "test:load:soak": "node scripts/test/runLoadTest.mjs --soak",
     "test:regression": "npm run test:unit && npm run test:db && npm run test:e2e",
-    "test:security": "node scripts/test/checkTrackedSecrets.mjs && npm audit --audit-level=high",
+    "test:security": "npm run test:secrets && npm audit --audit-level=high",
+    "launch:check": "node scripts/test/runLaunchReadiness.mjs",
+    "launch:check:full": "node scripts/test/runLaunchReadiness.mjs --full",
     "test:sdet": "npm run lint && npm run build && npm run test:security && npm run test:unit:coverage && npm run test:db && npm run test:edge && npm run test:e2e && npm run test:load:full",
     "import:questions": "node scripts/importQuestions.mjs",
     "content:inspect": "node scripts/content/inspectContent.mjs",
@@ -41,7 +47,7 @@
     "jspdf": "^4.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.0",
+    "react-router-dom": "^7.18.1",
     "ws": "^8.21.0"
   },
   "devDependencies": {

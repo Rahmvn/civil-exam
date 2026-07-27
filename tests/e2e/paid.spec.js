@@ -8,12 +8,10 @@ test("candidate sessions cannot enter content administration", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
 });
 
-test("paid dashboard keeps WhatsApp support, modules, account, and access connected", async ({ page }) => {
+test("paid dashboard keeps modules, account, and access connected without floating support", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toBeVisible();
-  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
-  await expect(whatsappSupport).toBeVisible();
-  await expect(whatsappSupport).toContainText("Support");
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
   await expect(page.getByText("Module access", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Modules" })).toBeVisible();
   const dashboardUnlockedModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
@@ -23,7 +21,7 @@ test("paid dashboard keeps WhatsApp support, modules, account, and access connec
   await expect(page).toHaveURL(/\/dashboard#modules$/);
 
   await page.goto("/modules/public-financial-management");
-  await expect(page.getByRole("heading", { name: "Choose a practice set" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
   await expect(page.getByText("Practice set 1", { exact: true })).toBeVisible();
 
   await page.goto("/profile");
@@ -37,7 +35,8 @@ test("paid dashboard keeps WhatsApp support, modules, account, and access connec
   await expect(page.getByRole("heading", { name: "Paid Candidate" })).toBeVisible();
 
   await page.goto("/access");
-  await expect(page.getByText("Manage module access and view your payment history.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toBeVisible();
   const unlockedModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
   await expect(unlockedModule.getByText("Unlocked", { exact: true })).toBeVisible();
   const lockedModule = page.locator("article").filter({ hasText: "Public Service Rules" }).first();
@@ -45,17 +44,17 @@ test("paid dashboard keeps WhatsApp support, modules, account, and access connec
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
-  const unlockDialog = page.getByRole("dialog", { name: "Module access" });
+  const unlockDialog = page.getByRole("dialog", { name: "Unlock module" });
   await expect(unlockDialog).toBeVisible();
   await expect(unlockDialog.getByText("Public Service Rules", { exact: true })).toBeVisible();
-  await expect(unlockDialog.getByRole("button", { name: "Continue" })).toBeVisible();
+  await expect(unlockDialog.getByRole("button", { name: "Continue to payment" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
 test("WhatsApp support stays out of active practice", async ({ page }) => {
   await page.goto("/practice/public-financial-management?batch=1");
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
 });
 
 test("payment return stays on the receipt until the candidate opens the purchased module", async ({ page }) => {
@@ -116,9 +115,11 @@ test("WhatsApp payment context preserves a delayed-access reference", async ({ p
   await expect(page.getByText(/Your payment was received, but the module has not unlocked yet/)).toBeVisible();
   await expect(page.getByText("Payment not confirmed yet", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
-  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  const whatsappSupport = page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" });
   const whatsappUrl = new URL(await whatsappSupport.getAttribute("href"));
+  expect(whatsappUrl.searchParams.get("text")).toContain("I need help with a payment.");
   expect(whatsappUrl.searchParams.get("text")).toContain(reference);
+  expect(whatsappUrl.searchParams.get("text")).not.toContain("password");
 
   const helpLink = page.getByRole("link", { name: "Get payment help" });
   await expect(helpLink).toHaveAttribute(
@@ -133,9 +134,10 @@ test("WhatsApp payment context preserves a delayed-access reference", async ({ p
 
 test("candidate can submit and track a help request", async ({ page }) => {
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: "Help & support" })).toHaveCount(1);
-  await expect(page.getByRole("heading", { name: "Find an answer" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Help and support" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Common answers" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toBeVisible();
 
   await page.getByPlaceholder("Search help...").fill("00:00");
   await page.getByRole("button", { name: "The timer stays at 00:00 or the page keeps blinking" }).click();
@@ -174,7 +176,7 @@ test("coming-soon lifecycle is never presented as unlocked", async ({ page }) =>
   await expect(accessModule.getByText("Unlocked", { exact: true })).toHaveCount(0);
   await expect(accessModule.getByText("Practice is coming soon.")).toBeVisible();
   await expect(accessModule.getByText("Not available yet")).toBeVisible();
-  await expect(accessModule.getByRole("link", { name: "Continue practice" })).toHaveCount(0);
+  await expect(accessModule.getByRole("link", { name: "View" })).toHaveCount(0);
   await expect(accessModule).not.toHaveClass(/is-unlocked/);
 
   await page.goto("/modules/e2e-coming-soon");
@@ -200,16 +202,15 @@ test("practice hub prioritises usable modules and keeps unlock options quiet", a
 
 test("oral practice is one-way, durable, and reveals guidance only after completion", async ({ page }) => {
   await page.goto("/modules/e2e-oral-questions");
-  await expect(page.getByRole("heading", { name: "Choose a practice set" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Oral Questions" })).toBeVisible();
   await page.getByRole("link", { name: "Start", exact: true }).click();
 
   await expect(page).toHaveURL(/\/oral-practice\/e2e-oral-questions\?batch=1/);
   await expect(page.getByText("Oral Questions", { exact: true })).toBeVisible();
-  if (await page.getByRole("button", { name: "Begin oral practice" }).isVisible()) {
-    await expect(page.getByText("Answer each prompt in your own words. Once you continue, that answer is locked.")).toBeVisible();
+  if (await page.getByRole("button", { name: "Begin" }).isVisible()) {
     await expect(page.getByLabel("3 minutes")).toBeChecked();
     await expect(page.getByLabel("5 minutes")).not.toBeChecked();
-    await page.getByRole("button", { name: "Begin oral practice" }).click();
+    await page.getByRole("button", { name: "Begin" }).click();
   }
   await expect(page.getByText("Accountability makes public officers answerable", { exact: false })).toHaveCount(0);
 
@@ -217,37 +218,40 @@ test("oral practice is one-way, durable, and reveals guidance only after complet
   await expect(page.getByText(/Question 1 of 3/)).toBeVisible();
   await expect(page.getByText("Accountability makes public officers answerable", { exact: false })).toHaveCount(0);
 
-  const answerField = page.getByLabel("Your answer");
+  const answerField = page.getByLabel("Answer");
   await answerField.fill("It makes officers answerable for decisions and public resources.");
   await expect(page.getByText("Saved", { exact: true })).toBeVisible({ timeout: 5000 });
   page.once("dialog", (dialog) => dialog.accept());
   await page.reload();
-  await expect(page.getByLabel("Your answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
+  await expect(page.getByLabel("Answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
   await expect(page.getByText(/Question 1 of 3/)).toBeVisible();
 
   await page.getByRole("button", { name: "Exit" }).click();
-  const exitDialog = page.getByRole("dialog", { name: "Leave oral practice?" });
+  const exitDialog = page.getByRole("dialog", { name: "Exit oral practice?" });
   await expect(exitDialog).toBeVisible();
-  await expect(exitDialog).toContainText("the current question timer will continue");
+  await expect(exitDialog).toContainText("This oral attempt will end");
   await exitDialog.getByRole("button", { name: "Continue practice" }).click();
   await expect(exitDialog).not.toBeVisible();
 
   await page.getByRole("button", { name: "Exit" }).click();
-  await exitDialog.getByRole("button", { name: "Save and leave" }).click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await exitDialog.getByRole("button", { name: "Exit practice" }).click();
+  await page.waitForURL(/\/modules\/e2e-oral-questions$/);
   await page.goto("/oral-practice/e2e-oral-questions?batch=1");
-  await expect(page.getByLabel("Your answer")).toHaveValue("It makes officers answerable for decisions and public resources.");
+  await expect(page.getByRole("button", { name: "Begin" })).toBeVisible();
+  await page.getByRole("button", { name: "Begin" }).click();
+  await expect(page.getByLabel("Answer")).toHaveValue("");
   await expect(page.getByText(/Question 1 of 3/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Lock answer and continue" }).click();
+  await page.getByLabel("Answer").fill("It makes officers answerable for decisions and public resources.");
+  await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("heading", { name: "Describe one practical safeguard for public funds." })).toBeVisible();
   await expect(page.getByText(/Question 2 of 3/)).toBeVisible();
   await expect(page.getByText("Explain why accountability matters in public service.", { exact: true })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Continue without an answer" }).click();
+  await page.getByRole("button", { name: "Continue without answer" }).click();
   await expect(page.getByRole("heading", { name: "How would you respond to an instruction that conflicts with approved procedure?" })).toBeVisible();
-  await page.getByLabel("Your answer").fill("I would check the rule, document the concern, and escalate properly.");
-  await page.getByRole("button", { name: "Lock answer and finish" }).click();
+  await page.getByLabel("Answer").fill("I would check the rule, document the concern, and escalate properly.");
+  await page.getByRole("button", { name: "Finish" }).click();
 
   await page.waitForURL(/\/oral-review\?attempt=/);
   await expect(page.getByText("Oral Questions - Practice set 1", { exact: true })).toBeVisible();
@@ -286,9 +290,9 @@ test("completed practice opens a durable result and answer review", async ({ pag
   }
 
   await page.getByRole("button", { name: "Submit Test" }).click();
-  const dialog = page.getByRole("dialog", { name: "Submit Test?" });
+  const dialog = page.getByRole("dialog", { name: "Submit test?" });
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Submit Test" }).click();
+  await dialog.getByRole("button", { name: "Submit" }).click();
 
   await page.waitForURL(/\/result\?attempt=/);
   await expect(page.getByRole("heading", { name: "You passed" })).toBeVisible();
@@ -300,15 +304,15 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await expect(page.getByRole("heading", { name: "You passed" })).toBeVisible();
 
   await page.getByRole("link", { name: "Review answers" }).click();
-  await expect(page.getByRole("heading", { name: "Answer review" })).toBeVisible();
-  await expect(page.getByText("1 of 4", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "View all questions" }).click();
-  const questionNavigator = page.getByRole("dialog", { name: "Choose a question" });
+  await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Question 1 of 4" })).toBeVisible();
+  await page.getByRole("button", { name: "Question 1 of 4" }).click();
+  const questionNavigator = page.getByRole("dialog", { name: "Questions" });
   await expect(questionNavigator).toBeVisible();
   await expect(questionNavigator.getByRole("button", { name: /Question 2, correct/ })).toBeVisible();
   await questionNavigator.getByRole("button", { name: /Question 2, correct/ }).click();
-  await expect(page.getByText("2 of 4", { exact: true })).toBeVisible();
-  await expect(page.locator(".answer-review-explanation")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Question 2 of 4" })).toBeVisible();
+  await expect(page.locator(".answer-review-explanation")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
 });
 

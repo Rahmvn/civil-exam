@@ -46,7 +46,7 @@ export function AppFrame({
   children,
   showBottomNav = true,
   showHeader = true,
-  showFooter = true,
+  showFooter = false,
 }) {
   const { profile, isAdmin } = useAuth();
   const location = useLocation();

@@ -3,10 +3,10 @@ import { expectNoHorizontalOverflow } from "./helpers.js";
 
 test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: "Help & support" })).toHaveCount(1);
-  await expect(page.getByRole("heading", { name: "Find an answer" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Help and support" })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Common answers" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Send a request" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your requests" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Support requests" })).toBeVisible();
   const showAllAnswers = page.getByRole("button", { name: /View all \d+ answers/ });
   await expect(showAllAnswers).toBeVisible();
   await showAllAnswers.click();
@@ -24,7 +24,7 @@ test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
 test("module access keeps mobile navigation and compact payment controls", async ({ page }) => {
   await page.goto("/access");
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
-  await expect(page.getByText("Manage module access and view your payment history.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   const paymentHistory = page.getByText("Payment history", { exact: true });
@@ -38,9 +38,9 @@ test("module access keeps mobile navigation and compact payment controls", async
 });
 
 test("mobile WhatsApp support, navigation, and practice controls fit the viewport", async ({ page }) => {
-  await page.goto("/dashboard");
+  await page.goto("/access");
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
-  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  const whatsappSupport = page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" });
   await expect(whatsappSupport).toBeVisible();
   const supportBox = await whatsappSupport.boundingBox();
   const bottomNavBox = await page.getByRole("navigation", { name: "Mobile primary" }).boundingBox();
@@ -83,13 +83,17 @@ test("mobile WhatsApp support, navigation, and practice controls fit the viewpor
   expect(Number.parseFloat(focusStyles.outlineWidth)).toBeGreaterThan(0);
   await expectNoHorizontalOverflow(page);
 
+  await page.goto("/dashboard");
+  await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
+
   await page.goto("/practice/public-financial-management?batch=1");
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Question Map" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mark for review" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Next", exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
 
@@ -98,11 +102,10 @@ test("oral practice start and answer controls fit a mobile viewport", async ({ p
   await expect(page.getByText("Oral Questions", { exact: true })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
-  if (await page.getByRole("button", { name: "Begin oral practice" }).isVisible()) {
-    await expect(page.getByText("Answer each prompt in your own words. Once you continue, that answer is locked.")).toBeVisible();
-    await page.getByRole("button", { name: "Begin oral practice" }).click();
+  if (await page.getByRole("button", { name: "Begin" }).isVisible()) {
+    await page.getByRole("button", { name: "Begin" }).click();
   }
-  await expect(page.getByLabel("Your answer")).toBeVisible();
+  await expect(page.getByLabel("Answer")).toBeVisible();
   await expect(page.getByRole("button", { name: /continue|finish/i })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);

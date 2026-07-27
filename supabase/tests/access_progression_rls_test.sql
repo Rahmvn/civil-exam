@@ -199,7 +199,7 @@ insert into public.payment_orders (
 update public.profiles
 set
   phone_number = '+2348000000000',
-  state_code = 'FC',
+  state_code = 'FCT',
   service_level = 'GL 10',
   organization_name = 'E2E Ministry',
   onboarding_completed_at = now()

@@ -42,7 +42,6 @@ export function AdminConfirmDialog({
         role="dialog"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <span className="admin-form-step">Confirm action</span>
         <h2 id="admin-dialog-title">{title}</h2>
         <div className="admin-dialog-copy">{children}</div>
         {choices.length > 0 && (

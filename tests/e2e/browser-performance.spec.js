@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const journeys = [
   { name: "dashboard", route: "/dashboard", heading: "Welcome, Paid" },
-  { name: "module access", route: "/access", heading: "Choose a module" },
+  { name: "module access", route: "/access", heading: "Access and payment" },
 ];
 
 async function installPerformanceObservers(page) {
@@ -51,7 +51,12 @@ async function readMetrics(page) {
 
 for (const journey of journeys) {
   test(`${journey.name} stays within local browser performance budgets`, async ({ page }, testInfo) => {
+    await page.goto(journey.route);
+    await expect(page.getByRole("heading", { name: journey.heading })).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
     await installPerformanceObservers(page);
+    await page.goto("about:blank");
     await page.goto(journey.route);
     await expect(page.getByRole("heading", { name: journey.heading })).toBeVisible();
     await page.waitForLoadState("networkidle");

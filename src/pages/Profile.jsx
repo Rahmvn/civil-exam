@@ -96,7 +96,7 @@ export default function Profile() {
                 {!hasPhoneNumber && (
                   <label>
                     <span>Phone number <small>Optional</small></span>
-                    <input inputMode="tel" value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} placeholder="0800 000 0000" />
+                    <input inputMode="tel" maxLength={20} value={phoneNumber} onChange={(event) => setPhoneNumber(event.target.value)} placeholder="0800 000 0000" />
                   </label>
                 )}
                 {!hasStateCode && (
@@ -111,7 +111,7 @@ export default function Profile() {
                 {!hasOrganizationName && (
                   <label className="account-organization-field">
                     <span>Civil service organisation <small>Optional</small></span>
-                    <input value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Ministry, department, agency, or commission" />
+                    <input maxLength={120} value={organizationName} onChange={(event) => setOrganizationName(event.target.value)} placeholder="Ministry, department, agency, or commission" />
                   </label>
                 )}
                 {message && <p className="action-error" role="alert">{message}</p>}

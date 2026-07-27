@@ -1,16 +1,98 @@
-# React + Vite
+# PromotionSure
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PromotionSure is a public service promotion exam practice app. Candidates can unlock modules, complete objective and oral practice sets, review answers, download payment receipts, and contact support.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React + Vite
+- Supabase Auth, Postgres, RLS, and Edge Functions
+- Paystack payments
+- Playwright, Node test runner, and Supabase database tests
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Use Node 22 or later.
 
-## Expanding the ESLint configuration
+```bash
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+For the local Supabase-backed test flows:
+
+```bash
+supabase start
+npm run test:unit
+npm run test:db
+npm run test:edge
+npm run test:e2e
+```
+
+## Required production configuration
+
+Set these in the production hosting and Supabase environments. Never expose secret keys through `VITE_*` variables.
+
+Use the full production checklist in `docs/PRODUCTION_CONFIG_CHECKLIST.md`.
+
+### Frontend
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_APP_VERSION`
+- `VITE_WHATSAPP_SUPPORT_ENABLED`
+- `VITE_WHATSAPP_SUPPORT_NUMBER`
+- `VITE_GOOGLE_AUTH_ENABLED` when Google sign-in is enabled
+- `VITE_TURNSTILE_ENABLED` when Turnstile is enabled
+- `VITE_TURNSTILE_SITE_KEY` when Turnstile is enabled
+
+### Supabase Edge Function secrets
+
+- `SUPABASE_URL`
+- `PAYSTACK_SECRET_KEY`
+- `APP_URL`
+- `RESEND_API_KEY` or the approved email provider secret, if production email depends on it
+- `GOOGLE_CLIENT_SECRET` when Google sign-in is enabled
+- `TURNSTILE_SECRET_KEY` when Turnstile is enabled
+
+Hosted Supabase Edge Functions receive Supabase publishable and secret keys from the platform. Local scripts that need privileged access require `SUPABASE_SECRET_KEY` in an untracked private environment.
+
+### Supabase dashboard
+
+- Auth site URL must be the production app URL.
+- Auth redirect URLs must include the production `/auth/callback` URL.
+- Email confirmations must remain enabled.
+- Email templates should use the PromotionSure confirmation and recovery copy.
+- RLS must stay enabled on exposed public tables.
+
+### Paystack
+
+- Use live keys only in production.
+- Confirm the production callback URL uses `APP_URL`.
+- Configure webhook delivery for the production Supabase Edge Function.
+- Verify a real payment in live mode before public launch.
+
+## Launch gate
+
+The working launch checklist is in `docs/LAUNCH_READINESS.md`.
+
+Minimum release pass:
+
+```bash
+npm run launch:check
+npm run launch:check:full
+```
+
+`npm audit --audit-level=high` currently reports a React Router RSC advisory. The app is a Vite client-side SPA and does not use React Router RSC/server APIs, so this is documented as a launch exception in `docs/LAUNCH_READINESS.md`. Do not run `npm audit fix --force` for this advisory.
+
+## Operational smoke checks
+
+Before public launch, manually verify in production:
+
+- Landing page → sign up/sign in.
+- Module access → View → practice sets.
+- Objective practice → submit → answer review.
+- Oral practice → exit/abandon behavior.
+- Payment initialize → verify → receipt view/download.
+- Support request → request history.
+- WhatsApp support appears only on approved routes.
+- Admin login can view users, modules, payments, support requests, and content tools.

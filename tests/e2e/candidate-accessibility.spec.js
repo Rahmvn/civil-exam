@@ -10,12 +10,12 @@ const routes = [
   {
     name: "module detail",
     route: "/modules/public-financial-management",
-    ready: (page) => page.getByRole("heading", { name: "Choose a practice set", exact: true }),
+    ready: (page) => page.getByRole("heading", { name: "Public Financial Management", exact: true }),
   },
   {
     name: "module access",
     route: "/access",
-    ready: (page) => page.getByText("Manage module access and view your payment history.", { exact: true }),
+    ready: (page) => page.getByRole("heading", { name: "Access and payment", exact: true }),
   },
   {
     name: "practice hub",

@@ -46,7 +46,7 @@ function PracticeQuestionMapModal({
   if (!questions.length) return null;
 
   return (
-    <div className="auth-modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="auth-modal-backdrop practice-map-backdrop" role="presentation" onClick={onClose}>
       <section
         aria-labelledby="practice-question-map-title"
         aria-modal="true"
@@ -55,7 +55,11 @@ function PracticeQuestionMapModal({
         role="dialog"
       >
         <div className="practice-map-modal-head">
-          <h2 id="practice-question-map-title">Question Map</h2>
+          <div>
+            <h2 id="practice-question-map-title">Questions</h2>
+            <p>Jump to any question in this set.</p>
+          </div>
+          <button className="practice-map-close" aria-label="Close question map" onClick={onClose} type="button">&times;</button>
         </div>
 
         <div className="practice-map-legend">
@@ -83,11 +87,6 @@ function PracticeQuestionMapModal({
           })}
         </div>
 
-        <div className="auth-modal-actions practice-map-actions">
-          <button className="ghost-button" onClick={onClose} type="button">
-            Close
-          </button>
-        </div>
       </section>
     </div>
   );
@@ -113,10 +112,7 @@ function PracticeSubmitConfirmModal({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <div className="practice-submit-illustration" aria-hidden="true">
-          <span />
-        </div>
-        <h2 id="practice-submit-confirm-title">Submit Test?</h2>
+        <h2 id="practice-submit-confirm-title">Submit test?</h2>
         <p>{`You have answered ${answeredCount} out of ${questionsCount} questions.`}</p>
         {unansweredCount > 0 && (
           <p className="practice-submit-secondary-copy">
@@ -125,7 +121,7 @@ function PracticeSubmitConfirmModal({
         )}
         <div className="auth-modal-actions practice-submit-actions">
           <button className="primary-action" disabled={submitting || answeredCount === 0} onClick={onConfirm} type="button">
-            {submitting ? "Submitting..." : "Submit Test"}
+            {submitting ? "Submitting..." : "Submit"}
           </button>
           <button className="ghost-button" disabled={submitting} onClick={onCancel} type="button">
             Cancel
@@ -146,9 +142,8 @@ function PracticeExitConfirmModal({ busy, onCancel, onConfirm }) {
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <p className="eyebrow">Active practice</p>
         <h2 id="practice-exit-confirm-title">Exit this practice?</h2>
-        <p>Your answers will be cleared. Opening this practice set again will start it from the beginning.</p>
+        <p>Your answers will be cleared and this set will restart next time.</p>
         <div className="auth-modal-actions">
           <button className="primary-action" disabled={busy} onClick={onCancel} type="button">Continue practice</button>
           <button className="ghost-button practice-confirm-exit" disabled={busy} onClick={onConfirm} type="button">

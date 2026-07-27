@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { createSupportRequest, getModuleAccessCatalog, getMySupportRequests } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { findSupportFaqs, SUPPORT_FAQS, SUPPORT_TOPICS } from "../lib/supportKnowledge";
+import { buildWhatsAppSupportUrl, resolveWhatsAppSupportConfig } from "../lib/whatsappSupport";
 
 const CATEGORIES = [
   ["account", "Account details or sign-in"],
@@ -23,8 +24,38 @@ const STATUS_LABELS = {
 };
 
 const MODULE_CATEGORIES = new Set(["access", "practice", "content"]);
+const SUPPORT_CONFIG = resolveWhatsAppSupportConfig(import.meta.env);
+
+function getSupportRequestStatusCopy(status) {
+  if (status === "in_review") {
+    return {
+      title: "In review",
+      body: "Our admin is checking the details now.",
+    };
+  }
+
+  if (status === "resolved") {
+    return {
+      title: "Resolved",
+      body: "Our admin has handled your request.",
+    };
+  }
+
+  if (status === "closed") {
+    return {
+      title: "Closed",
+      body: "Your request is closed. If the issue continues, send a new request.",
+    };
+  }
+
+  return {
+    title: "Received",
+    body: "Our admin will check it and update your request here.",
+  };
+}
 
 export default function Support() {
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const requestedCategory = searchParams.get("category");
   const initialCategory = CATEGORIES.some(([value]) => value === requestedCategory) ? requestedCategory : "access";
@@ -56,6 +87,13 @@ export default function Support() {
   const subjectInputRef = useRef(null);
   const visibleFaqs = useMemo(() => findSupportFaqs({ query: faqQuery, topic: faqTopic }), [faqQuery, faqTopic]);
   const faqsToShow = faqQuery || showAllFaqs ? visibleFaqs : visibleFaqs.slice(0, 5);
+  const openRequestCount = requests.filter((request) => !["resolved", "closed"].includes(request.status)).length;
+  const requestCountLabel = openRequestCount > 0
+    ? `${openRequestCount} open`
+    : `${requests.length} request${requests.length === 1 ? "" : "s"}`;
+  const whatsappSupportUrl = SUPPORT_CONFIG.enabled
+    ? buildWhatsAppSupportUrl({ number: SUPPORT_CONFIG.number, pathname: location.pathname })
+    : null;
 
   useEffect(() => {
     if (!initialPaymentReference) return;
@@ -145,180 +183,225 @@ export default function Support() {
     <AppFrame>
       <section className="support-page">
         <header className="support-page-intro">
-          <h1>Help &amp; support</h1>
-          <p>Search for a quick answer or send us enough detail to investigate.</p>
+          <div>
+            <h1>Help and support</h1>
+            <p>Search common answers, or send a request if we need to check your account.</p>
+          </div>
+          <label className="support-faq-search">
+            <span className="sr-only">Search help answers</span>
+            <input
+              maxLength={120}
+              onChange={(event) => {
+                setFaqQuery(event.target.value);
+                setShowAllFaqs(true);
+              }}
+              placeholder="Search help..."
+              type="search"
+              value={faqQuery}
+            />
+          </label>
         </header>
 
-        <section className="support-faq" aria-labelledby="support-faq-title">
-          <header className="support-faq-heading">
-            <div>
-              <h2 id="support-faq-title">Find an answer</h2>
-              <p>Start with a quick answer. Send a request if the problem continues.</p>
-            </div>
-            <label className="support-faq-search">
-              <span className="sr-only">Search help answers</span>
-              <input
-                onChange={(event) => {
-                  setFaqQuery(event.target.value);
-                  setShowAllFaqs(true);
-                }}
-                placeholder="Search help..."
-                type="search"
-                value={faqQuery}
-              />
-            </label>
-          </header>
-          <nav className="support-faq-topics" aria-label="Help topics">
-            {SUPPORT_TOPICS.map((topic) => (
-              <button
-                aria-pressed={!faqQuery && faqTopic === topic.id}
-                className={!faqQuery && faqTopic === topic.id ? "is-active" : ""}
-                key={topic.id}
-                onClick={() => {
-                  setFaqQuery("");
-                  setFaqTopic(topic.id);
-                  setOpenFaqId("");
-                  setShowAllFaqs(false);
-                }}
-                type="button"
-              >
-                {topic.label}
-              </button>
-            ))}
-          </nav>
-          <div className="support-faq-results">
-            {visibleFaqs.length === 0 ? (
-              <div className="support-faq-empty">
-                <strong>No matching answer</strong>
-                <p>Try a shorter search, or send us a request below.</p>
-              </div>
-            ) : faqsToShow.map((faq) => {
-              const isOpen = openFaqId === faq.id;
-              return (
-                <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
-                  <h3>
-                    <button
-                      aria-controls={`support-faq-answer-${faq.id}`}
-                      aria-expanded={isOpen}
-                      onClick={() => setOpenFaqId(isOpen ? "" : faq.id)}
-                      type="button"
-                    >
-                      <span>{faq.question}</span>
-                      <span aria-hidden="true">{isOpen ? "−" : "+"}</span>
-                    </button>
-                  </h3>
-                  {isOpen && (
-                    <div className="support-faq-answer" id={`support-faq-answer-${faq.id}`}>
-                      <p>{faq.answer}</p>
-                      <p><strong>Contact support when:</strong> {faq.escalation}</p>
-                      <button className="support-faq-request" onClick={() => prepareRequest(faq)} type="button">Send a request about this</button>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-          {!faqQuery && visibleFaqs.length > 5 && (
+        <nav className="support-faq-topics" aria-label="Help topics">
+          {SUPPORT_TOPICS.map((topic) => (
             <button
-              className="support-faq-more"
-              onClick={() => setShowAllFaqs((value) => !value)}
+              aria-pressed={!faqQuery && faqTopic === topic.id}
+              className={`support-topic-button${!faqQuery && faqTopic === topic.id ? " is-active" : ""}`}
+              key={topic.id}
+              onClick={() => {
+                setFaqQuery("");
+                setFaqTopic(topic.id);
+                setOpenFaqId("");
+                setShowAllFaqs(false);
+              }}
               type="button"
             >
-              {showAllFaqs ? "Show fewer answers" : `View all ${visibleFaqs.length} answers`}
+              {topic.label}
             </button>
-          )}
-        </section>
+          ))}
+        </nav>
 
-        <div className="support-layout">
-          <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
-            <header className="support-panel-heading">
-              <span className="support-panel-icon" aria-hidden="true">?</span>
-              <div><h2>Send a request</h2><p>Give us enough detail to investigate without sharing sensitive information.</p></div>
-            </header>
-            <div className="support-form-body">
-              <div className="support-form-row">
-                <label>
-                  <span>Help topic</span>
-                  <select aria-label="What do you need help with?" disabled={submitting} onChange={(event) => setCategory(event.target.value)} value={category}>
-                    {CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Short title</span>
-                  <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" ref={subjectInputRef} required value={subject} />
-                </label>
+        <div className="support-workflow">
+          <section className="support-faq" aria-labelledby="support-faq-title">
+            <header className="support-section-heading">
+              <div>
+                <h2 id="support-faq-title">Common answers</h2>
+                <p>{faqQuery ? `${visibleFaqs.length} matching answer${visibleFaqs.length === 1 ? "" : "s"}` : "Answers to the issues candidates ask about most."}</p>
               </div>
-              {MODULE_CATEGORIES.has(category) && (
-                <label>
-                  <span>Affected module</span>
-                  <select aria-label="Affected module" disabled={submitting} onChange={(event) => setModuleId(event.target.value)} required value={moduleId}>
-                    <option value="">Choose a module</option>
-                    {modules.map((module) => <option key={module.subject_id} value={module.subject_id}>{module.subject_name}</option>)}
-                  </select>
-                  {moduleError && <small className="support-field-error" role="alert">{moduleError}</small>}
-                </label>
-              )}
-              <label>
-                <span>What happened?</span>
-                <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder="What were you trying to do, what did you expect, and what happened instead?" required rows={6} value={description} />
-                <small className="support-character-count">{`${description.length} / 2,000`}</small>
-              </label>
-              {category === "payment" && (
-                <label>
-                  <span>Payment reference <small>Optional — shown on your receipt</small></span>
-                  <input aria-label="Payment reference optional" disabled={submitting} maxLength={120} onChange={(event) => setPaymentReference(event.target.value)} placeholder="PS-..." value={paymentReference} />
-                </label>
-              )}
-              <p className="support-safety-note"><span aria-hidden="true">i</span> Never include a password, OTP, PIN, or card details.</p>
-              {message && <p className={`support-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
-              <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : "Send request"}</button>
-            </div>
-          </form>
+            </header>
 
-          <section className="support-history" aria-labelledby="support-history-title">
-            <div className="support-history-heading">
-              <div><span>Request history</span><h2 id="support-history-title">Your requests</h2></div>
-              {!loading && !loadingError && <strong>{requests.length}</strong>}
-              {loadingError && <button className="text-action" onClick={() => { setLoading(true); setLoadingError(""); void loadRequests(); }} type="button">Try again</button>}
+            <div className="support-faq-results">
+              {visibleFaqs.length === 0 ? (
+                <div className="support-faq-empty">
+                  <strong>No matching answer</strong>
+                  <p>Try a shorter search, or send us a request.</p>
+                </div>
+              ) : faqsToShow.map((faq) => {
+                const isOpen = openFaqId === faq.id;
+                return (
+                  <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
+                    <h3>
+                      <button
+                        aria-controls={`support-faq-answer-${faq.id}`}
+                        aria-expanded={isOpen}
+                        className="support-faq-toggle"
+                        onClick={() => setOpenFaqId(isOpen ? "" : faq.id)}
+                        type="button"
+                      >
+                        <span>{faq.question}</span>
+                        <span aria-hidden="true">{isOpen ? "-" : "+"}</span>
+                      </button>
+                    </h3>
+                    {isOpen && (
+                      <div className="support-faq-answer" id={`support-faq-answer-${faq.id}`}>
+                        <p>{faq.answer}</p>
+                        <p><strong>Contact support when:</strong> {faq.escalation}</p>
+                        <button className="support-faq-request" onClick={() => prepareRequest(faq)} type="button">Send a request about this</button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
-            {loading ? <LoadingState /> : loadingError ? (
-              <p className="support-message is-error" role="alert">{loadingError}</p>
-            ) : requests.length === 0 ? (
-              <div className="support-empty"><span aria-hidden="true">✓</span><h3>No requests yet</h3><p>When you contact support, its status and resolution will appear here.</p></div>
-            ) : (
-              <div className="support-request-list">
-                {requests.map((request) => (
+
+            {!faqQuery && visibleFaqs.length > 5 && (
+              <button
+                className="support-faq-more"
+                onClick={() => setShowAllFaqs((value) => !value)}
+                type="button"
+              >
+                {showAllFaqs ? "Show fewer answers" : `View all ${visibleFaqs.length} answers`}
+              </button>
+            )}
+          </section>
+
+          <aside className="support-sidebar">
+            <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
+              <header className="support-panel-heading">
+                <div>
+                  <h2>Send a request</h2>
+                  <p>Use this when an answer does not solve the issue. Please avoid passwords, OTPs, PINs, and card details.</p>
+                </div>
+              </header>
+
+              <div className="support-form-body">
+                <div className="support-form-row">
+                  <label>
+                    <span>Help topic</span>
+                    <select aria-label="What do you need help with?" disabled={submitting} onChange={(event) => setCategory(event.target.value)} value={category}>
+                      {CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Short title</span>
+                    <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" ref={subjectInputRef} required value={subject} />
+                  </label>
+                </div>
+
+                {MODULE_CATEGORIES.has(category) && (
+                  <label>
+                    <span>Affected module</span>
+                    <select aria-label="Affected module" disabled={submitting} onChange={(event) => setModuleId(event.target.value)} required value={moduleId}>
+                      <option value="">Choose a module</option>
+                      {modules.map((module) => <option key={module.subject_id} value={module.subject_id}>{module.subject_name}</option>)}
+                    </select>
+                    {moduleError && <small className="support-field-error" role="alert">{moduleError}</small>}
+                  </label>
+                )}
+
+                <label>
+                  <span>What happened?</span>
+                  <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder="What were you trying to do, what did you expect, and what happened instead?" required rows={6} value={description} />
+                  <small className="support-character-count">{`${description.length} / 2,000`}</small>
+                </label>
+
+                {category === "payment" && (
+                  <label>
+                    <span>Payment reference <small>Optional - shown on your receipt</small></span>
+                    <input aria-label="Payment reference optional" disabled={submitting} maxLength={120} onChange={(event) => setPaymentReference(event.target.value)} placeholder="PS-..." value={paymentReference} />
+                  </label>
+                )}
+
+                <p className="support-safety-note"><span aria-hidden="true">i</span> Never include a password, OTP, PIN, or card details.</p>
+                {message && <p className={`support-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
+                <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : "Send request"}</button>
+              </div>
+            </form>
+            {whatsappSupportUrl && (
+              <a
+                aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
+                className="support-whatsapp-link"
+                href={whatsappSupportUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <span>Need urgent help?</span>
+                <strong>Chat on WhatsApp</strong>
+              </a>
+            )}
+          </aside>
+        </div>
+
+        <section className="support-history" aria-labelledby="support-history-title">
+          <div className="support-history-heading">
+            <div>
+              <h2 id="support-history-title">Support requests</h2>
+              <p>Track issues you have sent to support.</p>
+            </div>
+            {!loading && !loadingError && requests.length > 0 && <strong>{requestCountLabel}</strong>}
+            {loadingError && <button className="text-action" onClick={() => { setLoading(true); setLoadingError(""); void loadRequests(); }} type="button">Try again</button>}
+          </div>
+          {loading ? <LoadingState /> : loadingError ? (
+            <p className="support-message is-error" role="alert">{loadingError}</p>
+          ) : requests.length === 0 ? (
+            <div className="support-empty"><span aria-hidden="true">✓</span><h3>No support requests yet</h3><p>Requests you send will appear here with their status.</p></div>
+          ) : (
+            <div className="support-request-list">
+              {requests.map((request) => {
+                const statusCopy = getSupportRequestStatusCopy(request.status);
+                return (
                   <details key={request.id} className="support-request-row">
                     <summary>
                       <div className="support-request-copy">
-                        <span className="support-request-category">{CATEGORIES.find(([value]) => value === request.category)?.[1] ?? request.category}</span>
                         <strong>{request.subject}</strong>
-                        <span>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        <span className="support-request-meta">
+                          <span>{CATEGORIES.find(([value]) => value === request.category)?.[1] ?? request.category}</span>
+                          <span aria-hidden="true">-</span>
+                          <span>{new Date(request.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        </span>
                       </div>
                       <span className={`support-request-status is-${request.status}`}>{STATUS_LABELS[request.status] ?? "Received"}</span>
                     </summary>
                     <div className="support-request-detail">
-                      {request.description && (
-                        <div>
-                          <strong>Your request</strong>
-                          <p>{request.description}</p>
-                        </div>
-                      )}
-                      {request.resolution_note ? (
+                      <ol className={`support-request-timeline is-${request.status || "received"}`} aria-label="Request timeline">
+                        <li>
+                          <span className="support-request-timeline-dot" aria-hidden="true" />
+                          <div>
+                            <strong>Sent</strong>
+                            <p>{request.description || "Your request was sent to support."}</p>
+                          </div>
+                        </li>
+                        <li className="is-current">
+                          <span className="support-request-timeline-dot" aria-hidden="true" />
+                          <div>
+                            <strong>{statusCopy.title}</strong>
+                            <p>{request.resolution_note || statusCopy.body}</p>
+                          </div>
+                        </li>
+                      </ol>
+                      {request.resolution_note && request.status !== "resolved" && (
                         <div className="support-resolution-note">
-                          <strong>Resolution</strong>
+                          <strong>Admin update</strong>
                           <p>{request.resolution_note}</p>
                         </div>
-                      ) : (
-                        <p className="support-request-next-step">We have received this request. Any resolution or next step will appear here.</p>
                       )}
                     </div>
                   </details>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </section>
     </AppFrame>
   );

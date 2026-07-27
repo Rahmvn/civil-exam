@@ -3,6 +3,7 @@ import { Link, Navigate, useBlocker, useNavigate, useParams, useSearchParams } f
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import {
+  abandonOralAttempt,
   advanceOralAttempt,
   getActiveOralAttempt,
   getModuleAccessCatalog,
@@ -36,16 +37,12 @@ function OralExitConfirmModal({ busy, onCancel, onConfirm }) {
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <p className="eyebrow">Active oral practice</p>
-        <h2 id="oral-exit-confirm-title">Leave oral practice?</h2>
-        <p>
-          Your latest answer will be saved, but the current question timer will continue.
-          When time expires, the answer is locked. You must finish this attempt before starting another oral practice set.
-        </p>
+        <h2 id="oral-exit-confirm-title">Exit oral practice?</h2>
+        <p>This oral attempt will end. You can start this practice set again when you are ready.</p>
         <div className="auth-modal-actions">
           <button className="primary-action" disabled={busy} onClick={onCancel} type="button">Continue practice</button>
           <button className="ghost-button practice-confirm-exit" disabled={busy} onClick={onConfirm} type="button">
-            {busy ? "Saving..." : "Save and leave"}
+            {busy ? "Exiting..." : "Exit practice"}
           </button>
         </div>
       </section>
@@ -68,19 +65,16 @@ function OralStart({ accessRow, canPurchase, duration, durationOptions, error, o
         <Link className="oral-back-link" to={`/modules/${subject.slug}`}>Back to practice sets</Link>
         <article className="oral-start-card">
           <p className="oral-start-module-name">{getModuleDisplayName(subject.name)}</p>
-          <p className="oral-start-intro">
-            Answer each prompt in your own words. Once you continue, that answer is locked.
-          </p>
+          <h1>{`Practice set ${accessRow?.batch_number ?? 1}`}</h1>
 
           <div className="oral-start-facts" aria-label="Practice details">
-            <span><strong>{questionCount}</strong> questions in this set</span>
-            <span><strong>Timed response</strong> per question</span>
-            <span><strong>Guided review</strong> with model answers</span>
+            <span><strong>{questionCount}</strong> questions</span>
+            <span><strong>Timed</strong> per question</span>
           </div>
 
           {hasAccess ? (
             <fieldset className="oral-duration-picker">
-              <legend>Time for each question</legend>
+              <legend>Choose time</legend>
               {durationOptions.map((option) => (
                 <label className={duration === option.seconds ? "is-selected" : ""} key={option.seconds}>
                   <input
@@ -106,7 +100,7 @@ function OralStart({ accessRow, canPurchase, duration, durationOptions, error, o
           <div className="oral-start-actions">
             {hasAccess ? (
               <button className="primary-action" disabled={starting} onClick={onStart} type="button">
-                {starting ? "Preparing practice..." : "Begin oral practice"}
+                {starting ? "Preparing..." : "Begin"}
               </button>
             ) : purchaseUnavailable ? (
               <button className="primary-action" disabled type="button">
@@ -118,7 +112,7 @@ function OralStart({ accessRow, canPurchase, duration, durationOptions, error, o
               </Link>
             )}
           </div>
-          <p className="oral-no-pause-note">Choose your time once. The timer cannot be paused after you begin.</p>
+          <p className="oral-no-pause-note">Timer cannot be paused after you begin.</p>
         </article>
       </section>
     </AppFrame>
@@ -151,6 +145,7 @@ export default function OralPractice() {
   const autosavePromiseRef = useRef(null);
   const advanceRetryAtRef = useRef(0);
   const advancingRef = useRef(false);
+  const exitPendingRef = useRef(false);
   const allowExitRef = useRef(false);
   const questionHeadingRef = useRef(null);
   const hasActiveSession = session?.status === "active";
@@ -304,6 +299,12 @@ export default function OralPractice() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasActiveSession]);
 
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      exitPendingRef.current = true;
+    }
+  }, [blocker.state]);
+
   function changeAnswer(event) {
     const nextAnswer = event.target.value;
     answerRef.current = nextAnswer;
@@ -344,58 +345,41 @@ export default function OralPractice() {
 
   function cancelExit() {
     if (leaving) return;
+    exitPendingRef.current = false;
     if (blocker.state === "blocked") blocker.reset();
     setExitConfirmOpen(false);
+  }
+
+  function openExitConfirmation() {
+    exitPendingRef.current = true;
+    setExitConfirmOpen(true);
   }
 
   async function confirmExit() {
     const activeSession = sessionRef.current;
     const questionId = activeSession?.current_question?.id;
-    if (!activeSession?.attempt_id || !questionId || leaving) return;
+    if (!activeSession?.attempt_id || leaving) return;
 
+    exitPendingRef.current = true;
     window.clearTimeout(autosaveTimerRef.current);
-    storeOralResponseDraft(activeSession.attempt_id, questionId, answerRef.current);
     setLeaving(true);
-    setSaveState("Saving...");
     setError("");
 
     try {
-      if (autosavePromiseRef.current) {
-        try {
-          await autosavePromiseRef.current;
-        } catch {
-          // The final save below retries with the newest answer.
-        }
-      }
-
-      const nextSession = await saveOralResponseDraft({
-        attemptId: activeSession.attempt_id,
-        questionId,
-        responseText: answerRef.current,
-      });
-
-      clearOralResponseDraft(activeSession.attempt_id, questionId);
-      setSaveState("Saved");
+      await abandonOralAttempt(activeSession.attempt_id);
+      if (questionId) clearOralResponseDraft(activeSession.attempt_id, questionId);
       setExitConfirmOpen(false);
-
-      if (nextSession.status === "completed") {
-        if (blocker.state === "blocked") blocker.reset();
-        applySession(nextSession);
-        return;
-      }
-
       allowExitRef.current = true;
       if (blocker.state === "blocked") {
         blocker.proceed();
       } else {
-        navigate("/dashboard#modules", { replace: true });
+        navigate(`/modules/${subjectSlug}`, { replace: true });
       }
-    } catch (saveError) {
-      logAppError("Oral practice exit save", saveError);
-      setSaveState("Not saved");
+    } catch (exitError) {
+      logAppError("Oral practice exit", exitError);
       setError(friendlyErrorMessage(
-        saveError,
-        "We could not save your latest answer, so the practice is still open. Please try again.",
+        exitError,
+        "We could not close this oral practice. Please try again.",
       ));
     } finally {
       setLeaving(false);
@@ -423,7 +407,12 @@ export default function OralPractice() {
   async function advance(reason = "manual") {
     const activeSession = sessionRef.current;
     const questionId = activeSession?.current_question?.id;
-    if (!activeSession?.attempt_id || !questionId || advancingRef.current) return;
+    if (
+      !activeSession?.attempt_id
+      || !questionId
+      || advancingRef.current
+      || exitPendingRef.current
+    ) return;
 
     window.clearTimeout(autosaveTimerRef.current);
     advancingRef.current = true;
@@ -504,7 +493,7 @@ export default function OralPractice() {
               <button
                 className="oral-session-exit-button"
                 disabled={advancing || leaving}
-                onClick={() => setExitConfirmOpen(true)}
+                onClick={openExitConfirmation}
                 type="button"
               >
                 Exit
@@ -521,17 +510,16 @@ export default function OralPractice() {
 
         <div className="oral-session-layout">
           <article className="oral-question-panel">
-            <p className="eyebrow">Speak through your reasoning, then write your answer</p>
             <h1 ref={questionHeadingRef} tabIndex="-1">{question?.question_text}</h1>
 
             <label className="oral-answer-field">
-              <span>Your answer</span>
+              <span>Answer</span>
               <textarea
                 autoFocus
                 disabled={advancing || remainingSeconds === 0}
-                maxLength={20000}
+                maxLength={5000}
                 onChange={changeAnswer}
-                placeholder="Type the answer you would give in the oral exam..."
+                placeholder="Write your response..."
                 rows="10"
                 value={answer}
               />
@@ -542,7 +530,6 @@ export default function OralPractice() {
                 {saveState}
               </div>
               <div className="oral-answer-submit">
-                <p>Once you continue, this answer is locked.</p>
                 <button
                   className="primary-action"
                   disabled={advancing || remainingSeconds === 0}
@@ -552,8 +539,8 @@ export default function OralPractice() {
                   {advancing
                     ? "Moving on..."
                     : isFinalQuestion
-                      ? answerIsBlank ? "Finish without an answer" : "Lock answer and finish"
-                      : answerIsBlank ? "Continue without an answer" : "Lock answer and continue"}
+                      ? answerIsBlank ? "Finish without answer" : "Finish"
+                      : answerIsBlank ? "Continue without answer" : "Continue"}
                 </button>
               </div>
             </footer>

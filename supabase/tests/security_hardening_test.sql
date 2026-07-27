@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(30);
+select plan(36);
 
 create table public.security_acl_table_probe (id integer);
 create function public.security_acl_function_probe()
@@ -55,6 +55,115 @@ select ok(has_column_privilege('authenticated', 'public.profiles', 'phone_number
   'authenticated users can update permitted profile fields');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', 'UPDATE'),
   'authenticated users cannot update profile authorization fields');
+
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'c1000000-0000-4000-8000-000000000001',
+    'authenticated',
+    'authenticated',
+    'profile-rls-one@example.test',
+    'local-test-only',
+    now(), '', '', '', '',
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Profile RLS One"}',
+    now(), now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    'c1000000-0000-4000-8000-000000000002',
+    'authenticated',
+    'authenticated',
+    'profile-rls-two@example.test',
+    'local-test-only',
+    now(), '', '', '', '',
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Profile RLS Two"}',
+    now(), now()
+  );
+
+insert into public.profiles (id, email, full_name)
+values
+  ('c1000000-0000-4000-8000-000000000001', 'profile-rls-one@example.test', 'Profile RLS One'),
+  ('c1000000-0000-4000-8000-000000000002', 'profile-rls-two@example.test', 'Profile RLS Two')
+on conflict (id) do update
+set email = excluded.email,
+    full_name = excluded.full_name;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'c1000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select lives_ok(
+  $$
+    update public.profiles
+    set phone_number = '08142857377',
+        state_code = 'Delta',
+        organization_name = 'finance'
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  'candidate optional profile details update without recursive RLS'
+);
+
+select is(
+  (
+    select organization_name
+    from public.profiles
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  ),
+  'finance',
+  'candidate can read their own updated optional details'
+);
+
+select throws_ok(
+  $$
+    update public.profiles
+    set phone_number = 'call-me-on-this-number'
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  '23514',
+  null,
+  'profile phone numbers reject non-phone text'
+);
+
+select throws_ok(
+  $$
+    update public.profiles
+    set state_code = 'Atlantis'
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  '23514',
+  null,
+  'profile state is constrained to known Nigerian states'
+);
+
+select throws_ok(
+  $$
+    update public.profiles
+    set organization_name = repeat('x', 121)
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  '23514',
+  null,
+  'profile organisation names are length-limited'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from public.profiles
+    where id = 'c1000000-0000-4000-8000-000000000002'
+  ),
+  0,
+  'candidate cannot read another candidate profile'
+);
+
+reset role;
+
 select ok(has_table_privilege('authenticated', 'public.attempts', 'SELECT'),
   'authenticated users can read their attempt history through RLS');
 select ok(has_table_privilege('authenticated', 'public.questions', 'SELECT'),

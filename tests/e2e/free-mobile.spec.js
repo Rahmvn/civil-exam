@@ -10,16 +10,16 @@ test("free candidate is guided into one module without exposing paid access", as
   await expect(moduleCard.getByRole("button", { name: "Try free" })).toBeVisible();
   await expect(moduleCard.getByRole("button", { name: "Unlock module" })).toBeVisible();
   await moduleCard.getByRole("button", { name: "Try free" }).click();
-  await expect(page.getByRole("dialog", { name: "Use free practice?" })).toBeVisible();
-  await expect(page.getByText("Your free practice unlocks Practice Set 1 for this module and includes one retry.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start free practice" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Start free practice?" })).toBeVisible();
+  await expect(page.getByText("This unlocks Practice set 1 and one retry for this module.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
-  const unlockDialog = page.getByRole("dialog", { name: "Module access" });
+  const unlockDialog = page.getByRole("dialog", { name: "Unlock module" });
   await expect(unlockDialog).toBeVisible();
   await expect(unlockDialog.getByText("Public Service Rules", { exact: true })).toBeVisible();
-  await expect(unlockDialog.getByRole("button", { name: "Continue" })).toBeVisible();
+  await expect(unlockDialog.getByRole("button", { name: "Continue to payment" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 

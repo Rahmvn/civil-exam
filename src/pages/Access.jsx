@@ -16,7 +16,6 @@ import {
   isCandidateModuleComingSoon,
   getModuleDisplayName,
 } from "../lib/moduleDisplay";
-import { getPracticeRoute } from "../lib/oralPractice";
 import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
 import { useAuth } from "../lib/useAuth";
 
@@ -28,10 +27,9 @@ function formatMoney(kobo, currency = "NGN") {
   }).format((kobo ?? 0) / 100);
 }
 
-function formatReceiptMoney(kobo, currency = "NGN") {
+function formatPdfMoney(kobo, currency = "NGN") {
   const amount = new Intl.NumberFormat("en-NG", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format((kobo ?? 0) / 100);
   return `${currency || "NGN"} ${amount}`;
 }
@@ -47,6 +45,19 @@ function formatDate(value) {
   }).format(date);
 }
 
+async function loadReceiptLogoDataUrl() {
+  const response = await fetch("/logo/promotionsure-lockup.png", { cache: "force-cache" });
+  if (!response.ok) throw new Error("Receipt logo unavailable");
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", () => reject(reader.error));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function getPaymentAccessName(payment) {
   if (payment.subject_name) return getModuleDisplayName(payment.subject_name);
   if (payment.is_legacy_full_access) return "Legacy full access";
@@ -57,7 +68,11 @@ function compactReference(reference) {
   const value = String(reference ?? "").trim();
   if (!value) return "Reference unavailable";
   if (value.length <= 16) return value;
-  return `${value.slice(0, 7)}…${value.slice(-5)}`;
+  return `${value.slice(0, 7)}...${value.slice(-5)}`;
+}
+
+function getModulePracticeSetsRoute(subjectSlug) {
+  return `/modules/${encodeURIComponent(subjectSlug)}`;
 }
 
 function PaymentReference({ value }) {
@@ -82,7 +97,18 @@ function PaymentReference({ value }) {
       type="button"
     >
       <code>{compactReference(value)}</code>
-      <span>{copied ? "Copied" : "Copy"}</span>
+      <span className="access-payment-copy-icon" aria-hidden="true">
+        {copied ? (
+          <svg viewBox="0 0 16 16" focusable="false">
+            <path d="M3.5 8.2 6.7 11.3 12.8 4.7" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 16 16" focusable="false">
+            <path d="M5.5 4.5V3.7c0-.9.7-1.6 1.6-1.6h4.2c.9 0 1.6.7 1.6 1.6v5.2c0 .9-.7 1.6-1.6 1.6h-.8" />
+            <rect x="3.1" y="5.5" width="7.4" height="8.4" rx="1.6" />
+          </svg>
+        )}
+      </span>
     </button>
   );
 }
@@ -119,72 +145,161 @@ function ReceiptModal({ payment, profile, onClose }) {
       const { jsPDF } = await import("jspdf");
       const document = new jsPDF({ format: "a4", unit: "mm" });
       const pageWidth = document.internal.pageSize.getWidth();
-      const margin = 20;
+      const margin = 18;
       const contentWidth = pageWidth - (margin * 2);
-      const labelWidth = 48;
-      const receiptRows = [
-        ["Paid by", profile?.full_name || "Account holder"],
-        ["Email", profile?.email || "Not available"],
-        ["Module access", accessName],
-        ["Payment date", paymentDate],
-        ["Access through", formatDate(payment.expires_at)],
-        ["Payment reference", reference],
-      ];
+      const logoDataUrl = await loadReceiptLogoDataUrl().catch(() => null);
+      const paidBy = profile?.full_name || "Account holder";
+      const email = profile?.email || "Not available";
+      const accessUntil = formatDate(payment.expires_at);
+      const totalPaid = formatPdfMoney(payment.amount_kobo, payment.currency);
+      const receiptNumber = compactReference(reference);
+      const rightColumnX = pageWidth - margin - 76;
+      const rightValueX = pageWidth - margin;
+      const labelColor = [93, 103, 118];
+      const textColor = [28, 36, 48];
+      const brandColor = [15, 91, 58];
+      const lineColor = [220, 227, 232];
+
+      function setText() {
+        document.setTextColor(textColor[0], textColor[1], textColor[2]);
+      }
+
+      function setMuted() {
+        document.setTextColor(labelColor[0], labelColor[1], labelColor[2]);
+      }
+
+      function setBrand() {
+        document.setTextColor(brandColor[0], brandColor[1], brandColor[2]);
+      }
+
+      function drawRule(y, weight = 0.2) {
+        document.setDrawColor(lineColor[0], lineColor[1], lineColor[2]);
+        document.setLineWidth(weight);
+        document.line(margin, y, pageWidth - margin, y);
+      }
+
+      function drawMetaPair(label, value, x, y, options = {}) {
+        const valueX = options.valueX ?? x + 34;
+        const valueWidth = options.valueWidth ?? pageWidth - margin - valueX;
+        const valueLines = document.splitTextToSize(String(value), valueWidth);
+        document.setFont("helvetica", "normal");
+        document.setFontSize(8.2);
+        setMuted();
+        document.text(label, x, y);
+        document.setFont("helvetica", options.bold === false ? "normal" : "bold");
+        document.setFontSize(8.6);
+        setText();
+        document.text(valueLines, valueX, y);
+        return y + Math.max(7, valueLines.length * 4.2);
+      }
 
       document.setProperties({
         title: `Payment receipt ${reference}`,
         subject: "Verified module payment receipt",
         author: BRAND_NAME,
       });
-      document.setFillColor(15, 91, 58);
-      document.rect(0, 0, pageWidth, 7, "F");
-      document.setTextColor(15, 91, 58);
-      document.setFont("helvetica", "bold");
-      document.setFontSize(12);
-      document.text(BRAND_NAME.toUpperCase(), margin, 23);
-      document.setFont("helvetica", "normal");
-      document.setFontSize(8.5);
-      document.setTextColor(93, 103, 118);
-      document.text(BRAND_DESCRIPTOR, margin, 28.5);
-      document.setTextColor(28, 36, 48);
-      document.setFont("helvetica", "bold");
-      document.setFontSize(24);
-      document.text("Payment receipt", margin, 41);
-      document.setFont("helvetica", "normal");
-      document.setFontSize(9);
-      document.setTextColor(93, 103, 118);
-      document.text(`Receipt reference: ${reference}`, margin, 49);
-      document.setFillColor(234, 245, 239);
-      document.roundedRect(margin, 56, contentWidth, 27, 3, 3, "F");
-      document.setTextColor(15, 91, 58);
-      document.setFont("helvetica", "bold");
-      document.setFontSize(10);
-      document.text("PAYMENT VERIFIED", margin + 7, 67);
-      document.setTextColor(28, 36, 48);
-      document.setFontSize(17);
-      document.text(formatReceiptMoney(payment.amount_kobo, payment.currency), margin + 7, 76);
 
-      let y = 98;
-      receiptRows.forEach(([label, value]) => {
-        const valueLines = document.splitTextToSize(String(value), contentWidth - labelWidth - 5);
-        const rowHeight = Math.max(13, (valueLines.length * 5) + 7);
-        document.setDrawColor(220, 227, 232);
-        document.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
-        document.setFont("helvetica", "normal");
-        document.setFontSize(9);
-        document.setTextColor(93, 103, 118);
-        document.text(label, margin, y + 7);
+      document.setFillColor(brandColor[0], brandColor[1], brandColor[2]);
+      document.rect(0, 0, pageWidth, 4, "F");
+
+      if (logoDataUrl) {
+        document.addImage(logoDataUrl, "PNG", margin, 14, 50, 8.7);
+      } else {
+        setBrand();
         document.setFont("helvetica", "bold");
-        document.setTextColor(28, 36, 48);
-        document.text(valueLines, margin + labelWidth, y + 7);
-        y += rowHeight;
-      });
+        document.setFontSize(12);
+        document.text(BRAND_NAME, margin, 20.5);
+        document.setFont("helvetica", "normal");
+        document.setFontSize(8);
+        setMuted();
+        document.text(BRAND_DESCRIPTOR, margin, 25);
+      }
+
+      setText();
+      document.setFont("helvetica", "bold");
+      document.setFontSize(14.5);
+      document.text("Payment receipt", rightValueX, 18.5, { align: "right" });
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8.4);
+      setMuted();
+      document.text(`Receipt no. ${receiptNumber}`, rightValueX, 25, { align: "right" });
+      setBrand();
+      document.setFont("helvetica", "bold");
+      document.setFontSize(8.2);
+      document.text("Payment verified", rightValueX, 31, { align: "right" });
+
+      drawRule(38);
 
       document.setFont("helvetica", "normal");
-      document.setFontSize(8.5);
-      document.setTextColor(93, 103, 118);
-      const note = "This receipt confirms a payment verified through Paystack. Keep the payment reference for support or verification.";
-      document.text(document.splitTextToSize(note, contentWidth), margin, y + 16);
+      document.setFontSize(8);
+      setMuted();
+      document.text("Bill to", margin, 50);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(9.8);
+      setText();
+      document.text(paidBy, margin, 58);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8.4);
+      setMuted();
+      document.text(email, margin, 65);
+
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8);
+      setMuted();
+      document.text("Receipt details", rightColumnX, 50);
+      document.text("Issued on", rightColumnX, 59);
+      document.text("Provider", rightColumnX, 67);
+      setText();
+      document.setFont("helvetica", "bold");
+      document.setFontSize(8.4);
+      document.text(paymentDate, rightValueX, 59, { align: "right" });
+      document.text("Paystack", rightValueX, 67, { align: "right" });
+
+      drawRule(80);
+
+      document.setFont("helvetica", "bold");
+      document.setFontSize(8.4);
+      setMuted();
+      document.text("Item", margin, 92);
+      document.text("Access valid until", pageWidth - margin - 72, 92);
+      document.text("Amount", rightValueX, 92, { align: "right" });
+      drawRule(98);
+
+      document.setFont("helvetica", "bold");
+      document.setFontSize(9.2);
+      setText();
+      document.text(`${accessName} module access`, margin, 110);
+      document.text(totalPaid, rightValueX, 110, { align: "right" });
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8.2);
+      setMuted();
+      document.text("Module access", margin, 118);
+      document.text(accessUntil, pageWidth - margin - 72, 110);
+
+      drawRule(130);
+      document.setFont("helvetica", "bold");
+      document.setFontSize(10.2);
+      setText();
+      document.text("Total paid", pageWidth - margin - 72, 142);
+      document.text(totalPaid, rightValueX, 142, { align: "right" });
+      drawRule(149);
+
+      document.setFont("helvetica", "bold");
+      document.setFontSize(9.2);
+      setText();
+      document.text("Verification details", margin, 164);
+      let detailsY = 176;
+      detailsY = drawMetaPair("Reference", reference, margin, detailsY, { valueX: margin + 38 });
+      detailsY = drawMetaPair("Module", accessName, margin, detailsY, { valueX: margin + 38 });
+      drawMetaPair("Access until", accessUntil, margin, detailsY, { valueX: margin + 38 });
+
+      drawRule(206);
+      document.setFont("helvetica", "normal");
+      document.setFontSize(8);
+      setMuted();
+      const note = "This receipt confirms that PromotionSure received and verified this payment. Keep the payment reference for support.";
+      document.text(document.splitTextToSize(note, contentWidth), margin, 217);
+
       const safeReference = reference.replace(/[^a-zA-Z0-9_-]/g, "-");
       document.save(`promotionsure-receipt-${safeReference}.pdf`);
     } catch (error) {
@@ -206,35 +321,50 @@ function ReceiptModal({ payment, profile, onClose }) {
       >
         <header className="access-receipt-header">
           <div>
-            <span>{BRAND_NAME}</span>
-            <small>{BRAND_DESCRIPTOR}</small>
             <h2 id="payment-receipt-title">Payment receipt</h2>
+            <p>{accessName} <span aria-hidden="true">&middot;</span> {paymentDate}</p>
+            <span className="access-receipt-status">Payment verified</span>
           </div>
-          <button aria-label="Close receipt" onClick={onClose} type="button">Close</button>
+          <button className="access-receipt-close" aria-label="Close receipt" onClick={onClose} type="button">&times;</button>
         </header>
-
-        <div className="access-receipt-paid-mark">
-          <div>
-            <strong>Payment verified</strong>
-            <p>{formatMoney(payment.amount_kobo, payment.currency)}</p>
-          </div>
-        </div>
 
         <dl className="access-receipt-details">
           <div><dt>Paid by</dt><dd>{profile?.full_name || "Account holder"}</dd></div>
           <div><dt>Email</dt><dd>{profile?.email || "Not available"}</dd></div>
-          <div><dt>Module access</dt><dd>{accessName}</dd></div>
-          <div><dt>Payment date</dt><dd>{paymentDate}</dd></div>
-          <div><dt>Access through</dt><dd>{formatDate(payment.expires_at)}</dd></div>
-          <div><dt>Reference</dt><dd className="access-receipt-reference">{reference}</dd></div>
+          <div><dt>Module</dt><dd>{accessName}</dd></div>
+          <div><dt>Access until</dt><dd>{formatDate(payment.expires_at)}</dd></div>
+          <div>
+            <dt>Reference</dt>
+            <dd className="access-receipt-reference">
+              <code title={reference}>{compactReference(reference)}</code>
+              <button
+                aria-label={`Copy payment reference ${reference}`}
+                className="access-receipt-copy"
+                disabled={!payment.paystack_reference}
+                onClick={() => void copyReference()}
+                type="button"
+              >
+                <span className="access-payment-copy-icon" aria-hidden="true">
+                  {copied ? (
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <path d="M3.5 8.2 6.7 11.3 12.8 4.7" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <path d="M5.5 4.5V3.7c0-.9.7-1.6 1.6-1.6h4.2c.9 0 1.6.7 1.6 1.6v5.2c0 .9-.7 1.6-1.6 1.6h-.8" />
+                      <rect x="3.1" y="5.5" width="7.4" height="8.4" rx="1.6" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+            </dd>
+          </div>
+          <div className="access-receipt-total-row"><dt>Total paid</dt><dd>{formatMoney(payment.amount_kobo, payment.currency)}</dd></div>
         </dl>
 
         <div className="access-receipt-actions">
-          <button className="ghost-button" disabled={!payment.paystack_reference} onClick={() => void copyReference()} type="button">
-            {copied ? "Reference copied" : "Copy reference"}
-          </button>
           <button className="ghost-button" onClick={() => window.print()} type="button">Print</button>
-          <button disabled={downloading} onClick={() => void downloadReceipt()} type="button">
+          <button className="primary-action" disabled={downloading} onClick={() => void downloadReceipt()} type="button">
             {downloading ? "Preparing PDF..." : "Download receipt"}
           </button>
         </div>
@@ -345,6 +475,10 @@ export default function Access() {
     : null;
   const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
   const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
+  const unlockedCount = modulesToShow.filter((module) => {
+    const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
+    return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);
+  }).length;
 
   function openUnlockModule(subjectSlug) {
     setPaymentError(null);
@@ -360,7 +494,12 @@ export default function Access() {
     <AppFrame>
       <section className="access-page access-page-v2">
         <header className="access-page-intro">
-          <p>Manage module access and view your payment history.</p>
+          <div>
+            <h1>Access and payment</h1>
+          </div>
+          {unlockedCount < modulesToShow.length && (
+            <p>{`${unlockedCount} of ${modulesToShow.length} modules unlocked.`}</p>
+          )}
         </header>
 
         <section className="access-module-catalog" aria-label="Available modules">
@@ -406,7 +545,7 @@ export default function Access() {
                     {isComingSoon ? (
                       <span className="access-module-coming-soon">Not available yet</span>
                     ) : hasUsableModuleAccess ? (
-                      <Link className="secondary-action" to={getPracticeRoute(subject)}>Continue practice</Link>
+                      <Link className="secondary-action" to={getModulePracticeSetsRoute(module.subject_slug)}>View</Link>
                     ) : module.can_purchase ? (
                       <button aria-busy={isPaying} disabled={isPaying} onClick={() => openUnlockModule(module.subject_slug)} type="button">
                         Unlock module
@@ -433,11 +572,13 @@ export default function Access() {
                 return (
                   <article className="access-payment-row is-attention" key={payment.id}>
                     <div className="access-payment-main">
-                      <strong>{getPaymentAccessName(payment)}</strong>
-                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} • ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      <div className="access-payment-title-line">
+                        <strong>{getPaymentAccessName(payment)}</strong>
+                        <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                      </div>
+                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
                       <p>{statusMeta.description}</p>
                     </div>
-                    <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
                     <PaymentReference value={payment.paystack_reference} />
                     {statusMeta.canCheck && (
                       <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>
@@ -464,10 +605,12 @@ export default function Access() {
                   return (
                     <article className={`access-payment-row ${statusMeta.canViewReceipt ? "is-verified" : ""}`} key={payment.id}>
                       <div className="access-payment-main">
-                        <strong>{getPaymentAccessName(payment)}</strong>
-                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} • ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                        <div className="access-payment-title-line">
+                          <strong>{getPaymentAccessName(payment)}</strong>
+                          <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                        </div>
+                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
                       </div>
-                      <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
                       <PaymentReference value={payment.paystack_reference} />
                       {statusMeta.canViewReceipt ? (
                         <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>

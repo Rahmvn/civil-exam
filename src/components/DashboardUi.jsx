@@ -167,7 +167,7 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
       >
         <header className="free-batch-confirmation-header">
           <div>
-            <h2 id="free-batch-modal-title">Use free practice?</h2>
+            <h2 id="free-batch-modal-title">Start free practice?</h2>
             <p>{getModuleDisplayName(subject.name)}</p>
           </div>
           <button
@@ -180,12 +180,13 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
             &times;
           </button>
         </header>
-        <p className="free-batch-confirmation-note">
-          Your free practice unlocks Practice Set 1 for this module and includes one retry.
-        </p>
+        <p className="free-batch-confirmation-note">This unlocks Practice set 1 and one retry for this module.</p>
         <div className="free-batch-confirmation-actions">
+          <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
+            Cancel
+          </button>
           <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
-            {loading ? "Starting..." : "Start free practice"}
+            {loading ? "Starting..." : "Start"}
           </button>
         </div>
       </section>
@@ -211,13 +212,14 @@ export function SkipAheadConfirmationModal({
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="skip-ahead-modal-title">{`Practice set ${recommendedBatchNumber} is recommended first.`}</h2>
+        <h2 id="skip-ahead-modal-title">Start this set?</h2>
+        <p>{`Practice set ${recommendedBatchNumber} is recommended first.`}</p>
         <div className="auth-modal-actions">
-          <button className="primary-action" onClick={onContinue} type="button">
-            Continue anyway
-          </button>
           <button className="ghost-button" onClick={onGoRecommended} type="button">
-            {`Go to practice set ${recommendedBatchNumber}`}
+            {`Use set ${recommendedBatchNumber}`}
+          </button>
+          <button className="primary-action" onClick={onContinue} type="button">
+            Continue
           </button>
         </div>
       </section>

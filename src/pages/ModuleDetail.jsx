@@ -138,9 +138,6 @@ export default function ModuleDetail() {
     isComingSoon ? [] : rows,
     { isPaidUser: hasModuleAccess },
   );
-  const recommendationCopy = progression?.hasOpenRecommendation && progression.recommendedBatchNumber
-    ? `Practice set ${progression.recommendedBatchNumber} is recommended next. You can still choose another set.`
-    : "";
 
   const passedCount = liveRows.filter((row) => row.state === "completed_passed").length;
   const progressPercent = liveRows.length > 0 ? Math.round((passedCount / liveRows.length) * 100) : 0;
@@ -336,103 +333,118 @@ export default function ModuleDetail() {
     : rows.length > 0
     ? rows
     : [{ batch_number: 1, state: "unavailable_not_published", reason_code: "no_questions" }];
+  const recommendedBatchNumber = progression?.hasOpenRecommendation
+    ? Number(progression.recommendedBatchNumber ?? 0)
+    : 0;
+  const recommendedRow = recommendedBatchNumber
+    ? rowsToShow.find((row) => Number(row.batch_number ?? 1) === recommendedBatchNumber) ?? null
+    : null;
+  const orderedRows = recommendedRow
+    ? [
+        recommendedRow,
+        ...rowsToShow.filter((row) => Number(row.batch_number ?? 1) !== recommendedBatchNumber),
+      ]
+    : rowsToShow;
+
+  function renderPracticeSetRow(row) {
+    const primaryAction = getBatchPrimaryAction(row);
+    const secondaryAction = getBatchSecondaryAction(row);
+    const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
+    const supportCopy = guidance.isSkipAhead
+      ? ""
+      : getLockReason(row, selectedModuleName);
+    const attemptCount = Number(row.attempt_count ?? 0);
+    const isRecommended = recommendedBatchNumber
+      && Number(row.batch_number ?? 1) === recommendedBatchNumber;
+    let stateLabel = "";
+    let stateTone = "muted";
+
+    if (isRecommended) {
+      stateLabel = "Recommended";
+      stateTone = "recommended";
+    } else if (row.state === "completed_passed") {
+      stateLabel = "Passed";
+      stateTone = "passed";
+    } else if (row.state === "completed_failed") {
+      stateLabel = "Retry";
+      stateTone = "failed";
+    } else if (row.state === "unavailable_not_published") {
+      stateLabel = "Coming soon";
+      stateTone = "soon";
+    } else if (row.state === "locked_requires_payment" || !row.can_start) {
+      stateLabel = "Locked";
+      stateTone = "locked";
+    } else if (attemptCount > 0) {
+      stateLabel = "In progress";
+      stateTone = "available";
+    }
+
+    const scoreCopy = attemptCount > 0 && row.last_score !== null && row.last_score !== undefined
+      ? `Last score: ${row.last_score}%`
+      : null;
+
+    return (
+      <article
+        className={`practice-set-choice ${isRecommended ? "is-recommended" : ""}`}
+        key={`${subject.slug}-${row.batch_number ?? 1}`}
+      >
+        <div className="practice-set-choice-copy">
+          <div className="practice-set-choice-title">
+            <h3>{`Practice set ${row.batch_number ?? 1}`}</h3>
+            {stateLabel && <span className={`batch-status-badge is-${stateTone}`}>{stateLabel}</span>}
+          </div>
+          {scoreCopy && <p className="practice-set-choice-score">{scoreCopy}</p>}
+          {supportCopy && <p className="practice-set-choice-note">{supportCopy}</p>}
+        </div>
+
+        <div className="practice-set-choice-actions">
+          <DashboardActionButton action={primaryAction} />
+          <DashboardActionButton action={secondaryAction} className="ghost-button dashboard-soft-button" />
+        </div>
+      </article>
+    );
+  }
 
   return (
     <AppFrame>
       <section className="dashboard-hub dashboard-hub-compact module-detail-page">
-        <section className="dashboard-section-block">
-          <article className="dashboard-panel-card module-detail-hero module-chooser-hero">
+        <div className="module-chooser-shell">
+          <header className="module-chooser-header">
+            <Link className="module-detail-back" to="/dashboard#modules">
+              <span aria-hidden="true">&larr;</span> Back to modules
+            </Link>
+
+            <div className="module-chooser-heading">
             <div className="module-detail-copy">
-              <p className="dashboard-section-kicker">{getModuleDisplayName(subject.name)}</p>
               <h1 className="module-detail-title">
-                {isPaused ? "Practice is temporarily paused" : isComingSoon ? "Practice is coming soon" : "Choose a practice set"}
+                {isPaused ? "Practice is temporarily paused" : isComingSoon ? "Practice is coming soon" : getModuleDisplayName(subject.name)}
               </h1>
               {isPaused && <p>Your access and previous results are safe while new attempts are paused.</p>}
             </div>
 
             {!isComingSoon && liveRows.length > 0 && (
-              <div className="module-progress-summary module-progress-summary-detail">
+              <div className="module-chooser-progress">
                 <div className="module-progress-summary-copy">
                   <span>Module progress</span>
-                  <strong>{`${passedCount} of ${liveRows.length} practice sets completed`}</strong>
+                  <strong>{`${passedCount} of ${liveRows.length} passed`}</strong>
                 </div>
                 <AnimatedProgressBar value={progressPercent} />
               </div>
             )}
-
-            {recommendationCopy && (
-              <div className="module-progression-guidance" role="note">
-                <strong>Recommended next</strong>
-                <span>{recommendationCopy}</span>
-              </div>
-            )}
-
-            {ctaError && <p className="action-error" role="alert">{ctaError}</p>}
-            {moduleNotice && <p className="support-copy">{moduleNotice}</p>}
-          </article>
-        </section>
-
-        <section className="dashboard-section-block">
-          <article className="dashboard-panel-card module-detail-batches-card">
-            <div className="module-preview-panel module-preview-panel-detail">
-              {rowsToShow.map((row) => {
-                const primaryAction = getBatchPrimaryAction(row);
-                const secondaryAction = getBatchSecondaryAction(row);
-                const guidance = getBatchProgressionGuidance(row, progression, { isPaidUser: hasModuleAccess });
-                const supportCopy = guidance.isSkipAhead
-                  ? ""
-                  : getLockReason(row, selectedModuleName);
-                const attemptCount = Number(row.attempt_count ?? 0);
-                let stateLabel = null;
-                let stateTone = "muted";
-
-                if (guidance.isRecommended) {
-                  stateLabel = "Next for you";
-                  stateTone = "recommended";
-                } else if (row.state === "completed_passed") {
-                  stateLabel = "Completed";
-                  stateTone = "passed";
-                } else if (row.state === "completed_failed") {
-                  stateLabel = "Retry";
-                  stateTone = "failed";
-                } else if (row.state === "unavailable_not_published") {
-                  stateLabel = "Coming soon";
-                  stateTone = "soon";
-                } else if (row.state === "locked_requires_payment" || !row.can_start) {
-                  stateLabel = "Locked";
-                  stateTone = "locked";
-                }
-
-                const scoreCopy = attemptCount > 0 && row.last_score !== null && row.last_score !== undefined
-                  ? `Last score ${row.last_score}%`
-                  : null;
-
-                return (
-                  <article
-                    className={`module-preview-row practice-set-row ${guidance.isRecommended ? "is-recommended" : ""} ${guidance.isSkipAhead ? "is-skip-ahead" : ""}`}
-                    key={`${subject.slug}-${row.batch_number ?? 1}`}
-                  >
-                    <div className="module-preview-copy">
-                      <div className="module-preview-top">
-                        <strong>{`Practice set ${row.batch_number ?? 1}`}</strong>
-                        {stateLabel && <span className={`batch-status-badge is-${stateTone}`}>{stateLabel}</span>}
-                      </div>
-                      {scoreCopy && <p className="module-preview-meta">{scoreCopy}</p>}
-                      {supportCopy && (
-                        <p className={`module-preview-note ${guidance.note ? "is-guidance" : ""}`}>{supportCopy}</p>
-                      )}
-                    </div>
-
-                    <div className="module-preview-actions">
-                      <DashboardActionButton action={primaryAction} />
-                      <DashboardActionButton action={secondaryAction} className="ghost-button dashboard-soft-button" />
-                    </div>
-                  </article>
-                );
-              })}
             </div>
-          </article>
-        </section>
+          </header>
+
+          {ctaError && <p className="action-error" role="alert">{ctaError}</p>}
+          {moduleNotice && <p className="support-copy">{moduleNotice}</p>}
+
+          {orderedRows.length > 0 && (
+            <section className="module-set-section" aria-label="Practice sets">
+              <div className="practice-set-choice-list">
+                {orderedRows.map((row) => renderPracticeSetRow(row))}
+              </div>
+            </section>
+          )}
+        </div>
       </section>
 
       <FreeBatchConfirmationModal

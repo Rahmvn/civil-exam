@@ -1215,7 +1215,7 @@ function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, workin
             <h2 id="admin-support-drawer-title">{request.subject}</h2>
             <p><span className={`admin-support-status is-${request.status}`}>{SUPPORT_STATUS_LABELS[request.status] ?? request.status}</span><span>{new Date(request.created_at).toLocaleString("en-NG")}</span></p>
           </div>
-          <button autoFocus className="admin-support-drawer-close" disabled={working} onClick={onClose} type="button" aria-label="Close request details">×</button>
+          <button autoFocus className="admin-support-drawer-close" disabled={working} onClick={onClose} type="button" aria-label="Close request details">&times;</button>
         </header>
 
         <div aria-label="Request content" className="admin-support-drawer-body" role="region" tabIndex="0">
@@ -1225,7 +1225,7 @@ function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, workin
               <button disabled={checking || acting} onClick={() => void runSystemCheck()} type="button">{checking ? "Checking..." : "Refresh"}</button>
             </header>
             {diagnosticsError ? <p className="admin-support-diagnostics-error" role="alert">{diagnosticsError}</p> : checking && !diagnostics ? (
-              <p className="admin-support-diagnostics-loading">Checking this candidate’s account and module…</p>
+              <p className="admin-support-diagnostics-loading">Checking this candidate&apos;s account and module...</p>
             ) : diagnostics && (
               <>
                 <strong className="admin-support-diagnostics-summary">{diagnostics.summary}</strong>

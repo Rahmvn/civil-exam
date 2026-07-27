@@ -11,39 +11,33 @@ function PracticeExperiencePreview() {
   return (
     <aside className="landing-experience-preview" aria-label="Practice experience preview">
       <div className="landing-experience-preview-heading">
-        <span>Practice experience</span>
-        <strong>Focused from start to review</strong>
+        <strong>A timed set, then review.</strong>
       </div>
 
       <div className="landing-experience-test">
         <div className="landing-experience-test-meta">
           <span>Question 12 of 30</span>
-          <strong>18:42 left</strong>
+          <strong>18:42</strong>
         </div>
         <div className="landing-experience-progress"><i aria-hidden="true" /></div>
         <div className="landing-experience-question">
-          <p>Which core document provides the foundational policy direction for the rollout of the current Performance Management System (PMS) across the Nigerian Federal Civil Service?</p>
+          <p>Which document guides the Performance Management System rollout?</p>
           <div className="landing-experience-options" aria-label="Example answer choices">
             <div className="is-selected">
               <i aria-hidden="true" />
               <b>A</b>
-              <span>The Federal Civil Service Strategy and Implementation Plan (FCSSIP)</span>
+              <span>Federal Civil Service Strategy and Implementation Plan</span>
               <small>Selected</small>
             </div>
             <div>
               <i aria-hidden="true" />
               <b>B</b>
-              <span>The 1999 Constitution of the Federal Republic of Nigeria</span>
+              <span>1999 Constitution of the Federal Republic of Nigeria</span>
             </div>
             <div>
               <i aria-hidden="true" />
               <b>C</b>
-              <span>The National Civil Service Reform Plan (NCSRP)</span>
-            </div>
-             <div>
-              <i aria-hidden="true" />
-              <b>D</b>
-              <span>The Public Service Treasury Circulars (PSTC).</span>
+              <span>National Civil Service Reform Plan</span>
             </div>
           </div>
         </div>
@@ -51,21 +45,43 @@ function PracticeExperiencePreview() {
 
       <div className="landing-experience-outcomes">
         <article>
-          <div className="landing-experience-result-mark" aria-hidden="true">✓</div>
+          <div className="landing-experience-result-mark" aria-hidden="true">{"\u2713"}</div>
           <div>
-            <span>Clear results</span>
-            <strong>See your score after submitting</strong>
+            <span>Score</span>
+            <strong>Know how you performed</strong>
           </div>
         </article>
         <article>
           <div className="landing-experience-review-mark" aria-hidden="true"><i /><i /></div>
           <div>
-            <span>Answer review</span>
-            <strong>Understand every answer</strong>
+            <span>Review</span>
+            <strong>See the correct answers</strong>
           </div>
         </article>
       </div>
     </aside>
+  );
+}
+
+function LandingServicePoints() {
+  return (
+    <section className="landing-service-points" aria-labelledby="landing-service-points-title">
+      <h2 id="landing-service-points-title">What you can do</h2>
+      <div>
+        <article>
+          <span>Timed practice</span>
+          <p>Complete objective question sets under exam-style timing.</p>
+        </article>
+        <article>
+          <span>Oral questions</span>
+          <p>Practise written responses to oral-style prompts.</p>
+        </article>
+        <article>
+          <span>Answer review</span>
+          <p>Review your score and check the correct answers after practice.</p>
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -110,23 +126,22 @@ export default function Landing() {
 
       <section className="landing-experience-hero">
         <div className="landing-experience-copy">
-          <h1>PromotionSure helps you prepare for public service promotion exams.</h1>
+          <h1>Practice for your public service promotion exam.</h1>
           <p className="landing-experience-summary">
-            Practise objective questions and oral responses by module, complete timed practice sets, and review your
-            scores and answers as you prepare for the 2026 examination.
+            Timed objective practice, oral questions, scores, and answer review by module.
           </p>
           <Link className="primary-action landing-experience-action" to="/auth?mode=sign-up">Start free practice</Link>
-          <p className="landing-experience-free-note"><span aria-hidden="true">✓</span> Your first practice test in one module is free. No payment required.</p>
+          <p className="landing-experience-free-note"><span aria-hidden="true">{"\u2713"}</span> First practice set is free. No payment required.</p>
           <p className="landing-google-purpose">
-            If you choose Google sign-in, PromotionSure uses your Google account name and email only to create or
-            access your PromotionSure account. <Link to="/privacy">Read the Privacy Policy</Link>.
+            If you choose Google sign-in, we use your name and email only for your PromotionSure account.
+            <Link to="/privacy"> Privacy Policy</Link>.
           </p>
         </div>
 
         <PracticeExperiencePreview />
 
-        <div className="landing-experience-modules" aria-label="Current modules">
-          <strong>Current modules</strong>
+        <div className="landing-experience-modules" aria-label="Available modules">
+          <strong>Modules available</strong>
           {modules === null ? (
             <p className="landing-module-state" role="status">Loading current modules...</p>
           ) : moduleLoadFailed ? (
@@ -145,6 +160,8 @@ export default function Landing() {
             </div>
           )}
         </div>
+
+        <LandingServicePoints />
       </section>
       <PublicFooter />
     </main>

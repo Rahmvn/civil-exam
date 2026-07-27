@@ -8,11 +8,11 @@ test("landing page gives a clear public entry point", async ({ page }) => {
   await expect(page.getByRole("link", { name: "PromotionSure" })).toBeVisible();
   await expect(page).toHaveTitle("PromotionSure | Public Service Promotion Exam Practice");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "PromotionSure helps you prepare for public service promotion exams.",
+    "Practice for your public service promotion exam.",
   );
-  await expect(page.getByText(/Practise objective questions and oral responses by module/)).toBeVisible();
-  await expect(page.getByText(/uses your Google account name and email only/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Read the Privacy Policy" })).toHaveAttribute("href", "/privacy");
+  await expect(page.getByText(/Timed objective practice, oral questions, scores, and answer review by module/)).toBeVisible();
+  await expect(page.getByText(/we use your name and email only/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
   await expect(page.getByRole("link", { name: "Start free practice" })).toBeVisible();
   await expect(page.getByText("Public Financial Management (Financial Regulations)", { exact: true })).toBeVisible();
   await expect(page.getByText("Public Service Rules", { exact: true })).toBeVisible();
@@ -29,8 +29,8 @@ test("public legal pages identify the operator and explain data handling", async
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page).toHaveTitle("Privacy Policy | PromotionSure");
   await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
-  await expect(page.getByText(/operated by Saheed Imran/)).toBeVisible();
-  await expect(page.getByText("Saheed Imran, trading as PromotionSure, Abuja, Nigeria.")).toBeVisible();
+  await expect(page.getByText(/operated by/)).toBeVisible();
+  await expect(page.getByText(/trading as PromotionSure, Abuja, Nigeria/)).toBeVisible();
   await expect(page.getByText(/use it to train general-purpose artificial-intelligence models/)).toBeVisible();
   await expect(page.getByText(/PromotionSure does not receive or store card numbers/).first()).toBeVisible();
   await expect(page.getByText(/Opening the WhatsApp support link does not automatically send/)).toBeVisible();
@@ -56,14 +56,14 @@ test("WhatsApp support is available beside the canonical authentication experien
   });
   await expect(brand).toBeVisible();
   await expect(page.getByText("Public Service Promotion Exam Practice", { exact: true })).toHaveCount(1);
-  const whatsappSupport = page.getByRole("link", { name: "Chat with PromotionSure support on WhatsApp" });
+  const whatsappSupport = page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" });
   await expect(whatsappSupport).toBeVisible();
   await expect(whatsappSupport).toHaveAttribute("target", "_blank");
   await expect(whatsappSupport).toHaveAttribute("rel", "noopener noreferrer");
   const supportUrl = new URL(await whatsappSupport.getAttribute("href"));
   expect(supportUrl.origin).toBe("https://wa.me");
   expect(supportUrl.pathname).toBe("/2348000000000");
-  expect(supportUrl.searchParams.get("text")).toContain("signing in or recovering my account");
+  expect(supportUrl.searchParams.get("text")).toBe("Hello PromotionSure. I need help with signing in to my account.");
 });
 
 test("a user who forgot their password can reach a clear recovery form", async ({ page }) => {

@@ -246,6 +246,12 @@ export async function saveOralResponseDraft({ attemptId, questionId, responseTex
   }));
 }
 
+export async function abandonOralAttempt(attemptId) {
+  return requireData(await supabase.rpc("abandon_oral_attempt", {
+    requested_attempt_id: attemptId,
+  }));
+}
+
 export async function advanceOralAttempt({ attemptId, questionId, responseText, reason = "manual" }) {
   return requireData(await supabase.rpc("advance_oral_attempt", {
     requested_attempt_id: attemptId,

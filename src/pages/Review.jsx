@@ -13,6 +13,13 @@ const HISTORY_FILTERS = [
   { value: "recent", label: "Recent" },
 ];
 
+const REVIEW_SWIPE_MIN_DISTANCE = 70;
+const REVIEW_SWIPE_VERTICAL_RATIO = 0.65;
+
+function isInteractiveSwipeTarget(target) {
+  return Boolean(target?.closest?.("button, a, input, textarea, select, summary, [role='button'], [role='link']"));
+}
+
 function getPercent(score, total) {
   if (!total) return 0;
   return Math.round((Number(score) / Number(total)) * 100);
@@ -399,7 +406,7 @@ function buildQueueReviewPreview(queue, orderedAttempts, attemptReviewMap, limit
       attemptId: attempt.attemptId,
       firstQuestionId: firstItem.question_id,
       items: previewItems,
-      questionIds: previewItems.map((item) => String(item.question_id)),
+      questionIds: matchingItems.map((item) => String(item.question_id)),
     };
   }
 
@@ -449,10 +456,7 @@ function ReviewTrend({ values }) {
   const passMarkY = getPassMarkY(70, minValue, maxValue);
 
   return (
-    <div className="review-trend-card">
-      <div className="review-trend-head">
-        <span>Performance</span>
-      </div>
+    <div className="review-trend-card" aria-label="Performance trend">
       <svg
         aria-hidden="true"
         className="review-trend-chart"
@@ -507,7 +511,6 @@ function ReviewHistoryView({
   const failedCount = attempts.filter((item) => !item.passed).length;
   const filteredAttempts = filterAttemptSummaries(attempts, historyFilter);
   const trendValues = attempts.map((item) => item.scorePercent).filter((value) => Number.isFinite(value));
-  const reviewQueueCount = queue.length;
   const passRate = attempts.length > 0 ? Math.round((passedCount / attempts.length) * 100) : 0;
   const performanceGuidance = getPerformanceGuidance({
     averageScore,
@@ -517,6 +520,7 @@ function ReviewHistoryView({
   });
   const queuePreview = buildQueueReviewPreview(queue, attempts, attemptReviewMap, 3);
   const previewQueue = queuePreview?.items ?? queue.slice(0, 3);
+  const actionableQueueCount = queuePreview?.questionIds.length ?? queue.length;
   const topQueueSubject = previewQueue.length > 0
     ? getModuleShortLabel(
       [...previewQueue]
@@ -532,7 +536,8 @@ function ReviewHistoryView({
       {historyNotice && <p className="inline-notice" role="status">{historyNotice}</p>}
       <section className="dashboard-panel-card review-history-overview">
         <div className="review-history-overview-intro">
-          <p>Based on your last 12 attempts</p>
+          <h2>Performance summary</h2>
+          <p>{`Based on your recent ${attempts.length === 1 ? "attempt" : "attempts"}`}</p>
         </div>
         <div className="review-history-hero-row">
           <article>
@@ -542,6 +547,10 @@ function ReviewHistoryView({
           <article>
             <span>Pass rate</span>
             <strong>{`${passRate}%`}</strong>
+          </article>
+          <article>
+            <span>Questions to revisit</span>
+            <strong>{actionableQueueCount}</strong>
           </article>
         </div>
 
@@ -562,24 +571,9 @@ function ReviewHistoryView({
           <p className="review-trend-guidance">{performanceGuidance}</p>
         </div>
 
-        <div className="review-history-support-grid">
-          <article>
-            <span>Recent attempts</span>
-            <strong>{attempts.length}</strong>
-          </article>
-          <article>
-            <span>Passed</span>
-            <strong>{passedCount}</strong>
-          </article>
-          <article>
-            <span>Below pass mark</span>
-            <strong>{failedCount}</strong>
-          </article>
-          <article>
-            <span>Questions to revisit</span>
-            <strong>{reviewQueueCount}</strong>
-          </article>
-        </div>
+        <p className="review-history-summary-line">
+          {`${attempts.length} recent ${attempts.length === 1 ? "attempt" : "attempts"} · ${passedCount} passed · ${failedCount} below pass mark`}
+        </p>
       </section>
 
       <section className="dashboard-section-block">
@@ -673,8 +667,8 @@ function ReviewHistoryView({
                   <strong>Questions worth another look</strong>
                   <p>
                     {topQueueSubject
-                      ? `Most repeats are coming from ${topQueueSubject}.`
-                      : "Use these to sharpen weak areas."}
+                      ? `Previewing ${previewQueue.length} of ${actionableQueueCount}. Most repeats are coming from ${topQueueSubject}.`
+                      : `Previewing ${previewQueue.length} of ${actionableQueueCount}. Use these to sharpen weak areas.`}
                   </p>
                 </div>
                 <Link className="dashboard-module-toggle" to={reviewQueueLink}>
@@ -715,13 +709,13 @@ function ReviewDetailView({
   });
   const [questionNavigatorOpen, setQuestionNavigatorOpen] = useState(false);
   const readerRef = useRef(null);
+  const swipeStartRef = useRef(null);
   const questionListButtonRef = useRef(null);
   const navigatorRef = useRef(null);
   const navigatorCloseRef = useRef(null);
 
   const safeIndex = Math.min(currentIndex, Math.max(rows.length - 1, 0));
   const row = rows[safeIndex] ?? null;
-  const progressPercent = rows.length > 0 ? ((safeIndex + 1) / rows.length) * 100 : 0;
 
   useEffect(() => {
     if (!questionNavigatorOpen) return undefined;
@@ -765,6 +759,45 @@ function ReviewDetailView({
     });
   }
 
+  function handleReviewPointerDown(event) {
+    if (questionNavigatorOpen || event.pointerType === "mouse" || isInteractiveSwipeTarget(event.target)) {
+      swipeStartRef.current = null;
+      return;
+    }
+
+    swipeStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }
+
+  function handleReviewPointerUp(event) {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+
+    if (!start || start.pointerId !== event.pointerId || questionNavigatorOpen) return;
+    if (isInteractiveSwipeTarget(event.target)) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (absX < REVIEW_SWIPE_MIN_DISTANCE) return;
+    if (absY > absX * REVIEW_SWIPE_VERTICAL_RATIO) return;
+
+    if (deltaX < 0 && safeIndex < rows.length - 1) {
+      goToQuestion(safeIndex + 1);
+    } else if (deltaX > 0 && safeIndex > 0) {
+      goToQuestion(safeIndex - 1);
+    }
+  }
+
+  function handleReviewPointerCancel() {
+    swipeStartRef.current = null;
+  }
+
   if (error) {
     return (
       <section className="dashboard-panel-card review-detail-empty">
@@ -799,18 +832,40 @@ function ReviewDetailView({
   const correctLabel = getDisplayedOptionLabel(row, row.correct_option);
   const state = getQuestionState(row);
   const stateLabel = state === "correct" ? "Correct" : state === "unanswered" ? "Unanswered" : "Wrong";
+  const reviewTitle = row?.subject_name
+    ? getModuleDisplayName(row.subject_name)
+    : queueScoped
+      ? "Revisit questions"
+      : "Answer review";
 
   return (
     <section className="answer-review-reader" ref={readerRef}>
       <header className="answer-review-header">
-        <button className="answer-review-back" onClick={onBack} type="button" aria-label="Go back">
-          <span aria-hidden="true">‹</span>
+        <button className="answer-review-back" onClick={onBack} type="button">
+          Back
         </button>
-        <h1>{queueScoped ? "Revisit questions" : "Answer review"}</h1>
-        <strong>{`${safeIndex + 1} of ${rows.length}`}</strong>
+        <div className="answer-review-title-block">
+          <h1>{reviewTitle}</h1>
+          <button
+            aria-haspopup="dialog"
+            aria-expanded={questionNavigatorOpen ? "true" : "false"}
+            className="answer-review-question-picker"
+            onClick={() => setQuestionNavigatorOpen(true)}
+            ref={questionListButtonRef}
+            type="button"
+          >
+            {`Question ${safeIndex + 1} of ${rows.length}`}
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
       </header>
 
-      <article className={`dashboard-panel-card answer-review-card is-${state}`}>
+      <article
+        className={`dashboard-panel-card answer-review-card is-${state}`}
+        onPointerCancel={handleReviewPointerCancel}
+        onPointerDown={handleReviewPointerDown}
+        onPointerUp={handleReviewPointerUp}
+      >
         <div className="answer-review-question-meta">
           <span>{`Question ${safeIndex + 1}`}</span>
           <strong className={`review-answer-state is-${state}`}>{stateLabel}</strong>
@@ -853,26 +908,6 @@ function ReviewDetailView({
         >
           Previous
         </button>
-        <div className="answer-review-progress">
-          <div
-            aria-label={`Question ${safeIndex + 1} of ${rows.length}`}
-            aria-valuemax={rows.length}
-            aria-valuemin="1"
-            aria-valuenow={safeIndex + 1}
-            className="answer-review-progress-track"
-            role="progressbar"
-          >
-            <span style={{ width: `${progressPercent}%` }} />
-          </div>
-          <button
-            className="answer-review-question-list-button"
-            onClick={() => setQuestionNavigatorOpen(true)}
-            ref={questionListButtonRef}
-            type="button"
-          >
-            View all questions
-          </button>
-        </div>
         <button
           className="answer-review-nav-button is-next"
           disabled={safeIndex === rows.length - 1}
@@ -899,8 +934,7 @@ function ReviewDetailView({
           >
             <header>
               <div>
-                <h2 id="answer-review-navigator-title">Choose a question</h2>
-                <p>Review any answer without losing your place.</p>
+                <h2 id="answer-review-navigator-title">Questions</h2>
               </div>
               <button
                 aria-label="Close question list"
@@ -909,7 +943,7 @@ function ReviewDetailView({
                 ref={navigatorCloseRef}
                 type="button"
               >
-                ×
+                &times;
               </button>
             </header>
             <div className="answer-review-question-grid">
@@ -931,7 +965,7 @@ function ReviewDetailView({
                     type="button"
                   >
                     <span>{index + 1}</span>
-                    <small>{itemState === "correct" ? "✓" : itemState === "unanswered" ? "—" : "×"}</small>
+                    <small aria-hidden="true" />
                   </button>
                 );
               })}
@@ -1148,14 +1182,14 @@ export default function Review() {
 
   if (loading) {
     return (
-      <AppFrame showBottomNav={!attemptId} showFooter={!attemptId} showHeader={!attemptId}>
+      <AppFrame showBottomNav={!attemptId} showHeader={!attemptId}>
         <LoadingState />
       </AppFrame>
     );
   }
 
   return (
-    <AppFrame showBottomNav={!attemptId} showFooter={!attemptId} showHeader={!attemptId}>
+    <AppFrame showBottomNav={!attemptId} showHeader={!attemptId}>
       <section className="review-page review-page-v2">
         {attemptId ? (
           <ReviewDetailView

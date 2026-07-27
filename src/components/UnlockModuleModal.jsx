@@ -40,27 +40,31 @@ export function UnlockModuleModal({
       >
         <header className="access-unlock-header">
           <div>
-            <h2 id="unlock-module-title">Module access</h2>
+            <h2 id="unlock-module-title">Unlock module</h2>
             <p>{getModuleDisplayName(module.subject_name ?? module.name)}</p>
           </div>
-          <button className="access-unlock-close" aria-label="Close unlock module" onClick={onClose} type="button">×</button>
+          <button className="access-unlock-close" aria-label="Close unlock module" onClick={onClose} type="button">&times;</button>
         </header>
 
         <div className="access-unlock-price">
-          <span>Amount to pay</span>
+          <span>Price</span>
           <strong>{formatMoney(module.price_kobo, module.currency)}</strong>
         </div>
 
-        <p className="access-unlock-copy">You will be redirected to Paystack to complete this payment.</p>
+        <p className="access-unlock-copy">Pay securely with Paystack. Your module unlocks automatically after payment is confirmed.</p>
 
         <div className="access-unlock-actions">
+          <button className="ghost-button" disabled={paying} onClick={onClose} type="button">
+            Cancel
+          </button>
           <button
             aria-busy={paying}
+            className="primary-action"
             disabled={paying}
             onClick={() => void onStartPayment(module.subject_slug ?? module.slug)}
             type="button"
           >
-            {paying ? "Connecting..." : "Continue"}
+            {paying ? "Connecting..." : "Continue to payment"}
           </button>
         </div>
         {error && <p className="access-module-error" role="alert">{error}</p>}

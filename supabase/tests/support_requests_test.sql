@@ -179,9 +179,9 @@ select is(
   'the resolved status is visible to the requester and administrator'
 );
 select is(
-  (public.get_admin_support_queue('open', null, 25, 0) ->> 'total')::integer,
+  (public.get_admin_support_queue('open', 'Practice timer did not start', 25, 0) ->> 'total')::integer,
   1,
-  'resolved requests leave the default open queue while other open requests remain'
+  'resolved requests leave the open queue while other matching open requests remain'
 );
 select is(
   (select count(*)::integer

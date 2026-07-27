@@ -44,16 +44,14 @@ export default function PublicSupport() {
 
         <div className="public-support-menu">
           <section className="public-support-option">
-            <span className="public-support-option-icon" aria-hidden="true">?</span>
             <div>
               <h2>Signed-in support</h2>
               <p>Send a request and track its resolution from your account.</p>
             </div>
-            <Link className="public-support-action" to="/help">Open help centre <span aria-hidden="true">→</span></Link>
+            <Link className="public-support-action" to="/help">Open help centre <span aria-hidden="true">?</span></Link>
           </section>
 
           <section className="public-support-option">
-            <span className="public-support-option-icon" aria-hidden="true">@</span>
             <div>
               <h2>Cannot sign in?</h2>
               <p className="public-support-email">{SUPPORT_EMAIL}</p>
@@ -65,7 +63,6 @@ export default function PublicSupport() {
         </div>
 
         <aside className="public-support-payment-note">
-          <span aria-hidden="true">i</span>
           <div>
             <strong>Payment or access problem?</strong>
             <p>Include only the PromotionSure payment reference shown on your receipt. Never send card or bank-account credentials.</p>

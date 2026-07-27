@@ -17,19 +17,17 @@ export function resolveWhatsAppSupportConfig(env) {
 export function isWhatsAppSupportRoute(pathname) {
   return pathname === "/auth"
     || pathname === "/support"
-    || pathname === "/dashboard"
+    || pathname === "/reset-password"
     || pathname === "/access"
-    || pathname === "/profile"
-    || pathname === "/payment/verify"
-    || pathname.startsWith("/modules/");
+    || pathname === "/payment/verify";
 }
 
 export function getWhatsAppSupportTopic(pathname) {
-  if (pathname === "/access" || pathname === "/payment/verify") return "a payment or module access";
-  if (pathname === "/auth") return "signing in or recovering my account";
-  if (pathname === "/profile") return "my account details";
-  if (pathname.startsWith("/modules/")) return "a module";
-  return "the dashboard";
+  if (pathname === "/payment/verify") return "a payment";
+  if (pathname === "/access") return "my module access";
+  if (pathname === "/auth" || pathname === "/reset-password") return "signing in to my account";
+  if (pathname === "/help") return "an issue on my account";
+  return "using PromotionSure";
 }
 
 export function buildWhatsAppSupportUrl({ number, pathname, paymentReference = "" }) {
@@ -37,9 +35,9 @@ export function buildWhatsAppSupportUrl({ number, pathname, paymentReference = "
 
   const safeReference = String(paymentReference ?? "").trim().slice(0, 120);
   const referenceCopy = pathname === "/payment/verify" && safeReference
-    ? ` PromotionSure payment reference: ${safeReference}.`
+    ? ` Reference: ${safeReference}.`
     : "";
-  const message = `Hello PromotionSure Support. I need help with ${getWhatsAppSupportTopic(pathname)}.${referenceCopy} Please do not ask me for my password, OTP, or card details.`;
+  const message = `Hello PromotionSure. I need help with ${getWhatsAppSupportTopic(pathname)}.${referenceCopy}`;
 
   return `https://wa.me/${normalizeWhatsAppNumber(number)}?text=${encodeURIComponent(message)}`;
 }

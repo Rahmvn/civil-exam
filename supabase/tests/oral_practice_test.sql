@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(40);
+select plan(50);
 
 update public.exam_packs set is_active = false;
 
@@ -234,6 +234,15 @@ select ok(
 select ok(
   not has_function_privilege(
     'anon',
+    'public.abandon_oral_attempt(uuid)',
+    'EXECUTE'
+  ),
+  'anonymous clients cannot abandon oral practice'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
     'public.get_oral_attempt_review(uuid)',
     'EXECUTE'
   ),
@@ -284,6 +293,105 @@ select is(
   'Choose this module for your free oral practice.',
   'oral catalogue explains the free choice path'
 );
+
+create temporary table oral_abandon_fixture (
+  attempt_id uuid not null
+);
+grant all on oral_abandon_fixture to authenticated;
+
+insert into oral_abandon_fixture (attempt_id)
+select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 180)->>'attempt_id')::uuid;
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select throws_ok(
+  $$ select public.abandon_oral_attempt((select attempt_id from oral_abandon_fixture)) $$,
+  'P0001',
+  'Oral practice attempt was not found',
+  'a candidate cannot abandon another candidate oral attempt'
+);
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select is(
+  (
+    select public.abandon_oral_attempt(attempt_id)->>'status'
+    from oral_abandon_fixture
+  ),
+  'abandoned',
+  'deliberate oral exit abandons the active attempt'
+);
+
+select is(
+  public.get_active_oral_attempt('oral-questions-test', 1),
+  null::jsonb,
+  'abandoned oral attempt is no longer resumable'
+);
+
+select is(
+  (
+    select state
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  'available',
+  'abandoned oral attempt does not mark the practice set as passed'
+);
+
+select is(
+  (
+    select passed
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  false,
+  'abandoned oral attempt does not set the passed flag'
+);
+
+select is(
+  (
+    select attempt_count
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  0,
+  'abandoned oral attempt does not count as candidate progress'
+);
+
+select is(
+  (
+    select latest_completed_attempt_id
+    from public.get_oral_practice_set_access('oral-questions-test')
+    where batch_number = 1
+  ),
+  null::uuid,
+  'abandoned oral attempt does not provide a completed review'
+);
+
+select isnt(
+  (
+    select (public.start_or_resume_oral_attempt_v2('oral-questions-test', 1, 180)->>'attempt_id')::uuid
+  ),
+  (select attempt_id from oral_abandon_fixture),
+  'candidate can start a fresh oral attempt after deliberate exit'
+);
+
+do $$
+declare
+  v_attempt_id uuid;
+begin
+  select (public.get_active_oral_attempt('oral-questions-test', 1)->>'attempt_id')::uuid into v_attempt_id;
+  if v_attempt_id is not null then
+    perform public.abandon_oral_attempt(v_attempt_id);
+  end if;
+end;
+$$;
 
 select set_config('request.jwt.claim.sub', 'b4000000-0000-4000-8000-000000000001', true);
 
@@ -385,6 +493,19 @@ select lives_ok(
     )
   $$,
   'the current response can be autosaved before its deadline'
+);
+
+select throws_ok(
+  $$
+    select public.save_oral_response_draft(
+      (select attempt_id from oral_attempt_fixture),
+      (select first_question_id from oral_attempt_fixture),
+      repeat('x', 5001)
+    )
+  $$,
+  'P0001',
+  'Your answer is too long',
+  'oral answer drafts reject oversized text before storage'
 );
 
 select is(

@@ -7,8 +7,8 @@ test("privacy and terms are public, responsive, and accessible", async ({ page }
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page).toHaveTitle("Privacy Policy | PromotionSure");
   await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
-  await expect(page.getByText(/operated by Saheed Imran/)).toBeVisible();
-  await expect(page.getByText("Saheed Imran, trading as PromotionSure, Abuja, Nigeria.")).toBeVisible();
+  await expect(page.getByText(/operated by Muraina Rasheedah/)).toBeVisible();
+  await expect(page.getByText("Muraina Rasheedah, trading as PromotionSure, Abuja, Nigeria.")).toBeVisible();
   await expect(page.getByText(/use it to train general-purpose artificial-intelligence models/)).toBeVisible();
   await expect(page.getByText(/PromotionSure does not receive or store card numbers/).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "promotionsureapp@gmail.com" }).first()).toHaveAttribute(
