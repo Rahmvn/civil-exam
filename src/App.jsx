@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-rou
 import "./App.css";
 import { AuthProvider } from "./lib/AuthContext";
 import { NetworkStatus } from "./components/NetworkStatus";
+import { DocumentMetadata } from "./components/DocumentMetadata";
 import { RequireAdmin, RequireCandidate } from "./lib/AuthGuards";
 import Access from "./pages/Access";
 import Admin from "./pages/Admin";
@@ -29,6 +30,7 @@ import PublicSupport from "./pages/PublicSupport";
 function AppProviders() {
   return (
     <AuthProvider>
+      <DocumentMetadata />
       <NetworkStatus />
       <Outlet />
     </AuthProvider>

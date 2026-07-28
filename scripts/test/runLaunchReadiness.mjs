@@ -9,6 +9,7 @@ const full = process.argv.includes("--full");
 const baseStages = [
   ["Lint", ["run", "lint"]],
   ["Production build", ["run", "build"]],
+  ["SEO discovery outputs", ["run", "test:seo"]],
   ["Tracked-secret scan", ["run", "test:secrets"]],
   ["Production configuration contract", ["run", "test:config"]],
   ["Unit tests", ["run", "test:unit"]],

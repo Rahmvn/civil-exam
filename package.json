@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generateSeoPages.mjs",
     "lint": "eslint .",
     "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:unit:coverage": "node scripts/test/runUnitCoverage.mjs",
@@ -17,6 +17,7 @@
     "test:edge:compat": "node scripts/test/runPreMigrationPaymentSecurity.mjs",
     "test:secrets": "node scripts/test/checkTrackedSecrets.mjs",
     "test:config": "node scripts/test/checkProductionConfig.mjs",
+    "test:seo": "node scripts/test/checkSeoBuild.mjs",
     "test:operator-access": "node scripts/test/checkOperatorAccess.mjs",
     "test:e2e": "node scripts/test/runPlaywright.mjs",
     "test:e2e:auth-mock": "playwright test --config=playwright.auth-mock.config.js",
