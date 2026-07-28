@@ -1473,6 +1473,14 @@ pre,
 }
 
 @media (hover: none) and (pointer: coarse) {
+  .public-landing-v3,
+  .landing-start-page,
+  .landing-experience-page {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
   button,
   [role="button"],
   summary,

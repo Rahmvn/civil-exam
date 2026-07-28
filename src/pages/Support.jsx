@@ -325,7 +325,7 @@ export default function Support() {
                   <h2>{isSuggestion ? "Share a suggestion" : "Send a request"}</h2>
                   <p>{isSuggestion
                     ? "Use this for ideas, confusing wording, or improvements you would like us to consider."
-                    : "Use this when an answer does not solve the issue. Please avoid passwords, OTPs, PINs, and card details."}</p>
+                    : "Use this when an answer does not solve the issue."}</p>
                 </div>
               </header>
 
