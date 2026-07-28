@@ -157,7 +157,7 @@ export default function Result() {
         <section className="result-page">
           <article className="dashboard-panel-card result-unavailable">
             <h1>Result unavailable</h1>
-            <p>{error || "This result could not be found."}</p>
+            <p role="alert">{error || "This result could not be found."}</p>
             <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
           </article>
         </section>

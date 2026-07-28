@@ -35,12 +35,9 @@ const NO_ROW_MARKERS = [
 ];
 
 const SCHEMA_MARKERS = [
-  "column ",
-  "does not exist",
-  "relation ",
-  "schema",
-  "foreign key",
   "undefined column",
+  "schema cache",
+  "could not find the",
 ];
 
 const NETWORK_MARKERS = [
@@ -72,14 +69,13 @@ const PAYMENT_MARKERS = [
   "paystack",
   "payment",
   "authorization_url",
-  "reference",
 ];
 
 const QUESTION_CONTENT_MARKERS = [
-  "practice questions",
-  "batch",
-  "question",
-  "subject",
+  "questions for this module are not available",
+  "no active exam pack",
+  "batch is not available",
+  "batch is no longer available",
 ];
 
 let appErrorReporter = null;
@@ -172,6 +168,7 @@ export const PROBLEM_CODES = Object.freeze({
   PAYMENT_UNCONFIRMED: "payment_unconfirmed",
   CONTENT_UNAVAILABLE: "content_unavailable",
   CLIENT_VERSION: "client_version_mismatch",
+  SERVICE_CONFIGURATION: "service_configuration_error",
   VALIDATION: "validation_failed",
   SERVER: "server_unavailable",
   UNKNOWN: "unknown_problem",
@@ -184,13 +181,17 @@ export function resolveAppProblem(error, options = {}) {
   const fallback = options.fallback ?? "Something went wrong. Please try again.";
   const isOffline = typeof navigator !== "undefined" && navigator.onLine === false;
 
-  const problem = (code, title, userMessage, action, retryable = false) => ({
+  const problem = (code, title, userMessage, action, retryable = false, presentation = {}) => ({
     code,
     title,
     message: userMessage,
     action,
     retryable,
     status,
+    severity: presentation.severity ?? "error",
+    placement: presentation.placement ?? "action",
+    announcement: presentation.announcement ?? "assertive",
+    preserveInput: presentation.preserveInput ?? true,
   });
 
   if (isExpectedAbortError(error)) {
@@ -234,6 +235,21 @@ export function resolveAppProblem(error, options = {}) {
       "Check your internet connection, then try again.",
       "retry",
       true,
+    );
+  }
+
+  if (
+    error?.code === "42P17"
+    || message.includes("infinite recursion detected in policy")
+    || message.includes("policy recursion")
+  ) {
+    return problem(
+      PROBLEM_CODES.SERVICE_CONFIGURATION,
+      "This could not be completed",
+      "Your information is still here. Try again later, or contact support if it continues.",
+      "retry-later",
+      false,
+      { placement: "form" },
     );
   }
 
@@ -296,7 +312,11 @@ export function resolveAppProblem(error, options = {}) {
     );
   }
 
-  if (includesAny(message, SCHEMA_MARKERS)) {
+  if (
+    includesAny(message, SCHEMA_MARKERS)
+    || ["42703", "42P01", "PGRST204"].includes(String(error?.code ?? "").toUpperCase())
+    || /\b(column|relation)\b.+\bdoes not exist\b/.test(message)
+  ) {
     return problem(
       PROBLEM_CODES.CLIENT_VERSION,
       "This page needs to be refreshed",

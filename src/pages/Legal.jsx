@@ -62,7 +62,7 @@ export function PrivacyPolicy() {
           <li><strong>Optional profile information:</strong> your phone number, state, organisation, and public service level when you choose to provide them.</li>
           <li><strong>Practice activity:</strong> selected modules, answers, oral-response drafts, scores, attempts, progress, timing, reviews, and free-module choices.</li>
           <li><strong>Payment and access records:</strong> module, amount, currency, payment reference, payment status, payment channel, access status, and access expiry. PromotionSure does not receive or store card numbers, card expiry dates, PINs, or security codes. Payment information entered during checkout is handled by the payment provider.</li>
-          <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to our support desk. If you choose WhatsApp support, WhatsApp may also provide PromotionSure with the phone number, profile details, and message information you choose to share through that service.</li>
+          <li><strong>Support information:</strong> the issue details, payment reference, page path, and messages you submit to support. If you choose WhatsApp support, WhatsApp may also provide PromotionSure with the phone number, profile details, and message information you choose to share through that service.</li>
           <li><strong>Technical information:</strong> PromotionSure's hosting, authentication, security and payment providers may process limited technical information such as IP address, browser, device, response status, page path and security logs where necessary to operate, secure and troubleshoot the service.</li>
         </ul>
       </section>

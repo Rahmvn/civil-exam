@@ -1379,6 +1379,119 @@ button {
   cursor: pointer;
 }
 
+button,
+[role="button"],
+summary,
+.nav-chip,
+.ghost-button,
+.primary-action,
+.secondary-action,
+.app-nav-link,
+.authenticated-nav-link,
+.mobile-menu-button,
+.mobile-signout-button,
+.landing-nav-signin,
+.auth-mode-option,
+.auth-google-button,
+.auth-password-toggle,
+.auth-forgot-link,
+.auth-step-back,
+.auth-email-submit,
+.account-info-hint,
+.account-edit-open,
+.account-edit-cancel,
+.account-action-link,
+.dashboard-module-toggle,
+.practice-hub-row-action,
+.practice-hub-card-secondary,
+.practice-utility-button,
+.practice-nav-button,
+.practice-flag-button,
+.practice-map-button,
+.practice-map-close,
+.practice-exit-button,
+.option-card,
+.oral-rating-button,
+.oral-session-exit-button,
+.answer-review-back,
+.answer-review-question-picker,
+.answer-review-nav-button,
+.answer-review-navigator-close,
+.answer-review-navigator-grid button,
+.support-topic-button,
+.support-faq-toggle,
+.support-faq-more,
+.support-faq-request,
+.access-module-action button,
+.access-receipt-button,
+.access-receipt-close,
+.access-receipt-copy,
+.access-unlock-close,
+.module-unlock-action,
+.module-free-action,
+.free-batch-confirmation-close,
+.free-batch-confirmation-actions button,
+.whatsapp-support-button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+code,
+pre,
+.legal-page-shell,
+.public-landing-v3 .landing-v3-hero-copy,
+.landing-v3-faq-list,
+.access-receipt-modal,
+.access-receipt-details,
+.access-receipt-reference,
+.payment-verification-reference,
+.support-page,
+.public-support-page,
+.support-request-copy,
+.support-request-panel,
+.review-page,
+.review-card,
+.review-reference,
+.review-detail-copy,
+.answer-review-card,
+.answer-review-question,
+.answer-review-answer-box,
+.practice-question-copy,
+.practice-option-card > span:last-child,
+.oral-start-copy,
+.oral-question-card,
+.oral-answer-field,
+.field-error,
+.action-error,
+.auth-form-message {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  summary,
+  .nav-chip,
+  .app-nav-link,
+  .authenticated-nav-link,
+  .mobile-menu-button,
+  .landing-nav-signin,
+  .account-action-link,
+  .practice-option-card,
+  .practice-map-button,
+  .answer-review-navigator-grid button,
+  .support-topic-button,
+  .support-faq-toggle,
+  .access-receipt-button,
+  .whatsapp-support-button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 .primary-action,
 button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
@@ -6749,6 +6862,36 @@ button.auth-mode-option.is-active::after {
   color: var(--color-text-soft);
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.auth-verification-help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.auth-verification-help button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  box-shadow: none;
+}
+
+.field-error {
+  display: block;
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.4;
 }
 
 .auth-form-message {
@@ -14725,6 +14868,68 @@ button.module-chooser-link {
   gap: 5px;
 }
 
+.account-heading-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-info-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.account-info-hint button {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface));
+  color: var(--color-primary-dark);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.account-info-hint button:hover,
+.account-info-hint button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
+  background: var(--color-surface);
+}
+
+.account-info-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 6;
+  width: min(260px, calc(100vw - 38px));
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.11);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.account-info-hint:hover .account-info-popover,
+.account-info-hint:focus-within .account-info-popover,
+.account-info-popover[data-open="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .account-card-heading h2,
 .account-action-card h2,
 .account-support-card h2 {
@@ -21678,3 +21883,4 @@ button.practice-map-close:focus-visible {
     font-size: 0.74rem;
   }
 }
+

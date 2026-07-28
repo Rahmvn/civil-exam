@@ -446,7 +446,7 @@ export default function Access() {
         <section className="access-page access-page-v2">
           <article className="state-card">
             <h1>Access details unavailable</h1>
-            <p>{loadError}</p>
+            <p role="alert">{loadError}</p>
             <div className="hero-actions">
               <button onClick={() => window.location.reload()} type="button">Try again</button>
               <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>

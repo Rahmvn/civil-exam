@@ -79,7 +79,15 @@ test("Auth errors are classified before generic application errors", () => {
   assert.equal(classifyAuthError({ code: "over_email_send_rate_limit", status: 429 }), AUTH_PROBLEM_CODES.RATE_LIMITED);
   const problem = createSanitizedAuthProblem({ code: "otp_expired", message: "raw token detail" }, { purpose: "signup", route: "/auth" });
   assert.equal(problem.code, AUTH_PROBLEM_CODES.EXPIRED_OTP);
+  assert.equal(problem.field, "otp");
+  assert.equal(problem.action, "resend");
   assert.equal(JSON.stringify(problem).includes("raw token detail"), false);
+
+  const credentials = createSanitizedAuthProblem({ code: "invalid_credentials", message: "private provider detail" });
+  assert.equal(credentials.field, "form");
+  assert.equal(credentials.action, "reset-password");
+  assert.match(credentials.message, /reset your password/i);
+  assert.equal(JSON.stringify(credentials).includes("private provider detail"), false);
 });
 
 test("callback categories and cleanup never preserve callback values", () => {

@@ -45,6 +45,15 @@ test("friendly errors redact infrastructure details into actionable messages", (
     "We could not confirm your payment yet. Please try again.",
   );
   assert.equal(friendlyErrorMessage(new Error("unexpected internal detail"), "Safe fallback"), "Safe fallback");
+
+  const policyRecursion = resolveAppProblem({
+    code: "42P17",
+    message: 'infinite recursion detected in policy for relation "profiles"',
+  });
+  assert.equal(policyRecursion.code, PROBLEM_CODES.SERVICE_CONFIGURATION);
+  assert.equal(policyRecursion.action, "retry-later");
+  assert.equal(policyRecursion.message.includes("profiles"), false);
+  assert.equal(policyRecursion.preserveInput, true);
 });
 
 test("problem classification gives recovery behavior independently from display copy", () => {

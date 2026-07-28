@@ -369,7 +369,7 @@ export default function PracticeStart() {
         {error ? (
           <article className="practice-hub-error">
             <h2>Practice is unavailable</h2>
-            <p>{error}</p>
+            <p role="alert">{error}</p>
             <div className="practice-hub-error-actions">
               <button className="primary-action" onClick={retryPracticeHub} type="button">Try again</button>
               <Link className="secondary-action" to="/dashboard#modules">View modules</Link>

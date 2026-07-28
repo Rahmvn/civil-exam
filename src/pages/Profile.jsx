@@ -5,6 +5,8 @@ import { NIGERIA_STATES, updateProfile } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { useAuth } from "../lib/useAuth";
 
+const OPTIONAL_DETAILS_HELP = "These optional details help our admin check account, module, or payment issues faster.";
+
 function getInitials(name) {
   const parts = name?.trim().split(/\s+/).filter(Boolean).slice(0, 2) ?? [];
   return parts.map((part) => part[0]?.toUpperCase()).join("") || "A";
@@ -26,6 +28,7 @@ export default function Profile() {
   const [stateCode, setStateCode] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [message, setMessage] = useState("");
+  const [showDetailsHelp, setShowDetailsHelp] = useState(false);
   const [busy, setBusy] = useState(false);
   const fullName = profile?.full_name?.trim() || "Your account";
   const hasPhoneNumber = Boolean(profile?.phone_number?.trim());
@@ -87,8 +90,39 @@ export default function Profile() {
         <div className="account-layout">
           <section className="account-details-card">
             <div className="account-card-heading">
-              <h2>Account details</h2>
-              <p>Contact and workplace information on your account.</p>
+              <div className="account-heading-line">
+                <h2>Account details</h2>
+                <span
+                  className="account-info-hint"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setShowDetailsHelp(false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setShowDetailsHelp(false);
+                      event.currentTarget.querySelector("button")?.focus();
+                    }
+                  }}
+                >
+                  <button
+                    aria-describedby="account-details-help"
+                    aria-expanded={showDetailsHelp}
+                    aria-label="Why optional account details are requested"
+                    onClick={() => setShowDetailsHelp((current) => !current)}
+                    type="button"
+                  >
+                    i
+                  </button>
+                  <span
+                    className="account-info-popover"
+                    data-open={showDetailsHelp ? "true" : "false"}
+                    id="account-details-help"
+                    role="tooltip"
+                  >
+                    {OPTIONAL_DETAILS_HELP}
+                  </span>
+                </span>
+              </div>
             </div>
 
             {addingDetails ? (
@@ -157,3 +191,4 @@ export default function Profile() {
     </AppFrame>
   );
 }
+

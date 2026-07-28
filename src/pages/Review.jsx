@@ -802,7 +802,7 @@ function ReviewDetailView({
     return (
       <section className="dashboard-panel-card review-detail-empty">
         <h1>Review unavailable</h1>
-        <p className="support-copy">{error}</p>
+        <p className="support-copy" role="alert">{error}</p>
         <Link className="secondary-action" to="/review">
           Back to Review
         </Link>

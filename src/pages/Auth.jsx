@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { AuthCaptcha } from "../components/auth/AuthCaptcha";
 import { OtpInput } from "../components/auth/OtpInput";
 import { BrandLogo } from "../components/BrandLogo";
+import { FieldError, FeedbackMessage } from "../components/FeedbackMessage";
 import { LoadingState } from "../components/LoadingState";
 import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 import {
@@ -67,6 +68,7 @@ export default function Auth() {
   const [signUpStep, setSignUpStep] = useState(1);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [busyMethod, setBusyMethod] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaProblem, setCaptchaProblem] = useState("");
@@ -102,8 +104,13 @@ export default function Auth() {
       ? createSanitizedAuthProblem(fallbackCode, { purpose, route: "/auth" })
       : problem;
     logSanitizedAuthProblem("Authentication flow", displayProblem);
-    setMessageTone("error");
-    setMessage(displayProblem.message);
+    if (displayProblem.field && displayProblem.field !== "form") {
+      setFieldErrors((current) => ({ ...current, [displayProblem.field]: displayProblem.message }));
+      setMessage("");
+    } else {
+      setMessageTone("error");
+      setMessage(displayProblem.message);
+    }
   }
 
   function resetCaptcha() {
@@ -125,7 +132,14 @@ export default function Auth() {
     setSignUpStep(1);
     setMessage("");
     setMessageTone("error");
+    setFieldErrors({});
     setCaptchaProblem("");
+  }
+
+  function leaveVerification(nextMode) {
+    if (verificationPurpose) clearPendingAuthState(window.sessionStorage, verificationPurpose);
+    setPending(null);
+    switchMode(nextMode);
   }
 
   async function continueWithGoogle() {
@@ -165,8 +179,7 @@ export default function Auth() {
     setNow(Date.now());
     switchMode("verify-recovery");
     setEmail(normalizedEmail);
-    setMessageTone("success");
-    setMessage("If an account uses this email, recovery instructions have been sent.");
+    setMessage("");
   }
 
   async function createAccount() {
@@ -209,8 +222,7 @@ export default function Auth() {
       setNow(Date.now());
       switchMode("verify-signup");
       setEmail(normalizedEmail);
-      setMessageTone("success");
-      setMessage("If this email can be registered, a six-digit verification code has been sent.");
+      setMessage("");
       return;
     }
 
@@ -219,8 +231,7 @@ export default function Auth() {
 
   async function verifyCode() {
     if (!pending || !verificationPurpose || !isCompleteOtp(otp)) {
-      setMessageTone("error");
-      setMessage("Enter the complete six-digit code.");
+      setFieldErrors((current) => ({ ...current, otp: "Enter the complete six-digit code." }));
       return;
     }
 
@@ -267,32 +278,29 @@ export default function Auth() {
     setPending(nextPending);
     setNow(Date.now());
     setMessageTone("success");
-    setMessage(
-      verificationPurpose === AUTH_PURPOSES.SIGNUP
-        ? "If this email can be registered, a new code has been sent. Only the latest code will work."
-        : "A new code was sent. Only the latest code will work.",
-    );
+    setMessage("If a code can be sent to this address, a new one is on its way.");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setMessage("");
     setMessageTone("error");
+    setFieldErrors({});
 
     if (mode === "sign-up" && signUpStep === 1) {
       if (fullName.trim().length < 2) {
-        setMessage("Enter your full name.");
+        setFieldErrors({ fullName: "Enter your full name." });
         return;
       }
       setSignUpStep(2);
       return;
     }
     if (mode === "sign-up" && password !== confirmPassword) {
-      setMessage("Passwords do not match.");
+      setFieldErrors({ confirmPassword: "Enter the same password again." });
       return;
     }
     if (mode === "sign-up" && !legalAccepted) {
-      setMessage("Accept the Terms of Service and acknowledge the Privacy Policy to create your account.");
+      setFieldErrors({ legal: "Accept the terms and acknowledge the privacy policy to continue." });
       return;
     }
 
@@ -346,9 +354,17 @@ export default function Auth() {
         ? "auth_recovery"
         : "auth_resend";
 
-  function updateField(setter, value) {
+  function updateField(setter, value, field) {
     setter(value);
     if (message) setMessage("");
+    if (field) {
+      setFieldErrors((current) => {
+        if (!current[field]) return current;
+        const next = { ...current };
+        delete next[field];
+        return next;
+      });
+    }
   }
 
   return (
@@ -366,11 +382,19 @@ export default function Auth() {
         )}
 
         <header className="auth-card-heading">
-          <h1>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? "Verify your email" : "Enter your recovery code") : isForgotPassword ? "Reset your password" : mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
-          <p>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? `Enter the latest code if one was sent to ${maskEmail(pending?.email)}.` : `Use the latest code sent to ${maskEmail(pending?.email)}.`) : isForgotPassword ? "Enter your email and we will send secure recovery instructions." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
+          <h1>{isVerification ? "Check your email" : isForgotPassword ? "Reset your password" : mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
+          <p>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? `If this is a new account, we’ll send a six-digit code to ${maskEmail(pending?.email)}.` : `If an account uses this email, we’ll send a recovery code to ${maskEmail(pending?.email)}.`) : isForgotPassword ? "Enter your email and we will send secure recovery instructions." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
         </header>
 
-        {authNotice && <p className="auth-inline-notice">{authNotice}</p>}
+        {authNotice && <p className="auth-inline-notice" role="status">{authNotice}</p>}
+        {verificationPurpose === AUTH_PURPOSES.SIGNUP && (
+          <p className="auth-verification-help">
+            No email? Check spam. Already use PromotionSure?{" "}
+            <button onClick={() => leaveVerification("sign-in")} type="button">Sign in</button>
+            {" "}or{" "}
+            <button onClick={() => leaveVerification("forgot")} type="button">reset your password</button>.
+          </p>
+        )}
 
         {GOOGLE_ENABLED && !isSignUpPasswordStep && !isForgotPassword && !isVerification && (
           <>
@@ -384,16 +408,18 @@ export default function Auth() {
 
         <form className="auth-form-v2" onSubmit={handleSubmit}>
           {isVerification ? (
-            <OtpInput disabled={isBusy} id={`${verificationPurpose}-otp`} label="Six-digit verification code" onChange={(value) => updateField(setOtp, value)} value={otp} />
+            <OtpInput disabled={isBusy} error={fieldErrors.otp} id={`${verificationPurpose}-otp`} label="Six-digit verification code" onChange={(value) => updateField(setOtp, value, "otp")} value={otp} />
           ) : isSignUpPasswordStep ? (
             <>
-              <label><span>Password</span><div className="auth-password-field"><input aria-label="Password" autoComplete="new-password" disabled={isBusy} minLength={8} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Create a password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><small>Use 8 or more characters.</small></label>
-              <label><span>Confirm password</span><input aria-label="Confirm password" autoComplete="new-password" disabled={isBusy} minLength={8} name="confirm-password" onChange={(event) => updateField(setConfirmPassword, event.target.value)} placeholder="Enter your password again" required type={showPassword ? "text" : "password"} value={confirmPassword} /></label>
+              <label><span>Password</span><div className="auth-password-field"><input aria-describedby={fieldErrors.password ? "auth-password-hint auth-password-error" : "auth-password-hint"} aria-invalid={Boolean(fieldErrors.password)} aria-label="Password" autoComplete="new-password" disabled={isBusy} minLength={8} name="password" onChange={(event) => updateField(setPassword, event.target.value, "password")} placeholder="Create a password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><small id="auth-password-hint">Use 8 or more characters.</small><FieldError id="auth-password-error">{fieldErrors.password}</FieldError></label>
+              <label><span>Confirm password</span><input aria-describedby={fieldErrors.confirmPassword ? "auth-confirm-password-error" : undefined} aria-invalid={Boolean(fieldErrors.confirmPassword)} aria-label="Confirm password" autoComplete="new-password" disabled={isBusy} minLength={8} name="confirm-password" onChange={(event) => updateField(setConfirmPassword, event.target.value, "confirmPassword")} placeholder="Enter your password again" required type={showPassword ? "text" : "password"} value={confirmPassword} /><FieldError id="auth-confirm-password-error">{fieldErrors.confirmPassword}</FieldError></label>
               <label className="auth-legal-consent">
                 <input
+                  aria-describedby={fieldErrors.legal ? "auth-legal-error" : undefined}
+                  aria-invalid={Boolean(fieldErrors.legal)}
                   checked={legalAccepted}
                   disabled={isBusy}
-                  onChange={(event) => updateField(setLegalAccepted, event.target.checked)}
+                  onChange={(event) => updateField(setLegalAccepted, event.target.checked, "legal")}
                   required
                   type="checkbox"
                 />
@@ -401,24 +427,25 @@ export default function Auth() {
                   I agree to the <Link onClick={(event) => event.stopPropagation()} rel="noopener noreferrer" target="_blank" to="/terms">Terms of Service</Link> and acknowledge the <Link onClick={(event) => event.stopPropagation()} rel="noopener noreferrer" target="_blank" to="/privacy">Privacy Policy</Link>.
                 </span>
               </label>
+              <FieldError id="auth-legal-error">{fieldErrors.legal}</FieldError>
             </>
           ) : (
             <>
-              {mode === "sign-up" && <label><span>Full name</span><input autoComplete="name" disabled={isBusy} maxLength={120} minLength={2} name="name" onChange={(event) => updateField(setFullName, event.target.value)} placeholder="Your full name" required value={fullName} /></label>}
-              <label><span>Email address</span><input autoCapitalize="none" autoComplete="email" disabled={isBusy} inputMode="email" name="email" onChange={(event) => updateField(setEmail, event.target.value)} placeholder="you@example.com" required type="email" value={email} /></label>
-              {mode === "sign-in" && <label><span>Password</span><div className="auth-password-field"><input aria-label="Password" autoComplete="current-password" disabled={isBusy} minLength={6} name="password" onChange={(event) => updateField(setPassword, event.target.value)} placeholder="Your password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><button className="auth-forgot-link" onClick={() => switchMode("forgot")} type="button">Forgot password?</button></label>}
+              {mode === "sign-up" && <label><span>Full name</span><input aria-describedby={fieldErrors.fullName ? "auth-full-name-error" : undefined} aria-invalid={Boolean(fieldErrors.fullName)} autoComplete="name" disabled={isBusy} maxLength={120} minLength={2} name="name" onChange={(event) => updateField(setFullName, event.target.value, "fullName")} placeholder="Your full name" required value={fullName} /><FieldError id="auth-full-name-error">{fieldErrors.fullName}</FieldError></label>}
+              <label><span>Email address</span><input autoCapitalize="none" autoComplete="email" disabled={isBusy} inputMode="email" name="email" onChange={(event) => updateField(setEmail, event.target.value, "email")} placeholder="you@example.com" required type="email" value={email} /></label>
+              {mode === "sign-in" && <label><span>Password</span><div className="auth-password-field"><input aria-label="Password" autoComplete="current-password" disabled={isBusy} minLength={6} name="password" onChange={(event) => updateField(setPassword, event.target.value, "password")} placeholder="Your password" required type={showPassword ? "text" : "password"} value={password} /><button aria-label={showPassword ? "Hide password" : "Show password"} className="auth-password-toggle" disabled={isBusy} onClick={() => setShowPassword((value) => !value)} type="button">{showPassword ? "Hide" : "Show"}</button></div><button className="auth-forgot-link" onClick={() => switchMode("forgot")} type="button">Forgot password?</button></label>}
             </>
           )}
 
           {captchaEnabledForView && <AuthCaptcha action={captchaAction} enabled onProblem={handleCaptchaProblem} onTokenChange={handleCaptchaToken} resetKey={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} />}
-          {captchaProblem && <p className="auth-form-message is-error" role="alert">{captchaProblem}</p>}
-          {message && <p className={`auth-form-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
+          <FeedbackMessage className="auth-form-message" tone="error">{captchaProblem}</FeedbackMessage>
+          <FeedbackMessage className="auth-form-message" tone={messageTone}>{message}</FeedbackMessage>
 
           {isVerification ? (
             <>
               <button className="auth-email-submit" disabled={isBusy || !isCompleteOtp(otp)} type="submit">{busyMethod === "email" ? "Verifying..." : "Verify code"}</button>
               <div className="auth-verification-actions">
-                <button className="auth-step-back" disabled={isBusy} onClick={() => { clearPendingAuthState(window.sessionStorage, verificationPurpose); setPending(null); switchMode(verificationPurpose === AUTH_PURPOSES.SIGNUP ? "sign-up" : "forgot"); }} type="button">Start again</button>
+                <button className="auth-step-back" disabled={isBusy} onClick={() => leaveVerification(verificationPurpose === AUTH_PURPOSES.SIGNUP ? "sign-up" : "forgot")} type="button">Start again</button>
                 <button className="auth-resend-button" disabled={isBusy || resendSeconds > 0 || captchaBlocksResend} onClick={() => void handleResend()} type="button">{busyMethod === "resend" ? "Sending..." : resendSeconds > 0 ? `Resend in ${resendSeconds}s` : "Resend code"}</button>
               </div>
             </>

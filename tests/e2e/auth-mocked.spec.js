@@ -73,8 +73,32 @@ test("full-code paste behavior and expired-code errors remain safe", async ({ pa
   });
   await expect(input).toHaveValue("987654");
   await page.getByRole("button", { name: "Verify code" }).click();
-  await expect(page.getByRole("alert")).toHaveText("That code has expired. Request a new code and try again.");
+  await expect(page.getByRole("alert")).toHaveText("That code has expired. Request a new code.");
   await expect(page.getByRole("alert")).not.toContainText("private provider");
+});
+
+test("sign-in failure is useful without exposing provider details", async ({ page }) => {
+  await page.route("**/auth/v1/token?grant_type=password", async (route) => {
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error_code: "invalid_credentials",
+        msg: "private authentication provider detail",
+      }),
+    });
+  });
+
+  await page.goto("/auth?mode=sign-in");
+  await page.getByLabel("Email address").fill("candidate@example.com");
+  await page.getByLabel("Password", { exact: true }).fill("WrongPassword");
+  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("alert")).toHaveText(
+    "We could not sign you in with those details. Check them or reset your password.",
+  );
+  await expect(page.getByRole("button", { name: "Forgot password?" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("private authentication provider detail");
 });
 
 test("confirmation-required signup transitions to OTP without persisting password", async ({ page }) => {
@@ -125,7 +149,12 @@ test("confirmation-required signup transitions to OTP without persisting passwor
   await expect(createAccount).toBeEnabled();
   await createAccount.click();
 
-  await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(page.getByText(/If this is a new account, we’ll send a six-digit code/i)).toBeVisible();
+  await expect(page.getByText(/Already use PromotionSure/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "reset your password" })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("already registered");
   const stored = await page.evaluate(() => window.sessionStorage.getItem("promotionsure.auth.pending.signup"));
   expect(stored).not.toContain("StrongPass123!");
   expect(JSON.parse(stored).purpose).toBe("signup");
@@ -185,7 +214,7 @@ test("auto-confirm signup skips OTP and clears stale verification state", async 
   await page.getByRole("checkbox", { name: /I agree to the Terms of Service/i }).check();
   await page.locator("form").getByRole("button", { name: "Create account" }).click();
 
-  await expect(page.getByRole("heading", { name: "Verify your email" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Check your email" })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.sessionStorage.getItem("promotionsure.auth.pending.signup"))).toBeNull();
 });
 
@@ -194,6 +223,6 @@ test("failed implicit callback is sanitized and removes query and fragment data"
 
   await expect(page).toHaveURL("http://127.0.0.1:4174/auth/callback");
   await expect(page.getByRole("heading", { name: "Sign-in request unavailable" })).toBeVisible();
-  await expect(page.getByText("Google sign-in was cancelled. You can try again or continue with email.")).toBeVisible();
+  await expect(page.getByText("Google sign-in was cancelled. Try again or continue with email.")).toBeVisible();
   await expect(page.locator("body")).not.toContainText("private-provider-detail");
 });

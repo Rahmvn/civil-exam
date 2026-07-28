@@ -37,25 +37,97 @@ export const AUTH_PROBLEM_CODES = Object.freeze({
   UNKNOWN: "auth_unknown",
 });
 
-const AUTH_MESSAGES = Object.freeze({
-  [AUTH_PROBLEM_CODES.INVALID_OTP]: "That code is not correct. Check the latest email and try again.",
-  [AUTH_PROBLEM_CODES.INVALID_CREDENTIALS]: "Email or password is incorrect.",
-  [AUTH_PROBLEM_CODES.WEAK_PASSWORD]: "Use a stronger password with at least eight characters.",
-  [AUTH_PROBLEM_CODES.EXPIRED_OTP]: "That code has expired. Request a new code and try again.",
-  [AUTH_PROBLEM_CODES.OTP_NO_LONGER_VALID]: "That code is no longer valid. Request a new code and try again.",
-  [AUTH_PROBLEM_CODES.RATE_LIMITED]: "Please wait a moment before trying again.",
-  [AUTH_PROBLEM_CODES.RECOVERY_SESSION_MISSING]: "Your password reset session is no longer available. Start again.",
-  [AUTH_PROBLEM_CODES.RECOVERY_SESSION_EXPIRED]: "Your password reset session has expired. Start again.",
-  [AUTH_PROBLEM_CODES.OAUTH_CANCELLED]: "Google sign-in was cancelled. You can try again or continue with email.",
-  [AUTH_PROBLEM_CODES.AUTH_REQUEST_NO_LONGER_VALID]: "This sign-in request is no longer valid. Please start again.",
-  [AUTH_PROBLEM_CODES.CALLBACK_SESSION_MISSING]: "We could not complete this sign-in request. Please start again.",
-  [AUTH_PROBLEM_CODES.PROFILE_RECOVERY_FAILED]: "Your account was verified, but we could not load your profile. Please try again.",
-  [AUTH_PROBLEM_CODES.AUTHORITY_LOAD_FAILED]: "We could not load your account access. Please try again.",
-  [AUTH_PROBLEM_CODES.OFFLINE]: "Reconnect to the internet, then try again.",
-  [AUTH_PROBLEM_CODES.NETWORK_FAILURE]: "We could not connect. Check your internet connection and try again.",
-  [AUTH_PROBLEM_CODES.SERVICE_UNAVAILABLE]: "Authentication is temporarily unavailable. Please try again.",
-  [AUTH_PROBLEM_CODES.SIGNUP_FAILED]: "We could not create your account. Check the details and try again.",
-  [AUTH_PROBLEM_CODES.UNKNOWN]: "We could not complete that request. Please try again.",
+const AUTH_PROBLEMS = Object.freeze({
+  [AUTH_PROBLEM_CODES.INVALID_OTP]: {
+    message: "That code is not correct. Check the latest email and try again.",
+    field: "otp",
+    action: "check-code",
+  },
+  [AUTH_PROBLEM_CODES.INVALID_CREDENTIALS]: {
+    message: "We could not sign you in with those details. Check them or reset your password.",
+    field: "form",
+    action: "reset-password",
+  },
+  [AUTH_PROBLEM_CODES.WEAK_PASSWORD]: {
+    message: "Use a password with at least eight characters.",
+    field: "password",
+    action: "correct-field",
+  },
+  [AUTH_PROBLEM_CODES.EXPIRED_OTP]: {
+    message: "That code has expired. Request a new code.",
+    field: "otp",
+    action: "resend",
+  },
+  [AUTH_PROBLEM_CODES.OTP_NO_LONGER_VALID]: {
+    message: "That code is no longer valid. Request a new code.",
+    field: "otp",
+    action: "resend",
+  },
+  [AUTH_PROBLEM_CODES.RATE_LIMITED]: {
+    message: "Too many attempts were made. Wait a moment before trying again.",
+    field: "form",
+    action: "wait",
+  },
+  [AUTH_PROBLEM_CODES.RECOVERY_SESSION_MISSING]: {
+    message: "This password reset is no longer available. Start again.",
+    field: "form",
+    action: "restart",
+  },
+  [AUTH_PROBLEM_CODES.RECOVERY_SESSION_EXPIRED]: {
+    message: "This password reset has expired. Start again.",
+    field: "form",
+    action: "restart",
+  },
+  [AUTH_PROBLEM_CODES.OAUTH_CANCELLED]: {
+    message: "Google sign-in was cancelled. Try again or continue with email.",
+    field: "form",
+    action: "retry",
+  },
+  [AUTH_PROBLEM_CODES.AUTH_REQUEST_NO_LONGER_VALID]: {
+    message: "This sign-in request is no longer valid. Start again.",
+    field: "form",
+    action: "restart",
+  },
+  [AUTH_PROBLEM_CODES.CALLBACK_SESSION_MISSING]: {
+    message: "We could not complete this sign-in request. Start again.",
+    field: "form",
+    action: "restart",
+  },
+  [AUTH_PROBLEM_CODES.PROFILE_RECOVERY_FAILED]: {
+    message: "Your account was verified, but your profile could not be loaded. Try again.",
+    field: "form",
+    action: "retry",
+  },
+  [AUTH_PROBLEM_CODES.AUTHORITY_LOAD_FAILED]: {
+    message: "Your account access could not be loaded. Try again.",
+    field: "form",
+    action: "retry",
+  },
+  [AUTH_PROBLEM_CODES.OFFLINE]: {
+    message: "You are offline. Reconnect, then try again.",
+    field: "form",
+    action: "reconnect",
+  },
+  [AUTH_PROBLEM_CODES.NETWORK_FAILURE]: {
+    message: "We could not connect. Check your internet connection, then try again.",
+    field: "form",
+    action: "retry",
+  },
+  [AUTH_PROBLEM_CODES.SERVICE_UNAVAILABLE]: {
+    message: "Sign-in services are temporarily unavailable. Try again shortly.",
+    field: "form",
+    action: "retry-later",
+  },
+  [AUTH_PROBLEM_CODES.SIGNUP_FAILED]: {
+    message: "Your account could not be created. Check the details and try again.",
+    field: "form",
+    action: "correct-or-retry",
+  },
+  [AUTH_PROBLEM_CODES.UNKNOWN]: {
+    message: "We could not complete this request. Try again.",
+    field: "form",
+    action: "retry",
+  },
 });
 
 export function normalizeOtp(value) {
@@ -221,14 +293,17 @@ export function createSanitizedAuthProblem(errorOrCode, {
   correlationId,
   appVersion = "unknown",
 } = {}) {
-  const code = typeof errorOrCode === "string" && AUTH_MESSAGES[errorOrCode]
+  const code = typeof errorOrCode === "string" && AUTH_PROBLEMS[errorOrCode]
     ? errorOrCode
     : classifyAuthError(errorOrCode);
+  const definition = AUTH_PROBLEMS[code] ?? AUTH_PROBLEMS[AUTH_PROBLEM_CODES.UNKNOWN];
   const safeCorrelationId = correlationId || globalThis.crypto?.randomUUID?.() || `auth-${Date.now().toString(36)}`;
   return Object.freeze({
     isSanitizedAuthProblem: true,
     code,
-    message: AUTH_MESSAGES[code] ?? AUTH_MESSAGES[AUTH_PROBLEM_CODES.UNKNOWN],
+    message: definition.message,
+    field: definition.field,
+    action: definition.action,
     purpose,
     route,
     provider,
