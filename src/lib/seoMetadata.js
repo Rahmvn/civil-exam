@@ -67,7 +67,7 @@ export function getHomeStructuredData() {
         },
         founder: {
           "@type": "Person",
-          name: "Muraina Rasheedah",
+          name: "RASHEEDAH BUKOLA FAGBO",
         },
         email: "promotionsureapp@gmail.com",
         areaServed: {

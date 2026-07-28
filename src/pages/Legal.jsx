@@ -39,14 +39,14 @@ export function PrivacyPolicy() {
       <section>
         <h2>1. Who we are</h2>
         <p>
-          PromotionSure is an online public service promotion exam practice platform operated by Muraina Rasheedah,
+          PromotionSure is an online public service promotion exam practice platform operated by RASHEEDAH BUKOLA FAGBO,
           trading as PromotionSure ("PromotionSure", "we", "us", or "our"). This policy explains how we handle
           personal information when you visit or use promotionsure.com.ng and related PromotionSure services.
         </p>
         <dl className="legal-controller-card">
           <div>
             <dt>Data controller</dt>
-            <dd>Muraina Rasheedah, trading as PromotionSure, Abuja, Nigeria.</dd>
+            <dd>RASHEEDAH BUKOLA FAGBO, trading as PromotionSure, Abuja, Nigeria.</dd>
           </div>
           <div>
             <dt>Privacy contact</dt>
@@ -195,7 +195,7 @@ export function TermsOfService() {
       <section>
         <h2>1. Agreement and operator</h2>
         <p>
-          These Terms govern your use of PromotionSure. PromotionSure is operated by Muraina Rasheedah, trading as
+          These Terms govern your use of PromotionSure. PromotionSure is operated by RASHEEDAH BUKOLA FAGBO, trading as
           PromotionSure. By creating an account, using practice content, or purchasing access, you agree to these
           Terms and our <Link to="/privacy">Privacy Policy</Link>. If you do not agree, do not use the service.
         </p>
