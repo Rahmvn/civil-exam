@@ -49,6 +49,7 @@ export default defineConfig({
       VITE_E2E: "true",
       VITE_SUPABASE_URL: process.env.E2E_SUPABASE_URL,
       VITE_SUPABASE_ANON_KEY: process.env.E2E_SUPABASE_PUBLIC_KEY,
+      VITE_TURNSTILE_ENABLED: "false",
       VITE_WHATSAPP_SUPPORT_ENABLED: "true",
       VITE_WHATSAPP_SUPPORT_NUMBER: "2348000000000",
     },

@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(43);
+select plan(45);
 
 create table public.security_acl_table_probe (id integer);
 create function public.security_acl_function_probe()
@@ -244,6 +244,46 @@ select is(
   (select count(*)::integer from pg_policies where schemaname = 'public' and roles = '{public}'),
   0,
   'all application RLS policies are scoped to authenticated users'
+);
+select is(
+  (
+    select count(*)::integer
+    from pg_proc as p
+    join pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and (
+        p.proname ilike 'admin_%'
+        or p.proname ilike 'get_admin_%'
+        or p.proname ilike '%admin%'
+        or p.proname in ('update_support_request')
+      )
+      and has_function_privilege('anon', p.oid, 'EXECUTE')
+  ),
+  0,
+  'anonymous users cannot execute admin or admin-adjacent RPCs'
+);
+select is(
+  (
+    select count(*)::integer
+    from pg_proc as p
+    join pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname <> 'is_admin'
+      and (
+        p.proname ilike 'admin_%'
+        or p.proname ilike 'get_admin_%'
+        or p.proname ilike '%admin%'
+        or p.proname in ('update_support_request')
+      )
+      and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      and not (
+        p.prosrc ilike '%admin_assert_access%'
+        or p.prosrc ilike '%is_admin()%'
+        or p.prosrc ilike '%public.admin_%'
+      )
+  ),
+  0,
+  'authenticated admin RPCs enforce admin access directly or through checked admin wrappers'
 );
 select ok(to_regclass('public.attempts_user_started_idx') is not null,
   'recent-attempt history index exists');

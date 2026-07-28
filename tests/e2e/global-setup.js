@@ -184,10 +184,6 @@ async function seedPracticeContent(client, packId, subjects) {
     await client.from("questions").update({ status: "archived" }).eq("source_note", FIXTURE_SOURCE).eq("status", "published"),
     "Archive practice fixtures",
   );
-  requireResult(
-    await client.from("questions").delete().eq("source_note", FIXTURE_SOURCE),
-    "Clear practice fixtures",
-  );
 
   const pfm = subjects.find((subject) => subject.slug === "public-financial-management");
   const psr = subjects.find((subject) => subject.slug === "public-service-rules");
@@ -209,7 +205,7 @@ async function seedPracticeContent(client, packId, subjects) {
   requireResult(await client.from("questions").upsert(rows), "Seed practice fixtures");
 
   const fixtureQuestions = requireResult(
-    await client.from("questions").select("practice_set_id").eq("source_note", FIXTURE_SOURCE),
+    await client.from("questions").select("practice_set_id").in("id", rows.map((row) => row.id)),
     "Load seeded practice-set counts",
   );
   const questionCounts = fixtureQuestions.reduce((counts, row) => {
