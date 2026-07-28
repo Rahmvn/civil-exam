@@ -239,60 +239,60 @@ export default function Support() {
         </nav>
 
         <div className="support-workflow">
-          <section className="support-faq" aria-labelledby="support-faq-title">
-            <header className="support-section-heading">
-              <div>
-                <h2 id="support-faq-title">Common answers</h2>
-                <p>{faqQuery ? `${visibleFaqs.length} matching answer${visibleFaqs.length === 1 ? "" : "s"}` : "Answers to the issues candidates ask about most."}</p>
-              </div>
-            </header>
-
-            <div className="support-faq-results">
-              {visibleFaqs.length === 0 ? (
-                <div className="support-faq-empty">
-                  <strong>No matching answer</strong>
-                  <p>Try a shorter search, or send us a request.</p>
+          <div className="support-main-column">
+            <section className="support-faq" aria-labelledby="support-faq-title">
+              <header className="support-section-heading">
+                <div>
+                  <h2 id="support-faq-title">Common answers</h2>
+                  <p>{faqQuery ? `${visibleFaqs.length} matching answer${visibleFaqs.length === 1 ? "" : "s"}` : "Answers to the issues candidates ask about most."}</p>
                 </div>
-              ) : faqsToShow.map((faq) => {
-                const isOpen = openFaqId === faq.id;
-                return (
-                  <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
-                    <h3>
-                      <button
-                        aria-controls={`support-faq-answer-${faq.id}`}
-                        aria-expanded={isOpen}
-                        className="support-faq-toggle"
-                        onClick={() => setOpenFaqId(isOpen ? "" : faq.id)}
-                        type="button"
-                      >
-                        <span>{faq.question}</span>
-                        <span aria-hidden="true">{isOpen ? "-" : "+"}</span>
-                      </button>
-                    </h3>
-                    {isOpen && (
-                      <div className="support-faq-answer" id={`support-faq-answer-${faq.id}`}>
-                        <p>{faq.answer}</p>
-                        <p><strong>Contact support when:</strong> {faq.escalation}</p>
-                        <button className="support-faq-request" onClick={() => prepareRequest(faq)} type="button">Send a request about this</button>
-                      </div>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
+              </header>
 
-            {!faqQuery && visibleFaqs.length > 5 && (
-              <button
-                className="support-faq-more"
-                onClick={() => setShowAllFaqs((value) => !value)}
-                type="button"
-              >
-                {showAllFaqs ? "Show fewer answers" : `View all ${visibleFaqs.length} answers`}
-              </button>
-            )}
-          </section>
+              <div className="support-faq-results">
+                {visibleFaqs.length === 0 ? (
+                  <div className="support-faq-empty">
+                    <strong>No matching answer</strong>
+                    <p>Try a shorter search, or send us a request.</p>
+                  </div>
+                ) : faqsToShow.map((faq) => {
+                  const isOpen = openFaqId === faq.id;
+                  return (
+                    <article className={`support-faq-item${isOpen ? " is-open" : ""}`} key={faq.id}>
+                      <h3>
+                        <button
+                          aria-controls={`support-faq-answer-${faq.id}`}
+                          aria-expanded={isOpen}
+                          className="support-faq-toggle"
+                          onClick={() => setOpenFaqId(isOpen ? "" : faq.id)}
+                          type="button"
+                        >
+                          <span>{faq.question}</span>
+                          <span aria-hidden="true">{isOpen ? "-" : "+"}</span>
+                        </button>
+                      </h3>
+                      {isOpen && (
+                        <div className="support-faq-answer" id={`support-faq-answer-${faq.id}`}>
+                          <p>{faq.answer}</p>
+                          <p><strong>Contact support when:</strong> {faq.escalation}</p>
+                          <button className="support-faq-request" onClick={() => prepareRequest(faq)} type="button">Send a request about this</button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
 
-          <aside className="support-sidebar">
+              {!faqQuery && visibleFaqs.length > 5 && (
+                <button
+                  className="support-faq-more"
+                  onClick={() => setShowAllFaqs((value) => !value)}
+                  type="button"
+                >
+                  {showAllFaqs ? "Show fewer answers" : `View all ${visibleFaqs.length} answers`}
+                </button>
+              )}
+            </section>
+
             <div className="support-quick-actions" aria-label="Quick support options">
               <section className="support-suggestion-card" aria-labelledby="support-suggestion-title">
                 <div>
@@ -316,6 +316,9 @@ export default function Support() {
                 </a>
               )}
             </div>
+          </div>
+
+          <aside className="support-sidebar">
             <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
               <header className="support-panel-heading">
                 <div>

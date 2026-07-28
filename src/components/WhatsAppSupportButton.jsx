@@ -8,16 +8,11 @@ import {
 
 const SUPPORT_CONFIG = resolveWhatsAppSupportConfig(import.meta.env);
 const WHATSAPP_DOCK_SIDE_KEY = "promotionsure.whatsappSupportDockSide";
-const MOBILE_DOCK_QUERY = "(max-width: 720px)";
 const DRAG_THRESHOLD_PX = 7;
 
 function getSavedDockSide() {
   if (typeof window === "undefined") return "right";
   return window.localStorage.getItem(WHATSAPP_DOCK_SIDE_KEY) === "left" ? "left" : "right";
-}
-
-function isMobileDockViewport() {
-  return typeof window !== "undefined" && window.matchMedia(MOBILE_DOCK_QUERY).matches;
 }
 
 function clamp(value, min, max) {
@@ -35,22 +30,18 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    const mediaQuery = window.matchMedia(MOBILE_DOCK_QUERY);
     const handleViewportChange = () => {
-      if (!mediaQuery.matches) {
-        setDragLeft(null);
-        setIsDragging(false);
-        dragStateRef.current = null;
-      }
+      setDragLeft(null);
+      setIsDragging(false);
+      dragStateRef.current = null;
     };
 
-    handleViewportChange();
-    mediaQuery.addEventListener("change", handleViewportChange);
-    return () => mediaQuery.removeEventListener("change", handleViewportChange);
+    window.addEventListener("resize", handleViewportChange);
+    return () => window.removeEventListener("resize", handleViewportChange);
   }, []);
 
   function handlePointerDown(event) {
-    if (!isMobileDockViewport() || !event.isPrimary) return;
+    if (!event.isPrimary) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     dragStateRef.current = {

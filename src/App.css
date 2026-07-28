@@ -6934,6 +6934,7 @@ button.auth-forgot-link {
 .whatsapp-support-button {
   position: fixed;
   right: max(20px, env(safe-area-inset-right, 0px));
+  left: auto;
   bottom: max(20px, env(safe-area-inset-bottom, 0px));
   z-index: 45;
   display: inline-flex;
@@ -6951,7 +6952,25 @@ button.auth-forgot-link {
   line-height: 1;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+  touch-action: none;
+  transition:
+    left 160ms ease,
+    right 160ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.whatsapp-support-button[data-dock-side="left"] {
+  right: auto;
+  left: max(20px, env(safe-area-inset-left, 0px));
+}
+
+.whatsapp-support-button[data-dragging="true"] {
+  right: auto;
+  left: var(--whatsapp-drag-left);
+  cursor: grabbing;
+  transition: none;
 }
 
 .whatsapp-support-button:hover,
@@ -6985,13 +7004,6 @@ button.auth-forgot-link {
     min-height: 46px;
     padding: 0;
     justify-content: center;
-    touch-action: none;
-    transition:
-      left 160ms ease,
-      right 160ms ease,
-      border-color 140ms ease,
-      box-shadow 140ms ease,
-      background 140ms ease;
   }
 
   .whatsapp-support-button[data-dock-side="left"] {
@@ -14907,7 +14919,7 @@ button.module-chooser-link {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .account-info-hint {
@@ -14917,17 +14929,17 @@ button.module-chooser-link {
 }
 
 .account-info-hint button {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   min-height: 0;
   padding: 0;
   display: inline-grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-primary-soft) 38%, var(--color-surface));
+  background: var(--color-surface);
   color: var(--color-primary-dark);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 800;
   line-height: 1;
   box-shadow: none;
@@ -14936,7 +14948,7 @@ button.module-chooser-link {
 .account-info-hint button:hover,
 .account-info-hint button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-primary-soft) 28%, var(--color-surface));
 }
 
 .account-info-popover {
@@ -19903,6 +19915,11 @@ button.practice-hub-row-action:focus-visible {
   align-items: start;
 }
 
+.support-main-column {
+  display: grid;
+  gap: 16px;
+}
+
 .support-sidebar {
   display: grid;
   gap: 16px;
@@ -20255,16 +20272,25 @@ button.practice-hub-row-action:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  .support-main-column {
+    display: contents;
+  }
+
+  .support-faq {
+    order: 1;
+  }
+
   .support-sidebar {
+    order: 2;
     gap: 14px;
   }
 
-  .support-quick-actions {
-    order: 2;
+  .support-form {
+    order: initial;
   }
 
-  .support-form {
-    order: 1;
+  .support-quick-actions {
+    order: 3;
   }
 
   .support-suggestion-card {
