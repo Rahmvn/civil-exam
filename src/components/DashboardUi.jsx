@@ -180,7 +180,9 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
             &times;
           </button>
         </header>
-        <p className="free-batch-confirmation-note">This unlocks Practice set 1 and one retry for this module.</p>
+        <p className="free-batch-confirmation-note">
+          You will get Practice set 1 for this module, plus one retry if you need it.
+        </p>
         <div className="free-batch-confirmation-actions">
           <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
             Cancel

@@ -26,6 +26,8 @@ const KNOWN_USER_MESSAGES = new Map([
   ["Payment was declined", "This payment was declined. No access was unlocked."],
   ["Payment was not completed", "This payment was not completed. No access was unlocked."],
   ["This payment reference does not belong to your account", "We could not confirm your payment yet. Please try again."],
+  ["This module does not have an active payment offering yet", "This module is not open for purchase yet. Please check back when sales are available."],
+  ["Unable to prepare this module payment", "This module is not open for purchase yet. Please check back when sales are available."],
 ]);
 
 const NO_ROW_MARKERS = [

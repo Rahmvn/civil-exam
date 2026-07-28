@@ -503,9 +503,18 @@ export default function Access() {
         </header>
 
         <section className="access-module-catalog" aria-label="Available modules">
-
-          <div className="access-module-list">
-            {modulesToShow.map((module) => {
+          {modulesToShow.length === 0 ? (
+            <article className="access-empty-state">
+              <span className="access-empty-kicker">Access status</span>
+              <h2>No module is open for purchase yet</h2>
+              <p>
+                Your account is ready. Available modules will appear here once they are open for sale or assigned to your account.
+              </p>
+              <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
+            </article>
+          ) : (
+            <div className="access-module-list">
+              {modulesToShow.map((module) => {
               const displayName = getModuleDisplayName(module.subject_name);
               const isPaying = payingModule === module.subject_slug;
               const subject = subjects.find((item) => item.slug === module.subject_slug) ?? {
@@ -557,8 +566,9 @@ export default function Access() {
                   </div>
                 </article>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </section>
 
         {paymentAttention.length > 0 && (

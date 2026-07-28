@@ -22026,3 +22026,128 @@ button.practice-map-close:focus-visible {
   }
 }
 
+/* Final access and free-practice polish */
+.access-page.access-page-v2 {
+  padding-top: clamp(18px, 4vw, 34px);
+}
+
+.access-page-v2 .access-page-intro {
+  align-items: flex-start;
+  padding-bottom: 16px;
+}
+
+.access-page-v2 .access-module-list {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.access-page-v2 .access-module-row,
+.access-page-v2 .access-module-row.is-focused {
+  padding: 18px 20px;
+}
+
+.access-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 620px;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.access-empty-kicker {
+  color: var(--color-primary-dark);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.access-empty-state h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.15rem, 3vw, 1.55rem);
+  line-height: 1.25;
+}
+
+.access-empty-state p {
+  max-width: 54ch;
+  margin: 0 0 4px;
+  color: var(--color-text-soft);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.access-empty-state .secondary-action {
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 10px;
+}
+
+.free-batch-confirmation-modal {
+  width: min(500px, calc(100% - 32px));
+  gap: 18px;
+  padding: 28px;
+  border-radius: 16px;
+}
+
+.auth-modal-card.free-batch-confirmation-modal h2 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.auth-modal-card .free-batch-confirmation-header p {
+  color: var(--color-primary-dark);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.auth-modal-card p.free-batch-confirmation-note {
+  padding: 16px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-soft);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.free-batch-confirmation-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.free-batch-confirmation-actions button {
+  min-height: 48px;
+  border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+  .access-page.access-page-v2 {
+    width: min(100% - 24px, 1080px);
+    padding-top: 10px;
+  }
+
+  .access-page-v2 .access-module-list {
+    border-radius: 12px;
+  }
+
+  .access-page-v2 .access-module-row,
+  .access-page-v2 .access-module-row.is-focused {
+    padding: 16px;
+  }
+
+  .free-batch-confirmation-modal {
+    width: min(100% - 28px, 500px);
+    gap: 16px;
+    padding: 22px;
+  }
+
+  .free-batch-confirmation-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
