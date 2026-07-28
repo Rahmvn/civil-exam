@@ -60,9 +60,16 @@ In Authentication > Emails > SMTP Settings:
 In Authentication > Bot and Abuse Protection:
 
 - Enable Cloudflare Turnstile.
-- Configure the exact production hostname in Turnstile.
+- Configure every hostname users can actually visit in Turnstile Hostname
+  Management, including the exact apex and `www` production forms if both
+  resolve to the app.
 - Put the Turnstile secret in Supabase Auth, never in a `VITE_*` variable.
 - Confirm the frontend site key matches the configured widget.
+- Use Cloudflare's public testing sitekey for local automated/manual testing,
+  or explicitly authorize the local hostname. Do not use an unauthorized
+  production key on `localhost`.
+- Test password sign-in, account creation, recovery, and resend separately
+  before enabling CAPTCHA for the public project.
 
 In Authentication > Rate Limits and Password Security:
 

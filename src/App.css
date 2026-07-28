@@ -7131,10 +7131,13 @@ button.auth-resend-button {
 }
 
 .auth-captcha {
-  min-height: 65px;
   display: grid;
+  width: 100%;
   place-items: center;
-  overflow: hidden;
+}
+
+.auth-captcha > div {
+  width: 100%;
 }
 
 button.auth-google-button:disabled {

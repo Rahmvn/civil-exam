@@ -69,16 +69,14 @@ export default function Auth() {
   const [messageTone, setMessageTone] = useState("error");
   const [busyMethod, setBusyMethod] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaProblem, setCaptchaProblem] = useState("");
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [now, setNow] = useState(initialPending?.requestedAt ?? 0);
   const stateReturnTo = location.state?.from ? buildLocationPath(location.state.from) : null;
   const redirectTo = getSafeReturnTo(searchParams.get("returnTo") || pending?.returnTo || stateReturnTo, "/dashboard");
   const authNotice = location.state?.authMessage ?? "";
   const verificationPurpose = mode === "verify-signup" ? AUTH_PURPOSES.SIGNUP : mode === "verify-recovery" ? AUTH_PURPOSES.RECOVERY : null;
-  const handleCaptchaProblem = useCallback((value) => {
-    setMessageTone("error");
-    setMessage(value);
-  }, []);
+  const handleCaptchaProblem = useCallback((value) => setCaptchaProblem(value), []);
   const handleCaptchaToken = useCallback((value) => setCaptchaToken(value), []);
 
   useEffect(() => {
@@ -110,6 +108,7 @@ export default function Auth() {
 
   function resetCaptcha() {
     setCaptchaToken("");
+    setCaptchaProblem("");
     setCaptchaResetKey((value) => value + 1);
   }
 
@@ -126,6 +125,7 @@ export default function Auth() {
     setSignUpStep(1);
     setMessage("");
     setMessageTone("error");
+    setCaptchaProblem("");
   }
 
   async function continueWithGoogle() {
@@ -302,7 +302,9 @@ export default function Auth() {
       else if (mode === "sign-up") await createAccount();
       else if (verificationPurpose) await verifyCode();
       else {
-        const { error } = await supabase.auth.signInWithPassword({ email: normalizeAuthEmail(email), password });
+        const credentials = { email: normalizeAuthEmail(email), password };
+        if (captchaToken) credentials.options = { captchaToken };
+        const { error } = await supabase.auth.signInWithPassword(credentials);
         if (error) throw error;
       }
     } catch (error) {
@@ -332,7 +334,17 @@ export default function Auth() {
   const isForgotPassword = mode === "forgot";
   const isVerification = Boolean(verificationPurpose);
   const resendSeconds = pending ? getResendSeconds(pending.cooldownUntil, now) : 0;
-  const captchaBlocksSubmit = TURNSTILE_ENABLED && !captchaToken;
+  const primaryActionNeedsCaptcha = mode === "sign-in" || isSignUpPasswordStep || isForgotPassword;
+  const captchaEnabledForView = TURNSTILE_ENABLED && (primaryActionNeedsCaptcha || isVerification);
+  const captchaBlocksPrimarySubmit = TURNSTILE_ENABLED && primaryActionNeedsCaptcha && !captchaToken;
+  const captchaBlocksResend = TURNSTILE_ENABLED && !captchaToken;
+  const captchaAction = mode === "sign-in"
+    ? "auth_signin"
+    : isSignUpPasswordStep
+      ? "auth_signup"
+      : isForgotPassword
+        ? "auth_recovery"
+        : "auth_resend";
 
   function updateField(setter, value) {
     setter(value);
@@ -398,23 +410,24 @@ export default function Auth() {
             </>
           )}
 
-          {(mode === "sign-up" || isForgotPassword || isVerification) && <AuthCaptcha enabled={TURNSTILE_ENABLED} onProblem={handleCaptchaProblem} onTokenChange={handleCaptchaToken} resetKey={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} />}
+          {captchaEnabledForView && <AuthCaptcha action={captchaAction} enabled onProblem={handleCaptchaProblem} onTokenChange={handleCaptchaToken} resetKey={captchaResetKey} siteKey={TURNSTILE_SITE_KEY} />}
+          {captchaProblem && <p className="auth-form-message is-error" role="alert">{captchaProblem}</p>}
           {message && <p className={`auth-form-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
 
           {isVerification ? (
             <>
-              <button className="auth-email-submit" disabled={isBusy || !isCompleteOtp(otp) || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Verifying..." : "Verify code"}</button>
+              <button className="auth-email-submit" disabled={isBusy || !isCompleteOtp(otp)} type="submit">{busyMethod === "email" ? "Verifying..." : "Verify code"}</button>
               <div className="auth-verification-actions">
                 <button className="auth-step-back" disabled={isBusy} onClick={() => { clearPendingAuthState(window.sessionStorage, verificationPurpose); setPending(null); switchMode(verificationPurpose === AUTH_PURPOSES.SIGNUP ? "sign-up" : "forgot"); }} type="button">Start again</button>
-                <button className="auth-resend-button" disabled={isBusy || resendSeconds > 0 || captchaBlocksSubmit} onClick={() => void handleResend()} type="button">{busyMethod === "resend" ? "Sending..." : resendSeconds > 0 ? `Resend in ${resendSeconds}s` : "Resend code"}</button>
+                <button className="auth-resend-button" disabled={isBusy || resendSeconds > 0 || captchaBlocksResend} onClick={() => void handleResend()} type="button">{busyMethod === "resend" ? "Sending..." : resendSeconds > 0 ? `Resend in ${resendSeconds}s` : "Resend code"}</button>
               </div>
             </>
           ) : isSignUpPasswordStep ? (
-            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || !legalAccepted || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button></div>
+            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => { setPassword(""); setConfirmPassword(""); setSignUpStep(1); }} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || !legalAccepted || captchaBlocksPrimarySubmit} type="submit">{busyMethod === "email" ? "Creating..." : "Create account"}</button></div>
           ) : isForgotPassword ? (
-            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => switchMode("sign-in")} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || captchaBlocksSubmit} type="submit">{busyMethod === "email" ? "Sending..." : "Send recovery code"}</button></div>
+            <div className="auth-step-actions"><button className="auth-step-back" disabled={isBusy} onClick={() => switchMode("sign-in")} type="button">Back</button><button className="auth-email-submit" disabled={isBusy || captchaBlocksPrimarySubmit} type="submit">{busyMethod === "email" ? "Sending..." : "Send recovery code"}</button></div>
           ) : (
-            <button className="auth-email-submit" disabled={isBusy} type="submit">{busyMethod === "email" ? "Signing in..." : mode === "sign-up" ? "Next" : "Sign in"}</button>
+            <button className="auth-email-submit" disabled={isBusy || captchaBlocksPrimarySubmit} type="submit">{busyMethod === "email" ? "Signing in..." : mode === "sign-up" ? "Next" : "Sign in"}</button>
           )}
         </form>
       </section>

@@ -19,6 +19,7 @@ const baseStages = [
 
 const fullStages = [
   ["Authentication E2E", ["run", "test:e2e:auth-mock"]],
+  ["Turnstile E2E", ["run", "test:e2e:turnstile"]],
   ["Candidate/admin E2E regression", ["run", "test:e2e"]],
   ["Performance E2E", ["run", "test:e2e:performance"]],
   ["Visual regression", ["run", "test:e2e:visual"]],

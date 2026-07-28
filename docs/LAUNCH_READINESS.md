@@ -16,10 +16,10 @@ payments, backups, and live smoke checks are confirmed.
 | --- | --- | --- |
 | Product UI direction | In progress | Core pages have been heavily refined. Final pass should focus only on launch-blocking clarity issues, not broad redesign. |
 | Local launch check | Passing | `npm run launch:check` passes. This covers lint, build, tracked-secret scan, the production-config contract, unit tests, database tests, payment edge tests, and operator read-only access. |
-| Full local launch check | Passing | `npm run launch:check:full` passes on Node 22: mocked Auth flows, 79 browser tests, 3 performance tests, 4 visual tests, the standard load profile, and every base gate. The final run completed in 10 minutes. |
+| Full local launch check | Passing | `npm run launch:check:full` passes on Node 22 and now includes mocked Auth plus a live Cloudflare test-widget gate, 79 browser tests, 3 performance tests, 4 visual tests, the standard load profile, and every base gate. |
 | Frontend build | Passing | Covered by `npm run launch:check`. Vite reports large chunks, but this is not a launch blocker. |
 | Lint | Passing | Covered by `npm run launch:check`. |
-| Unit tests | Passing | `npm run test:unit` passes: 94 tests. |
+| Unit tests | Passing | `npm run test:unit` passes: 95 tests. |
 | Database tests | Passing | `npm run test:db` passes: 326 assertions. |
 | Database advisors | Passing | Supabase database advisors report no security or performance issues after redundant permissive policies were removed. |
 | Payment edge tests | Passing | `npm run test:edge` passes. |
@@ -30,6 +30,7 @@ payments, backups, and live smoke checks are confirmed.
 | Cross-browser critical E2E | Passing | `npm run test:e2e -- --project=critical-firefox --project=critical-webkit` passes: 6 tests. |
 | Accessibility E2E | Passing | `npm run test:e2e -- --project=candidate-accessibility --project=admin-accessibility` passes: 10 tests. |
 | Reliability E2E | Passing | `npm run test:e2e -- --project=reliability-desktop` passes: 6 tests. |
+| Turnstile E2E | Passing | `npm run test:e2e:turnstile` uses Cloudflare's public test widget and confirms that sign-in, signup, and recovery send completed CAPTCHA tokens to Supabase. |
 | Performance E2E | Passing | `npm run test:e2e:performance` passes: 3 tests using warmed-route local preview measurements. |
 | Standard load test | Passing | `npm run test:load` passes. Local smoke profile reached 50 concurrent candidate reads, 25 admin reads, objective submit contention, and oral autosave contention with 0 failures. |
 | Full local stress load | Not cleared | `npm run test:load:full` passes through 100 concurrent candidate reads but fails at 250-300 local candidate-read concurrency with `fetch failed` errors. Treat as a staging-capacity gate, not cleared by local smoke. |
