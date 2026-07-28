@@ -33,6 +33,7 @@
     "launch:check:full": "node scripts/test/runLaunchReadiness.mjs --full",
     "test:sdet": "npm run lint && npm run build && npm run test:security && npm run test:unit:coverage && npm run test:db && npm run test:edge && npm run test:e2e && npm run test:load:full",
     "import:questions": "node scripts/importQuestions.mjs",
+    "internal:convert-bulk-text": "node scripts/convertBulkText.mjs",
     "content:inspect": "node scripts/content/inspectContent.mjs",
     "content:validate": "node scripts/content/validateContent.mjs",
     "content:build-batch": "node scripts/content/buildBatch.mjs",

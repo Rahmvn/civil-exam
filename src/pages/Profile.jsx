@@ -5,7 +5,7 @@ import { NIGERIA_STATES, updateProfile } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { useAuth } from "../lib/useAuth";
 
-const OPTIONAL_DETAILS_HELP = "These optional details help our admin check account, module, or payment issues faster.";
+const OPTIONAL_DETAILS_HELP = "Helpful if you ever need support with your account, access, or payment.";
 
 function getInitials(name) {
   const parts = name?.trim().split(/\s+/).filter(Boolean).slice(0, 2) ?? [];

@@ -293,6 +293,29 @@ export default function Support() {
           </section>
 
           <aside className="support-sidebar">
+            <div className="support-quick-actions" aria-label="Quick support options">
+              <section className="support-suggestion-card" aria-labelledby="support-suggestion-title">
+                <div>
+                  <h2 id="support-suggestion-title">Have a suggestion?</h2>
+                  <p>Share an idea or something that felt unclear.</p>
+                </div>
+                <button className="support-suggestion-action" onClick={prepareSuggestion} type="button">
+                  Share a suggestion
+                </button>
+              </section>
+              {whatsappSupportUrl && (
+                <a
+                  aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
+                  className="support-whatsapp-link"
+                  href={whatsappSupportUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span>Need urgent help?</span>
+                  <strong>Chat on WhatsApp</strong>
+                </a>
+              )}
+            </div>
             <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
               <header className="support-panel-heading">
                 <div>
@@ -346,27 +369,6 @@ export default function Support() {
                 <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : isSuggestion ? "Send suggestion" : "Send request"}</button>
               </div>
             </form>
-            <section className="support-suggestion-card" aria-labelledby="support-suggestion-title">
-              <div>
-                <h2 id="support-suggestion-title">Have a suggestion?</h2>
-                <p>Share an idea or something that felt unclear.</p>
-              </div>
-              <button className="support-suggestion-action" onClick={prepareSuggestion} type="button">
-                Share a suggestion
-              </button>
-            </section>
-            {whatsappSupportUrl && (
-              <a
-                aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
-                className="support-whatsapp-link"
-                href={whatsappSupportUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <span>Need urgent help?</span>
-                <strong>Chat on WhatsApp</strong>
-              </a>
-            )}
           </aside>
         </div>
 

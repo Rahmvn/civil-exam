@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   buildWhatsAppSupportUrl,
@@ -6,9 +7,109 @@ import {
 } from "../lib/whatsappSupport";
 
 const SUPPORT_CONFIG = resolveWhatsAppSupportConfig(import.meta.env);
+const WHATSAPP_DOCK_SIDE_KEY = "promotionsure.whatsappSupportDockSide";
+const MOBILE_DOCK_QUERY = "(max-width: 720px)";
+const DRAG_THRESHOLD_PX = 7;
+
+function getSavedDockSide() {
+  if (typeof window === "undefined") return "right";
+  return window.localStorage.getItem(WHATSAPP_DOCK_SIDE_KEY) === "left" ? "left" : "right";
+}
+
+function isMobileDockViewport() {
+  return typeof window !== "undefined" && window.matchMedia(MOBILE_DOCK_QUERY).matches;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 export function WhatsAppSupportButton({ avoidBottomNav = false }) {
   const location = useLocation();
+  const [dockSide, setDockSide] = useState(getSavedDockSide);
+  const [dragLeft, setDragLeft] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStateRef = useRef(null);
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia(MOBILE_DOCK_QUERY);
+    const handleViewportChange = () => {
+      if (!mediaQuery.matches) {
+        setDragLeft(null);
+        setIsDragging(false);
+        dragStateRef.current = null;
+      }
+    };
+
+    handleViewportChange();
+    mediaQuery.addEventListener("change", handleViewportChange);
+    return () => mediaQuery.removeEventListener("change", handleViewportChange);
+  }, []);
+
+  function handlePointerDown(event) {
+    if (!isMobileDockViewport() || !event.isPrimary) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      currentLeft: rect.left,
+      width: rect.width,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function handlePointerMove(event) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const distance = Math.hypot(deltaX, deltaY);
+    if (!dragState.moved && distance < DRAG_THRESHOLD_PX) return;
+
+    dragState.moved = true;
+    setIsDragging(true);
+    suppressClickRef.current = true;
+    const maxLeft = window.innerWidth - dragState.width - 14;
+    const nextLeft = clamp(dragState.startLeft + deltaX, 14, maxLeft);
+    dragState.currentLeft = nextLeft;
+    setDragLeft(nextLeft);
+    event.preventDefault();
+  }
+
+  function finishPointerInteraction(event) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+    if (dragState.moved) {
+      const centerX = dragState.currentLeft + dragState.width / 2;
+      const nextDockSide = centerX < window.innerWidth / 2 ? "left" : "right";
+      setDockSide(nextDockSide);
+      window.localStorage.setItem(WHATSAPP_DOCK_SIDE_KEY, nextDockSide);
+      setDragLeft(null);
+      setIsDragging(false);
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+    }
+
+    dragStateRef.current = null;
+  }
+
+  function handleClick(event) {
+    if (!suppressClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
   if (!SUPPORT_CONFIG.enabled || !isWhatsAppSupportRoute(location.pathname)) return null;
 
@@ -26,8 +127,17 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
     <a
       aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
       className={`whatsapp-support-button${avoidBottomNav ? " avoid-bottom-nav" : ""}`}
+      data-dock-side={dockSide}
+      data-dragging={isDragging ? "true" : "false"}
+      draggable="false"
       href={supportUrl}
+      onClick={handleClick}
+      onPointerCancel={finishPointerInteraction}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishPointerInteraction}
       rel="noopener noreferrer"
+      style={dragLeft === null ? undefined : { "--whatsapp-drag-left": `${dragLeft}px` }}
       target="_blank"
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">

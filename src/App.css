@@ -6978,13 +6978,46 @@ button.auth-forgot-link {
 @media (max-width: 720px) {
   .whatsapp-support-button {
     right: max(14px, env(safe-area-inset-right, 0px));
+    left: auto;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    width: 46px;
+    height: 46px;
     min-height: 46px;
-    padding: 9px 14px 9px 11px;
+    padding: 0;
+    justify-content: center;
+    touch-action: none;
+    transition:
+      left 160ms ease,
+      right 160ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      background 140ms ease;
+  }
+
+  .whatsapp-support-button[data-dock-side="left"] {
+    right: auto;
+    left: max(14px, env(safe-area-inset-left, 0px));
+  }
+
+  .whatsapp-support-button[data-dragging="true"] {
+    right: auto;
+    left: var(--whatsapp-drag-left);
+    cursor: grabbing;
+    transition: none;
   }
 
   .whatsapp-support-button.avoid-bottom-nav {
     bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .whatsapp-support-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -14874,7 +14907,7 @@ button.module-chooser-link {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .account-info-hint {
@@ -14884,15 +14917,17 @@ button.module-chooser-link {
 }
 
 .account-info-hint button {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  padding: 0;
   display: inline-grid;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
   border-radius: 50%;
-  background: color-mix(in srgb, var(--color-primary-soft) 45%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary-soft) 38%, var(--color-surface));
   color: var(--color-primary-dark);
-  font-size: 0.76rem;
+  font-size: 0.68rem;
   font-weight: 800;
   line-height: 1;
   box-shadow: none;
@@ -14907,9 +14942,9 @@ button.module-chooser-link {
 .account-info-popover {
   position: absolute;
   top: calc(100% + 8px);
-  left: 50%;
+  right: 0;
   z-index: 6;
-  width: min(260px, calc(100vw - 38px));
+  width: min(235px, calc(100vw - 38px));
   padding: 10px 12px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -14921,7 +14956,7 @@ button.module-chooser-link {
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.11);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -4px);
+  transform: translateY(-4px);
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
@@ -14929,7 +14964,7 @@ button.module-chooser-link {
 .account-info-hint:focus-within .account-info-popover,
 .account-info-popover[data-open="true"] {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 
 .account-card-heading h2,
@@ -19873,6 +19908,11 @@ button.practice-hub-row-action:focus-visible {
   gap: 16px;
 }
 
+.support-quick-actions {
+  display: grid;
+  gap: 12px;
+}
+
 .support-suggestion-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -20217,6 +20257,14 @@ button.practice-hub-row-action:focus-visible {
 
   .support-sidebar {
     gap: 14px;
+  }
+
+  .support-quick-actions {
+    order: 2;
+  }
+
+  .support-form {
+    order: 1;
   }
 
   .support-suggestion-card {
