@@ -331,6 +331,15 @@ export const ADMIN_SUPPORT_GUIDANCE = {
     ],
     escalate: "Escalate repeatable blinking, blank pages, timer faults, stale-client errors, or failures across unrelated accounts.",
   },
+  suggestion: {
+    safety: "Do not treat suggestions as urgent support incidents unless the message clearly reports a live access, payment, or practice problem.",
+    checks: [
+      "Identify whether the suggestion is about wording, layout, content, workflow, or a requested feature.",
+      "Check whether similar suggestions or support reports point to the same confusion.",
+      "If it reveals a real user-blocking issue, reclassify or escalate it before closing.",
+    ],
+    escalate: "Escalate suggestions that point to repeated confusion, content risk, payment/access friction, or a change that affects exam preparation.",
+  },
 };
 
 export function getAdminSupportGuidance(category) {

@@ -21,7 +21,7 @@ function PracticeExperiencePreview() {
         </div>
         <div className="landing-experience-progress"><i aria-hidden="true" /></div>
         <div className="landing-experience-question">
-          <p>Which document guides the Performance Management System rollout?</p>
+          <p>Under which Federal Civil Service reform strategy was the modern Performance Management System introduced as a key pillar?</p>
           <div className="landing-experience-options" aria-label="Example answer choices">
             <div className="is-selected">
               <i aria-hidden="true" />

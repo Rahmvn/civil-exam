@@ -14,6 +14,7 @@ const CATEGORIES = [
   ["practice", "Practice attempt"],
   ["content", "Question or answer content"],
   ["technical", "Technical problem"],
+  ["suggestion", "Suggestion"],
 ];
 
 const STATUS_LABELS = {
@@ -94,6 +95,7 @@ export default function Support() {
   const whatsappSupportUrl = SUPPORT_CONFIG.enabled
     ? buildWhatsAppSupportUrl({ number: SUPPORT_CONFIG.number, pathname: location.pathname })
     : null;
+  const isSuggestion = category === "suggestion";
 
   useEffect(() => {
     if (!initialPaymentReference) return;
@@ -103,6 +105,19 @@ export default function Support() {
   function prepareRequest(faq) {
     setCategory(faq.category);
     setSubject(faq.requestTitle);
+    setMessage("");
+    window.requestAnimationFrame(() => {
+      requestFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      subjectInputRef.current?.focus({ preventScroll: true });
+    });
+  }
+
+  function prepareSuggestion() {
+    setCategory("suggestion");
+    setSubject("");
+    setDescription("");
+    setPaymentReference("");
+    setModuleId("");
     setMessage("");
     window.requestAnimationFrame(() => {
       requestFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -170,7 +185,9 @@ export default function Support() {
       setPaymentReference("");
       setModuleId("");
       setMessageTone("success");
-      setMessage("Your request has been received. You can follow its status below.");
+      setMessage(isSuggestion
+        ? "Thanks. We have received your suggestion."
+        : "Your request has been received. You can follow its status below.");
     } catch (error) {
       logAppError("Support request create", error);
       setMessage(friendlyErrorMessage(error, "Your request could not be sent. Please try again."));
@@ -279,8 +296,10 @@ export default function Support() {
             <form className="support-form" onSubmit={submitRequest} ref={requestFormRef}>
               <header className="support-panel-heading">
                 <div>
-                  <h2>Send a request</h2>
-                  <p>Use this when an answer does not solve the issue. Please avoid passwords, OTPs, PINs, and card details.</p>
+                  <h2>{isSuggestion ? "Share a suggestion" : "Send a request"}</h2>
+                  <p>{isSuggestion
+                    ? "Use this for ideas, confusing wording, or improvements you would like us to consider."
+                    : "Use this when an answer does not solve the issue. Please avoid passwords, OTPs, PINs, and card details."}</p>
                 </div>
               </header>
 
@@ -293,8 +312,8 @@ export default function Support() {
                     </select>
                   </label>
                   <label>
-                    <span>Short title</span>
-                    <input aria-label="Issue" disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder="Briefly describe the issue" ref={subjectInputRef} required value={subject} />
+                    <span>{isSuggestion ? "Suggestion title" : "Short title"}</span>
+                    <input aria-label={isSuggestion ? "Suggestion title" : "Issue"} disabled={submitting} maxLength={120} minLength={5} onChange={(event) => setSubject(event.target.value)} placeholder={isSuggestion ? "Briefly describe the idea" : "Briefly describe the issue"} ref={subjectInputRef} required value={subject} />
                   </label>
                 </div>
 
@@ -310,8 +329,8 @@ export default function Support() {
                 )}
 
                 <label>
-                  <span>What happened?</span>
-                  <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder="What were you trying to do, what did you expect, and what happened instead?" required rows={6} value={description} />
+                  <span>{isSuggestion ? "What should we improve?" : "What happened?"}</span>
+                  <textarea disabled={submitting} maxLength={2000} minLength={20} onChange={(event) => setDescription(event.target.value)} placeholder={isSuggestion ? "Tell us what would make PromotionSure clearer or easier to use." : "What were you trying to do, what did you expect, and what happened instead?"} required rows={6} value={description} />
                   <small className="support-character-count">{`${description.length} / 2,000`}</small>
                 </label>
 
@@ -324,9 +343,18 @@ export default function Support() {
 
                 <p className="support-safety-note"><span aria-hidden="true">i</span> Never include a password, OTP, PIN, or card details.</p>
                 {message && <p className={`support-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
-                <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : "Send request"}</button>
+                <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : isSuggestion ? "Send suggestion" : "Send request"}</button>
               </div>
             </form>
+            <section className="support-suggestion-card" aria-labelledby="support-suggestion-title">
+              <div>
+                <h2 id="support-suggestion-title">Have a suggestion?</h2>
+                <p>Share an idea or something that felt unclear.</p>
+              </div>
+              <button className="support-suggestion-action" onClick={prepareSuggestion} type="button">
+                Share a suggestion
+              </button>
+            </section>
             {whatsappSupportUrl && (
               <a
                 aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
@@ -346,7 +374,7 @@ export default function Support() {
           <div className="support-history-heading">
             <div>
               <h2 id="support-history-title">Support requests</h2>
-              <p>Track issues you have sent to support.</p>
+              <p>Track requests and suggestions you have sent.</p>
             </div>
             {!loading && !loadingError && requests.length > 0 && <strong>{requestCountLabel}</strong>}
             {loadingError && <button className="text-action" onClick={() => { setLoading(true); setLoadingError(""); void loadRequests(); }} type="button">Try again</button>}

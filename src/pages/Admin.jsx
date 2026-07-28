@@ -1312,6 +1312,7 @@ const SUPPORT_CATEGORY_LABELS = {
   practice: "Practice",
   content: "Content",
   technical: "Technical",
+  suggestion: "Suggestion",
 };
 
 const SUPPORT_STATUS_LABELS = {

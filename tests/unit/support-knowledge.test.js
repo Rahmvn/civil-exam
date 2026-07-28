@@ -34,7 +34,7 @@ test("FAQ search crosses topics and normal topic browsing stays scoped", () => {
 });
 
 test("every support category provides actionable admin handling guidance", () => {
-  for (const category of ["account", "access", "payment", "practice", "content", "technical"]) {
+  for (const category of ["account", "access", "payment", "practice", "content", "technical", "suggestion"]) {
     const guidance = getAdminSupportGuidance(category);
     assert.ok(guidance.safety.length > 20);
     assert.equal(guidance.checks.length, 3);

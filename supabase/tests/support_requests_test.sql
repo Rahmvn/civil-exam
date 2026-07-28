@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(24);
+select plan(26);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -86,6 +86,24 @@ select is(
   (select subject_id from public.support_requests where subject = 'Practice timer did not start'),
   'e2000000-0000-4000-8000-000000000001'::uuid,
   'the affected module is retained for automated diagnosis'
+);
+
+select lives_ok(
+  $$ select public.create_support_request_v2(
+    'suggestion',
+    'Improve review navigation',
+    'It would help if answer review navigation stayed easier to reach on mobile.',
+    null,
+    '/help',
+    null
+  ) $$,
+  'a candidate can send a non-urgent product suggestion'
+);
+
+select is(
+  (select category from public.support_requests where subject = 'Improve review navigation'),
+  'suggestion',
+  'suggestions are stored with their own category'
 );
 
 select throws_ok(
