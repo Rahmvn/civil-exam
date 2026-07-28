@@ -202,7 +202,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.OFFLINE,
       "You are offline",
-      "Reconnect to the internet, then try again.",
+      "Connection problem. Reconnect, then try again.",
       "reconnect",
       true,
     );
@@ -212,7 +212,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.TIMEOUT,
       "This is taking longer than expected",
-      "Check your connection, then try again.",
+      "Connection problem. Try again.",
       "retry",
       true,
     );
@@ -222,7 +222,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.RATE_LIMITED,
       "Please wait a moment",
-      "There have been too many attempts. Wait briefly, then try again.",
+      "Too many attempts. Wait a moment, then try again.",
       "wait",
       true,
     );
@@ -232,7 +232,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.NETWORK,
       "We could not connect",
-      "Check your internet connection, then try again.",
+      "Connection problem. Check your internet and try again.",
       "retry",
       true,
     );
@@ -246,7 +246,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.SERVICE_CONFIGURATION,
       "This could not be completed",
-      "Your information is still here. Try again later, or contact support if it continues.",
+      "This could not be completed. Try again later.",
       "retry-later",
       false,
       { placement: "form" },
@@ -288,7 +288,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.PAYMENT_UNCONFIRMED,
       "Payment not confirmed",
-      KNOWN_USER_MESSAGES.get(rawMessage) ?? "We could not confirm your payment yet. Check its status before trying to pay again.",
+      KNOWN_USER_MESSAGES.get(rawMessage) ?? "Payment not confirmed yet. Check its status before trying again.",
       "check-payment",
       true,
     );
@@ -320,7 +320,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.CLIENT_VERSION,
       "This page needs to be refreshed",
-      "Refresh the page to load the latest version. If it continues, return to the dashboard.",
+      "Refresh the page to load the latest version.",
       "refresh",
       true,
     );
@@ -348,7 +348,7 @@ export function resolveAppProblem(error, options = {}) {
     return problem(
       PROBLEM_CODES.SERVER,
       "Service temporarily unavailable",
-      "Your request could not be completed right now. Please try again.",
+      "Service temporarily unavailable. Try again.",
       "retry",
       true,
     );

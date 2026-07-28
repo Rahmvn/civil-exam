@@ -15,7 +15,7 @@ create or replace function public.create_support_request(
 returns public.support_requests
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   v_user_id uuid := auth.uid();

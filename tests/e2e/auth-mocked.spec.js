@@ -73,7 +73,7 @@ test("full-code paste behavior and expired-code errors remain safe", async ({ pa
   });
   await expect(input).toHaveValue("987654");
   await page.getByRole("button", { name: "Verify code" }).click();
-  await expect(page.getByRole("alert")).toHaveText("That code has expired. Request a new code.");
+  await expect(page.getByRole("alert")).toHaveText("Code expired. Request a new one.");
   await expect(page.getByRole("alert")).not.toContainText("private provider");
 });
 
@@ -95,7 +95,7 @@ test("sign-in failure is useful without exposing provider details", async ({ pag
   await page.locator("form").getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("alert")).toHaveText(
-    "We could not sign you in with those details. Check them or reset your password.",
+    "Invalid sign-in details.",
   );
   await expect(page.getByRole("button", { name: "Forgot password?" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("private authentication provider detail");
@@ -150,7 +150,7 @@ test("confirmation-required signup transitions to OTP without persisting passwor
   await createAccount.click();
 
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
-  await expect(page.getByText(/If this is a new account, we’ll send a six-digit code/i)).toBeVisible();
+  await expect(page.getByText(/Check ca\*\*\*\*\*\*@example\.com for a six-digit code/i)).toBeVisible();
   await expect(page.getByText(/Already use PromotionSure/i)).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(page.getByRole("button", { name: "reset your password" })).toBeVisible();

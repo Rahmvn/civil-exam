@@ -278,7 +278,7 @@ export default function Auth() {
     setPending(nextPending);
     setNow(Date.now());
     setMessageTone("success");
-    setMessage("If a code can be sent to this address, a new one is on its way.");
+    setMessage("If a code can be sent to this email, a new one is on its way.");
   }
 
   async function handleSubmit(event) {
@@ -383,13 +383,13 @@ export default function Auth() {
 
         <header className="auth-card-heading">
           <h1>{isVerification ? "Check your email" : isForgotPassword ? "Reset your password" : mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
-          <p>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? `If this is a new account, we’ll send a six-digit code to ${maskEmail(pending?.email)}.` : `If an account uses this email, we’ll send a recovery code to ${maskEmail(pending?.email)}.`) : isForgotPassword ? "Enter your email and we will send secure recovery instructions." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Now create a password to secure your account.") : "Sign in to continue your preparation."}</p>
+          <p>{isVerification ? (verificationPurpose === AUTH_PURPOSES.SIGNUP ? `Check ${maskEmail(pending?.email)} for a six-digit code.` : `If an account uses this email, a recovery code will be sent to ${maskEmail(pending?.email)}.`) : isForgotPassword ? "Enter your email to request a recovery code." : mode === "sign-up" ? (isSignUpDetailsStep ? "First, tell us how to identify your account." : "Create a password to secure your account.") : "Sign in to continue your preparation."}</p>
         </header>
 
         {authNotice && <p className="auth-inline-notice" role="status">{authNotice}</p>}
         {verificationPurpose === AUTH_PURPOSES.SIGNUP && (
           <p className="auth-verification-help">
-            No email? Check spam. Already use PromotionSure?{" "}
+            No code yet? Check spam. Already use PromotionSure?{" "}
             <button onClick={() => leaveVerification("sign-in")} type="button">Sign in</button>
             {" "}or{" "}
             <button onClick={() => leaveVerification("forgot")} type="button">reset your password</button>.

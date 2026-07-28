@@ -86,7 +86,7 @@ test("Auth errors are classified before generic application errors", () => {
   const credentials = createSanitizedAuthProblem({ code: "invalid_credentials", message: "private provider detail" });
   assert.equal(credentials.field, "form");
   assert.equal(credentials.action, "reset-password");
-  assert.match(credentials.message, /reset your password/i);
+  assert.equal(credentials.message, "Invalid sign-in details.");
   assert.equal(JSON.stringify(credentials).includes("private provider detail"), false);
 });
 

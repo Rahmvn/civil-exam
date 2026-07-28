@@ -39,12 +39,12 @@ export const AUTH_PROBLEM_CODES = Object.freeze({
 
 const AUTH_PROBLEMS = Object.freeze({
   [AUTH_PROBLEM_CODES.INVALID_OTP]: {
-    message: "That code is not correct. Check the latest email and try again.",
+    message: "Invalid code.",
     field: "otp",
     action: "check-code",
   },
   [AUTH_PROBLEM_CODES.INVALID_CREDENTIALS]: {
-    message: "We could not sign you in with those details. Check them or reset your password.",
+    message: "Invalid sign-in details.",
     field: "form",
     action: "reset-password",
   },
@@ -54,17 +54,17 @@ const AUTH_PROBLEMS = Object.freeze({
     action: "correct-field",
   },
   [AUTH_PROBLEM_CODES.EXPIRED_OTP]: {
-    message: "That code has expired. Request a new code.",
+    message: "Code expired. Request a new one.",
     field: "otp",
     action: "resend",
   },
   [AUTH_PROBLEM_CODES.OTP_NO_LONGER_VALID]: {
-    message: "That code is no longer valid. Request a new code.",
+    message: "Code no longer valid. Request a new one.",
     field: "otp",
     action: "resend",
   },
   [AUTH_PROBLEM_CODES.RATE_LIMITED]: {
-    message: "Too many attempts were made. Wait a moment before trying again.",
+    message: "Too many attempts. Wait a moment, then try again.",
     field: "form",
     action: "wait",
   },
@@ -104,27 +104,27 @@ const AUTH_PROBLEMS = Object.freeze({
     action: "retry",
   },
   [AUTH_PROBLEM_CODES.OFFLINE]: {
-    message: "You are offline. Reconnect, then try again.",
+    message: "Connection problem. Reconnect, then try again.",
     field: "form",
     action: "reconnect",
   },
   [AUTH_PROBLEM_CODES.NETWORK_FAILURE]: {
-    message: "We could not connect. Check your internet connection, then try again.",
+    message: "Connection problem. Check your internet and try again.",
     field: "form",
     action: "retry",
   },
   [AUTH_PROBLEM_CODES.SERVICE_UNAVAILABLE]: {
-    message: "Sign-in services are temporarily unavailable. Try again shortly.",
+    message: "Sign-in is temporarily unavailable. Try again shortly.",
     field: "form",
     action: "retry-later",
   },
   [AUTH_PROBLEM_CODES.SIGNUP_FAILED]: {
-    message: "Your account could not be created. Check the details and try again.",
+    message: "Account creation could not be completed. Check the details and try again.",
     field: "form",
     action: "correct-or-retry",
   },
   [AUTH_PROBLEM_CODES.UNKNOWN]: {
-    message: "We could not complete this request. Try again.",
+    message: "This request could not be completed. Try again.",
     field: "form",
     action: "retry",
   },

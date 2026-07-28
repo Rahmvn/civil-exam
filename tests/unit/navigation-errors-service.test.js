@@ -26,7 +26,7 @@ test("return navigation preserves safe local paths and rejects redirects", () =>
 test("friendly errors redact infrastructure details into actionable messages", () => {
   assert.equal(
     friendlyErrorMessage(new Error("TypeError: Failed to fetch")),
-    "Check your internet connection, then try again.",
+    "Connection problem. Check your internet and try again.",
   );
   assert.equal(
     friendlyErrorMessage(new Error("permission denied by row-level security")),
@@ -38,7 +38,7 @@ test("friendly errors redact infrastructure details into actionable messages", (
   );
   assert.equal(
     friendlyErrorMessage(new Error("column practice_type does not exist")),
-    "Refresh the page to load the latest version. If it continues, return to the dashboard.",
+    "Refresh the page to load the latest version.",
   );
   assert.equal(
     friendlyErrorMessage(new Error("Payment reference is required")),
