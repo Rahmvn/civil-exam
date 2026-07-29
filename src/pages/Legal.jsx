@@ -255,11 +255,19 @@ export function TermsOfService() {
       <section>
         <h2>6. Refunds</h2>
         <p>
-          Refunds are available for duplicate charges, incorrect charges, or successful payments where access cannot
-          be delivered or restored. Completed purchases are otherwise non-refundable once digital module access has
-          been activated, except where applicable law requires a refund. Send requests with the account email and
-          payment reference to <ContactLink />. We may verify the transaction and access history before deciding a
-          request. PromotionSure does not require card details to investigate a refund.
+          PromotionSure will review refund requests for duplicate successful charges, incorrect charges, successful
+          payments where purchased access cannot be delivered or restored, or purchased content that is materially
+          unavailable and cannot reasonably be replaced. Refunds may also be available where applicable law requires
+          one. Activated digital module access is otherwise normally non-refundable after it has been made available
+          for use.
+        </p>
+        <p>
+          Send refund requests with the account email, payment reference, affected module, and reason to{" "}
+          <ContactLink />. PromotionSure may verify the transaction, access history, module availability, amount,
+          currency, and account ownership before deciding a request. Approved refunds may be full or partial depending
+          on the issue. After a refund is processed by the payment provider, bank and provider timelines may still
+          affect when funds reach the customer. PromotionSure does not require card details, PINs, OTPs, CVVs, or bank
+          login details to investigate a refund.
         </p>
       </section>
 

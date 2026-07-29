@@ -286,7 +286,7 @@ Use the payment history/receipt action when available. If the receipt cannot be 
 
 #### I want a refund or I disputed the payment
 
-Send a `Payment` request with the PromotionSure reference and reason. Do not send card or bank credentials. Refunds and disputes require payment operations review and must not be promised by first-line support.
+Send a `Payment` request with the PromotionSure reference, affected module, and reason. Do not send card details, PINs, OTPs, CVVs, bank credentials, or full receipts. Refunds may be reviewed for duplicate successful charges, incorrect charges, successful payments where purchased access cannot be delivered or restored, purchased content that is materially unavailable and cannot reasonably be replaced, or where applicable law requires one. Refunds and disputes require payment operations review and must not be promised by first-line support.
 
 ### Connection and device
 
@@ -374,6 +374,7 @@ Open `/help` while signed in. The request will show as `Received`, `In review`, 
 | Success but no access | provider success plus fulfillment not fulfilled/entitlement inactive | treat as P0; keep reference; do not ask for another payment | always to payment operations/engineering | active entitlement exists and module starts |
 | Missing/changed callback reference | look up only an owned payment reference | return candidate to access/status check | owned payment cannot be found or foreign reference appears | correct owned order is displayed |
 | Duplicate payment concern | compare references, amounts, module, and timestamps | do not promise refund; preserve both references | more than one successful charge | operations records final disposition |
+| Purchased content materially unavailable | compare module lifecycle, published content, candidate access, and reasonable replacement options | keep In review; do not promise refund or manual access | content cannot be delivered or reasonably replaced for the purchased access period | operations records final disposition and candidate receives a clear note |
 | Refund pending/dispute | Payment attention label and provider record | acknowledge review; avoid access/refund promises | always to payment operations | provider and entitlement follow approved policy |
 | Receipt failure | confirmed payment remains authoritative | provide/copy reference and retry receipt action later | receipt generation consistently fails | receipt works or alternative confirmation is delivered |
 

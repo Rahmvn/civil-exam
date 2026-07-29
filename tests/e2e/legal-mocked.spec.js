@@ -34,7 +34,7 @@ test("privacy and terms are public, responsive, and accessible", async ({ page }
   await expect(page).toHaveURL(/\/terms$/);
   await expect(page).toHaveTitle("Terms of Service | PromotionSure");
   await expect(page.getByRole("heading", { level: 1, name: "Terms of Service" })).toBeVisible();
-  await expect(page.getByText(/Refunds are available for duplicate charges/)).toBeVisible();
+  await expect(page.getByText(/PromotionSure will review refund requests for duplicate successful charges/)).toBeVisible();
   await expect(page.getByText(/Rights in third-party, government or publicly sourced materials/)).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
