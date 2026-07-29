@@ -1,0 +1,113 @@
+{
+  "generatedAt": "2026-07-29T23:40:33.365Z",
+  "action": "restore pension-module set 9 to published",
+  "setBefore": {
+    "id": "933daa0d-9840-4077-b5b3-3e340f393ab1",
+    "exam_pack_id": "ce71ad9a-e142-4364-a1dc-461c58568f1a",
+    "subject_id": "78b41743-9f18-4b16-82e4-025e9c41057f",
+    "set_number": 9,
+    "expected_question_count": 10,
+    "status": "withdrawn",
+    "created_by": null,
+    "updated_by": "c36459af-7e13-4ab7-aac6-606c96386fee",
+    "published_at": "2026-07-29T22:57:05.012+00:00",
+    "archived_at": null,
+    "created_at": "2026-07-29T22:57:15.465361+00:00",
+    "updated_at": "2026-07-29T23:21:19.258562+00:00",
+    "practice_type": "objective",
+    "logical_set_key": "690a1bb6-bb62-4cc7-bd79-b0e676762a99",
+    "version_number": 1,
+    "replaces_practice_set_id": null,
+    "replaced_by_practice_set_id": null,
+    "ever_published": true,
+    "first_published_at": "2026-07-29T22:57:05.012+00:00",
+    "withdrawn_at": "2026-07-29T23:21:19.258562+00:00",
+    "retired_at": null,
+    "retirement_reason": null,
+    "withdrawn_question_ids": [
+      "cf152a62-f462-41c1-9b6c-79e72db9f318",
+      "23e7d0fb-d50a-4df1-9ab0-55fbeeb0233b",
+      "4dae4911-42a6-49fc-9b3a-311cb3d325df",
+      "a42e2115-7ca1-4641-9dcf-a58cf00d8aca",
+      "f00cb860-8321-45d5-a049-65278fbbe91e",
+      "603bc365-8dcc-4e0f-ae8a-f645af71fe93",
+      "e463517a-1f16-4792-b229-775569457c20",
+      "3b8c5f2c-73cc-4c7f-a246-98296f40d74e",
+      "6eec2098-7550-4196-bf7d-9b27e921dfcd",
+      "28114b41-94f7-4213-aead-3ec7bb42bb9f"
+    ]
+  },
+  "questionCount": 10,
+  "questionsBefore": [
+    {
+      "id": "cf152a62-f462-41c1-9b6c-79e72db9f318",
+      "batch_position": 1,
+      "status": "archived",
+      "correct_option": "D",
+      "question_text": "In June 2026, the Federal Government transmitted an official wireless signal approving a major landmark welfare program for treasury-funded workers and police officers retiring from 2026 onwards. What is this scheme called?"
+    },
+    {
+      "id": "23e7d0fb-d50a-4df1-9ab0-55fbeeb0233b",
+      "batch_position": 2,
+      "status": "archived",
+      "correct_option": "B",
+      "question_text": "Does an employee in the Federal Civil Service have the right to opt out of the mandatory Contributory Pension Scheme?"
+    },
+    {
+      "id": "4dae4911-42a6-49fc-9b3a-311cb3d325df",
+      "batch_position": 3,
+      "status": "archived",
+      "correct_option": "C",
+      "question_text": "Under the Nigerian Pension Reform Act (PRA) 2014, which categories of employers are mandated to implement the Contributory Pension Scheme?"
+    },
+    {
+      "id": "a42e2115-7ca1-4641-9dcf-a58cf00d8aca",
+      "batch_position": 4,
+      "status": "archived",
+      "correct_option": "A",
+      "question_text": "Which of the following categories of personnel are explicitly EXEMPTED from the Contributory Pension Scheme under the PRA 2014?"
+    },
+    {
+      "id": "f00cb860-8321-45d5-a049-65278fbbe91e",
+      "batch_position": 5,
+      "status": "archived",
+      "correct_option": "B",
+      "question_text": "Can an employer dictate or compel an employee to use a specific Pension Fund Administrator (PFA) for his/her Retirement Savings Account?"
+    },
+    {
+      "id": "603bc365-8dcc-4e0f-ae8a-f645af71fe93",
+      "batch_position": 6,
+      "status": "archived",
+      "correct_option": "A",
+      "question_text": "Under the Contributory Pension Scheme, are employees allowed to make Voluntary Contributions (VC) to their Retirement Savings Account (RSA)?"
+    },
+    {
+      "id": "e463517a-1f16-4792-b229-775569457c20",
+      "batch_position": 7,
+      "status": "archived",
+      "correct_option": "B",
+      "question_text": "Under the PRA 2014, within how many days from the day salaries are paid must an employer remit both the employer and employee pension contributions to the Pension Fund Custodian (PFC)?"
+    },
+    {
+      "id": "3b8c5f2c-73cc-4c7f-a246-98296f40d74e",
+      "batch_position": 8,
+      "status": "archived",
+      "correct_option": "C",
+      "question_text": "Which of the following is true regarding the attachment or seizure of pension funds in a Retirement Savings Account to settle personal debts?"
+    },
+    {
+      "id": "6eec2098-7550-4196-bf7d-9b27e921dfcd",
+      "batch_position": 9,
+      "status": "archived",
+      "correct_option": "B",
+      "question_text": "The certificate of service is rendered on the approved form. For retiring officers on GL 07 and above, the appropriate form is called………………while in the case of officers on GL 06 and below, it is known as……………………."
+    },
+    {
+      "id": "28114b41-94f7-4213-aead-3ec7bb42bb9f",
+      "batch_position": 10,
+      "status": "archived",
+      "correct_option": "A",
+      "question_text": "The certificate of service of retiring officers on GL 07 and above requires the signature and counter-signature of………… and……….. while that of GL 06 and below requires the signature and counter-signature of………… and………………."
+    }
+  ]
+}

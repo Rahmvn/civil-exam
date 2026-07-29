@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-07-29T23:41:58.702Z",
+  "totals": {
+    "subjects": 5,
+    "published_sets": 65,
+    "published_questions": 1165,
+    "objective_questions": 1090,
+    "oral_questions": 75,
+    "issues": 0
+  },
+  "bySubject": {
+    "pension-module": {
+      "name": "Pension Module",
+      "objective": 170,
+      "oral": 0,
+      "published_sets": 9
+    },
+    "current-affairs": {
+      "name": "Current Affairs",
+      "objective": 220,
+      "oral": 0,
+      "published_sets": 11
+    },
+    "public-financial-management": {
+      "name": "Public Financial Management (PFM)",
+      "objective": 340,
+      "oral": 0,
+      "published_sets": 12
+    },
+    "public-service-rules": {
+      "name": "Public Service Rules (PSR)",
+      "objective": 360,
+      "oral": 0,
+      "published_sets": 18
+    },
+    "public-service-rules-oral": {
+      "name": "Oral module (PSR, PFM & Pension)",
+      "objective": 0,
+      "oral": 75,
+      "published_sets": 15
+    }
+  },
+  "issues": []
+}
