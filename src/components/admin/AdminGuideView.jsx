@@ -57,6 +57,15 @@ const ADMIN_GUIDE_TASKS = [
       "Publishing switches new attempts to the replacement and retires the old version without changing candidate history.",
     ],
   },
+  {
+    title: "Handle a sensitive support request",
+    steps: [
+      "Use WhatsApp or email for general questions only.",
+      "For payment, access, account, identity, or user-data changes, ask the candidate to send the request from Help and support while signed in.",
+      "Open the in-app request and confirm Source is Signed-in app and Verification is Logged-in user.",
+      "Use system checks and provider records before changing payment access or marking the request resolved.",
+    ],
+  },
 ];
 
 const ADMIN_GUIDE_SECTIONS = [
@@ -226,6 +235,20 @@ const ADMIN_GUIDE_SECTIONS = [
       "Review imports, updates, publishes, withdrawals, replacements, and retirements.",
       "Use the filters to narrow the log by action type.",
       "Open an entry to inspect the recorded details.",
+    ],
+  },
+  {
+    id: "support-verification",
+    title: "Support verification",
+    intro: "WhatsApp and email are useful for triage, but they do not prove the person owns the PromotionSure account.",
+    items: [
+      "Answer general questions in WhatsApp or email when no account, access, money, or private data change is needed.",
+      "Do not change payment access, module access, account details, identity fields, exports, or deletions from WhatsApp or email alone.",
+      "Use this reply for sensitive WhatsApp or email requests: For your security, we cannot handle payment, access, or account changes over WhatsApp or email. Please open PromotionSure, go to Help and support, and send the request from your signed-in account.",
+      "In Help requests, check Source and Verification before acting. Sensitive requests should show Source: Signed-in app and Verification: Logged-in user.",
+      "Never ask for passwords, OTPs, PINs, CVVs, card numbers, bank credentials, reset links, or full receipts.",
+      "For payment/access repair, trust the system check and payment provider record rather than screenshots.",
+      "If the source or verification looks wrong, keep the ticket in review and ask the candidate to submit again from the signed-in app.",
     ],
   },
   {

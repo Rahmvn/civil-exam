@@ -21307,6 +21307,15 @@ button.admin-support-drawer-close:focus-visible {
   line-height: 1.55;
 }
 
+.admin-support-message.is-warning {
+  border-color: #e6c77f;
+  background: #fff8e5;
+}
+
+.admin-support-message.is-warning h3 {
+  color: #7a4f07;
+}
+
 .admin-support-next-step {
   display: grid;
   gap: 8px;

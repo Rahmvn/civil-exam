@@ -311,7 +311,7 @@ export default function Support() {
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <span>Need urgent help?</span>
+                  <span>Quick questions only</span>
                   <strong>Chat on WhatsApp</strong>
                 </a>
               )}
@@ -367,7 +367,7 @@ export default function Support() {
                   </label>
                 )}
 
-                <p className="support-safety-note"><span aria-hidden="true">i</span> Never include a password, OTP, PIN, or card details.</p>
+                <p className="support-safety-note"><span aria-hidden="true">i</span> Never include a password, OTP, PIN, or card details. Payment and account changes must be sent from this signed-in support form.</p>
                 {message && <p className={`support-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>{message}</p>}
                 <button className="primary-action" disabled={submitting} type="submit">{submitting ? "Sending..." : isSuggestion ? "Send suggestion" : "Send request"}</button>
               </div>

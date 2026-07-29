@@ -2873,6 +2873,17 @@ button.admin-danger-link {
   white-space: pre-wrap;
 }
 
+.admin-support-message.is-warning {
+  padding: 14px;
+  border: 1px solid #e6c77f;
+  border-radius: 8px;
+  background: #fff8e5;
+}
+
+.admin-support-message.is-warning h3 {
+  color: #7a4f07;
+}
+
 .admin-support-request-details dl {
   margin: 0;
 }

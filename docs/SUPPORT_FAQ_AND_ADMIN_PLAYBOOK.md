@@ -28,6 +28,23 @@ Every issue must be answered in this order:
 
 ## 3. Support Boundaries
 
+### Channel verification
+
+WhatsApp and email are triage channels. They are useful for quick questions, but they do not prove that the sender owns the PromotionSure account.
+
+Sensitive requests include payment review, refund/dispute handling, module access changes, account identity changes, email/phone changes, data export, data deletion, and any action that affects money, access, identity, or private user data.
+
+For sensitive requests that arrive by WhatsApp or email, support should reply:
+
+> For your security, we cannot handle payment, access, or account changes over WhatsApp or email. Please open PromotionSure, go to Help and support, and send the request from your signed-in account.
+
+Before acting on a sensitive request in the admin, confirm the ticket shows:
+
+- Source: `Signed-in app`
+- Verification: `Logged-in user`
+
+If either value is missing or untrusted, keep the request in review and ask the candidate to submit or confirm from the signed-in app. Payment/access repair must use the system check and payment provider record, not screenshots alone.
+
 ### Candidate self-service
 
 Candidates may safely:

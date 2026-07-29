@@ -1136,6 +1136,8 @@ function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, workin
   const [acting, setActing] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const emailHref = buildSupportEmailComposeHref(request);
+  const isSensitiveRequest = ["account", "access", "payment"].includes(request.category);
+  const isVerifiedInApp = request.request_source === "in_app" && request.verification_status === "logged_in_user";
 
   async function runSystemCheck() {
     setChecking(true);
@@ -1250,6 +1252,12 @@ function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, workin
             )}
             {actionMessage && <p className="admin-support-action-message" role="status">{actionMessage}</p>}
           </section>
+          {isSensitiveRequest && !isVerifiedInApp && (
+            <section className="admin-support-message is-warning">
+              <h3>Verification required</h3>
+              <p>Ask the candidate to submit or confirm this from the signed-in app before changing money, access, account identity, or user data.</p>
+            </section>
+          )}
           <section className="admin-support-message">
             <h3>Candidate message</h3>
             <p>{request.description}</p>
@@ -1260,6 +1268,8 @@ function SupportRequestDetail({ onClose, onOpenModule, onUpdate, request, workin
               <div><dt>Candidate</dt><dd>{request.requester_name || "Not provided"}</dd></div>
               {request.requester_email && <div><dt>Email</dt><dd>{request.requester_email}</dd></div>}
               <div><dt>Category</dt><dd>{SUPPORT_CATEGORY_LABELS[request.category] ?? request.category}</dd></div>
+              <div><dt>Source</dt><dd>{SUPPORT_SOURCE_LABELS[request.request_source] ?? request.request_source ?? "Unknown"}</dd></div>
+              <div><dt>Verification</dt><dd>{SUPPORT_VERIFICATION_LABELS[request.verification_status] ?? request.verification_status ?? "Unknown"}</dd></div>
               {request.subject_name && <div><dt>Module</dt><dd>{request.subject_name}</dd></div>}
               {request.payment_reference && <div><dt>Payment reference</dt><dd className="is-technical">{request.payment_reference}</dd></div>}
               {request.page_path && <div><dt>Reported from</dt><dd>{request.page_path}</dd></div>}
@@ -1320,6 +1330,21 @@ const SUPPORT_STATUS_LABELS = {
   in_review: "In review",
   resolved: "Resolved",
   closed: "Closed",
+};
+
+const SUPPORT_SOURCE_LABELS = {
+  in_app: "Signed-in app",
+  email: "Email",
+  whatsapp: "WhatsApp",
+  admin_manual: "Admin-entered",
+};
+
+const SUPPORT_VERIFICATION_LABELS = {
+  unverified: "Unverified",
+  logged_in_user: "Logged-in user",
+  email_otp_verified: "Email OTP verified",
+  phone_otp_verified: "Phone OTP verified",
+  admin_reviewed: "Admin reviewed",
 };
 
 function buildSupportEmailComposeHref(request) {

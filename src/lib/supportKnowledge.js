@@ -278,7 +278,7 @@ const DEFAULT_ADMIN_GUIDANCE = {
 
 export const ADMIN_SUPPORT_GUIDANCE = {
   account: {
-    safety: "Never request a password, OTP, reset link, or authentication token. Do not tell a user with payment history to create another account.",
+    safety: "Never request a password, OTP, reset link, or authentication token. Sensitive account changes must come from a signed-in in-app support request, not WhatsApp or email alone.",
     checks: [
       "Confirm the candidate is referring to the signed-in account shown in this request.",
       "Separate a forgotten-password problem from an identity or profile correction.",
@@ -287,7 +287,7 @@ export const ADMIN_SUPPORT_GUIDANCE = {
     escalate: "Identity changes, repeated reset failures, missing profiles, and role problems require privileged operations or engineering review.",
   },
   access: {
-    safety: "Do not grant access informally or ask the candidate to buy again until entitlement and payment state are known.",
+    safety: "Do not grant access informally or ask the candidate to buy again until entitlement and payment state are known. WhatsApp and email can triage access issues, but access changes require a signed-in in-app request.",
     checks: [
       "Check the module lifecycle, published-set count, candidate availability, and sales state.",
       "Determine whether the issue affects this account, all users of one module, or a wider cohort.",
@@ -296,7 +296,7 @@ export const ADMIN_SUPPORT_GUIDANCE = {
     escalate: "Escalate when the authoritative catalogue, entitlement, and candidate UI disagree.",
   },
   payment: {
-    safety: "Do not ask the candidate to pay again. Never request card details, PIN, OTP, CVV, or bank credentials.",
+    safety: "Do not ask the candidate to pay again. Never request card details, PIN, OTP, CVV, or bank credentials. Payment actions must be anchored to a signed-in in-app request and the provider record.",
     checks: [
       "Locate the exact PromotionSure reference in Payment attention.",
       "Compare provider status, fulfillment status, active entitlement, module, amount, and currency.",

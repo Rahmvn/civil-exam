@@ -47,11 +47,14 @@ Deno.serve(async (request) => {
 
     const { data: supportRequest, error: requestError } = await adminClient
       .from("support_requests")
-      .select("id, user_id, category, payment_reference, subject_id")
+      .select("id, user_id, category, payment_reference, subject_id, request_source, verification_status")
       .eq("id", supportRequestId)
       .maybeSingle();
 
     if (requestError || !supportRequest) return jsonResponse({ error: "Support request not found" }, 404);
+    if (supportRequest.request_source !== "in_app" || supportRequest.verification_status !== "logged_in_user") {
+      return jsonResponse({ error: "Ask the candidate to submit this from the signed-in app before changing payment access" }, 403);
+    }
     if (supportRequest.category !== "payment" || !supportRequest.payment_reference) {
       return jsonResponse({ error: "This request does not contain a payment to recheck" }, 400);
     }
