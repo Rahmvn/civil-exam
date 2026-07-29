@@ -37,7 +37,7 @@ payments, backups, and live smoke checks are confirmed.
 | Visual regression | Passing | `npm run test:e2e:visual` passes: 4 tests. Current dashboard/access snapshots were inspected and intentionally refreshed after UI redesign. |
 | Full E2E regression | Mostly cleared | Candidate, admin, free-mobile, cross-browser, accessibility, reliability, performance, and visual gates are passing. Full local stress remains a staging-capacity concern. |
 | Operator/admin access check | Passing locally | `npm run test:operator-access` passes. The script now loads local `.env` when shell env vars are not already present. |
-| Legal operator consistency | Passing | Privacy and Terms use Muraina Rasheedah as operator/data controller. |
+| Legal operator consistency | Passing | Privacy, Terms, and structured data use RASHEEDAH BUKOLA FAGBO as operator/data controller. |
 | User-input abuse hardening | Passing locally | User-controlled text limits are enforced in the database and UI. Support requests remain capped and rate-limited; profile optional fields now have format/length constraints; oral answers are capped at 5,000 characters and late timeout submissions cannot overwrite the saved answer. |
 | Payment/Edge abuse hardening | Passing locally | Candidate/admin payment bodies are capped at 2 KiB, signed webhooks at 256 KiB, payment references are format-limited and ownership-checked before provider calls, and trusted payment endpoints use atomic per-user rate limits. |
 | Browser response hardening | Passing locally | `vercel.json` carries a tested CSP, anti-framing, MIME, referrer, permissions, HSTS, and OAuth-compatible opener policies. |

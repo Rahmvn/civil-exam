@@ -32,7 +32,7 @@ test("homepage structured data identifies the site and online business", () => {
   assert.equal(website.url, "https://promotionsure.com.ng/");
   assert.equal(organization.name, "PromotionSure");
   assert.equal(organization.areaServed.name, "Nigeria");
-  assert.equal(organization.founder.name, "Muraina Rasheedah");
+  assert.equal(organization.founder.name, "RASHEEDAH BUKOLA FAGBO");
   assert.doesNotMatch(JSON.stringify(structuredData), /sameAs/);
 });
 
