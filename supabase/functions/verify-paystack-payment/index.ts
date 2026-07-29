@@ -19,6 +19,11 @@ import {
 } from "../_shared/paystack.ts";
 import { validatePaystackEnvironment } from "../_shared/payment-validation.js";
 import { getPaymentUserId } from "../_shared/payment-validation.js";
+import {
+  getPaymentEmailDetails,
+  sendPaymentAccessIssueEmail,
+  sendPaymentSuccessEmail,
+} from "../_shared/transactional-email.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -104,6 +109,15 @@ Deno.serve(async (request) => {
       }
       validateModulePayment(order, payload.data);
       const entitlement = await activateModulePurchase(reference, payload.data);
+      const emailDetails = await getPaymentEmailDetails(reference);
+      if (emailDetails) {
+        await sendPaymentSuccessEmail(emailDetails).catch((emailError) => {
+          console.warn("Payment success email could not be sent", {
+            reference,
+            message: emailError instanceof Error ? emailError.message : "Unknown email error",
+          });
+        });
+      }
 
       return jsonResponse({
         status: "active",
@@ -113,6 +127,15 @@ Deno.serve(async (request) => {
       });
     } catch (fulfillmentError) {
       await markModulePaymentFulfillmentFailed(reference, fulfillmentError);
+      const emailDetails = await getPaymentEmailDetails(reference);
+      if (emailDetails) {
+        await sendPaymentAccessIssueEmail(emailDetails).catch((emailError) => {
+          console.warn("Payment access issue email could not be sent", {
+            reference,
+            message: emailError instanceof Error ? emailError.message : "Unknown email error",
+          });
+        });
+      }
       return jsonResponse({
         code: "PAYMENT_FULFILLMENT_FAILED",
         error: "Payment was received, but module access still needs attention. Please check again.",

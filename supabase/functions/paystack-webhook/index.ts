@@ -21,6 +21,23 @@ import {
   isValidPaystackSignature,
   validatePaystackEnvironment,
 } from "../_shared/payment-validation.js";
+import {
+  getPaymentEmailDetails,
+  sendPaymentReviewEmail,
+  sendPaymentSuccessEmail,
+} from "../_shared/transactional-email.ts";
+
+function getPaymentReviewEmailType(eventType: string, resolution = "") {
+  if (["refund.pending", "refund.processing", "refund.needs-attention"].includes(eventType)) {
+    return "refund_pending";
+  }
+  if (eventType === "refund.processed") return "refund_processed";
+  if (eventType === "refund.failed") return "refund_failed";
+  if (["charge.dispute.create", "charge.dispute.remind"].includes(eventType)) return "payment_disputed";
+  if (eventType === "charge.dispute.resolve") return "payment_dispute_resolved";
+  if (resolution) return "payment_dispute_resolved";
+  return null;
+}
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -49,6 +66,24 @@ Deno.serve(async (request) => {
 
     if (isPaystackPostPaymentEvent(event.event)) {
       const result = await applyPaystackPostPaymentEvent(await createPaystackEventKey(body), event);
+      if (result?.event_applied && reference) {
+        const reviewEmailType = getPaymentReviewEmailType(
+          event.event,
+          String(event?.data?.resolution ?? ""),
+        );
+        if (reviewEmailType) {
+          const emailDetails = await getPaymentEmailDetails(reference);
+          if (emailDetails) {
+            await sendPaymentReviewEmail(emailDetails, reviewEmailType).catch((emailError) => {
+              console.warn("Payment review email could not be sent", {
+                event: event.event,
+                reference,
+                message: emailError instanceof Error ? emailError.message : "Unknown email error",
+              });
+            });
+          }
+        }
+      }
       console.log("Processed Paystack post-payment event", {
         event: event.event,
         matched: Boolean(result?.payment_order_id),
@@ -65,6 +100,15 @@ Deno.serve(async (request) => {
         try {
           validateModulePayment(order, event.data);
           await activateModulePurchase(event.data.reference, event.data);
+          const emailDetails = await getPaymentEmailDetails(event.data.reference);
+          if (emailDetails) {
+            await sendPaymentSuccessEmail(emailDetails).catch((emailError) => {
+              console.warn("Payment success email could not be sent", {
+                reference: event.data.reference,
+                message: emailError instanceof Error ? emailError.message : "Unknown email error",
+              });
+            });
+          }
         } catch (fulfillmentError) {
           await markModulePaymentFulfillmentFailed(event.data.reference, fulfillmentError);
           throw fulfillmentError;
