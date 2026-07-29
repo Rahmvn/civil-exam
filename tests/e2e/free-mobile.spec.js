@@ -10,8 +10,8 @@ test("free candidate is guided into one module without exposing paid access", as
   await expect(moduleCard.getByRole("button", { name: "Try free" })).toBeVisible();
   await expect(moduleCard.getByRole("button", { name: "Unlock module" })).toBeVisible();
   await moduleCard.getByRole("button", { name: "Try free" }).click();
-  await expect(page.getByRole("dialog", { name: "Start free practice?" })).toBeVisible();
-  await expect(page.getByText("This unlocks Practice set 1 and one retry for this module.")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Financial Management" })).toBeVisible();
+  await expect(page.getByText("You will get Practice set 1 for this module, plus one retry if you need it.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 

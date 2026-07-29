@@ -167,8 +167,7 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
       >
         <header className="free-batch-confirmation-header">
           <div>
-            <h2 id="free-batch-modal-title">Start free practice?</h2>
-            <p>{getModuleDisplayName(subject.name)}</p>
+            <h2 id="free-batch-modal-title">{getModuleDisplayName(subject.name)}</h2>
           </div>
           <button
             aria-label="Close free practice confirmation"
