@@ -531,16 +531,21 @@ test("admin catalogue keeps its management layout at each breakpoint", async ({ 
 });
 
 test("admin launch offer uses per-module prices without tablet overflow", async ({ page }) => {
-  await page.setViewportSize({ width: 768, height: 1024 });
-  await page.goto("/admin");
+  for (const viewport of [
+    { width: 768, height: 1024 },
+    { width: 850, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/admin");
 
-  const offerPanel = page.locator(".admin-launch-offer");
-  await expect(offerPanel.getByRole("heading", { name: "One-time launch offer" })).toBeVisible();
-  await expect(offerPanel.getByText("Sets one genuine discounted price per active NGN module")).toBeVisible();
-  await expect(offerPanel.getByText("Launch prices (NGN)")).toBeVisible();
-  await expect.poll(() => offerPanel.locator(".admin-launch-offer-prices input").count()).toBeGreaterThanOrEqual(2);
-  await expect(offerPanel.locator(".admin-launch-offer-prices small").first()).toContainText("Regular");
-  await expectNoHorizontalOverflow(page);
+    const offerPanel = page.locator(".admin-launch-offer");
+    await expect(offerPanel.getByRole("heading", { name: "One-time launch offer" })).toBeVisible();
+    await expect(offerPanel.getByText("Sets one genuine discounted price per active NGN module")).toBeVisible();
+    await expect(offerPanel.getByText("Launch prices (NGN)")).toBeVisible();
+    await expect.poll(() => offerPanel.locator(".admin-launch-offer-prices input").count()).toBeGreaterThanOrEqual(2);
+    await expect(offerPanel.locator(".admin-launch-offer-prices small").first()).toContainText("Regular");
+    await expectNoHorizontalOverflow(page);
+  }
 });
 
 test("published admin questions and replacement controls survive durable URL reloads", async ({ page }) => {

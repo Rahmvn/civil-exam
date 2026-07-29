@@ -152,6 +152,17 @@
   }
 }
 
+@media (max-width: 900px) {
+  .admin-launch-offer-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-launch-offer-prices,
+  .admin-launch-offer-form button {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 680px) {
   .admin-launch-offer-form {
     grid-template-columns: 1fr;
@@ -3515,6 +3526,17 @@ button.admin-danger-link {
   .admin-launch-offer {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-launch-offer-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-launch-offer-prices,
+  .admin-launch-offer-form button {
+    grid-column: 1 / -1;
   }
 }
 
