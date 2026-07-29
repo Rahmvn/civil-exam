@@ -12,6 +12,18 @@ function pendingSignupState(now = Date.now()) {
   };
 }
 
+function pendingRecoveryState(now = Date.now()) {
+  return {
+    version: 1,
+    purpose: "recovery",
+    email: "candidate@example.com",
+    returnTo: "/reset-password",
+    requestedAt: now,
+    cooldownUntil: now + 60_000,
+    expiresAt: now + 3_600_000,
+  };
+}
+
 function mockJwt(userId) {
   const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
   return `${encode({ alg: "HS256", typ: "JWT" })}.${encode({
@@ -28,6 +40,14 @@ async function openSignupVerification(page) {
     window.sessionStorage.setItem("promotionsure.auth.pending.signup", JSON.stringify(value));
   }, pending);
   await page.goto("/auth?mode=verify-signup");
+}
+
+async function openRecoveryVerification(page) {
+  const pending = pendingRecoveryState();
+  await page.addInitScript((value) => {
+    window.sessionStorage.setItem("promotionsure.auth.pending.recovery", JSON.stringify(value));
+  }, pending);
+  await page.goto("/auth?mode=verify-recovery");
 }
 
 test("disabled Google authentication is not presented as an unfinished option", async ({ page }) => {
@@ -53,6 +73,32 @@ test("OTP uses one accessible numeric input with six visual cells", async ({ pag
   await expect(page.locator(".auth-otp-cell")).toHaveCount(6);
   await expect(page.locator(".auth-otp-cell").nth(0)).toHaveText("1");
   await expect(page.locator(".auth-otp-cell").nth(5)).toHaveText("6");
+});
+
+test("verification actions fit on mobile for signup and password recovery", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  for (const openVerification of [openSignupVerification, openRecoveryVerification]) {
+    await openVerification(page);
+
+    const actions = page.locator(".auth-verification-actions");
+    const startAgain = page.getByRole("button", { name: "Start again" });
+    const resend = page.getByRole("button", { name: /Resend in \d+s|Resend code/ });
+
+    await expect(startAgain).toBeVisible();
+    await expect(resend).toBeVisible();
+
+    const actionBox = await actions.boundingBox();
+    const startBox = await startAgain.boundingBox();
+    const resendBox = await resend.boundingBox();
+    expect(actionBox).not.toBeNull();
+    expect(startBox).not.toBeNull();
+    expect(resendBox).not.toBeNull();
+    expect(Math.round(startBox.width)).toBeGreaterThanOrEqual(300);
+    expect(Math.round(resendBox.width)).toBeGreaterThanOrEqual(300);
+    expect(resendBox.x).toBeGreaterThanOrEqual(actionBox.x - 1);
+    expect(resendBox.x + resendBox.width).toBeLessThanOrEqual(actionBox.x + actionBox.width + 1);
+  }
 });
 
 test("full-code paste behavior and expired-code errors remain safe", async ({ page }) => {

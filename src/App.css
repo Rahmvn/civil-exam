@@ -1503,7 +1503,7 @@ pre,
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -7309,23 +7309,40 @@ button.auth-step-back {
 }
 
 .auth-verification-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(9rem, max-content);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
 button.auth-resend-button {
-  min-height: 40px;
-  padding: 5px 0;
-  border: 0;
-  background: transparent;
+  justify-self: end;
+  min-height: 46px;
+  min-width: 9rem;
+  padding: 10px 14px;
+  border: 1.5px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: 12px;
+  background: var(--color-primary-soft);
   color: var(--color-primary-dark);
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   font-weight: 800;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
   box-shadow: none;
+  white-space: normal;
+}
+
+button.auth-resend-button:disabled {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+button.auth-resend-button:hover,
+button.auth-resend-button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 44%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-soft) 72%, var(--color-surface));
 }
 
 .auth-captcha {
@@ -7451,12 +7468,13 @@ button.auth-google-button:disabled {
 
   .auth-verification-actions {
     align-items: stretch;
-    flex-direction: column-reverse;
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
   button.auth-resend-button,
   .auth-verification-actions button.auth-step-back {
+    justify-self: stretch;
     width: 100%;
   }
 
