@@ -5,14 +5,20 @@ import App from './App.jsx'
 import { configureAppErrorReporter, logAppError } from './lib/errors.js'
 import { supabase } from './lib/supabaseClient.js'
 
-configureAppErrorReporter(({ context, problemCode, status }) => supabase.rpc("record_app_error", {
-  requested_context: context,
-  requested_problem_code: problemCode,
-  requested_page_path: window.location.pathname,
-  requested_http_status: status,
-}));
+configureAppErrorReporter(async ({ context, problemCode, status }) => {
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) return null;
+
+  return supabase.rpc("record_app_error", {
+    requested_context: context,
+    requested_problem_code: problemCode,
+    requested_page_path: window.location.pathname,
+    requested_http_status: status,
+  });
+});
 
 window.addEventListener("error", (event) => {
+  if (event.target && event.target !== window) return;
   logAppError("Unhandled browser error", event.error ?? new Error("Unhandled browser error"));
 });
 
