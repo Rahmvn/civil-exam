@@ -1,0 +1,72 @@
+{
+  "generated_at": "2026-07-29T22:52:39.491Z",
+  "database_writes": false,
+  "decisions": [
+    {
+      "slug": "public-financial-management",
+      "source_number": 105,
+      "decision": "leave_db_as_is",
+      "reason": "Source labels skip option b and repeat d; DB has four coherent options matching source text order. Answer key is C and DB correct_option is C."
+    },
+    {
+      "slug": "public-financial-management",
+      "source_number": 110,
+      "decision": "leave_db_as_is",
+      "reason": "Source repeats c for All of the above; DB maps All of the above to option D and keeps option C as States Accountant-General/Commissioner text. Answer key is C, so DB is coherent."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 1,
+      "decision": "leave_db_as_is",
+      "reason": "Source answer key uses I. d for #1; DB correct_option D is correct. Parser failed to read Roman-style I as 1."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 66,
+      "decision": "leave_db_as_is",
+      "reason": "Source has malformed c label without dot; DB correctly separates B Complicity and C Connivance. Answer key D and DB D."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 84,
+      "decision": "leave_db_as_is",
+      "reason": "Source repeats b label; DB maps the second b line to C. Answer key B and DB B."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 137,
+      "decision": "unresolved_source_defect",
+      "reason": "Source provides only A-C options and answer key C. DB option D is a placeholder. Accurate repair needs verified fourth option or replacement question; I did not invent one."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 139,
+      "decision": "leave_db_as_is",
+      "reason": "Source repeats b label for the fourth option; DB maps it to D. Answer key A and DB A."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 157,
+      "decision": "leave_db_as_is",
+      "reason": "Source option b lacks punctuation; DB correctly separates A-D options. Answer key C and DB C."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 293,
+      "decision": "leave_db_as_is",
+      "reason": "Source has stray empty e line after option D; DB keeps A-D only. DB answer A retained."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": 299,
+      "decision": "leave_db_as_is",
+      "reason": "Source has duplicate 50 years for C and D while DB has C as 55 years and D as 50 years. DB is more coherent; no verified correction applied."
+    },
+    {
+      "slug": "public-service-rules",
+      "source_number": "340/351 duplicate",
+      "decision": "leave_both_source_backed_rows",
+      "reason": "Both rows are source-backed and answer-equivalent: FCSC is correct in both, but appears as C in set 17 and D in set 18. Removing one would underfill a published set without a verified replacement."
+    }
+  ]
+}
