@@ -15167,6 +15167,16 @@ button.account-edit-open {
   .account-support-card {
     padding: 18px;
   }
+
+  .account-info-hint {
+    position: static;
+  }
+
+  .account-info-popover {
+    left: 0;
+    right: auto;
+    width: min(235px, 100%);
+  }
 }
 
 @media (max-width: 420px) {
