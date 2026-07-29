@@ -183,9 +183,6 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
           You will get Practice set 1 for this module, plus one retry if you need it.
         </p>
         <div className="free-batch-confirmation-actions">
-          <button className="ghost-button" disabled={loading} onClick={onCancel} type="button">
-            Cancel
-          </button>
           <button className="primary-action" disabled={loading} onClick={onConfirm} type="button">
             {loading ? "Starting..." : "Start"}
           </button>
