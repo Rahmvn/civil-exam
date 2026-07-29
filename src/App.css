@@ -10342,7 +10342,7 @@ button.practice-flag-button {
   }
 
   .practice-page-focused {
-    width: min(430px, 100%);
+    width: min(760px, 100%);
   }
 
   .practice-desktop-layout {
@@ -10352,6 +10352,51 @@ button.practice-flag-button {
 
   .practice-desktop-sidebar {
     display: none;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 980px) {
+  .authenticated-shell {
+    width: min(100% - 48px, 900px);
+    padding-top: 18px;
+  }
+
+  .authenticated-frame {
+    gap: 22px;
+  }
+
+  .authenticated-header {
+    top: 14px;
+    padding: 14px 18px;
+    border-radius: 18px;
+  }
+
+  .authenticated-content {
+    display: grid;
+    align-content: start;
+    min-height: calc(100dvh - 168px);
+  }
+
+  .account-page,
+  .practice-hub,
+  .practice-page-focused,
+  .oral-start-page,
+  .oral-session-page {
+    width: min(100%, 820px);
+  }
+
+  .practice-session-shell,
+  .oral-start-card,
+  .oral-question-panel {
+    border-radius: 16px;
+  }
+
+  .practice-session-shell {
+    padding: 18px;
+  }
+
+  .oral-session-page {
+    padding-top: 16px;
   }
 }
 
@@ -15167,7 +15212,9 @@ button.account-edit-open {
   .account-support-card {
     padding: 18px;
   }
+}
 
+@media (max-width: 900px) {
   .account-info-hint {
     position: static;
   }
