@@ -29,6 +29,8 @@ export function UnlockModuleModal({
 
   if (!module) return null;
 
+  const moduleName = getModuleDisplayName(module.subject_name ?? module.name);
+
   return (
     <div className="access-receipt-backdrop" role="presentation" onClick={onClose}>
       <section
@@ -40,8 +42,7 @@ export function UnlockModuleModal({
       >
         <header className="access-unlock-header">
           <div>
-            <h2 id="unlock-module-title">Unlock module</h2>
-            <p>{getModuleDisplayName(module.subject_name ?? module.name)}</p>
+            <h2 id="unlock-module-title">{moduleName}</h2>
           </div>
           <button className="access-unlock-close" aria-label="Close unlock module" onClick={onClose} type="button">&times;</button>
         </header>
