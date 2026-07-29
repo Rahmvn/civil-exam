@@ -610,6 +610,12 @@ Critical journeys must run on:
 
 The full long-running suite may remain Chromium-first, but critical smoke and payment flows must be cross-browser.
 
+Run the focused iPhone Safari-sized journey check with:
+
+```bash
+npm run test:e2e:iphone
+```
+
 ### 13.2 Viewport matrix
 
 At minimum test:

@@ -23,6 +23,7 @@
     "test:e2e:auth-mock": "playwright test --config=playwright.auth-mock.config.js",
     "test:e2e:turnstile": "playwright test --config=playwright.turnstile.config.js",
     "test:e2e:headed": "node scripts/test/runPlaywright.mjs --headed",
+    "test:e2e:iphone": "node scripts/test/runPlaywright.mjs --project=public-iphone --project=paid-iphone --project=free-iphone",
     "test:e2e:visual": "node scripts/test/runPlaywright.mjs --visual --project=visual-desktop",
     "test:e2e:performance": "node scripts/test/runPlaywright.mjs --performance --project=performance-desktop",
     "test:load": "node scripts/test/runLoadTest.mjs",

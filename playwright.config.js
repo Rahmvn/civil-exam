@@ -84,6 +84,11 @@ export default defineConfig({
       use: { ...devices["Pixel 5"] },
     },
     {
+      name: "public-iphone",
+      testMatch: /public\.spec\.js/,
+      use: { ...devices["iPhone 13"] },
+    },
+    {
       name: "paid-desktop",
       dependencies: ["setup-paid"],
       testMatch: /paid\.spec\.js/,
@@ -96,10 +101,22 @@ export default defineConfig({
       use: { ...devices["Pixel 5"], storageState: ".playwright-auth/paid.json" },
     },
     {
+      name: "paid-iphone",
+      dependencies: ["setup-paid"],
+      testMatch: /paid-mobile\.spec\.js/,
+      use: { ...devices["iPhone 13"], storageState: ".playwright-auth/paid.json" },
+    },
+    {
       name: "free-mobile",
       dependencies: ["setup-free"],
       testMatch: /free-mobile\.spec\.js/,
       use: { ...devices["Pixel 5"], storageState: ".playwright-auth/free.json" },
+    },
+    {
+      name: "free-iphone",
+      dependencies: ["setup-free"],
+      testMatch: /free-mobile\.spec\.js/,
+      use: { ...devices["iPhone 13"], storageState: ".playwright-auth/free.json" },
     },
     {
       name: "critical-firefox",
