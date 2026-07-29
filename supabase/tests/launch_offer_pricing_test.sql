@@ -41,7 +41,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ select public.admin_configure_launch_offer(100000, now(), now() + interval '1 day') $$,
+  $$ select public.admin_configure_launch_offer('[]'::jsonb, now(), now() + interval '1 day') $$,
   'P0001',
   'Admin access is required',
   'candidates cannot configure the launch offer'
@@ -54,6 +54,91 @@ select throws_ok(
   'authenticated clients cannot read the launch offer table directly'
 );
 
+reset role;
+
+insert into public.subjects (
+  id,
+  name,
+  slug,
+  description,
+  sort_order,
+  is_active,
+  batch_size,
+  pass_mark_percent,
+  lifecycle_status,
+  candidate_availability,
+  practice_type
+) values
+  (
+    'f2000000-0000-4000-8000-000000000001',
+    'Launch Offer Objective Fixture',
+    'launch-offer-objective-fixture',
+    'Launch offer pricing test objective module',
+    991,
+    true,
+    20,
+    70,
+    'active',
+    'available',
+    'objective'
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000002',
+    'Launch Offer Oral Fixture',
+    'launch-offer-oral-fixture',
+    'Launch offer pricing test oral module',
+    992,
+    true,
+    5,
+    70,
+    'active',
+    'available',
+    'oral'
+  )
+on conflict (id) do update
+set lifecycle_status = 'active',
+    candidate_availability = 'available',
+    is_active = true;
+
+update public.module_offerings
+set is_active = false
+where subject_id not in (
+  'f2000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000002'
+);
+
+insert into public.module_offerings (
+  exam_pack_id,
+  subject_id,
+  price_kobo,
+  currency,
+  is_active
+)
+select
+  ep.id,
+  fixture.subject_id,
+  fixture.price_kobo,
+  'NGN',
+  true
+from (
+  values
+    ('f2000000-0000-4000-8000-000000000001'::uuid, 1000000),
+    ('f2000000-0000-4000-8000-000000000002'::uuid, 1200000)
+) as fixture(subject_id, price_kobo)
+cross join lateral (
+  select id
+  from public.exam_packs
+  where is_active = true
+  order by active_from desc, created_at desc
+  limit 1
+) ep
+on conflict (exam_pack_id, subject_id) do update
+set price_kobo = excluded.price_kobo,
+    currency = excluded.currency,
+    is_active = true;
+
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000002', true);
 
 select is(
@@ -63,33 +148,48 @@ select is(
 );
 
 select throws_ok(
-  $$ select public.admin_configure_launch_offer(
-    100000,
-    now() + interval '10 minutes',
-    now() + interval '7 days 11 minutes'
-  ) $$,
+  $$
+    select public.admin_configure_launch_offer(
+      jsonb_build_array(
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000001', 'discounted_price_kobo', 700000),
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000002', 'discounted_price_kobo', 900000)
+      ),
+      now() + interval '10 minutes',
+      now() + interval '7 days 11 minutes'
+    )
+  $$,
   'P0001',
   'The one-time launch offer cannot run for more than seven days',
   'an offer cannot exceed seven days'
 );
 
 select throws_ok(
-  $$ select public.admin_configure_launch_offer(
-    (select minimum_regular_price_kobo from public.get_admin_launch_offer()),
-    now() + interval '10 minutes',
-    now() + interval '1 day'
-  ) $$,
+  $$
+    select public.admin_configure_launch_offer(
+      jsonb_build_array(
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000001', 'discounted_price_kobo', 1000000),
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000002', 'discounted_price_kobo', 1200000)
+      ),
+      now() + interval '10 minutes',
+      now() + interval '1 day'
+    )
+  $$,
   'P0001',
-  'Launch price must be lower than every active module regular price',
-  'the launch price must be a genuine discount'
+  'Each launch price must be lower than that module regular price',
+  'each module launch price must be a genuine discount'
 );
 
 select lives_ok(
-  $$ select public.admin_configure_launch_offer(
-    100000,
-    now() + interval '10 minutes',
-    now() + interval '6 days'
-  ) $$,
+  $$
+    select public.admin_configure_launch_offer(
+      jsonb_build_array(
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000001', 'discounted_price_kobo', 700000),
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000002', 'discounted_price_kobo', 900000)
+      ),
+      now() + interval '10 minutes',
+      now() + interval '6 days'
+    )
+  $$,
   'an admin can schedule the one-time offer'
 );
 
@@ -106,11 +206,16 @@ select is(
 );
 
 select lives_ok(
-  $$ select public.admin_configure_launch_offer(
-    100000,
-    now() - interval '1 minute',
-    now() + interval '6 days'
-  ) $$,
+  $$
+    select public.admin_configure_launch_offer(
+      jsonb_build_array(
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000001', 'discounted_price_kobo', 700000),
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000002', 'discounted_price_kobo', 900000)
+      ),
+      now() - interval '1 minute',
+      now() + interval '6 days'
+    )
+  $$,
   'an admin can make a scheduled offer live'
 );
 
@@ -119,7 +224,14 @@ reset role;
 select throws_ok(
   $$
     update public.module_offerings
-    set price_kobo = 100000
+    set price_kobo = (
+      select lop.discounted_price_kobo
+      from public.launch_offers lo
+      join public.launch_offer_module_prices lop on lop.launch_offer_id = lo.id
+      where lo.singleton_key = 'launch'
+        and lop.subject_id = module_offerings.subject_id
+      limit 1
+    )
     where id = (
       select mo.id
       from public.module_offerings mo
@@ -134,7 +246,7 @@ select throws_ok(
     )
   $$,
   'P0001',
-  'An active module regular price must remain above the configured launch price',
+  'An active module regular price must remain above its configured launch price',
   'regular module prices cannot invalidate a scheduled or live discount'
 );
 
@@ -146,7 +258,6 @@ select ok(
     select 1
     from public.get_module_access_catalog_v2()
     where launch_offer_active = true
-      and price_kobo = 100000
       and regular_price_kobo > price_kobo
   ),
   'candidate pricing shows the server-computed launch price and regular price'
@@ -156,11 +267,16 @@ select set_config('request.jwt.claim.sub', 'f1000000-0000-4000-8000-000000000002
 select public.admin_end_launch_offer();
 
 select throws_ok(
-  $$ select public.admin_configure_launch_offer(
-    100000,
-    now() + interval '1 day',
-    now() + interval '2 days'
-  ) $$,
+  $$
+    select public.admin_configure_launch_offer(
+      jsonb_build_array(
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000001', 'discounted_price_kobo', 700000),
+        jsonb_build_object('subject_id', 'f2000000-0000-4000-8000-000000000002', 'discounted_price_kobo', 900000)
+      ),
+      now() + interval '1 day',
+      now() + interval '2 days'
+    )
+  $$,
   'P0001',
   'The one-time launch offer has already started and cannot be rescheduled',
   'an offer cannot be restarted after it has begun'

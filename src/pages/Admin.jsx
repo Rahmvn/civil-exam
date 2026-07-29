@@ -268,8 +268,9 @@ function ModuleCatalogue({
       </section>
 
       <AdminLaunchOfferPanel
-        key={launchOffer?.updated_at ?? "launch-offer-new"}
+        key={`${launchOffer?.updated_at ?? "launch-offer-new"}:${modules.map((module) => `${module.subject_id}:${module.price_kobo}`).join("|")}`}
         busy={working}
+        modules={modules}
         offer={launchOffer}
         onEnd={onEndLaunchOffer}
         onSchedule={onScheduleLaunchOffer}
@@ -1884,7 +1885,7 @@ export default function Admin() {
   function handleScheduleLaunchOffer(config) {
     requestConfirmation({
       title: "Schedule this launch offer?",
-      body: `Every eligible module will use this launch price from the selected start until the selected end. Once the offer starts, it cannot be restarted or rescheduled.`,
+      body: "Each eligible module will use its configured launch price from the selected start until the selected end. Once the offer starts, it cannot be restarted or rescheduled.",
       label: launchOffer?.status === "scheduled" ? "Update schedule" : "Schedule offer",
       action: async () => {
         await configureAdminLaunchOffer(config);

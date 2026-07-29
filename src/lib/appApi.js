@@ -432,9 +432,12 @@ export async function getAdminLaunchOffer() {
   return rows[0] ?? null;
 }
 
-export async function configureAdminLaunchOffer({ discountedPriceKobo, startsAt, endsAt }) {
+export async function configureAdminLaunchOffer({ modulePrices, startsAt, endsAt }) {
   return requireData(await supabase.rpc("admin_configure_launch_offer", {
-    requested_discounted_price_kobo: discountedPriceKobo,
+    requested_module_prices: ensureArray(modulePrices).map((item) => ({
+      subject_id: item.subjectId,
+      discounted_price_kobo: item.discountedPriceKobo,
+    })),
     requested_starts_at: startsAt,
     requested_ends_at: endsAt,
   }));

@@ -151,7 +151,7 @@ export async function getModuleOffering(
       .maybeSingle(),
     adminClient
       .from("launch_offers")
-      .select("discounted_price_kobo, currency, starts_at, ends_at, enabled")
+      .select("id, currency, starts_at, ends_at, enabled")
       .eq("singleton_key", "launch")
       .maybeSingle(),
   ]);
@@ -164,17 +164,30 @@ export async function getModuleOffering(
   if (launchOfferResult.error) throw launchOfferResult.error;
 
   const launchOffer = launchOfferResult.data;
+  const launchPriceResult = launchOffer
+    ? await adminClient
+      .from("launch_offer_module_prices")
+      .select("discounted_price_kobo, currency")
+      .eq("launch_offer_id", launchOffer.id)
+      .eq("subject_id", subject.id)
+      .maybeSingle()
+    : { data: null, error: null };
+
+  if (launchPriceResult.error) throw launchPriceResult.error;
+
+  const launchPrice = launchPriceResult.data;
   const now = Date.now();
   const startsAt = launchOffer ? new Date(launchOffer.starts_at).getTime() : Number.NaN;
   const endsAt = launchOffer ? new Date(launchOffer.ends_at).getTime() : Number.NaN;
   const launchOfferActive = Boolean(
     launchOffer?.enabled
+    && launchPrice
     && Number.isFinite(startsAt)
     && Number.isFinite(endsAt)
     && now >= startsAt
     && now < endsAt
-    && launchOffer.currency === offering.currency
-    && Number(launchOffer.discounted_price_kobo) < Number(offering.price_kobo),
+    && launchPrice.currency === offering.currency
+    && Number(launchPrice.discounted_price_kobo) < Number(offering.price_kobo),
   );
 
   return {
@@ -182,7 +195,7 @@ export async function getModuleOffering(
       ...offering,
       regular_price_kobo: offering.price_kobo,
       price_kobo: launchOfferActive
-        ? Number(launchOffer.discounted_price_kobo)
+        ? Number(launchPrice.discounted_price_kobo)
         : Number(offering.price_kobo),
       pricing_type: launchOfferActive ? "launch_offer" : "regular",
       launch_offer_ends_at: launchOfferActive ? launchOffer.ends_at : null,

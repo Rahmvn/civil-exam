@@ -20,22 +20,46 @@ function defaultWindow() {
   return { start: toWatInput(start), end: toWatInput(end) };
 }
 
-export function AdminLaunchOfferPanel({ offer, busy, onEnd, onSchedule }) {
-  const defaults = defaultWindow();
-  const [priceNaira, setPriceNaira] = useState(
-    offer?.discounted_price_kobo ? String(Number(offer.discounted_price_kobo) / 100) : "",
+function buildInitialModulePrices(offer, modules) {
+  const configured = new Map(
+    (Array.isArray(offer?.module_prices) ? offer.module_prices : [])
+      .map((item) => [item.subject_id, item.discounted_price_kobo]),
   );
+
+  return Object.fromEntries(
+    modules.map((module) => [
+      module.subject_id,
+      configured.has(module.subject_id) ? String(Number(configured.get(module.subject_id)) / 100) : "",
+    ]),
+  );
+}
+
+export function AdminLaunchOfferPanel({ modules = [], offer, busy, onEnd, onSchedule }) {
+  const defaults = defaultWindow();
+  const eligibleModules = modules.filter((module) => (
+    module.lifecycle_status === "active"
+    && module.price_kobo
+    && module.currency === "NGN"
+  ));
+  const [priceBySubject, setPriceBySubject] = useState(() => buildInitialModulePrices(offer, eligibleModules));
   const [startsAt, setStartsAt] = useState(offer?.starts_at ? toWatInput(offer.starts_at) : defaults.start);
   const [endsAt, setEndsAt] = useState(offer?.ends_at ? toWatInput(offer.ends_at) : defaults.end);
   const status = offer?.status ?? "not_configured";
   const canConfigure = status === "not_configured" || status === "scheduled" || status === "cancelled";
+  const allPricesPresent = eligibleModules.length > 0 && eligibleModules.every((module) => {
+    const priceKobo = Math.round(Number(priceBySubject[module.subject_id]) * 100);
+    return Number.isInteger(priceKobo) && priceKobo > 0 && priceKobo < Number(module.price_kobo);
+  });
 
   function submit(event) {
     event.preventDefault();
-    const discountedPriceKobo = Math.round(Number(priceNaira) * 100);
-    if (!Number.isInteger(discountedPriceKobo) || discountedPriceKobo <= 0) return;
+    const modulePrices = eligibleModules.map((module) => ({
+      subjectId: module.subject_id,
+      discountedPriceKobo: Math.round(Number(priceBySubject[module.subject_id]) * 100),
+    }));
+    if (!allPricesPresent) return;
     onSchedule({
-      discountedPriceKobo,
+      modulePrices,
       startsAt: fromWatInput(startsAt),
       endsAt: fromWatInput(endsAt),
     });
@@ -49,7 +73,7 @@ export function AdminLaunchOfferPanel({ offer, busy, onEnd, onSchedule }) {
           <span className={`admin-status admin-status-${status}`}>{status.replace("_", " ")}</span>
         </div>
         <p>
-          Sets one genuine discounted price across every active NGN module for no more than seven days.
+          Sets one genuine discounted price per active NGN module for no more than seven days.
           Candidate pages show the regular price crossed out, checkout verifies the discount on the server,
           and the offer ends automatically. Once it starts, it cannot be restarted or rescheduled.
         </p>
@@ -70,10 +94,32 @@ export function AdminLaunchOfferPanel({ offer, busy, onEnd, onSchedule }) {
 
       {canConfigure ? (
         <form className="admin-launch-offer-form" onSubmit={submit}>
-          <label>
-            Launch price (NGN)
-            <input min="1" required step="1" type="number" value={priceNaira} onChange={(event) => setPriceNaira(event.target.value)} />
-          </label>
+          <fieldset className="admin-launch-offer-prices">
+            <legend>Launch prices (NGN)</legend>
+            {eligibleModules.map((module) => {
+              const priceNaira = Number(module.price_kobo) / 100;
+              return (
+                <label key={module.subject_id}>
+                  <span>
+                    <strong>{module.subject_name}</strong>
+                    <small>Regular {formatModuleMoney(module.price_kobo, module.currency)}</small>
+                  </span>
+                  <input
+                    max={Math.max(1, priceNaira - 1)}
+                    min="1"
+                    required
+                    step="1"
+                    type="number"
+                    value={priceBySubject[module.subject_id] ?? ""}
+                    onChange={(event) => setPriceBySubject((current) => ({
+                      ...current,
+                      [module.subject_id]: event.target.value,
+                    }))}
+                  />
+                </label>
+              );
+            })}
+          </fieldset>
           <label>
             Starts (WAT)
             <input required type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
@@ -82,7 +128,7 @@ export function AdminLaunchOfferPanel({ offer, busy, onEnd, onSchedule }) {
             Ends (WAT)
             <input required type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
           </label>
-          <button disabled={busy || !priceNaira || !startsAt || !endsAt} type="submit">
+          <button disabled={busy || !allPricesPresent || !startsAt || !endsAt} type="submit">
             {status === "scheduled" ? "Update schedule" : "Schedule offer"}
           </button>
           {(status === "scheduled" || status === "cancelled") && (
