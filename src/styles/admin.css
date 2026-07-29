@@ -3236,6 +3236,40 @@ button.admin-danger-link {
   gap: 14px;
 }
 
+.admin-payment-note {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 12px;
+  background: #f8faf8;
+  color: #314139;
+}
+
+.admin-payment-note h2,
+.admin-payment-note p,
+.admin-payment-note ul {
+  margin: 0;
+}
+
+.admin-payment-note h2 {
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.admin-payment-note p,
+.admin-payment-note li {
+  color: var(--admin-muted, #667067);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.admin-payment-note ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+}
+
 .admin-payment-attention-row {
   display: grid;
   gap: 16px;

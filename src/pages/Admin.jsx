@@ -186,7 +186,7 @@ function AdminRail({ currentView, navigate }) {
           onClick={() => navigate("/admin/payments")}
         >
           <AdminChromeIcon name="payments" />
-          <strong>Payments</strong>
+          <strong>Payment issues</strong>
         </button>
         <button
           className={`admin-rail-link${currentView === "guide" ? " is-active" : ""}`}
@@ -1402,8 +1402,8 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
     <>
       <section className="admin-page-heading admin-payment-heading">
         <div>
-          <h1>Payment attention</h1>
-          <p>Confirmed payments without usable access, delayed processing, refunds, and disputes appear here automatically.</p>
+          <h1>Payment issues</h1>
+          <p>Only payments needing review appear here: missing access, delayed processing, refunds, and disputes.</p>
         </div>
         <button disabled={refreshing} onClick={onRefresh} type="button">
           {refreshing ? "Refreshing..." : "Refresh queue"}
@@ -1414,6 +1414,19 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
         { label: "Access issues", value: items.filter((item) => item.attention_type === "access_issue").length },
         { label: "Provider reviews", value: items.filter((item) => ["dispute", "refund_pending"].includes(item.attention_type)).length },
       ]} />
+      <section className="admin-payment-note" aria-labelledby="payment-issues-note-title">
+        <h2 id="payment-issues-note-title">How this queue works</h2>
+        <p>
+          This is not a full payment ledger. It only shows payments where money and access may need review.
+          Normal successful payments stay on the candidate&apos;s Access page and do not appear here.
+        </p>
+        <ul>
+          <li>Success without active module access appears as an access issue.</li>
+          <li>Provider refunds and disputes appear for operations review.</li>
+          <li>Pending payments appear only after they have been delayed for more than 15 minutes.</li>
+          <li>Access repair is handled from Help requests when the candidate submits a signed-in payment request.</li>
+        </ul>
+      </section>
       <section className="admin-payment-board">
         <div className="admin-list-toolbar">
           <label className="admin-inline-search">
