@@ -1,13 +1,7 @@
 import { useEffect } from "react";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
-
-function formatMoney(kobo, currency = "NGN") {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: currency || "NGN",
-    maximumFractionDigits: 0,
-  }).format((kobo ?? 0) / 100);
-}
+import { formatLaunchOfferEnd } from "../lib/pricing";
+import { ModulePrice } from "./ModulePrice";
 
 export function UnlockModuleModal({
   error,
@@ -49,9 +43,14 @@ export function UnlockModuleModal({
 
         <div className="access-unlock-price">
           <span>Price</span>
-          <strong>{formatMoney(module.price_kobo, module.currency)}</strong>
+          <ModulePrice module={module} />
         </div>
 
+        {module.launch_offer_active && module.launch_offer_ends_at && (
+          <p className="access-unlock-offer-end">
+            Launch price ends {formatLaunchOfferEnd(module.launch_offer_ends_at)} WAT.
+          </p>
+        )}
         <p className="access-unlock-copy">Pay securely with Paystack. Your module unlocks automatically after payment is confirmed.</p>
 
         <div className="access-unlock-actions">
@@ -62,7 +61,7 @@ export function UnlockModuleModal({
             aria-busy={paying}
             className="primary-action"
             disabled={paying}
-            onClick={() => void onStartPayment(module.subject_slug ?? module.slug)}
+            onClick={() => void onStartPayment(module.subject_slug ?? module.slug, Number(module.price_kobo))}
             type="button"
           >
             {paying ? "Connecting..." : "Continue to payment"}

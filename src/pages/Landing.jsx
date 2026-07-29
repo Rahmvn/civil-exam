@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { PublicFooter, PublicNav } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
-import { getPublicModuleCatalog } from "../lib/appApi";
+import { getPublicLaunchOffer, getPublicModuleCatalog } from "../lib/appApi";
 import { logAppError } from "../lib/errors";
+import { formatLaunchOfferEnd, formatModuleMoney } from "../lib/pricing";
 import { normalizePublicModules } from "../lib/publicModules";
 import { useAuth } from "../lib/useAuth";
 
@@ -88,6 +89,7 @@ function LandingServicePoints() {
 export default function Landing() {
   const { isAdmin, loading, user } = useAuth();
   const [modules, setModules] = useState(null);
+  const [launchOffer, setLaunchOffer] = useState(null);
   const [moduleLoadFailed, setModuleLoadFailed] = useState(false);
 
   useEffect(() => {
@@ -95,9 +97,18 @@ export default function Landing() {
 
     let cancelled = false;
 
-    getPublicModuleCatalog()
-      .then((rows) => {
-        if (!cancelled) setModules(normalizePublicModules(rows));
+    Promise.all([
+      getPublicModuleCatalog(),
+      getPublicLaunchOffer().catch((error) => {
+        logAppError("Landing launch offer", error);
+        return null;
+      }),
+    ])
+      .then(([rows, currentLaunchOffer]) => {
+        if (!cancelled) {
+          setModules(normalizePublicModules(rows));
+          setLaunchOffer(currentLaunchOffer);
+        }
       })
       .catch((error) => {
         logAppError("Landing public module catalog", error);
@@ -132,6 +143,17 @@ export default function Landing() {
           </p>
           <Link className="primary-action landing-experience-action" to="/auth?mode=sign-up">Start free practice</Link>
           <p className="landing-experience-free-note"><span aria-hidden="true">{"\u2713"}</span> First practice set is free. No payment required.</p>
+          {launchOffer && (
+            <div className="landing-launch-offer" role="status">
+              <strong>Seven-day launch price</strong>
+              <span>
+                {launchOffer.has_uniform_regular_price ? "Regular price " : "Regular prices from "}
+                <del>{formatModuleMoney(launchOffer.regular_price_kobo, launchOffer.currency)}</del>
+                {" "}<b>{formatModuleMoney(launchOffer.discounted_price_kobo, launchOffer.currency)} per module</b>
+              </span>
+              <small>Available until {formatLaunchOfferEnd(launchOffer.ends_at)} WAT.</small>
+            </div>
+          )}
           <p className="landing-google-purpose">
             If you choose Google sign-in, we use your name and email only for your PromotionSure account.
             <Link to="/privacy"> Privacy Policy</Link>.

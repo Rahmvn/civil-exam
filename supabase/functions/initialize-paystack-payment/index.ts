@@ -14,8 +14,13 @@ import {
   getAuthedUser,
   enforceEdgeRateLimit,
   getModuleOffering,
+  getPaystackTransactionStatus,
+  isFinalUnsuccessfulPaystackPayment,
+  recordModulePaymentStatus,
 } from "../_shared/paystack.ts";
 import { sanitizePaymentPayload } from "../_shared/payment-sanitization.js";
+
+const CHECKOUT_RECHECK_AFTER_MS = 30 * 60 * 1000;
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -33,6 +38,7 @@ Deno.serve(async (request) => {
     const pack = await getActivePack(adminClient);
     const requestBody = await readJsonBody(request, 2_048) as Record<string, unknown>;
     const subjectSlug = requestBody?.subject_slug;
+    const expectedPriceKobo = requestBody?.expected_price_kobo;
 
     if (
       typeof subjectSlug !== "string"
@@ -59,10 +65,15 @@ Deno.serve(async (request) => {
       });
     }
 
+    const paystackSecret = requireEnv("PAYSTACK_SECRET_KEY");
+    getPaystackEnvironment(paystackSecret);
+    const paystackApiUrl = Deno.env.get("PAYSTACK_API_URL") ?? "https://api.paystack.co";
+    const callbackUrl = getPaymentCallbackUrl(Deno.env.get("APP_URL"));
+
     async function recoverCheckout() {
       const { data: existingOrder, error } = await adminClient
         .from("payment_orders")
-        .select("provider_reference, provider_status, provider_payload")
+        .select("provider_reference, provider_status, provider_payload, created_at")
         .eq("user_id", user.id)
         .eq("exam_pack_id", pack.id)
         .eq("subject_id", subject.id)
@@ -73,7 +84,64 @@ Deno.serve(async (request) => {
         .maybeSingle();
 
       if (error) throw error;
+      if (!existingOrder) return null;
+
       const checkout = existingOrder?.provider_payload?.data;
+      const createdAt = new Date(existingOrder.created_at).getTime();
+      const shouldRecheck = Number.isFinite(createdAt)
+        && Date.now() - createdAt >= CHECKOUT_RECHECK_AFTER_MS;
+
+      if (shouldRecheck) {
+        try {
+          const verifyResponse = await fetch(
+            `${paystackApiUrl}/transaction/verify/${encodeURIComponent(existingOrder.provider_reference)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${paystackSecret}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+          const verifyPayload = await verifyResponse.json();
+          const providerStatus = getPaystackTransactionStatus(verifyPayload);
+
+          if (verifyResponse.ok && providerStatus === "success") {
+            await recordModulePaymentStatus(existingOrder.provider_reference, verifyPayload);
+            return {
+              authorization_url: `${callbackUrl}?reference=${encodeURIComponent(existingOrder.provider_reference)}`,
+              reference: existingOrder.provider_reference,
+              subject_name: subject.name,
+              subject_slug: subject.slug,
+              resumed: true,
+            };
+          }
+
+          if (verifyResponse.ok && isFinalUnsuccessfulPaystackPayment(verifyPayload)) {
+            await recordModulePaymentStatus(existingOrder.provider_reference, verifyPayload);
+            return null;
+          }
+
+          if (verifyResponse.status === 404) {
+            await adminClient
+              .from("payment_orders")
+              .update({
+                status: "failed",
+                provider_status: "failed",
+                provider_message: "Payment session expired before checkout was completed",
+                provider_checked_at: new Date().toISOString(),
+              })
+              .eq("provider_reference", existingOrder.provider_reference)
+              .eq("status", "pending");
+            return null;
+          }
+        } catch (recheckError) {
+          console.warn("Could not recheck an older Paystack checkout", {
+            reference: existingOrder.provider_reference,
+            message: recheckError instanceof Error ? recheckError.message : "Unknown error",
+          });
+        }
+      }
+
       if (
         existingOrder?.provider_status === "initialized" &&
         checkout?.authorization_url &&
@@ -89,7 +157,7 @@ Deno.serve(async (request) => {
         };
       }
 
-      return existingOrder ? { preparing: true } : null;
+      return { preparing: true };
     }
 
     const existingCheckout = await recoverCheckout();
@@ -100,9 +168,31 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: "Payment setup is already in progress. Please try again in a moment." }, 409);
     }
 
-    const paystackSecret = requireEnv("PAYSTACK_SECRET_KEY");
-    getPaystackEnvironment(paystackSecret);
-    const callbackUrl = getPaymentCallbackUrl(Deno.env.get("APP_URL"));
+    if (expectedPriceKobo !== undefined && (
+      typeof expectedPriceKobo !== "number"
+      || !Number.isInteger(expectedPriceKobo)
+      || Number(expectedPriceKobo) <= 0
+    )) {
+      return jsonResponse({ error: "The displayed module price is invalid" }, 400);
+    }
+
+    if (offering.pricing_type === "launch_offer" && expectedPriceKobo === undefined) {
+      return jsonResponse({
+        error: "Review and confirm the current launch price before continuing.",
+        code: "PRICE_CONFIRMATION_REQUIRED",
+      }, 409);
+    }
+
+    if (
+      expectedPriceKobo !== undefined
+      && Number(expectedPriceKobo) !== Number(offering.price_kobo)
+    ) {
+      return jsonResponse({
+        error: "The module price changed. Review the current price before continuing.",
+        code: "PRICE_CHANGED",
+      }, 409);
+    }
+
     const reference = `PS-${crypto.randomUUID()}`;
     const { data: order, error: orderError } = await adminClient
       .from("payment_orders")
@@ -113,6 +203,9 @@ Deno.serve(async (request) => {
         module_offering_id: offering.id,
         provider_reference: reference,
         amount_kobo: offering.price_kobo,
+        list_price_kobo: offering.regular_price_kobo,
+        pricing_type: offering.pricing_type,
+        launch_offer_ends_at: offering.launch_offer_ends_at,
         currency: offering.currency,
         status: "pending",
         provider_status: "initializing",
@@ -152,9 +245,9 @@ Deno.serve(async (request) => {
       userId: user.id,
       subjectId: subject.id,
       amount: offering.price_kobo,
+      pricingType: offering.pricing_type,
     });
 
-    const paystackApiUrl = Deno.env.get("PAYSTACK_API_URL") ?? "https://api.paystack.co";
     const paystackResponse = await fetch(`${paystackApiUrl}/transaction/initialize`, {
       method: "POST",
       headers: {
@@ -207,6 +300,9 @@ Deno.serve(async (request) => {
       reference: payload.data.reference,
       subject_name: subject.name,
       subject_slug: subject.slug,
+      amount_kobo: offering.price_kobo,
+      list_price_kobo: offering.regular_price_kobo,
+      pricing_type: offering.pricing_type,
       resumed: false,
     });
   } catch (error) {

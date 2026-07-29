@@ -202,6 +202,9 @@ export default function Dashboard() {
       subject_slug: subject.slug,
       subject_name: subject.name,
       price_kobo: catalogEntry?.price_kobo,
+      regular_price_kobo: catalogEntry?.regular_price_kobo,
+      launch_offer_active: catalogEntry?.launch_offer_active,
+      launch_offer_ends_at: catalogEntry?.launch_offer_ends_at,
       currency: catalogEntry?.currency,
     });
   }
@@ -211,13 +214,13 @@ export default function Dashboard() {
     setUnlockModule(null);
   }
 
-  async function startPayment(subjectSlug) {
+  async function startPayment(subjectSlug, expectedPriceKobo) {
     if (payingModule) return;
     setPayingModule(subjectSlug);
     setPaymentError(null);
 
     try {
-      const payment = await initializePayment(subjectSlug);
+      const payment = await initializePayment(subjectSlug, expectedPriceKobo);
       if (payment.already_paid) {
         await loadDashboardData({ showLoading: false });
         closeUnlockModule();

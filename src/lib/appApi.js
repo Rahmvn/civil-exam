@@ -157,6 +157,13 @@ export async function getPublicModuleCatalog() {
   )));
 }
 
+export async function getPublicLaunchOffer() {
+  return readWithPolicy("public-launch-offer", async () => {
+    const rows = ensureArray(requireData(await supabase.rpc("get_public_launch_offer")));
+    return rows[0] ?? null;
+  });
+}
+
 export async function createSupportRequest({ category, subject, description, paymentReference, pagePath, subjectId }) {
   return requireData(await supabase.rpc("create_support_request_v2", {
     requested_category: category,
@@ -170,7 +177,7 @@ export async function createSupportRequest({ category, subject, description, pay
 
 export async function getModuleAccessCatalog() {
   return readWithPolicy("module-access-catalog", async () => ensureArray(requireData(
-    await supabase.rpc("get_module_access_catalog"),
+    await supabase.rpc("get_module_access_catalog_v2"),
   )));
 }
 
@@ -411,10 +418,30 @@ export async function submitAttempt({ mode, subjectId, answers, batchNumber = nu
   return requireData(await supabase.rpc("submit_attempt_idempotent_v2", payload));
 }
 
-export async function initializePayment(subjectSlug) {
+export async function initializePayment(subjectSlug, expectedPriceKobo) {
   return requireFunctionData(await supabase.functions.invoke("initialize-paystack-payment", {
-    body: { subject_slug: subjectSlug },
+    body: {
+      subject_slug: subjectSlug,
+      expected_price_kobo: expectedPriceKobo,
+    },
   }));
+}
+
+export async function getAdminLaunchOffer() {
+  const rows = ensureArray(requireData(await supabase.rpc("get_admin_launch_offer")));
+  return rows[0] ?? null;
+}
+
+export async function configureAdminLaunchOffer({ discountedPriceKobo, startsAt, endsAt }) {
+  return requireData(await supabase.rpc("admin_configure_launch_offer", {
+    requested_discounted_price_kobo: discountedPriceKobo,
+    requested_starts_at: startsAt,
+    requested_ends_at: endsAt,
+  }));
+}
+
+export async function endAdminLaunchOffer() {
+  return requireData(await supabase.rpc("admin_end_launch_offer"));
 }
 
 export async function verifyPayment(reference) {

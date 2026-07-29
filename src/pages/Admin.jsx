@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
 import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
+import { AdminLaunchOfferPanel } from "../components/admin/AdminLaunchOfferPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
 import { BrandLogo } from "../components/BrandLogo";
@@ -10,6 +11,7 @@ import { LoadingState } from "../components/LoadingState";
 import "../styles/admin.css";
 import {
   archiveAdminQuestion,
+  configureAdminLaunchOffer,
   createAdminModule,
   createAdminPracticeSet,
   createAdminPracticeSetReplacement,
@@ -17,8 +19,10 @@ import {
   deleteDraftAdminQuestion,
   deleteEmptyAdminModule,
   deleteEmptyAdminPracticeSet,
+  endAdminLaunchOffer,
   getAdminAuditLogs,
   getAdminContentModules,
+  getAdminLaunchOffer,
   getAdminPracticeSets,
   getAdminPracticeSetValidation,
   getAdminQuestions,
@@ -220,7 +224,17 @@ function AdminFeedback({ feedback, onDismiss }) {
   );
 }
 
-function ModuleCatalogue({ modules, onCreate, onManage, onQueryChange, query }) {
+function ModuleCatalogue({
+  launchOffer,
+  modules,
+  onCreate,
+  onEndLaunchOffer,
+  onManage,
+  onQueryChange,
+  onScheduleLaunchOffer,
+  query,
+  working,
+}) {
   const [filter, setFilter] = useState("all");
   const normalizedQuery = query.trim().toLowerCase();
   const visibleModules = modules.filter((module) => {
@@ -252,6 +266,14 @@ function ModuleCatalogue({ modules, onCreate, onManage, onQueryChange, query }) 
         </div>
         <button type="button" onClick={onCreate}>Create module</button>
       </section>
+
+      <AdminLaunchOfferPanel
+        key={launchOffer?.updated_at ?? "launch-offer-new"}
+        busy={working}
+        offer={launchOffer}
+        onEnd={onEndLaunchOffer}
+        onSchedule={onScheduleLaunchOffer}
+      />
 
       <div className="admin-filter-tabs" aria-label="Filter modules">
         {[
@@ -1585,6 +1607,7 @@ export default function Admin() {
       : "modules";
 
   const [modules, setModules] = useState([]);
+  const [launchOffer, setLaunchOffer] = useState(null);
   const [practiceSets, setPracticeSets] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [validation, setValidation] = useState(null);
@@ -1624,14 +1647,16 @@ export default function Admin() {
 
     async function loadAdmin() {
       try {
-        const [nextModules, nextAuditLogs] = await Promise.all([
+        const [nextModules, nextAuditLogs, nextLaunchOffer] = await Promise.all([
           getAdminContentModules(),
           getAdminAuditLogs(),
+          getAdminLaunchOffer(),
         ]);
 
         if (!active) return;
         setModules(nextModules);
         setAuditLogs(nextAuditLogs);
+        setLaunchOffer(nextLaunchOffer);
       } catch (error) {
         if (!active) return;
         logAppError("Admin content load", error);
@@ -1848,6 +1873,42 @@ export default function Admin() {
 
   async function refreshAudit() {
     setAuditLogs(await getAdminAuditLogs());
+  }
+
+  async function refreshLaunchOffer() {
+    const nextOffer = await getAdminLaunchOffer();
+    setLaunchOffer(nextOffer);
+    return nextOffer;
+  }
+
+  function handleScheduleLaunchOffer(config) {
+    requestConfirmation({
+      title: "Schedule this launch offer?",
+      body: `Every eligible module will use this launch price from the selected start until the selected end. Once the offer starts, it cannot be restarted or rescheduled.`,
+      label: launchOffer?.status === "scheduled" ? "Update schedule" : "Schedule offer",
+      action: async () => {
+        await configureAdminLaunchOffer(config);
+        await Promise.all([refreshLaunchOffer(), refreshAudit()]);
+        setFeedback({ tone: "success", message: "Launch offer scheduled. It will activate automatically at the selected time." });
+      },
+    });
+  }
+
+  function handleEndLaunchOffer() {
+    const isLive = launchOffer?.status === "live";
+    requestConfirmation({
+      title: isLive ? "End the launch offer now?" : "Cancel this launch offer?",
+      body: isLive
+        ? "New checkouts will return to the regular module prices. Existing Paystack checkout links keep their agreed price and will still be reconciled if paid."
+        : "The scheduled discount will not become visible to candidates.",
+      label: isLive ? "End offer" : "Cancel offer",
+      tone: "danger",
+      action: async () => {
+        await endAdminLaunchOffer();
+        await Promise.all([refreshLaunchOffer(), refreshAudit()]);
+        setFeedback({ tone: "success", message: isLive ? "Launch offer ended." : "Launch offer cancelled." });
+      },
+    });
   }
 
   async function handleSaveModule(module) {
@@ -2323,11 +2384,15 @@ export default function Admin() {
               </section>
             ) : (
               <ModuleCatalogue
+                launchOffer={launchOffer}
                 modules={modules}
                 query={shellSearch}
                 onCreate={() => setModuleEditor({})}
                 onManage={(id) => navigateWithinAdmin(`/admin/modules/${id}`)}
+                onEndLaunchOffer={handleEndLaunchOffer}
                 onQueryChange={setShellSearch}
+                onScheduleLaunchOffer={handleScheduleLaunchOffer}
+                working={working}
               />
             )}
           </div>

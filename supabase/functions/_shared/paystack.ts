@@ -141,19 +141,54 @@ export async function getModuleOffering(
     throw new Error("This module has no published practice sets available for purchase yet");
   }
 
-  const { data: offering, error: offeringError } = await adminClient
-    .from("module_offerings")
-    .select("id, exam_pack_id, subject_id, price_kobo, currency")
-    .eq("exam_pack_id", packId)
-    .eq("subject_id", subject.id)
-    .eq("is_active", true)
-    .maybeSingle();
+  const [offeringResult, launchOfferResult] = await Promise.all([
+    adminClient
+      .from("module_offerings")
+      .select("id, exam_pack_id, subject_id, price_kobo, currency")
+      .eq("exam_pack_id", packId)
+      .eq("subject_id", subject.id)
+      .eq("is_active", true)
+      .maybeSingle(),
+    adminClient
+      .from("launch_offers")
+      .select("discounted_price_kobo, currency, starts_at, ends_at, enabled")
+      .eq("singleton_key", "launch")
+      .maybeSingle(),
+  ]);
+  const { data: offering, error: offeringError } = offeringResult;
 
   if (offeringError || !offering) {
     throw new Error("This module does not have an active payment offering yet");
   }
 
-  return { offering, subject };
+  if (launchOfferResult.error) throw launchOfferResult.error;
+
+  const launchOffer = launchOfferResult.data;
+  const now = Date.now();
+  const startsAt = launchOffer ? new Date(launchOffer.starts_at).getTime() : Number.NaN;
+  const endsAt = launchOffer ? new Date(launchOffer.ends_at).getTime() : Number.NaN;
+  const launchOfferActive = Boolean(
+    launchOffer?.enabled
+    && Number.isFinite(startsAt)
+    && Number.isFinite(endsAt)
+    && now >= startsAt
+    && now < endsAt
+    && launchOffer.currency === offering.currency
+    && Number(launchOffer.discounted_price_kobo) < Number(offering.price_kobo),
+  );
+
+  return {
+    offering: {
+      ...offering,
+      regular_price_kobo: offering.price_kobo,
+      price_kobo: launchOfferActive
+        ? Number(launchOffer.discounted_price_kobo)
+        : Number(offering.price_kobo),
+      pricing_type: launchOfferActive ? "launch_offer" : "regular",
+      launch_offer_ends_at: launchOfferActive ? launchOffer.ends_at : null,
+    },
+    subject,
+  };
 }
 
 async function hasPublishedObjectiveQuestions(

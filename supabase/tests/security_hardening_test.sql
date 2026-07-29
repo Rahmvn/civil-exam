@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(45);
+select plan(46);
 
 create table public.security_acl_table_probe (id integer);
 create function public.security_acl_function_probe()
@@ -36,6 +36,8 @@ select ok(not has_function_privilege('anon', 'public.get_module_access_catalog()
   'anonymous role cannot call candidate module access RPCs');
 select ok(has_function_privilege('anon', 'public.get_public_module_catalog()', 'EXECUTE'),
   'anonymous users can read the narrow public module catalogue');
+select ok(has_function_privilege('anon', 'public.get_public_launch_offer()', 'EXECUTE'),
+  'anonymous users can read the narrow active launch offer');
 select is(
   (
     select count(*)::integer
@@ -45,8 +47,8 @@ select is(
       and p.prokind = 'f'
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
-  1,
-  'the public module catalogue is the only anonymous public-schema function'
+  2,
+  'only the public catalogue and active launch offer are anonymous public-schema functions'
 );
 
 select ok(has_table_privilege('authenticated', 'public.profiles', 'SELECT'),

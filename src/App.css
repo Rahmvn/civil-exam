@@ -248,6 +248,121 @@
   color: var(--color-danger);
 }
 
+/* Launch offer pricing */
+.module-price {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.module-price-regular,
+.module-price-current {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.module-price-regular > span,
+.module-price-current > span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.module-price del {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.module-price-current strong {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.module-price.is-launch-offer .module-price-current strong {
+  color: var(--color-primary-dark);
+}
+
+.module-price.is-compact {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+
+.access-unlock-price > .module-price {
+  flex-wrap: wrap;
+}
+
+.access-unlock-price .module-price-current strong {
+  font-size: 1.28rem;
+}
+
+.access-unlock-offer-end {
+  margin: -8px 0 0;
+  color: var(--color-primary-dark);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.landing-launch-offer {
+  max-width: 520px;
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px 0;
+  border-block: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.landing-launch-offer > strong {
+  color: var(--color-primary-dark);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.landing-launch-offer > span {
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.landing-launch-offer del {
+  color: var(--color-text-muted);
+}
+
+.landing-launch-offer b {
+  color: var(--color-primary-dark);
+}
+
+.landing-launch-offer small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 620px) {
+  .access-page-v2 .access-module-action {
+    justify-items: stretch;
+  }
+
+  .module-price.is-compact {
+    justify-items: start;
+  }
+
+  .access-unlock-price {
+    align-items: flex-start;
+  }
+
+  .access-unlock-price > .module-price {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    white-space: normal;
+  }
+}
+
 /* Candidate confirmation modal system */
 .auth-modal-card.signout-confirm-modal,
 .auth-modal-card.dashboard-confirmation-modal,
@@ -22210,6 +22325,20 @@ button.practice-map-close:focus-visible {
 
   .free-batch-confirmation-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Keep nested launch-price labels stronger than legacy modal span rules. */
+.access-unlock-price .module-price-regular > span,
+.access-unlock-price .module-price-current > span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+}
+
+@media (max-width: 620px) {
+  .access-page-v2 .access-module-action,
+  .access-page-v2 .access-module-row.is-focused .access-module-action {
+    justify-items: stretch;
   }
 }
 

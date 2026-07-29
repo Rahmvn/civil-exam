@@ -10,6 +10,104 @@
   border: 0;
 }
 
+/* One-time launch offer controls */
+.admin-launch-offer {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(420px, 0.9fr);
+  align-items: end;
+  gap: 28px;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.admin-launch-offer-copy {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-launch-offer-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-launch-offer-heading h2,
+.admin-launch-offer-copy p,
+.admin-launch-offer-copy small {
+  margin: 0;
+}
+
+.admin-launch-offer-heading h2 {
+  font-size: 1rem;
+}
+
+.admin-launch-offer-copy p {
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.admin-launch-offer-copy small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.admin-launch-offer-form {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1fr;
+  gap: 9px;
+}
+
+.admin-launch-offer-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-text-soft);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.admin-launch-offer-form input {
+  width: 100%;
+  min-height: 38px;
+}
+
+.admin-launch-offer-form button {
+  min-height: 38px;
+}
+
+.admin-status-not_configured,
+.admin-status-cancelled,
+.admin-status-ended {
+  background: #f1f3f2;
+  color: var(--color-text-soft);
+}
+
+.admin-status-scheduled {
+  background: #fff4cf;
+  color: #765400;
+}
+
+.admin-status-live {
+  background: #e5f5ec;
+  color: var(--color-primary-dark);
+}
+
+@media (max-width: 1000px) {
+  .admin-launch-offer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-launch-offer-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-content-manager {
   width: min(1420px, calc(100% - 24px));
   padding: 8px 0 28px;
@@ -3359,6 +3457,18 @@ button.admin-danger-link {
   }
 
   .admin-payment-attention-row dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1000px) {
+  .admin-launch-offer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-launch-offer-form {
     grid-template-columns: 1fr;
   }
 }
