@@ -1,0 +1,31 @@
+# PromotionSure
+
+PromotionSure is an independent online practice platform for Nigerian public servants preparing for public service promotion examinations.
+
+## Public Pages
+
+- Home: https://promotionsure.com.ng/
+- Support: https://promotionsure.com.ng/support
+- Privacy Policy: https://promotionsure.com.ng/privacy
+- Terms of Service: https://promotionsure.com.ng/terms
+- Sitemap: https://promotionsure.com.ng/sitemap.xml
+
+## What PromotionSure Provides
+
+- Objective practice questions for public service promotion exam preparation.
+- Oral response practice for modules that support oral preparation.
+- Timed practice sets, scores, answer review, and progress tools for signed-in candidates.
+- Paid module access and receipts through a specialist payment provider.
+- Signed-in support for account, access, payment, content, and technical issues.
+
+## Audience
+
+PromotionSure is intended for adults preparing for Nigerian public service promotion examinations.
+
+## Access Notes
+
+Public marketing, support, privacy, and terms pages may be crawled. Candidate dashboards, practice sessions, review pages, payment pages, profile pages, and admin pages require authentication and should not be indexed.
+
+## Contact
+
+Support email: promotionsureapp@gmail.com
