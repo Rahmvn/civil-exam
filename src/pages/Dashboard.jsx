@@ -193,7 +193,7 @@ export default function Dashboard() {
     setPaymentError(null);
 
     if (!catalogEntry?.can_purchase || !Number.isFinite(Number(catalogEntry.price_kobo))) {
-      setCtaError("We could not prepare this module payment right now.");
+      setCtaError("This module is not open for purchase yet. Please check back when sales are available.");
       return;
     }
 
