@@ -531,9 +531,12 @@ test("admin catalogue keeps its management layout at each breakpoint", async ({ 
 });
 
 test("admin launch offer uses per-module prices without tablet overflow", async ({ page }) => {
+  test.setTimeout(60_000);
+
   for (const viewport of [
     { width: 768, height: 1024 },
     { width: 850, height: 720 },
+    { width: 1024, height: 768 },
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/admin");

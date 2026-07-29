@@ -152,7 +152,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .admin-launch-offer-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3529,7 +3529,7 @@ button.admin-danger-link {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .admin-launch-offer-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
