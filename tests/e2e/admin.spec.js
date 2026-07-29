@@ -547,6 +547,10 @@ test("admin launch offer uses per-module prices without tablet overflow", async 
     await expect(offerPanel.getByText("Launch prices (NGN)")).toBeVisible();
     await expect.poll(() => offerPanel.locator(".admin-launch-offer-prices input").count()).toBeGreaterThanOrEqual(2);
     await expect(offerPanel.locator(".admin-launch-offer-prices small").first()).toContainText("Regular");
+    const formColumns = await offerPanel.locator(".admin-launch-offer-form").evaluate((element) =>
+      getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length,
+    );
+    expect(formColumns).toBeLessThanOrEqual(2);
     await expectNoHorizontalOverflow(page);
   }
 });

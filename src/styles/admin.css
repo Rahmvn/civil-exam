@@ -62,13 +62,14 @@
 
 .admin-launch-offer-form {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) repeat(2, minmax(150px, 0.72fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
   min-width: 0;
 }
 
 .admin-launch-offer-prices {
   display: grid;
+  grid-column: 1 / -1;
   gap: 8px;
   min-width: 0;
   margin: 0;
@@ -125,6 +126,7 @@
 }
 
 .admin-launch-offer-form button {
+  grid-column: 1 / -1;
   min-height: 38px;
 }
 
@@ -149,17 +151,6 @@
   .admin-launch-offer {
     grid-template-columns: 1fr;
     align-items: stretch;
-  }
-}
-
-@media (max-width: 1200px) {
-  .admin-launch-offer-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .admin-launch-offer-prices,
-  .admin-launch-offer-form button {
-    grid-column: 1 / -1;
   }
 }
 
@@ -3526,17 +3517,6 @@ button.admin-danger-link {
   .admin-launch-offer {
     grid-template-columns: 1fr;
     align-items: stretch;
-  }
-}
-
-@media (max-width: 1200px) {
-  .admin-launch-offer-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .admin-launch-offer-prices,
-  .admin-launch-offer-form button {
-    grid-column: 1 / -1;
   }
 }
 
