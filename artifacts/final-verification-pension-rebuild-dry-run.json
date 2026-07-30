@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-07-29T23:13:53.003Z",
+  "mode": "dry-run",
+  "source_file": "C:\\Users\\USER\\Downloads\\2026 PROMOTION (FINANCIAL REGULATIONS, PSR & CURRENT AFFAIRS) (1).txt",
+  "source_counts": {
+    "free": 20,
+    "paid": 150,
+    "total": 170
+  },
+  "target_host": "beapcfiofyrhsxwxcmyd.supabase.co",
+  "operations": [
+    {
+      "set_number": 1,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 2,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 3,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 4,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 5,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 6,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 7,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 8,
+      "source_count": 20,
+      "expected_question_count": 20,
+      "mode": "replace_published_set"
+    },
+    {
+      "set_number": 9,
+      "source_count": 10,
+      "expected_question_count": 10,
+      "mode": "replace_published_set"
+    }
+  ],
+  "results": []
+}

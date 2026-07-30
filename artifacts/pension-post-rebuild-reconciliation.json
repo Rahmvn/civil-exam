@@ -1,0 +1,16 @@
+{
+  "generated_at": "2026-07-29T22:57:40.282Z",
+  "source_counts": {
+    "free": 20,
+    "paid": 150,
+    "total": 170
+  },
+  "db_count": 170,
+  "summary": {
+    "missing": 0,
+    "extra": 0,
+    "answerMismatch": 4,
+    "optionMismatch": 11,
+    "duplicates": 16
+  }
+}

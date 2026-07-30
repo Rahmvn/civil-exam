@@ -20,3 +20,20 @@ export function formatLaunchOfferEnd(value) {
     timeZone: "Africa/Lagos",
   }).format(new Date(value));
 }
+
+export function formatLaunchOfferSavings(offer) {
+  const regularPrice = Number(offer?.regular_price_kobo);
+  const discountedPrice = Number(offer?.discounted_price_kobo);
+
+  if (!Number.isFinite(regularPrice) || !Number.isFinite(discountedPrice) || regularPrice <= discountedPrice) {
+    return "Launch price";
+  }
+
+  const percent = Math.round(((regularPrice - discountedPrice) / regularPrice) * 100);
+
+  if (percent <= 0) {
+    return "Launch price";
+  }
+
+  return `${offer?.has_uniform_regular_price ? "Save" : "Save up to"} ${percent}%`;
+}

@@ -1,0 +1,885 @@
+{
+  "generated_at": "2026-07-29T22:54:40.959Z",
+  "source_counts": {
+    "free": 20,
+    "paid": 150,
+    "total": 170
+  },
+  "db_count": 160,
+  "summary": {
+    "missing": 29,
+    "extra": 2,
+    "answerMismatch": 4,
+    "optionMismatch": 13,
+    "duplicates": 27
+  },
+  "missing": [
+    {
+      "source_number": 61,
+      "question_text": "When a PFA invests public service pension assets in infrastructure bonds or equity markets, which independent institution actually holds the physical custody of those cash assets and securities?",
+      "option_a": "The Central Bank of Nigeria (CBN)",
+      "option_b": "The Ministry of Finance Incorporated (MOFI)",
+      "option_c": "The Pension Fund Custodian (PFC)",
+      "option_d": "The Nigerian Pension Commission (PenCom).",
+      "line": 8011,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 62,
+      "question_text": "If a civil servant is dissatisfied with the investment performance of their current PFA, what is the official PenCom platform used to facilitate a seamless migration to a new PFA?",
+      "option_a": "Enhanced Contributory Pension Portal (ECPP)",
+      "option_b": "National Pension Registry Exchange (NPRE)",
+      "option_c": "PFA Cleardown Window.",
+      "option_d": "Retirement Savings Account Transfer System (RTS)",
+      "line": 8017,
+      "active": "option_d",
+      "correct_option": "D",
+      "block": "paid"
+    },
+    {
+      "source_number": 63,
+      "question_text": "Under PenCom's Multi-Fund Structure, which fund category must a PFA automatically assign to a newly employed 25-year-old civil servant who fails to specify a fund preference?",
+      "option_a": "Fund I",
+      "option_b": "Fund II",
+      "option_c": "Fund III",
+      "option_d": "Fund IV",
+      "line": 8023,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 64,
+      "question_text": "Under Section 56 of the Pension Reform Act (PRA) 2014, which body is solely responsible for issuing an operational license to a Pension Fund Custodian (PFC) in Nigeria?",
+      "option_a": "Central Bank of Nigeria (CBN)",
+      "option_b": "National Insurance Commission (NAICOM)",
+      "option_c": "Federal Ministry of Finance",
+      "option_d": "National Pension Commission (PenCom)",
+      "line": 8029,
+      "active": "option_d",
+      "correct_option": "D",
+      "block": "paid"
+    },
+    {
+      "source_number": 65,
+      "question_text": "When an employer deducts pension contributions from a civil servant's salary, the PRA 2014 mandates that the money must be remitted directly to which entity?",
+      "option_a": "The employee's Pension Fund Administrator (PFA)",
+      "option_b": "The PenCom Pension Transfers Wallet",
+      "option_c": "The Pension Fund Custodian (PFC) chosen by the employee's PFA",
+      "option_d": "The Central Bank of Nigeria's Treasury Single Account (TSA)",
+      "line": 8035,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 66,
+      "question_text": "To protect public service investments from institutional collapse, a PFC is statutorily barred from doing which of the following?",
+      "option_a": "Executing investment instructions received from a licensed PFA",
+      "option_b": "Receiving corporate dividends on behalf of pension fund shareholders",
+      "option_c": "Utilizing pension assets to grant commercial loans or financial credits to third parties",
+      "option_d": "Providing regular asset inventory reports to PenCom.",
+      "line": 8041,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 67,
+      "question_text": "In the event that a Pension Fund Administrator (PFA) goes into liquidation or has its operational license revoked by PenCom, what happens to the RSA assets held by the PFC?",
+      "option_a": "The assets remain fully protected and intact at the PFC, awaiting transfer to another PFA.",
+      "option_b": "The assets are liquidated to pay off the PFA’s corporate creditors.",
+      "option_c": "The assets are absorbed into the Federal Government's Consolidated Revenue Fund (CRF).",
+      "option_d": "The PFC splits the assets equally among all surviving PFAs in the industry.",
+      "line": 8047,
+      "active": "option_d",
+      "correct_option": "A",
+      "block": "paid"
+    },
+    {
+      "source_number": 68,
+      "question_text": "Which constitutional and statutory framework excludes personnel of the Armed Forces of Nigeria from the Contributory Pension Scheme (CPS) managed by PenCom, placing them under the administration of the Military Pensions Board (MPB)?",
+      "option_a": "Armed Forces Act, Cap A20, Laws of the Federation of Nigeria (LFN)",
+      "option_b": "Pension Reform Act (PRA) 2014 Amendment",
+      "option_c": "Section 173 of the 1999 Constitution (as amended)",
+      "option_d": "Civil Service Rules Circular 2024/01",
+      "line": 8053,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 69,
+      "question_text": "Unlike the civilian public service where pensions are funded via Retirement Savings Accounts (RSAs), military pensions administered by the MPB are funded through which mechanism?",
+      "option_a": "PenCom Transitional Military Pension Wallet",
+      "option_b": "Joint Sovereign Wealth Allocations",
+      "option_c": "Non-Contributory Defined Benefit Scheme (DBS) funded directly via the Consolidated Revenue Fund",
+      "option_d": "Defence Sector Contributory Trust Fund",
+      "line": 8059,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 70,
+      "question_text": "What is the statutory timeline mandated for the Military Pensions Board to pay the death benefits and next-of-kin gratuities of Armed Forces personnel killed in active service?",
+      "option_a": "Within 90 days of the budget defense cycle",
+      "option_b": "Within 6 months of the fiscal year ending",
+      "option_c": "Exactly 12 calendar months from the date of demise",
+      "option_d": "Within 30 days of official confirmation and documentation clearance",
+      "line": 8065,
+      "active": "option_d",
+      "correct_option": "D",
+      "block": "paid"
+    },
+    {
+      "source_number": 71,
+      "question_text": "Which technological platform was fully institutionalized by the Military Pensions Board to eliminate \"ghost pensioners\" and allow veterans to verify their alive status remotely?",
+      "option_a": "IPPIS Military Veteran Module",
+      "option_b": "\"MPB Alive\" Biometric Verification Software",
+      "option_c": "National Identity Management System (NIMS) Link",
+      "option_d": "Armed Forces Pension Portal (AFPP).",
+      "line": 8071,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 72,
+      "question_text": "Which officer exercises direct administrative oversight and holds final accounting liability for the financial disbursements and operations of the Military Pensions Board?",
+      "option_a": "The Chief of Defence Staff (CDS)",
+      "option_b": "The Minister of Defence",
+      "option_c": "The Chairman of the Military Pensions Board",
+      "option_d": "The Accountant-General of the Federation",
+      "line": 8077,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 73,
+      "question_text": "What is the primary parent ministry responsible for the oversight, policy direction, and strategic support of the Nigerian Military Pensions Board (MPB)?",
+      "option_a": "Ministry of Finance",
+      "option_b": "Ministry of Defence",
+      "option_c": "Ministry of Internal Affairs",
+      "option_d": "Ministry of Budget and Economic Planning",
+      "line": 8083,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 74,
+      "question_text": "In which year was the Nigerian Military Pensions Board (MPB) or its earliest predecessor formally established to process and disburse retirement benefits to Armed Forces personnel?",
+      "option_a": "1960",
+      "option_b": "1988",
+      "option_c": "1974",
+      "option_d": "1999",
+      "line": 8089,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 75,
+      "question_text": "What was the initial nomenclature of the current Military Pensions Board when it was first established shortly after the Civil War?",
+      "option_a": "Armed Forces Pension Assessment Committee (AFPAC)",
+      "option_b": "Directorate of Military Pensions (DMP)",
+      "option_c": "Military Pensions Assessments Board (MPAB)",
+      "option_d": "Defence Pension and Gratuity Board (DPGB).",
+      "line": 8095,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 76,
+      "question_text": "Following the change from MPAB, the body was restructured and renamed as the Directorate of Military Pensions (DMP). In what year was the body restructured to attain its current nomenclature, the Military Pensions Board (MPB)?",
+      "option_a": "1989",
+      "option_b": "2005",
+      "option_c": "2015",
+      "option_d": "2003.",
+      "line": 8101,
+      "active": "option_d",
+      "correct_option": "D",
+      "block": "paid"
+    },
+    {
+      "source_number": 77,
+      "question_text": "Which senior military officer served as the Chairman of the Military Pensions Board (MPB) in 2026, overseeing the implementation of pension enhancement drives?",
+      "option_a": "Air Vice Marshal Mikail Abdulraheem",
+      "option_b": "Major-General Ahmadu Adamu",
+      "option_c": "Rear Admiral Saburi Lawal",
+      "option_d": "Air Vice Marshal Abubakar Idris Adamu",
+      "line": 8107,
+      "active": "option_d",
+      "correct_option": "A",
+      "block": "paid"
+    },
+    {
+      "source_number": 78,
+      "question_text": "Under the provisions of the Armed Forces Pensions Act, what is the minimum number of years an officer must serve in the Armed Forces of Nigeria to qualify for a standard monthly pension?",
+      "option_a": "15 years",
+      "option_b": "20 years",
+      "option_c": "25 years",
+      "option_d": "10 years",
+      "line": 8112,
+      "active": "option_d",
+      "correct_option": "D",
+      "block": "paid"
+    },
+    {
+      "source_number": 79,
+      "question_text": "What major technological innovation was introduced by the Military Pensions Board to enhance the efficiency of the pensioner verification process and eliminate the need for physical travel?",
+      "option_a": "Biometric fingerprint scanners at state offices",
+      "option_b": "Annual physical parades at military formations",
+      "option_c": "Online life certificate verification requiring only a selfie",
+      "option_d": "Mandatory postal mail submissions of life certificates.",
+      "line": 8118,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 80,
+      "question_text": "Which federal body collaborates with the Military Pensions Board (MPB) to draw up new payment charts and implement government-approved minimum wage policies for military retirees?",
+      "option_a": "Office of the Head of the Civil Service of the Federation (OHCSF).",
+      "option_b": "National Salaries, Incomes and Wages Commission (NSIWC)",
+      "option_c": "Bureau of Public Service Reforms",
+      "option_d": "Nigerian Legion.",
+      "line": 8124,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 142,
+      "question_text": "Does an employee in the Federal Civil Service have the right to opt out of the mandatory Contributory Pension Scheme?",
+      "option_a": "Yes. Because it is optional based on the Pension Act of 1979.",
+      "option_b": "The participation is mandatory for all categories of employees in the public service of the Federation and Federal Capital Territory, except those exempted under the Act.",
+      "option_c": "You can elect to contribute or opt out of the pension system, which is in accordance with Personal Liberty (Section 35) and Private Life (Section 37) of 1999 Constitution of the Federal Republic of Nigeria.",
+      "option_d": "All of the above.",
+      "line": 8490,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 143,
+      "question_text": "Under the Nigerian Pension Reform Act (PRA) 2014, which categories of employers are mandated to implement the Contributory Pension Scheme?",
+      "option_a": "Only employers in the private sector with a workforce of 50 or more employees.",
+      "option_b": "Only the Federal Civil Service and its parastatals.",
+      "option_c": "All employees in the Public Service of the Federation, FCT, States, Local Governments, and private sector organizations with 15 or more employees.",
+      "option_d": "Only organizations whose primary business is financial services and banking.",
+      "line": 8496,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 144,
+      "question_text": "Which of the following categories of personnel are explicitly EXEMPTED from the Contributory Pension Scheme under the PRA 2014?",
+      "option_a": "Members of the Armed Forces, Judicial Officers of Court of Records, Defence Intelligence Agency, and Secret Services.",
+      "option_b": "Political office holders, such as Ministers and Governors.",
+      "option_c": "Civil Servants in the Ministry of Finance.",
+      "option_d": "Expatriates working in Nigeria for multinational companies.",
+      "line": 8502,
+      "active": "option_d",
+      "correct_option": "A",
+      "block": "paid"
+    },
+    {
+      "source_number": 145,
+      "question_text": "Can an employer dictate or compel an employee to use a specific Pension Fund Administrator (PFA) for his/her Retirement Savings Account?",
+      "option_a": "Yes, especially if the employer is paying 100% of the contributions.",
+      "option_b": "No, the employee has the exclusive statutory right to choose his/her own PFA.",
+      "option_c": "Yes, but only if the employee is a junior cadre civil servant.",
+      "option_d": "Yes, if the employer has a binding partnership agreement with the PFA.",
+      "line": 8508,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 146,
+      "question_text": "Under the Contributory Pension Scheme, are employees allowed to make Voluntary Contributions (VC) to their Retirement Savings Account (RSA)?",
+      "option_a": "Yes, an employee may make voluntary contributions in addition to the mandatory statutory contributions.",
+      "option_b": "No, the statutory 18% is the absolute maximum allowed by law.",
+      "option_c": "Yes, but only if the employer matches the voluntary contribution equally.",
+      "option_d": "No, voluntary contributions are only permitted for private sector employees, not public servants.",
+      "line": 8514,
+      "active": "option_d",
+      "correct_option": "A",
+      "block": "paid"
+    },
+    {
+      "source_number": 147,
+      "question_text": "Under the PRA 2014, within how many days from the day salaries are paid must an employer remit both the employer and employee pension contributions to the Pension Fund Custodian (PFC)?",
+      "option_a": "Within 3 days.",
+      "option_b": "Within 7 working days.",
+      "option_c": "Within 14 days.",
+      "option_d": "Within 30 days.",
+      "line": 8520,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 148,
+      "question_text": "Which of the following is true regarding the attachment or seizure of pension funds in a Retirement Savings Account to settle personal debts?",
+      "option_a": "Funds can be attached by a court order if the employee is declared bankrupt.",
+      "option_b": "The employer can seize the funds to recover unspent operational advances.",
+      "option_c": "Pension funds are strictly protected and shall not be subject to attachment, seizure, or sequestration by any court order.",
+      "option_d": "Funds can be seized only if the debt is owed to the Federal Government of Nigeria.",
+      "line": 8526,
+      "active": "option_d",
+      "correct_option": "C",
+      "block": "paid"
+    },
+    {
+      "source_number": 149,
+      "question_text": "The certificate of service is rendered on the approved form. For retiring officers on GL 07 and above, the appropriate form is called………………while in the case of officers on GL 06 and below, it is known as…………………….",
+      "option_a": "GEN 60, GEN 66D",
+      "option_b": "GEN 58, GEN 58A",
+      "option_c": "GEN 80, GEN 81B",
+      "option_d": "None of the above.",
+      "line": 8532,
+      "active": "option_d",
+      "correct_option": "B",
+      "block": "paid"
+    },
+    {
+      "source_number": 150,
+      "question_text": "The certificate of service of retiring officers on GL 07 and above requires the signature and counter-signature of………… and……….. while that of GL 06 and below requires the signature and counter-signature of………… and……………….",
+      "option_a": "For GL 07 and above, it requires the signatures of the Permanent Secretary of FCSC, and the Permanent Secretary of the Officer’s MDA. On the other hand, For GL 06 and below, it requires the signatures of the Permanent Secretary of Career Management Office (CMO), and the Permanent Secretary of the Officer’s MDA.",
+      "option_b": "For GL 07 and above, as well as GL 06 and below, the officers only need the endorsement of Deputy Director (Training and Staff Welfare) and the Director, Human Resources Management.",
+      "option_c": "It requires the signature of the immediate supervisor of the retiring officer, in accordance with the extant public service rules (PSR).",
+      "option_d": "All of the above.",
+      "line": 8538,
+      "active": "option_d",
+      "correct_option": "A",
+      "block": "paid"
+    }
+  ],
+  "extra": [
+    {
+      "id": "25e57089-3cc3-4bcf-b3f6-6cf494a97b2a",
+      "practice_set_id": "1d536408-234d-4b1f-8946-4d584f9e9f7e",
+      "batch_number": 7,
+      "batch_position": 10,
+      "question_text": "Following a federal minimum-wage review, which agency supplies the salary relativity used to revise the DSS retirement-payment matrix?",
+      "option_a": "Federal Civil Service Commission",
+      "option_b": "National Salaries, Incomes and Wages Commission (NSIWC)",
+      "option_c": "Corporate Affairs Commission (CAC)",
+      "option_d": "National Bureau of Statistics (NBS)",
+      "correct_option": "B",
+      "status": "published"
+    },
+    {
+      "id": "042e7343-2c83-4cf9-9ce1-262b496889b5",
+      "practice_set_id": "1d536408-234d-4b1f-8946-4d584f9e9f7e",
+      "batch_number": 7,
+      "batch_position": 11,
+      "question_text": "A DSS officer is permanently incapacitated during an internal security operation before completing ten years of service. Which pension treatment applies?",
+      "option_a": "The officer is completely disqualified from receiving a pension due to short service",
+      "option_b": "The officer qualifies for a full medical retirement pension regardless of length of service",
+      "option_c": "The officer must wait until age 60 to apply for any financial relief",
+      "option_d": "The officer receives a one-off transport allowance and is discharged",
+      "correct_option": "B",
+      "status": "published"
+    }
+  ],
+  "answerMismatch": [
+    {
+      "source_number": 95,
+      "block": "paid",
+      "text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+      "db_id": "0413fda0-57fa-4e20-b41e-0d6f54579469",
+      "db_correct": "D",
+      "source_correct": "B"
+    },
+    {
+      "source_number": 97,
+      "block": "paid",
+      "text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+      "db_id": "1702d507-73a0-47bb-8906-7004fa2497d1",
+      "db_correct": "C",
+      "source_correct": "B"
+    },
+    {
+      "source_number": 103,
+      "block": "paid",
+      "text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+      "db_id": "badb9ed0-84f7-40a7-86c1-b4a85f5438c8",
+      "db_correct": "C",
+      "source_correct": "B"
+    },
+    {
+      "source_number": 135,
+      "block": "paid",
+      "text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+      "db_id": "eb0fffb9-dcbd-425b-8f07-e5f9139a5fb7",
+      "db_correct": "C",
+      "source_correct": "D"
+    }
+  ],
+  "optionMismatch": [
+    {
+      "source_number": 95,
+      "block": "paid",
+      "text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+      "option": "B",
+      "db": "Proceeds from the EFCC Asset Forfeiture account",
+      "source": "The Consolidated Revenue Fund (CRF) of the Federation via statutory transfers",
+      "db_id": "0413fda0-57fa-4e20-b41e-0d6f54579469"
+    },
+    {
+      "source_number": 97,
+      "block": "paid",
+      "text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+      "option": "A",
+      "db": "To subsidize foreign vacations considering their impactful role to the nation’s security.",
+      "source": "To subsidize foreign vacations",
+      "db_id": "1702d507-73a0-47bb-8906-7004fa2497d1"
+    },
+    {
+      "source_number": 103,
+      "block": "paid",
+      "text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+      "option": "A",
+      "db": "Contributory Pension Scheme (CPS) supervised by PENCOM",
+      "source": "Contributory Pension Scheme (CPS) overseen by PENCOM",
+      "db_id": "badb9ed0-84f7-40a7-86c1-b4a85f5438c8"
+    },
+    {
+      "source_number": 111,
+      "block": "paid",
+      "text": "If a DSS personnel is permanently incapacitated during an internal security operation before hitting 10 years of service, what is their statutory pension status?",
+      "option": "C",
+      "db": "He must wait until they turn 60 to apply for any financial relief",
+      "source": "They must wait until they turn 60 to apply for any financial relief",
+      "db_id": "e464460c-c490-4378-955c-b28a1a396563"
+    },
+    {
+      "source_number": 128,
+      "block": "paid",
+      "text": "What pension framework model applies to Nigerian judicial officers of superior courts of record?",
+      "option": "A",
+      "db": "The Service -Wide Contributory Pension Scheme (CPS)",
+      "source": "The Contributory Pension Scheme (CPS)",
+      "db_id": "5b46fb09-8ae7-47c1-8d7a-4d1d9e6625aa"
+    },
+    {
+      "source_number": 130,
+      "block": "paid",
+      "text": "Under the provisions of the 1999 Constitution and the Public Service Rules, which body is completely barred from processing appointments, promotions, or pension clearances for Judges?",
+      "option": "D",
+      "db": "The National Judicial Council (NJC)",
+      "source": "The National Judicial Council (NJC) e. The State Judicial Service Commission",
+      "db_id": "89b16c11-de0e-4703-a650-77a49a026a59"
+    },
+    {
+      "source_number": 132,
+      "block": "paid",
+      "text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+      "option": "A",
+      "db": "National Library Service of Nigeria pension desk",
+      "source": "Federal Fire Service",
+      "db_id": "6ffbc335-1fd7-4d16-b480-47cc5eb5c283"
+    },
+    {
+      "source_number": 134,
+      "block": "paid",
+      "text": "What is the official vision of the Military Pensions Board?",
+      "option": "B",
+      "db": "To extinguish, control and prevent Rescue victims during an emergency To save life and protect property.",
+      "source": "To be a world-class organization that ensures prompt payment of retirement benefits and promotes a sustainable pension system",
+      "db_id": "a5e1317d-815c-4193-8a65-51fd96e4b188"
+    },
+    {
+      "source_number": 135,
+      "block": "paid",
+      "text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+      "option": "C",
+      "db": "To preserve national security, identity concealment, and confidentiality of secret service operatives",
+      "source": "Mainstream PFAs went bankrupt during fiscal consolidation.",
+      "db_id": "eb0fffb9-dcbd-425b-8f07-e5f9139a5fb7"
+    },
+    {
+      "source_number": 136,
+      "block": "paid",
+      "text": "Which statutory body retains ultimate accounting responsibility for the budgetary allocation, funding, and disbursement of pensions for retired DSS personnel?",
+      "option": "A",
+      "db": "Military Pensions Board (MPB) []",
+      "source": "Joint Military -DSS Pensions Board (JMPB)",
+      "db_id": "ed61db6c-87bb-495b-a485-3159ec113f5d"
+    },
+    {
+      "source_number": 137,
+      "block": "paid",
+      "text": "Which internal administrative unit within the DSS manages files, documentation processing, and payment clearances for retiring intelligence officers?",
+      "option": "A",
+      "db": "Mainstream Ministry Establishment Unit",
+      "source": "National Pension Commission (PenCom)",
+      "db_id": "9ded99c6-c927-452e-8198-67d64b830622"
+    },
+    {
+      "source_number": 139,
+      "block": "paid",
+      "text": "Who oversees the institutional welfare and final administrative approvals for the internal pension adjustments of the DSS?",
+      "option": "A",
+      "db": "Mr. Ayo Magaji",
+      "source": "The Executive Chairman of PENCOM",
+      "db_id": "1aaf9a71-0a67-40dc-8142-d50abdc29cb6"
+    },
+    {
+      "source_number": 141,
+      "block": "paid",
+      "text": "In June 2026, the Federal Government transmitted an official wireless signal approving a major landmark welfare program for treasury-funded workers and police officers retiring from 2026 onwards. What is this scheme called?",
+      "option": "A",
+      "db": "Retired Security Operatives Inducement Fund",
+      "source": "Security Inducement Fund",
+      "db_id": "8398626a-7a18-4fb0-abbf-4ae48cd59c9f"
+    }
+  ],
+  "duplicates": [
+    {
+      "text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+      "count": 2,
+      "positions": [
+        "1.2",
+        "7.3"
+      ],
+      "ids": [
+        "badb9ed0-84f7-40a7-86c1-b4a85f5438c8",
+        "2581c24c-b497-4ca9-b944-65d8e49e95d3"
+      ]
+    },
+    {
+      "text": "What pension framework model applies to Nigerian judicial officers of superior courts of record?",
+      "count": 2,
+      "positions": [
+        "1.4",
+        "8.8"
+      ],
+      "ids": [
+        "5b46fb09-8ae7-47c1-8d7a-4d1d9e6625aa",
+        "5221f8cb-6a38-4a85-9e32-00cdef6dfbda"
+      ]
+    },
+    {
+      "text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+      "count": 3,
+      "positions": [
+        "1.17",
+        "5.15",
+        "6.15"
+      ],
+      "ids": [
+        "0413fda0-57fa-4e20-b41e-0d6f54579469",
+        "179219d9-13fa-4acb-bef4-b2b09a99b4b2",
+        "cff1750f-af3d-4f65-8928-4a321d65645a"
+      ]
+    },
+    {
+      "text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+      "count": 3,
+      "positions": [
+        "1.19",
+        "5.17",
+        "6.17"
+      ],
+      "ids": [
+        "1702d507-73a0-47bb-8906-7004fa2497d1",
+        "bb1be136-5b08-41da-a564-ead60e8f23a3",
+        "b30e6cce-869b-4e52-9eb6-ebbb6d2b6798"
+      ]
+    },
+    {
+      "text": "When an active DSS operative falls in the line of duty, the internal pension division pays death benefits and gratuities to the Next-of-Kin (NOK) through which process?",
+      "count": 3,
+      "positions": [
+        "1.20",
+        "5.18",
+        "6.18"
+      ],
+      "ids": [
+        "c63669fb-1295-4246-857d-9e6a5661283c",
+        "416c94a3-2dbd-4603-923a-baddb249023e",
+        "77dbd771-c972-42ef-85ad-3898886343e1"
+      ]
+    },
+    {
+      "text": "Under the harmonized Public Service Rules (PSR), what is the statutory retirement age or length of service (whichever comes first) for civil servants and qualifying uniformed personnel?",
+      "count": 2,
+      "positions": [
+        "5.1",
+        "6.1"
+      ],
+      "ids": [
+        "528cfbf6-a75a-4297-8a89-4d90f6462de8",
+        "73e846a4-72ce-45de-8d50-ebec9ed838a0"
+      ]
+    },
+    {
+      "text": "What specific allowance, recently paid in tranches by the Military Pensions Board, was introduced by the Federal Government to cater to veterans and retired personnel?",
+      "count": 2,
+      "positions": [
+        "5.2",
+        "6.2"
+      ],
+      "ids": [
+        "54ae2261-5658-459d-988c-7c3fcef645f0",
+        "3c9486b8-d144-48ba-b3e7-f2252f3125f4"
+      ]
+    },
+    {
+      "text": "Aside from disbursing monthly pensions to retired personnel, what is a key statutory function of the Military Pensions Board regarding deceased personnel?",
+      "count": 2,
+      "positions": [
+        "5.3",
+        "6.3"
+      ],
+      "ids": [
+        "3a9f7874-286f-4740-a529-153fe419dce5",
+        "5f132a9a-937c-4469-b01c-7e97aa6f5b75"
+      ]
+    },
+    {
+      "text": "What is the primary statutory mandate of the Military Pensions Board (MPB)?",
+      "count": 2,
+      "positions": [
+        "5.4",
+        "6.4"
+      ],
+      "ids": [
+        "86c819bb-dee2-43d1-aa05-85083dc378d7",
+        "5ce8a044-312b-4a26-9dd8-56b38ac97028"
+      ]
+    },
+    {
+      "text": "Which tier of the Nigerian civil service structure supervises the Military Pensions Board?",
+      "count": 2,
+      "positions": [
+        "5.5",
+        "6.5"
+      ],
+      "ids": [
+        "c7c72a9f-c1a8-43d5-bbd1-207cf7c1ec55",
+        "22065134-648a-4687-a3cc-2de1ef5a4263"
+      ]
+    },
+    {
+      "text": "What document is primarily utilized by the MPB to prevent the continuous payment of pension to deceased military pensioners?",
+      "count": 2,
+      "positions": [
+        "5.6",
+        "6.6"
+      ],
+      "ids": [
+        "99b4b6b3-984d-458d-be44-c3a01d466392",
+        "ab0f674f-495f-4ad6-814d-f24945702fac"
+      ]
+    },
+    {
+      "text": "To eliminate the cumbersomeness and difficulties associated with traditional physical assemblies, what recent initiative did the MPB introduce for pensioners?",
+      "count": 2,
+      "positions": [
+        "5.7",
+        "6.7"
+      ],
+      "ids": [
+        "51b2480b-2bbe-44a1-adb5-ce37303f8f67",
+        "ecd77e38-0483-4708-888f-b7864d17a16d"
+      ]
+    },
+    {
+      "text": "Aside from processing retirement benefits, what is the role of the MPB regarding deceased military personnel?",
+      "count": 2,
+      "positions": [
+        "5.8",
+        "6.8"
+      ],
+      "ids": [
+        "cdf7b122-0b9a-44a3-bda4-96ce33f03a21",
+        "caf03f74-f8af-4be4-9afa-dec421b25655"
+      ]
+    },
+    {
+      "text": "During the early 2026 familiarization visit of the Permanent Secretary, Ministry of Defence, to the Military Pensions Board headquarters in Abuja, what was the overarching theme of the discussions?",
+      "count": 2,
+      "positions": [
+        "5.9",
+        "6.9"
+      ],
+      "ids": [
+        "f787471a-e37e-4c58-b229-9274bea6daa7",
+        "cc2c7d23-bf01-4df2-920b-d5ab930129c1"
+      ]
+    },
+    {
+      "text": "Which internal department within the Military Pensions Board is primarily responsible for storing and managing historical files, operational workflows, and data necessary for pension processing?",
+      "count": 2,
+      "positions": [
+        "5.10",
+        "6.10"
+      ],
+      "ids": [
+        "a7615665-d549-40eb-9aa6-980f30af5b31",
+        "a69bcc79-5d02-402c-a1a9-1243a37db195"
+      ]
+    },
+    {
+      "text": "Under the newly confirmed 2026 Exit Benefit Scheme (EBS), what is the formula for the lump-sum payment provided to an eligible retiring police officer?",
+      "count": 2,
+      "positions": [
+        "5.11",
+        "6.11"
+      ],
+      "ids": [
+        "7bed75c8-6c93-495e-a004-1a2fdf11a4f6",
+        "9ee64731-d4dc-4e98-ae16-b2c5c2c09e82"
+      ]
+    },
+    {
+      "text": "What is the core target of the proposed \"Bill for an Act to Establish the Nigeria Police Force Pension Board\" passed by the National Assembly and awaiting final Executive assent?",
+      "count": 2,
+      "positions": [
+        "5.12",
+        "6.12"
+      ],
+      "ids": [
+        "b0bf2d27-28e8-4ecc-bee2-03ea57f3281a",
+        "88ced90e-48e4-4656-93f1-c5330a259d88"
+      ]
+    },
+    {
+      "text": "Under the standard Contributory Pension Scheme (CPS) framework governing police personnel, what is the mandatory monthly percentage deducted from an officer's basic monthly salary into their Retirement Savings Account (RSA)?",
+      "count": 2,
+      "positions": [
+        "5.13",
+        "6.13"
+      ],
+      "ids": [
+        "986658e4-2c83-407c-8af1-037dc00cb0e0",
+        "09b13bf5-c863-460b-9794-1d268690f905"
+      ]
+    },
+    {
+      "text": "To eliminate identity fraud among aging secret service veterans while preserving deep confidentiality, what method is utilized to verify retired DSS officers?",
+      "count": 3,
+      "positions": [
+        "5.14",
+        "6.14",
+        "7.9"
+      ],
+      "ids": [
+        "96bd6da9-b13e-4dba-9504-8b5a5baa65e6",
+        "67c278db-1f55-4caf-a8b3-bfeaa3b4a60a",
+        "12c28549-3254-43dc-9b8d-41aef4e1a941"
+      ]
+    },
+    {
+      "text": "If a DSS personnel is compulsorily retired from service on disciplinary grounds under the Public Service Rules (PSR), what is the impact on their accrued pension rights?",
+      "count": 2,
+      "positions": [
+        "5.16",
+        "6.16"
+      ],
+      "ids": [
+        "c51a697c-5cf2-49e2-8618-37021bf6c6b5",
+        "009af9cc-e9e2-4dc7-940d-0c730d4a834d"
+      ]
+    },
+    {
+      "text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+      "count": 3,
+      "positions": [
+        "5.19",
+        "6.19",
+        "8.12"
+      ],
+      "ids": [
+        "6ffbc335-1fd7-4d16-b480-47cc5eb5c283",
+        "cca0c5e3-7946-4109-a75c-ed29d5977b95",
+        "5ee56529-5c07-4f20-8442-cd1c04b6a475"
+      ]
+    },
+    {
+      "text": "Retired DSS officers drawing monthly pensions remain bound by the Official Secrets Act. What is the administrative penalty if a pensioner writes a book leaking classified active operations?",
+      "count": 3,
+      "positions": [
+        "5.20",
+        "6.20",
+        "8.13"
+      ],
+      "ids": [
+        "98b26601-0ba0-46d8-a19a-2e5b8be3b641",
+        "f081ecdd-29e5-41b9-8a5f-83414623e950",
+        "92178ffc-354d-427d-9499-69ff0732d54a"
+      ]
+    },
+    {
+      "text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+      "count": 2,
+      "positions": [
+        "7.4",
+        "8.15"
+      ],
+      "ids": [
+        "eb0fffb9-dcbd-425b-8f07-e5f9139a5fb7",
+        "75a34b85-2c88-43e2-8080-fca372fe9c7a"
+      ]
+    },
+    {
+      "text": "Which statutory body retains ultimate accounting responsibility for the budgetary allocation, funding, and disbursement of pensions for retired DSS personnel?",
+      "count": 2,
+      "positions": [
+        "7.5",
+        "8.16"
+      ],
+      "ids": [
+        "ed61db6c-87bb-495b-a485-3159ec113f5d",
+        "06a2b257-cd74-429a-a7d4-986f76f2b671"
+      ]
+    },
+    {
+      "text": "Which internal administrative unit within the DSS manages files, documentation processing, and payment clearances for retiring intelligence officers?",
+      "count": 2,
+      "positions": [
+        "7.6",
+        "8.17"
+      ],
+      "ids": [
+        "9ded99c6-c927-452e-8198-67d64b830622",
+        "14f6b124-e31d-46e0-aa55-42c258128776"
+      ]
+    },
+    {
+      "text": "Under the harmonized pension structure for security services, a retired Director-General of State Services (DGSS) is entitled to a terminal monthly pension equivalent to:",
+      "count": 2,
+      "positions": [
+        "7.7",
+        "8.18"
+      ],
+      "ids": [
+        "f47c4877-569b-4f85-a4cd-85e814bd66cf",
+        "42abfda0-c4d8-4b83-874a-e7effc3bc7d9"
+      ]
+    },
+    {
+      "text": "Who oversees the institutional welfare and final administrative approvals for the internal pension adjustments of the DSS?",
+      "count": 2,
+      "positions": [
+        "7.8",
+        "8.19"
+      ],
+      "ids": [
+        "1aaf9a71-0a67-40dc-8142-d50abdc29cb6",
+        "7e5c5de6-aa4b-49a2-8633-ae486dc79db0"
+      ]
+    }
+  ]
+}

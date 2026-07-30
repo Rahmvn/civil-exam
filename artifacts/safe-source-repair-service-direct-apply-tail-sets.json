@@ -1,0 +1,211 @@
+{
+  "generated_at": "2026-07-29T22:38:29.977Z",
+  "mode": "confirm-safe-auto",
+  "service_direct": true,
+  "plan_file": "C:\\dev\\civil-exam-app\\artifacts\\post-pfm-replacement-repair-plan.json",
+  "target_host": "beapcfiofyrhsxwxcmyd.supabase.co",
+  "skipped_tail_slugs": [
+    "public-service-rules"
+  ],
+  "results": [
+    {
+      "type": "missing_tail_set_direct",
+      "slug": "current-affairs",
+      "set_number": 11,
+      "practice_set_id": "d77b0ce0-5e21-4648-9a05-3c349b84b1f2",
+      "inserted": [
+        {
+          "id": "02afb9ee-cac0-4f6f-8217-c6975d0d4098",
+          "batch_position": 1
+        },
+        {
+          "id": "c14a5e0e-4319-401a-be8d-eb4284e261c1",
+          "batch_position": 2
+        },
+        {
+          "id": "2cdc1d39-d048-46d6-9804-13d01a416d4a",
+          "batch_position": 3
+        },
+        {
+          "id": "daf99470-957a-4416-a342-2db819e8cbb9",
+          "batch_position": 4
+        },
+        {
+          "id": "4f1df380-bf25-49bc-aabe-b7ff97a14e48",
+          "batch_position": 5
+        },
+        {
+          "id": "d5e84235-bb76-4342-9b44-3cc4e44d3e9d",
+          "batch_position": 6
+        },
+        {
+          "id": "bbae97e0-261a-4d17-92a3-1c602481ead7",
+          "batch_position": 7
+        },
+        {
+          "id": "0275994a-6896-49d2-ba4c-37db649d84c3",
+          "batch_position": 8
+        },
+        {
+          "id": "a18a56ce-081b-4d4b-9edd-150af4c562ce",
+          "batch_position": 9
+        },
+        {
+          "id": "8c8b7fd3-17c4-46c6-9738-2fed308c7ff5",
+          "batch_position": 10
+        },
+        {
+          "id": "c4a701bc-574f-4bff-a3a7-948257df9339",
+          "batch_position": 11
+        },
+        {
+          "id": "5d7c6f2f-a542-4c50-8540-2b3bd129914d",
+          "batch_position": 12
+        },
+        {
+          "id": "ea9d2559-18c7-464b-90f7-916890d8ac3a",
+          "batch_position": 13
+        },
+        {
+          "id": "6355bd0e-eba3-4ec9-8ebb-42f3fa3cf6e6",
+          "batch_position": 14
+        },
+        {
+          "id": "08c16d8c-cc09-4b7c-8079-64344b344761",
+          "batch_position": 15
+        },
+        {
+          "id": "dc7ddb89-3b35-44a9-ab5e-4b002679a346",
+          "batch_position": 16
+        },
+        {
+          "id": "0668577d-d03e-46af-ab54-194b47c95ef0",
+          "batch_position": 17
+        },
+        {
+          "id": "28761250-27f8-4736-b1b7-536377cbf837",
+          "batch_position": 18
+        },
+        {
+          "id": "c501bb75-d544-400b-a500-467cf26cbc06",
+          "batch_position": 19
+        },
+        {
+          "id": "91cc05ec-2bb8-410a-a0cc-f5621ef68934",
+          "batch_position": 20
+        }
+      ],
+      "backup": {
+        "practiceSet": {
+          "id": "d77b0ce0-5e21-4648-9a05-3c349b84b1f2",
+          "exam_pack_id": "ce71ad9a-e142-4364-a1dc-461c58568f1a",
+          "subject_id": "55ecd50c-47a9-48d0-9620-9d0047f5e5d8",
+          "set_number": 11,
+          "expected_question_count": 20,
+          "status": "draft",
+          "created_by": "c36459af-7e13-4ab7-aac6-606c96386fee",
+          "updated_by": "c36459af-7e13-4ab7-aac6-606c96386fee",
+          "published_at": null,
+          "archived_at": null,
+          "created_at": "2026-07-29T05:17:19.456682+00:00",
+          "updated_at": "2026-07-29T05:17:19.456682+00:00",
+          "practice_type": "objective",
+          "logical_set_key": "866f7177-f88b-42f6-8d4a-4f87664abe09",
+          "version_number": 1,
+          "replaces_practice_set_id": null,
+          "replaced_by_practice_set_id": null,
+          "ever_published": false,
+          "first_published_at": null,
+          "withdrawn_at": null,
+          "retired_at": null,
+          "retirement_reason": null,
+          "withdrawn_question_ids": null
+        },
+        "existingQuestions": []
+      }
+    },
+    {
+      "type": "missing_tail_set_direct",
+      "slug": "public-financial-management",
+      "set_number": 12,
+      "practice_set_id": "68981abb-da15-43e1-8428-cb7e280f8a31",
+      "inserted": [
+        {
+          "id": "6e8b13ce-5a90-44a0-a598-aebb4c423747",
+          "batch_position": 1
+        },
+        {
+          "id": "dff71341-bc57-4a34-8048-46e653f7a5b0",
+          "batch_position": 2
+        },
+        {
+          "id": "a9830cf4-7bcc-4e21-b028-966c707acc26",
+          "batch_position": 3
+        },
+        {
+          "id": "eaddb1a2-d7bf-47f2-a05e-89fa42672c3c",
+          "batch_position": 4
+        },
+        {
+          "id": "82935cb0-99bf-41da-a4bc-3917ee4d5f34",
+          "batch_position": 5
+        },
+        {
+          "id": "bbca7058-2187-408b-964a-a73083235872",
+          "batch_position": 6
+        },
+        {
+          "id": "eb9104e4-0e8c-4c87-97f3-c5f101f419d3",
+          "batch_position": 7
+        },
+        {
+          "id": "192a7114-8e71-4ca2-b3f6-1715f7687922",
+          "batch_position": 8
+        },
+        {
+          "id": "027a0f8f-68ec-4165-9f31-0c5c6bb264af",
+          "batch_position": 9
+        },
+        {
+          "id": "2bbd6fed-e893-41cf-bfc0-435c9bebc317",
+          "batch_position": 10
+        }
+      ],
+      "backup": {
+        "practiceSet": {
+          "id": "68981abb-da15-43e1-8428-cb7e280f8a31",
+          "exam_pack_id": "ce71ad9a-e142-4364-a1dc-461c58568f1a",
+          "subject_id": "bdb11020-f358-47c4-831d-769bcfbba3e1",
+          "set_number": 12,
+          "expected_question_count": 10,
+          "status": "draft",
+          "created_by": null,
+          "updated_by": null,
+          "published_at": null,
+          "archived_at": null,
+          "created_at": "2026-07-29T22:38:29.260982+00:00",
+          "updated_at": "2026-07-29T22:38:29.260982+00:00",
+          "practice_type": "objective",
+          "logical_set_key": "2bcaab71-3016-44f9-91f9-85459ef326cd",
+          "version_number": 1,
+          "replaces_practice_set_id": null,
+          "replaced_by_practice_set_id": null,
+          "ever_published": false,
+          "first_published_at": null,
+          "withdrawn_at": null,
+          "retired_at": null,
+          "retirement_reason": null,
+          "withdrawn_question_ids": null
+        },
+        "existingQuestions": []
+      }
+    },
+    {
+      "type": "missing_tail_set_direct",
+      "slug": "public-service-rules",
+      "set_number": 18,
+      "skipped": true,
+      "reason": "Skipped because this tail set has an unresolved manual-review source row."
+    }
+  ]
+}

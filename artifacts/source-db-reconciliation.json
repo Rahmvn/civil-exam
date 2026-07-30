@@ -1,0 +1,2969 @@
+{
+  "generatedAt": "2026-07-29T22:09:28.604Z",
+  "modules": {
+    "public-financial-management": {
+      "sourceCount": 340,
+      "dbPublishedCount": 330,
+      "sourceWithAnswers": 340,
+      "missingInDb": [
+        {
+          "source_number": 331,
+          "source_position": 331,
+          "question_text": "Which statutory officer is responsible for supervising the accounting operations of all ministries and extra-ministerial offices to ensure compliance with financial rules?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 332,
+          "source_position": 332,
+          "question_text": "What is the constitutional or statutory role of the Finance Minister concerning the annual budget?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 333,
+          "source_position": 333,
+          "question_text": "Which of the following documents is the Director of Finance and Accounts (DFA) required to prepare periodically to aid the Accounting Officer in monitoring the ministry's budget?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 334,
+          "source_position": 334,
+          "question_text": "In terms of administrative reporting, why is the Head of Internal Audit expected to have a direct line of communication with the Accounting Officer?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 335,
+          "source_position": 335,
+          "question_text": "According to the Financial Regulations, when should a Revenue Collector remit the funds they have collected to the Sub-Treasurer or designated bank?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 336,
+          "source_position": 336,
+          "question_text": "Under the Pension Reform Act, which category of federal public service employees remains exempted from the Contributory Pension Scheme (CPS) and is still covered under the old Defined Benefits Scheme (DBS)?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 337,
+          "source_position": 337,
+          "question_text": "According to the revised provisions of the Pension Reform Act, what is the mandatory minimum percentage of an employee's monthly emoluments that the Federal Government (Employer) and the Civil Servant (Employee) must contribute respectively into the Retirement Savings Account (RSA)?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 338,
+          "source_position": 338,
+          "question_text": "Which organ of the Federal Government is legally mandated to oversee the direct administration, verification, and payment of pensions to retirees under the old Defined Benefits Scheme (DBS)?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 339,
+          "source_position": 339,
+          "question_text": "From a public finance perspective, what is the fundamental structural difference between the funding mechanisms of the DBS and the CPS that prompted the 2004 pension reform?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 340,
+          "source_position": 340,
+          "question_text": "Under the Contributory Pension Scheme, an officer who is disengaged from the civil service or retires before the age of 50, and is unable to secure another job within four (4) months, is legally permitted to withdraw what maximum percentage from their RSA balance?",
+          "correct_option": "B"
+        }
+      ],
+      "extraInDb": [],
+      "answerMismatches": [
+        {
+          "question_text": "The primary objective of implementing a uniform National Chart of Accounts (NCOA) across the three tiers of government in Nigeria is to:",
+          "source_number": 296,
+          "source_correct": "D",
+          "db_correct": "A",
+          "db_id": "4a15ac4d-01c8-4c2d-9c48-40a3199817c0"
+        },
+        {
+          "question_text": "In the standard NCOA structure, which of the following is NOT one of the six core segments?",
+          "source_number": 297,
+          "source_correct": "A",
+          "db_correct": "C",
+          "db_id": "959002b5-7fdc-4053-ba53-427e70d0985c"
+        },
+        {
+          "question_text": "How many standard segments make up the standardized National Chart of Accounts (NCOA) implemented in the Nigerian public sector to ensure uniformity and compliance with IPSAS?",
+          "source_number": 299,
+          "source_correct": "C",
+          "db_correct": "B",
+          "db_id": "45ce9f95-237d-4fb9-992d-eb37a5fa6402"
+        },
+        {
+          "question_text": "Under the IPSAS Accrual basis of accounting, how does the Economic segment of the NCOA facilitate proper financial reporting?",
+          "source_number": 300,
+          "source_correct": "B",
+          "db_correct": "C",
+          "db_id": "53ded3c2-b8aa-4f86-bc3c-53b132aaa8eb"
+        },
+        {
+          "question_text": "The Functional segment in the NCOA is based on the international standard known as COFOG. What does COFOG stand for in the context of public sector budgeting?",
+          "source_number": 301,
+          "source_correct": "C",
+          "db_correct": "B",
+          "db_id": "d3c86b15-6f7d-4899-8ca6-aa4bfb081b3e"
+        },
+        {
+          "question_text": "In the context of the NCOA, what is the primary purpose of the Fund segment?",
+          "source_number": 302,
+          "source_correct": "B",
+          "db_correct": "C",
+          "db_id": "5f10d466-5bb8-45fb-8f2e-32ba8bfecb2e"
+        },
+        {
+          "question_text": "How does the comprehensive NCOA structure support the effective implementation of the Treasury Single Account (TSA) under the Financial Regulations?",
+          "source_number": 303,
+          "source_correct": "C",
+          "db_correct": "B",
+          "db_id": "537168b0-b588-4e08-9fa6-9402c75b6836"
+        },
+        {
+          "question_text": "Which of the following best describes the role of the Programme segment in the Nigerian NCOA?",
+          "source_number": 304,
+          "source_correct": "B",
+          "db_correct": "A",
+          "db_id": "88129cb0-9384-46f1-869b-e3ea52facda9"
+        },
+        {
+          "question_text": "If the Federal Government is constructing a dam in a specific senatorial district, which NCOA segment is strictly responsible for capturing this territorial or geographic detail?",
+          "source_number": 305,
+          "source_correct": "A",
+          "db_correct": "D",
+          "db_id": "3a351843-01dc-490d-a56b-a529227724d1"
+        },
+        {
+          "question_text": "Why is the full implementation of the harmonized 6-segment NCOA considered critical for the transition to IPSAS Accrual in Nigeria?",
+          "source_number": 306,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "cdaa9079-f46a-4bb4-8ca4-91b98ff25a63"
+        },
+        {
+          "question_text": "Under the Financial Regulations, what is the consequence of incorrectly coding an expenditure using the wrong segment in the NCOA?",
+          "source_number": 307,
+          "source_correct": "C",
+          "db_correct": "D",
+          "db_id": "aca6c5a4-c17c-4ca5-93d6-14b414a49131"
+        },
+        {
+          "question_text": "Which of the following is a primary duty of an Accounting Officer?",
+          "source_number": 309,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "39658149-8a36-4c05-8221-8d4a541a2b1a"
+        },
+        {
+          "question_text": "What is the primary statutory function of the Minister of Finance regarding the public accounts of the Federation?",
+          "source_number": 310,
+          "source_correct": "C",
+          "db_correct": "B",
+          "db_id": "8f4ac403-1eba-43bd-9804-fc931ce68a3f"
+        },
+        {
+          "question_text": "The Office of the Accountant-General of the Federation (OAGF) is constitutionally responsible for:",
+          "source_number": 311,
+          "source_correct": "B",
+          "db_correct": "D",
+          "db_id": "d87e4686-1fb2-43b7-b8ba-c81a00809699"
+        },
+        {
+          "question_text": "According to Section 85 of the 1999 Constitution of Nigeria, the Auditor-General for the Federation is empowered to submit their audit reports to:",
+          "source_number": 313,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "24efd109-4bd9-4ae6-8004-56a9c78099fd"
+        },
+        {
+          "question_text": "Which type of audit ensures that public funds are expended exactly as appropriated by the Legislature?",
+          "source_number": 314,
+          "source_correct": "C",
+          "db_correct": "A",
+          "db_id": "48e12e3d-a343-46a8-aa5f-5b88201d1c66"
+        },
+        {
+          "question_text": "The Director of Finance and Accounts in a Ministry is primarily responsible to:",
+          "source_number": 315,
+          "source_correct": "A",
+          "db_correct": "D",
+          "db_id": "71bc268c-fee1-41e5-affd-46ae67faee82"
+        },
+        {
+          "question_text": "If a Director of Finance and Accounts discovers a major financial irregularity or violation of financial regulations within their ministry, what is their immediate next step?",
+          "source_number": 316,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "68cbdad9-4562-4c6f-81fe-1849e75ba166"
+        },
+        {
+          "question_text": "The Head of Internal Audit in a Ministry is expected to conduct routine checks and ensure adherence to laid-down procedures. To whom do they directly report?",
+          "source_number": 317,
+          "source_correct": "C",
+          "db_correct": "D",
+          "db_id": "27b2a9df-a0d3-4c7d-812f-db49da70ce22"
+        },
+        {
+          "question_text": "What is the core objective of the internal audit function within the public sector?",
+          "source_number": 318,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "80d7a657-fcda-4758-bf23-0126f546d82e"
+        },
+        {
+          "question_text": "Which of the following best describes the function of an official Revenue Collector?",
+          "source_number": 319,
+          "source_correct": "C",
+          "db_correct": "D",
+          "db_id": "36e3b443-633c-4a66-961a-6903b6b3dc74"
+        },
+        {
+          "question_text": "When an official Revenue Collector receives cash, what is the required regulatory timeline for remitting these funds to the Sub-Accounting Officer or the Treasury?",
+          "source_number": 320,
+          "source_correct": "D",
+          "db_correct": "A",
+          "db_id": "2b3bc656-aa5b-4046-8f57-96ae560962d2"
+        },
+        {
+          "question_text": "According to the Financial Regulations, who is designated as the Accounting Officer for the receipts and payments of a Ministry or Extra-Ministerial Office?",
+          "source_number": 321,
+          "source_correct": "A",
+          "db_correct": "D",
+          "db_id": "fa9e8979-6ebc-4c75-9cf2-930eb3cb475b"
+        },
+        {
+          "question_text": "Which section of the 1999 Constitution of the Federal Republic of Nigeria provides the statutory mandate for the Auditor General for the Federation to audit public accounts?",
+          "source_number": 322,
+          "source_correct": "D",
+          "db_correct": "B",
+          "db_id": "d4c1f159-6384-4c8f-b2c2-8d9cb573e8a4"
+        },
+        {
+          "question_text": "Which of the following best describes the primary statutory responsibility of the Accountant General of the Federation?",
+          "source_number": 323,
+          "source_correct": "B",
+          "db_correct": "C",
+          "db_id": "ba0933e1-2493-4483-8da5-0857c5583f73"
+        },
+        {
+          "question_text": "Which of the following statutory powers is exclusively vested in the Minister of Finance?",
+          "source_number": 324,
+          "source_correct": "C",
+          "db_correct": "D",
+          "db_id": "489756d5-d6ed-4d96-aed2-76f83a1c91f1"
+        },
+        {
+          "question_text": "If a Head of Internal Audit discovers an irregular payment instruction that contradicts the Financial Regulations, what is their immediate statutory obligation?",
+          "source_number": 326,
+          "source_correct": "D",
+          "db_correct": "B",
+          "db_id": "9d179725-b8d6-409d-9535-206b7ff0623d"
+        }
+      ],
+      "optionMismatches": [
+        {
+          "question_text": "The membership of the Plenary Session comprise the any of the following:",
+          "option": "C",
+          "source": "All of the above.",
+          "db": "ONLY the States' Accountant General as well as States' Commissioner for Finance.",
+          "db_id": "4d744014-41e9-4040-af92-8d4cd8722cbe"
+        }
+      ],
+      "duplicateInDb": []
+    },
+    "public-service-rules": {
+      "sourceCount": 360,
+      "dbPublishedCount": 340,
+      "sourceWithAnswers": 359,
+      "missingInDb": [
+        {
+          "source_number": 341,
+          "source_position": 341,
+          "question_text": "What is the minimum substantive rank a civil servant must hold in the Directorate cadre to be eligible to apply for the post of Permanent Secretary in the Federal Civil Service?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 342,
+          "source_position": 342,
+          "question_text": "According to the Public Service Rules (PSR), what is the minimum remaining active service requirement for a candidate applying for the post of Permanent Secretary?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 343,
+          "source_position": 343,
+          "question_text": "What are the primary stages involved in the selection and promotion process for Permanent Secretaries in the Federal Civil Service?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 344,
+          "source_position": 344,
+          "question_text": "Can a civil servant with a pending disciplinary case or active interdiction apply for the post of Permanent Secretary?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 345,
+          "source_position": 345,
+          "question_text": "According to the Constitution of the Federal Republic of Nigeria, who is empowered to appoint a person to the office of Permanent Secretary in the Federal Civil Service?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 346,
+          "source_position": 346,
+          "question_text": "In the context of the civil service, which of the following best describes the primary role of a Permanent Secretary?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 347,
+          "source_position": 347,
+          "question_text": "What policy principle guides the appointment of Permanent Secretaries at the Federal level to ensure inclusivity and geographical spread?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 348,
+          "source_position": 348,
+          "question_text": "In the promotion examination for the post of Permanent Secretary, which of the following is typically the main focus of the Policy and Administration paper?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 349,
+          "source_position": 349,
+          "question_text": "Why is continuous participation in management and leadership courses (such as those from ASCON) highly regarded in the selection process for Permanent Secretaries?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 350,
+          "source_position": 350,
+          "question_text": "Why has the ICT Assessment become a critical stage in the Permanent Secretary promotion examination?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 352,
+          "source_position": 352,
+          "question_text": "What is the fundamental distinction between \"Reinstatement\" and \"Condonation of Service\" under the Nigerian Public Service Rules (PSR)?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 353,
+          "source_position": 353,
+          "question_text": "What is the specific role of the Head of the Civil Service of the Federation (HCSF) in processing an application for condonation of service for a senior officer?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 354,
+          "source_position": 354,
+          "question_text": "What is the primary implication of condonation of service on a civil servant's retirement benefits?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 355,
+          "source_position": 355,
+          "question_text": "What is the fundamental difference between the \"Termination of Appointment\" and \"Dismissal\" in the civil service?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 356,
+          "source_position": 356,
+          "question_text": "An officer on a probationary appointment can have their appointment terminated by the Commission. What notice or remuneration is standard in lieu of notice?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 357,
+          "source_position": 357,
+          "question_text": "If a permanent, pensionable officer's position is completely eliminated due to government restructuring, what is the appropriate term for their exit from service?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 358,
+          "source_position": 358,
+          "question_text": "Which of the following is considered an act of \"Serious Misconduct\" that can lead directly to dismissal rather than a simple termination?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 359,
+          "source_position": 359,
+          "question_text": "Who has the ultimate statutory authority to terminate or dismiss a civil servant on Grade Level 07 and above?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 360,
+          "source_position": 360,
+          "question_text": "When an officer's appointment is terminated due to general inefficiency, what entitlement does the officer typically retain regarding retirement benefits, unlike a dismissed officer?",
+          "correct_option": "B"
+        }
+      ],
+      "extraInDb": [],
+      "answerMismatches": [
+        {
+          "question_text": "Which body is primarily responsible for the final approval of conversion of officers on Grade Level 07 to 13 in the Federal Civil Service?",
+          "source_number": 351,
+          "source_correct": "D",
+          "db_correct": "C",
+          "db_id": "6f0a5c06-7f3d-4898-97a8-996d9b714532"
+        }
+      ],
+      "optionMismatches": [
+        {
+          "question_text": "Any Officer that fails to proceed on posting would be regarded as a ...............",
+          "option": "B",
+          "source": "Complicity c Connivance",
+          "db": "Complicity",
+          "db_id": "52a9a580-2fae-4535-839b-e89eebada52f"
+        },
+        {
+          "question_text": "Public Service of the Federation is.........................",
+          "option": "B",
+          "source": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
+          "db": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+          "db_id": "c5073bfc-4b3b-43cf-9f85-2179baccbefc"
+        },
+        {
+          "question_text": "Payment for overtime on weekends would be at the rate of ................of the normal overtime rate whereas on public holidays, the rate would be ............ the normal overtime rate.",
+          "option": "B",
+          "source": "0.9 percent, Quadruple",
+          "db": "3.5 percent, triple",
+          "db_id": "ec99d3b4-95d0-40cf-b4d0-d826c83ead12"
+        },
+        {
+          "question_text": "The Chairman of the Junior Staff Committee (Headquarters) must me the Director, Personnel/Human Resources Management with other members not below Salary Grade Level 12 and ............................",
+          "option": "A",
+          "source": "a Representative of the Ministry of Labour and Employment. b a Representative of the Office of the Head of the Civil Service of the Federation",
+          "db": "a Representative of the Ministry of Labour and Employment.",
+          "db_id": "99e05f3a-2907-4c2a-ad90-644ad720f0ce"
+        },
+        {
+          "question_text": "What is the maximum statutory timeline required for an officer to submit a written representation in response to an official query?",
+          "option": "D",
+          "source": "36 hours. e.",
+          "db": "36 hours.",
+          "db_id": "719da2eb-c362-47f0-add3-92a3eaef5100"
+        },
+        {
+          "question_text": "An officer in the Nigerian Public Service can proceed on voluntary retirement after reaching what minimum age?",
+          "option": "C",
+          "source": "50 years",
+          "db": "55 years",
+          "db_id": "b447bc6f-de04-4528-8a80-8be203ba2d21"
+        },
+        {
+          "question_text": "Which body is primarily responsible for the final approval of conversion of officers on Grade Level 07 to 13 in the Federal Civil Service?",
+          "option": "C",
+          "source": "The National Council on Establishment (NCE)",
+          "db": "The Federal Civil Service Commission (FCSC)",
+          "db_id": "6f0a5c06-7f3d-4898-97a8-996d9b714532"
+        }
+      ],
+      "duplicateInDb": []
+    },
+    "current-affairs": {
+      "sourceCount": 220,
+      "dbPublishedCount": 200,
+      "sourceWithAnswers": 220,
+      "missingInDb": [
+        {
+          "source_number": 201,
+          "source_position": 201,
+          "question_text": "Under the GIFMIS and Nigerian Financial Regulations context, what does CCS Module stand for?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 202,
+          "source_position": 202,
+          "question_text": "What is the full meaning of GOEs?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 203,
+          "source_position": 203,
+          "question_text": "Under e-collection framework, RRR means?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 204,
+          "source_position": 204,
+          "question_text": "The statutory national minimum wage in Nigeria, adjusted under the Minimum Wage Act to alleviate fiscal pressures on public sector employees, stands at what baseline monthly flat rate?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 205,
+          "source_position": 205,
+          "question_text": "Under the fiscal consolidation reforms aimed at easing public deficits and expanding federal revenues to ₦28 trillion, which major socioeconomic policy was permanently retired by the Federal Government?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 206,
+          "source_position": 206,
+          "question_text": "Which agency or regulatory framework is statutorily responsible for monitoring compliance, issuing circulars, and managing consequential wage adjustments within the civil service following national minimum wage shifts?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 207,
+          "source_position": 207,
+          "question_text": "What is the full meaning of GRRN?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 208,
+          "source_position": 208,
+          "question_text": "what is the full meaning of AWOL?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 209,
+          "source_position": 209,
+          "question_text": "What is the current Monetary Policy Rate (MPR)?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 210,
+          "source_position": 210,
+          "question_text": "...............is a sovereign digital platform deployed on the 1Gov Cloud to digitize government records, automate workflows, and eliminate paper-based administrative bottlenecks across Nigerian Ministries, Departments, and Agencies (MDAs)",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 211,
+          "source_position": 211,
+          "question_text": "What does KRA stand for?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 212,
+          "source_position": 212,
+          "question_text": "What is the full meaning of COBRA?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 213,
+          "source_position": 213,
+          "question_text": "The full meaning of RBBRF is ....................",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 214,
+          "source_position": 214,
+          "question_text": "TUC of Nigeria stands for?",
+          "correct_option": "A"
+        },
+        {
+          "source_number": 215,
+          "source_position": 215,
+          "question_text": "What is the full meaning of NLC?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 216,
+          "source_position": 216,
+          "question_text": "Who is the current Chairman of PenCom?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 217,
+          "source_position": 217,
+          "question_text": "What does PFC signify?",
+          "correct_option": "D"
+        },
+        {
+          "source_number": 218,
+          "source_position": 218,
+          "question_text": "What is the full meaning of RTS?",
+          "correct_option": "B"
+        },
+        {
+          "source_number": 219,
+          "source_position": 219,
+          "question_text": "What does PPP represent in the Nigerian Pension Sector?",
+          "correct_option": "C"
+        },
+        {
+          "source_number": 220,
+          "source_position": 220,
+          "question_text": "What does DRE stand for in the Nigerian Pension Industry?",
+          "correct_option": "D"
+        }
+      ],
+      "extraInDb": [],
+      "answerMismatches": [],
+      "optionMismatches": [],
+      "duplicateInDb": []
+    },
+    "pension-module": {
+      "sourceCount": 152,
+      "dbPublishedCount": 160,
+      "sourceWithAnswers": 0,
+      "missingInDb": [
+        {
+          "source_number": 150,
+          "source_position": 1,
+          "question_text": "The certificate of service of retiring officers on GL 07 and above requires the signature and counter-signature of………… and……….. while that of GL 06 and below requires the signature and counter-signature of………… and……………….",
+          "correct_option": ""
+        },
+        {
+          "source_number": 150,
+          "source_position": 2,
+          "question_text": "PAID FOR, OBJECTIVE PRACTICE QUESTIONS- ANSWERS (CIVILIAN, JUDICIAL AND UNIFORMED PERSONNEL)",
+          "correct_option": ""
+        },
+        {
+          "source_number": 1,
+          "source_position": 3,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 2,
+          "source_position": 4,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 3,
+          "source_position": 5,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 4,
+          "source_position": 6,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 5,
+          "source_position": 7,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 6,
+          "source_position": 8,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 7,
+          "source_position": 9,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 8,
+          "source_position": 10,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 9,
+          "source_position": 11,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 10,
+          "source_position": 12,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 11,
+          "source_position": 13,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 12,
+          "source_position": 14,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 13,
+          "source_position": 15,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 14,
+          "source_position": 16,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 15,
+          "source_position": 17,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 16,
+          "source_position": 18,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 17,
+          "source_position": 19,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 18,
+          "source_position": 20,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 19,
+          "source_position": 21,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 20,
+          "source_position": 22,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 21,
+          "source_position": 23,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 22,
+          "source_position": 24,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 23,
+          "source_position": 25,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 24,
+          "source_position": 26,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 25,
+          "source_position": 27,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 26,
+          "source_position": 28,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 27,
+          "source_position": 29,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 28,
+          "source_position": 30,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 29,
+          "source_position": 31,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 30,
+          "source_position": 32,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 31,
+          "source_position": 33,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 32,
+          "source_position": 34,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 33,
+          "source_position": 35,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 34,
+          "source_position": 36,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 35,
+          "source_position": 37,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 36,
+          "source_position": 38,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 37,
+          "source_position": 39,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 38,
+          "source_position": 40,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 39,
+          "source_position": 41,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 40,
+          "source_position": 42,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 41,
+          "source_position": 43,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 42,
+          "source_position": 44,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 43,
+          "source_position": 45,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 44,
+          "source_position": 46,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 45,
+          "source_position": 47,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 46,
+          "source_position": 48,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 47,
+          "source_position": 49,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 48,
+          "source_position": 50,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 49,
+          "source_position": 51,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 50,
+          "source_position": 52,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 51,
+          "source_position": 53,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 52,
+          "source_position": 54,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 53,
+          "source_position": 55,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 54,
+          "source_position": 56,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 55,
+          "source_position": 57,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 56,
+          "source_position": 58,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 57,
+          "source_position": 59,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 58,
+          "source_position": 60,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 59,
+          "source_position": 61,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 60,
+          "source_position": 62,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 61,
+          "source_position": 63,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 62,
+          "source_position": 64,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 63,
+          "source_position": 65,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 64,
+          "source_position": 66,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 65,
+          "source_position": 67,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 66,
+          "source_position": 68,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 67,
+          "source_position": 69,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 68,
+          "source_position": 70,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 69,
+          "source_position": 71,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 70,
+          "source_position": 72,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 71,
+          "source_position": 73,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 72,
+          "source_position": 74,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 73,
+          "source_position": 75,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 74,
+          "source_position": 76,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 75,
+          "source_position": 77,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 76,
+          "source_position": 78,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 77,
+          "source_position": 79,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 78,
+          "source_position": 80,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 79,
+          "source_position": 81,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 80,
+          "source_position": 82,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 81,
+          "source_position": 83,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 82,
+          "source_position": 84,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 83,
+          "source_position": 85,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 84,
+          "source_position": 86,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 85,
+          "source_position": 87,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 86,
+          "source_position": 88,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 87,
+          "source_position": 89,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 88,
+          "source_position": 90,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 89,
+          "source_position": 91,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 90,
+          "source_position": 92,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 91,
+          "source_position": 93,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 92,
+          "source_position": 94,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 93,
+          "source_position": 95,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 94,
+          "source_position": 96,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 95,
+          "source_position": 97,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 96,
+          "source_position": 98,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 97,
+          "source_position": 99,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 98,
+          "source_position": 100,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 99,
+          "source_position": 101,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 100,
+          "source_position": 102,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 101,
+          "source_position": 103,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 102,
+          "source_position": 104,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 103,
+          "source_position": 105,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 104,
+          "source_position": 106,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 105,
+          "source_position": 107,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 106,
+          "source_position": 108,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 107,
+          "source_position": 109,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 108,
+          "source_position": 110,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 109,
+          "source_position": 111,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 110,
+          "source_position": 112,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 111,
+          "source_position": 113,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 112,
+          "source_position": 114,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 113,
+          "source_position": 115,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 114,
+          "source_position": 116,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 115,
+          "source_position": 117,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 116,
+          "source_position": 118,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 117,
+          "source_position": 119,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 118,
+          "source_position": 120,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 119,
+          "source_position": 121,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 120,
+          "source_position": 122,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 121,
+          "source_position": 123,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 122,
+          "source_position": 124,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 123,
+          "source_position": 125,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 124,
+          "source_position": 126,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 125,
+          "source_position": 127,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 126,
+          "source_position": 128,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 127,
+          "source_position": 129,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 128,
+          "source_position": 130,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 129,
+          "source_position": 131,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 130,
+          "source_position": 132,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 131,
+          "source_position": 133,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 132,
+          "source_position": 134,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 133,
+          "source_position": 135,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 134,
+          "source_position": 136,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 135,
+          "source_position": 137,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 136,
+          "source_position": 138,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 137,
+          "source_position": 139,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 138,
+          "source_position": 140,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 139,
+          "source_position": 141,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 140,
+          "source_position": 142,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 141,
+          "source_position": 143,
+          "question_text": "d",
+          "correct_option": ""
+        },
+        {
+          "source_number": 142,
+          "source_position": 144,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 143,
+          "source_position": 145,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 144,
+          "source_position": 146,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 145,
+          "source_position": 147,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 146,
+          "source_position": 148,
+          "question_text": "a",
+          "correct_option": ""
+        },
+        {
+          "source_number": 147,
+          "source_position": 149,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 148,
+          "source_position": 150,
+          "question_text": "c",
+          "correct_option": ""
+        },
+        {
+          "source_number": 149,
+          "source_position": 151,
+          "question_text": "b",
+          "correct_option": ""
+        },
+        {
+          "source_number": 150,
+          "source_position": 152,
+          "question_text": "a",
+          "correct_option": ""
+        }
+      ],
+      "extraInDb": [
+        {
+          "db_id": "205280d0-38c9-4695-9fee-34935aac97cf",
+          "batch": 2,
+          "position": 1,
+          "question_text": "What is the primary statutory length of service required for an employee to qualify for the 100% Exit Benefit Scheme (EBS)?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "03c96e07-3030-40b2-a8be-f8ea2a971b12",
+          "batch": 4,
+          "position": 4,
+          "question_text": "Which of the following activities is NOT a primary function of a Pension Fund Administrator (PFA)?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "9e76aced-2e28-4fab-abf6-3aa769b6cb08",
+          "batch": 4,
+          "position": 7,
+          "question_text": "To which office does the National Pension Commission (PenCom) directly report its activities and performance under the law?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "a7615665-d549-40eb-9aa6-980f30af5b31",
+          "batch": 5,
+          "position": 10,
+          "question_text": "Which internal department within the Military Pensions Board is primarily responsible for storing and managing historical files, operational workflows, and data necessary for pension processing?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "7bed75c8-6c93-495e-a004-1a2fdf11a4f6",
+          "batch": 5,
+          "position": 11,
+          "question_text": "Under the newly confirmed 2026 Exit Benefit Scheme (EBS), what is the formula for the lump-sum payment provided to an eligible retiring police officer?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "b0bf2d27-28e8-4ecc-bee2-03ea57f3281a",
+          "batch": 5,
+          "position": 12,
+          "question_text": "What is the core target of the proposed \"Bill for an Act to Establish the Nigeria Police Force Pension Board\" passed by the National Assembly and awaiting final Executive assent?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "986658e4-2c83-407c-8af1-037dc00cb0e0",
+          "batch": 5,
+          "position": 13,
+          "question_text": "Under the standard Contributory Pension Scheme (CPS) framework governing police personnel, what is the mandatory monthly percentage deducted from an officer's basic monthly salary into their Retirement Savings Account (RSA)?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "96bd6da9-b13e-4dba-9504-8b5a5baa65e6",
+          "batch": 5,
+          "position": 14,
+          "question_text": "To eliminate identity fraud among aging secret service veterans while preserving deep confidentiality, what method is utilized to verify retired DSS officers?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "179219d9-13fa-4acb-bef4-b2b09a99b4b2",
+          "batch": 5,
+          "position": 15,
+          "question_text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "c51a697c-5cf2-49e2-8618-37021bf6c6b5",
+          "batch": 5,
+          "position": 16,
+          "question_text": "If a DSS personnel is compulsorily retired from service on disciplinary grounds under the Public Service Rules (PSR), what is the impact on their accrued pension rights?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "ab0f674f-495f-4ad6-814d-f24945702fac",
+          "batch": 6,
+          "position": 6,
+          "question_text": "What document is primarily utilized by the MPB to prevent the continuous payment of pension to deceased military pensioners?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "8de4ba23-4fc3-4638-a0ba-9e46bd65b10e",
+          "batch": 2,
+          "position": 2,
+          "question_text": "Under which of the following circumstances will an officer be granted the EBS before reaching the statutory retirement age or length of service?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "5f27955a-ef1e-4a0b-a8e6-a25551f9dd88",
+          "batch": 2,
+          "position": 3,
+          "question_text": "Which of the following conditions automatically disqualifies a retiring officer from being granted the Exit Benefit?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "871ec875-f423-4024-9757-bf73aa333c35",
+          "batch": 2,
+          "position": 4,
+          "question_text": "What condition must an officer with an outstanding government liability (e.g., an unliquidated housing or vehicle loan) meet before their EBS is released?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "4eef628f-976f-4894-9648-d493c94fcfdd",
+          "batch": 2,
+          "position": 5,
+          "question_text": "For an employee's EBS application to be approved by PenCom, what condition must be met regarding their RSA status?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "a3d48e74-c0d2-463d-8bc4-a256b6fa1261",
+          "batch": 2,
+          "position": 6,
+          "question_text": "What is the primary defining characteristic of the Defined Benefits Scheme (DBS) for Nigerian civil servants?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "193c5420-56b3-4fd7-bcd8-4bf332cc9941",
+          "batch": 2,
+          "position": 7,
+          "question_text": "Under the old Defined Benefits Scheme, what were the two main financial entitlements given to a retiring civil servant?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "8ff849a6-7714-49c6-ba21-dcd475fee73a",
+          "batch": 2,
+          "position": 8,
+          "question_text": "Which category of public servants was entirely EXEMPTED from transitioning to the new Contributory Pension Scheme (CPS) when it was introduced?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "dc90ddee-58a5-4315-8989-ea415fc54f3a",
+          "batch": 2,
+          "position": 9,
+          "question_text": "What was one of the major reasons the Nigerian government transitioned from the Defined Benefits Scheme to the Contributory Pension Scheme?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "d335970b-eb0b-46b4-b2a7-0a007d1f57e2",
+          "batch": 2,
+          "position": 10,
+          "question_text": "Under the old public service rules of the Defined Benefits Scheme, what is the maximum number of pensionable service years a civil servant could accumulate to calculate their maximum pension?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "6c1c1fea-22e6-45b2-b6a7-9d3701b57405",
+          "batch": 2,
+          "position": 11,
+          "question_text": "Which government regulatory body was established by the Pension Reform Act to regulate, supervise, and ensure the effective administration of all pension matters in Nigeria?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "06b7ffcb-deef-492b-9908-49721708dcd4",
+          "batch": 2,
+          "position": 12,
+          "question_text": "In what year did the Federal Government of Nigeria officially enact the landmark Pension Reform Act that abolished the old Defined Benefits Scheme for new entrants and introduced the Contributory Pension Scheme?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "e6ce294b-8bee-477a-a08e-11a260893f96",
+          "batch": 2,
+          "position": 13,
+          "question_text": "Under the old public service rules guiding retirement, what is the mandatory retirement age for a civil servant in Nigeria?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "d94ec971-246d-44ac-a9bf-9d34c709de6e",
+          "batch": 2,
+          "position": 14,
+          "question_text": "What mandatory length of service allows a civil servant in Nigeria to voluntarily retire and qualify for maximum pension benefits under the old scheme?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "83b6d20d-06aa-4030-83ef-c3b84163cb7a",
+          "batch": 2,
+          "position": 15,
+          "question_text": "What does the term \"Accrued Pension Rights\" refer to in the context of the transition from the old scheme to the new Contributory Pension Scheme?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "f7bd7ff6-293e-427b-90f1-3152fa5ccc65",
+          "batch": 2,
+          "position": 16,
+          "question_text": "What is the fundamental funding structure of the Defined Benefits Scheme (DBS) for Nigerian Civil Servants?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "cca7f69e-6198-4692-bba5-edae07fd4ac4",
+          "batch": 2,
+          "position": 17,
+          "question_text": "According to the Nigerian Public Service Rules and pension regulations, what are the statutory conditions for a civil servant to retire with full pension benefits under the DBS?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "c56b3194-d5f1-49b3-ba0a-6d28b74d5130",
+          "batch": 2,
+          "position": 18,
+          "question_text": "What is the primary statutory mandate of the Pension Transitional Arrangement Directorate (PTAD)?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "ff3c9b30-3003-43cd-9711-348ff91306b5",
+          "batch": 2,
+          "position": 19,
+          "question_text": "Under the Defined Benefits Scheme (DBS), who bears the investment risk associated with the payment of pensions?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "b580ce71-0a11-45a0-aa6f-006f3e25578f",
+          "batch": 2,
+          "position": 20,
+          "question_text": "Which specific legislation abolished the old pension schemes in the Nigerian Public Service and established the Contributory Pension Scheme (CPS), paving the way for PTAD?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "01cb7a00-a037-4b41-9e4e-ab54b91614eb",
+          "batch": 3,
+          "position": 1,
+          "question_text": "Under the DBS, how is a retiree's pension typically computed upon retirement from the Nigerian Civil Service?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "703a51db-76f0-41f0-9740-daf1f1ea78a1",
+          "batch": 3,
+          "position": 2,
+          "question_text": "What is the name of the periodic biometric verification and validation exercise conducted by PTAD to authenticate DBS pensioners and eliminate 'ghost' pensioners?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "989b5781-6c9e-4d28-9f33-3b2fb59e164d",
+          "batch": 3,
+          "position": 3,
+          "question_text": "Why do DBS pensioners frequently advocate for \"Pension Harmonization\" in Nigeria?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "9ad58d5b-a7f1-476c-a78a-fb6f42cc603c",
+          "batch": 3,
+          "position": 4,
+          "question_text": "Which of the following statements accurately contrasts Pension Portability between the DBS and the CPS?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "f680b90a-5f51-4df8-939c-470aa052435d",
+          "batch": 3,
+          "position": 5,
+          "question_text": "Under the Defined Benefits Scheme, how are the funds for pension payments sourced and managed before being disbursed to retirees?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "8488de8c-f243-4660-9539-4e3d2f61a6db",
+          "batch": 3,
+          "position": 6,
+          "question_text": "Under the DBS rules, what is a \"gratuity\" in the context of a civil servant exiting the service?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "40d138b9-5ae4-44e5-8d20-aa276b51b0ac",
+          "batch": 3,
+          "position": 7,
+          "question_text": "In comparing the DBS and the CPS, what happens to the Accrued Pension Rights of an active civil servant who was in the DBS before the CPS commenced?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "b7376f24-de90-4b55-91d4-6ec14cafa39d",
+          "batch": 3,
+          "position": 8,
+          "question_text": "Which of the following represents a major administrative and financial challenge faced by PTAD in managing the Defined Benefits Scheme?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "dc0cc3f4-4dce-4d1f-9f1f-2a09c7634153",
+          "batch": 3,
+          "position": 9,
+          "question_text": "Under the Contributory Pension Scheme (CPS), what is the current minimum statutory contribution rate required from both the employer and the employee?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "8464aab2-93c7-4613-9f0f-c45bc12d4094",
+          "batch": 3,
+          "position": 10,
+          "question_text": "Who is responsible for the regulation of the Pension Transitional Arrangement Directorate (PTAD) and its pension operations?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "93daaf74-a0e5-42eb-abf0-288e7caf632a",
+          "batch": 3,
+          "position": 11,
+          "question_text": "When did the full nationwide rollout of PTAD \"I Am Alive\" confirmation commence?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "e99e6c83-0955-4f53-a00b-0fc7ce49da31",
+          "batch": 3,
+          "position": 12,
+          "question_text": "What is the primary statutory function of the National Pension Commission (PenCom) as established by the Pension Reform Act?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "a77ec9c5-6bff-45fa-9ab9-da67227789cf",
+          "batch": 3,
+          "position": 13,
+          "question_text": "Under the Contributory Pension Scheme (CPS) governed by the Pension Reform Act, what is the minimum statutory contribution rate for the employer, calculated on the employee's monthly emolument?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "f4f771b6-539e-4bd4-b6f1-aafc9cb9a83f",
+          "batch": 3,
+          "position": 14,
+          "question_text": "What is the minimum statutory rate of contribution expected from an employee under the Contributory Pension Scheme (CPS)? [1, 2]",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "2c39bab6-d133-4e0f-8801-30035ee51a61",
+          "batch": 3,
+          "position": 15,
+          "question_text": "Which of the following entities is legally responsible for holding the pension fund assets in safe custody under the Contributory Pension Scheme?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "f1c4d47a-a423-4ea8-9c48-acfba2b946c1",
+          "batch": 3,
+          "position": 16,
+          "question_text": "Which entity has the sole responsibility for opening and managing the Retirement Savings Account (RSA) for a civil servant under the CPS?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "ed502d52-f722-4bc5-bd00-ad3d403ebbea",
+          "batch": 3,
+          "position": 17,
+          "question_text": "According to the Pension Reform Act, within how many months must an employee open a Retirement Savings Account (RSA) with a PFA of their choice upon assumption of duty?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "a3292130-2467-42fb-86e2-b28529846e46",
+          "batch": 3,
+          "position": 18,
+          "question_text": "What is the minimum coverage required for the Group Life Insurance Policy that employers are mandated to maintain for their employees under the Pension Reform Act?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "a2c77f5e-2d20-48f3-896a-1fa11f40d767",
+          "batch": 3,
+          "position": 19,
+          "question_text": "Can a civil servant transfer their Retirement Savings Account (RSA) from one Pension Fund Administrator (PFA) to another.",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "2d73adca-bd76-4e66-86a7-057fd099609c",
+          "batch": 3,
+          "position": 20,
+          "question_text": "What is the aggregate (total) minimum monthly contribution required under the Contributory Pension Scheme, expressed as a percentage of the employee's monthly emolument?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "ee4f87c0-2ef0-4ef3-a5f8-a7fa69ad6334",
+          "batch": 4,
+          "position": 5,
+          "question_text": "Which of the following accurately describes a statutory function of a Pension Fund Custodian (PFC)?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "05ed33b9-4bd2-4fb8-9a0b-2d483a82eaac",
+          "batch": 4,
+          "position": 6,
+          "question_text": "According to the Pension Reform Act, what penalty applies to an employer who fails to deduct or remit pension contributions within the stipulated time frame?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "786702b7-a878-4bde-b6cd-317a77aee7df",
+          "batch": 1,
+          "position": 1,
+          "question_text": "Under what condition can an officer who has served for less than 10 years qualify for a regular monthly pension from the Military Pensions Board?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "badb9ed0-84f7-40a7-86c1-b4a85f5438c8",
+          "batch": 1,
+          "position": 2,
+          "question_text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "8398626a-7a18-4fb0-abbf-4ae48cd59c9f",
+          "batch": 1,
+          "position": 3,
+          "question_text": "In June 2026, the Federal Government transmitted an official wireless signal approving a major landmark welfare program for treasury-funded workers and police officers retiring from 2026 onwards. What is this scheme called?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "5b46fb09-8ae7-47c1-8d7a-4d1d9e6625aa",
+          "batch": 1,
+          "position": 4,
+          "question_text": "What pension framework model applies to Nigerian judicial officers of superior courts of record?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "5a9cec0b-d748-47eb-9d0f-8460f164ab60",
+          "batch": 1,
+          "position": 5,
+          "question_text": "Who is the current Director-General/Executive Secretary of PTAD, piloting the digitization and prompt payment of old-regime pensions?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "2281a604-8dad-4ce8-9d50-17228352ef97",
+          "batch": 1,
+          "position": 6,
+          "question_text": "Which federal agency collaborates directly with PTAD to investigate and prosecute racketeers attempting to intercept the bank accounts of aging pensioners?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "fb8da9c9-5013-494f-ad44-661bfbe087d0",
+          "batch": 1,
+          "position": 7,
+          "question_text": "When the Federal Government implements national minimum wage adjustments, what commission calculates the adjusted relativity percentage used by PTAD to upgrade retirees' monthly package?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "4fd2d42a-9aa6-4bcd-90c2-203c37f78f2c",
+          "batch": 1,
+          "position": 8,
+          "question_text": "If a pensioner under PTAD passes away, their Next-of-Kin (NOK) can claim the unpaid balance of their accrued pension assets (arrears) up to the date of death by presenting which legal document?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "6a106f4c-a1b3-489e-b4cc-c7a3d97eac7a",
+          "batch": 1,
+          "position": 9,
+          "question_text": "What is the structural relationship between PTAD and the National Pension Commission (PenCom)?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "2627c4af-80e4-47f4-8a6a-65d382c2b5b4",
+          "batch": 1,
+          "position": 10,
+          "question_text": "For vulnerable, sick, or physically incapacitated pensioners who cannot navigate smartphones for the \"I Am Alive\" online validation, what alternative operational policy does PTAD provide?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "8df085ad-27cc-46cd-b6dc-9e13e149a440",
+          "batch": 1,
+          "position": 11,
+          "question_text": "According to the long-term provisions of the Pension Reform Act, what will happen to PTAD once the last pensioner under the old Defined Benefit Scheme passes away?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "149c693d-7dc4-47a8-9760-59c125131ee0",
+          "batch": 1,
+          "position": 12,
+          "question_text": "To preserve the integrity of the bench, a retired judicial officer drawing a life pension from the CRF is constitutionally barred from which activity?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "8e4426e4-f794-4e96-a106-bbf16b1ebb97",
+          "batch": 1,
+          "position": 13,
+          "question_text": "The harmonized 70-year retirement age and specialized NJC-managed pension protections apply exclusively to judges of:",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "55228e69-1ff8-4d32-85a9-b3c9622667e9",
+          "batch": 1,
+          "position": 14,
+          "question_text": "If a judicial officer is removed from office by the President or a Governor following a recommendation by the NJC for gross misconduct, what happens to his pension rights?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "e966c68f-3001-42d9-ac3c-50d5d08eed25",
+          "batch": 1,
+          "position": 15,
+          "question_text": "When a judicial officer dies while actively serving on the bench, how are the death benefits and gratuities computed for his Next-of-Kin (NOK)?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "b60d5a6a-ca58-4f23-96e1-2990799907c1",
+          "batch": 1,
+          "position": 16,
+          "question_text": "When the Federal Government implements national minimum wage adjustments or review updates across the public sector, which body ensures the relative indexation of judicial pensions?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "0413fda0-57fa-4e20-b41e-0d6f54579469",
+          "batch": 1,
+          "position": 17,
+          "question_text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "059da5f3-a30d-4678-aeaf-58690c9b3031",
+          "batch": 1,
+          "position": 18,
+          "question_text": "If a DSS personnel is compulsorily retired from service on disciplinary grounds under the Public Service Rules (PSR), what is the impact on his accrued pension rights?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "1702d507-73a0-47bb-8906-7004fa2497d1",
+          "batch": 1,
+          "position": 19,
+          "question_text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "c63669fb-1295-4246-857d-9e6a5661283c",
+          "batch": 1,
+          "position": 20,
+          "question_text": "When an active DSS operative falls in the line of duty, the internal pension division pays death benefits and gratuities to the Next-of-Kin (NOK) through which process?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "70144441-f140-4b45-913f-db17734e938a",
+          "batch": 4,
+          "position": 1,
+          "question_text": "Which of the following is NOT a function of the National Pension Commission (PenCom)?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "9d6268e3-6984-4bcf-95a3-583303a72c17",
+          "batch": 4,
+          "position": 2,
+          "question_text": "Upon retirement, what percentage of the total balance in a Retirement Savings Account (RSA) can a retiree withdraw as a lump sum, provided the balance can fund a programmed monthly withdrawal or annuity?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "e8aab498-d110-43d7-8846-9cc882b88968",
+          "batch": 4,
+          "position": 3,
+          "question_text": "Under the Pension Reform Act, can an employer choose to bear the full burden of the pension contributions under the Contributory Pension Scheme (CPS) without deducting from the employee's salary?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "c28e5b08-162c-4671-aa71-6e7ddb04cdf3",
+          "batch": 4,
+          "position": 8,
+          "question_text": "If a civil servant is dissatisfied with the services of their PFA or detects a discrepancy in their RSA statement, what is the legally mandated first step before seeking judicial redress?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "74f270f3-4832-4ed5-912d-aaa108cdcb59",
+          "batch": 4,
+          "position": 9,
+          "question_text": "Which section of the Pension Reform Act 2014 empowers PenCom to regulate, supervise, and ensure the effective administration of pension matters in Nigeria?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "5c2b928e-dde9-43c6-bb38-b28ba93f841c",
+          "batch": 4,
+          "position": 10,
+          "question_text": "In accordance with PenCom guidelines, an employee can access a maximum of what percentage of their RSA balance as a lump sum for a residential mortgage equity contribution?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "5831e96b-1af0-4cdc-aa05-bfa70dd92362",
+          "batch": 4,
+          "position": 11,
+          "question_text": "What is the statutory retirement age or condition for an employee to naturally access their retirement benefits under the CPS, barring any health or contractual exceptions?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "6ff07684-adf0-485d-b4a7-97a9b73bb53b",
+          "batch": 4,
+          "position": 12,
+          "question_text": "Which organ of a Federal MDA bears direct financial and statutory liability if third-party service providers discover unremitted employee pension deductions during an audit cycle?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "6be03703-542a-430f-aee2-48692dfc4c54",
+          "batch": 4,
+          "position": 13,
+          "question_text": "When a civil servant transitions into retirement under the Contributory Pension Scheme (CPS), the calculation of their Programmed Withdrawal is dynamically determined by which primary metric?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "553d6fe0-85d0-4383-8f14-a83c0190a10b",
+          "batch": 4,
+          "position": 14,
+          "question_text": "Which specific structural ledger within the Central Bank of Nigeria (CBN) is managed alongside PenCom to settle the accrued pension rights of Federal public servants who worked prior to June 2004?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "714195b9-4ee5-4f3c-b833-b870e7712613",
+          "batch": 4,
+          "position": 15,
+          "question_text": "Which statutory document must an MDA or any other entity clear and obtain annually from PenCom to qualify for any federal budgetary releases or procurement bidding processes under civil service rules?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "48b1976e-ea88-4735-a22f-c3c2ec9d8464",
+          "batch": 4,
+          "position": 16,
+          "question_text": "If an MDA erroneously over-remits pension contributions into a civil servant’s RSA, what is the regulatory protocol according to PenCom’s current framework?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "ba96f2fc-6ddf-4653-a335-d74c9b60ff39",
+          "batch": 4,
+          "position": 17,
+          "question_text": "What is the statutory timeline within which an MDA must submit its staff nominal roll to PenCom for the mandatory annual Pre-Retirement Verification and Enrollment Exercise?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "63292cd3-db78-4f40-920a-57d6a198a4c3",
+          "batch": 4,
+          "position": 18,
+          "question_text": "Under the current PenCom guidelines on Voluntary Contributions (VC), what percentage of a public servant's contingent VC withdrawal is subject to tax if withdrawn before the 5-year statutory maturity period?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "b5212d59-66de-47f4-8bb3-075860fee42b",
+          "batch": 4,
+          "position": 19,
+          "question_text": "Which body represents the interests of public sector workers on the Governing Board of the National Pension Commission?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "dbd4bc13-db77-4bbb-92d9-aeeeda2e65d2",
+          "batch": 4,
+          "position": 20,
+          "question_text": "Which of the following actions is a PFA strictly prohibited from doing with an employee's Retirement Savings Account (RSA) balance under the Pension Reform Act (PRA) 2014?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "528cfbf6-a75a-4297-8a89-4d90f6462de8",
+          "batch": 5,
+          "position": 1,
+          "question_text": "Under the harmonized Public Service Rules (PSR), what is the statutory retirement age or length of service (whichever comes first) for civil servants and qualifying uniformed personnel?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "54ae2261-5658-459d-988c-7c3fcef645f0",
+          "batch": 5,
+          "position": 2,
+          "question_text": "What specific allowance, recently paid in tranches by the Military Pensions Board, was introduced by the Federal Government to cater to veterans and retired personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "3a9f7874-286f-4740-a529-153fe419dce5",
+          "batch": 5,
+          "position": 3,
+          "question_text": "Aside from disbursing monthly pensions to retired personnel, what is a key statutory function of the Military Pensions Board regarding deceased personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "86c819bb-dee2-43d1-aa05-85083dc378d7",
+          "batch": 5,
+          "position": 4,
+          "question_text": "What is the primary statutory mandate of the Military Pensions Board (MPB)?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "c7c72a9f-c1a8-43d5-bbd1-207cf7c1ec55",
+          "batch": 5,
+          "position": 5,
+          "question_text": "Which tier of the Nigerian civil service structure supervises the Military Pensions Board?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "99b4b6b3-984d-458d-be44-c3a01d466392",
+          "batch": 5,
+          "position": 6,
+          "question_text": "What document is primarily utilized by the MPB to prevent the continuous payment of pension to deceased military pensioners?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "51b2480b-2bbe-44a1-adb5-ce37303f8f67",
+          "batch": 5,
+          "position": 7,
+          "question_text": "To eliminate the cumbersomeness and difficulties associated with traditional physical assemblies, what recent initiative did the MPB introduce for pensioners?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "cdf7b122-0b9a-44a3-bda4-96ce33f03a21",
+          "batch": 5,
+          "position": 8,
+          "question_text": "Aside from processing retirement benefits, what is the role of the MPB regarding deceased military personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "f787471a-e37e-4c58-b229-9274bea6daa7",
+          "batch": 5,
+          "position": 9,
+          "question_text": "During the early 2026 familiarization visit of the Permanent Secretary, Ministry of Defence, to the Military Pensions Board headquarters in Abuja, what was the overarching theme of the discussions?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "bb1be136-5b08-41da-a564-ead60e8f23a3",
+          "batch": 5,
+          "position": 17,
+          "question_text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "416c94a3-2dbd-4603-923a-baddb249023e",
+          "batch": 5,
+          "position": 18,
+          "question_text": "When an active DSS operative falls in the line of duty, the internal pension division pays death benefits and gratuities to the Next-of-Kin (NOK) through which process?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "6ffbc335-1fd7-4d16-b480-47cc5eb5c283",
+          "batch": 5,
+          "position": 19,
+          "question_text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "98b26601-0ba0-46d8-a19a-2e5b8be3b641",
+          "batch": 5,
+          "position": 20,
+          "question_text": "Retired DSS officers drawing monthly pensions remain bound by the Official Secrets Act. What is the administrative penalty if a pensioner writes a book leaking classified active operations?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "73e846a4-72ce-45de-8d50-ebec9ed838a0",
+          "batch": 6,
+          "position": 1,
+          "question_text": "Under the harmonized Public Service Rules (PSR), what is the statutory retirement age or length of service (whichever comes first) for civil servants and qualifying uniformed personnel?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "3c9486b8-d144-48ba-b3e7-f2252f3125f4",
+          "batch": 6,
+          "position": 2,
+          "question_text": "What specific allowance, recently paid in tranches by the Military Pensions Board, was introduced by the Federal Government to cater to veterans and retired personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "5f132a9a-937c-4469-b01c-7e97aa6f5b75",
+          "batch": 6,
+          "position": 3,
+          "question_text": "Aside from disbursing monthly pensions to retired personnel, what is a key statutory function of the Military Pensions Board regarding deceased personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "5ce8a044-312b-4a26-9dd8-56b38ac97028",
+          "batch": 6,
+          "position": 4,
+          "question_text": "What is the primary statutory mandate of the Military Pensions Board (MPB)?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "22065134-648a-4687-a3cc-2de1ef5a4263",
+          "batch": 6,
+          "position": 5,
+          "question_text": "Which tier of the Nigerian civil service structure supervises the Military Pensions Board?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "ecd77e38-0483-4708-888f-b7864d17a16d",
+          "batch": 6,
+          "position": 7,
+          "question_text": "To eliminate the cumbersomeness and difficulties associated with traditional physical assemblies, what recent initiative did the MPB introduce for pensioners?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "caf03f74-f8af-4be4-9afa-dec421b25655",
+          "batch": 6,
+          "position": 8,
+          "question_text": "Aside from processing retirement benefits, what is the role of the MPB regarding deceased military personnel?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "cc2c7d23-bf01-4df2-920b-d5ab930129c1",
+          "batch": 6,
+          "position": 9,
+          "question_text": "During the early 2026 familiarization visit of the Permanent Secretary, Ministry of Defence, to the Military Pensions Board headquarters in Abuja, what was the overarching theme of the discussions?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "a69bcc79-5d02-402c-a1a9-1243a37db195",
+          "batch": 6,
+          "position": 10,
+          "question_text": "Which internal department within the Military Pensions Board is primarily responsible for storing and managing historical files, operational workflows, and data necessary for pension processing?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "9ee64731-d4dc-4e98-ae16-b2c5c2c09e82",
+          "batch": 6,
+          "position": 11,
+          "question_text": "Under the newly confirmed 2026 Exit Benefit Scheme (EBS), what is the formula for the lump-sum payment provided to an eligible retiring police officer?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "88ced90e-48e4-4656-93f1-c5330a259d88",
+          "batch": 6,
+          "position": 12,
+          "question_text": "What is the core target of the proposed \"Bill for an Act to Establish the Nigeria Police Force Pension Board\" passed by the National Assembly and awaiting final Executive assent?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "09b13bf5-c863-460b-9794-1d268690f905",
+          "batch": 6,
+          "position": 13,
+          "question_text": "Under the standard Contributory Pension Scheme (CPS) framework governing police personnel, what is the mandatory monthly percentage deducted from an officer's basic monthly salary into their Retirement Savings Account (RSA)?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "67c278db-1f55-4caf-a8b3-bfeaa3b4a60a",
+          "batch": 6,
+          "position": 14,
+          "question_text": "To eliminate identity fraud among aging secret service veterans while preserving deep confidentiality, what method is utilized to verify retired DSS officers?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "cff1750f-af3d-4f65-8928-4a321d65645a",
+          "batch": 6,
+          "position": 15,
+          "question_text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "009af9cc-e9e2-4dc7-940d-0c730d4a834d",
+          "batch": 6,
+          "position": 16,
+          "question_text": "If a DSS personnel is compulsorily retired from service on disciplinary grounds under the Public Service Rules (PSR), what is the impact on their accrued pension rights?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "b30e6cce-869b-4e52-9eb6-ebbb6d2b6798",
+          "batch": 6,
+          "position": 17,
+          "question_text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "77dbd771-c972-42ef-85ad-3898886343e1",
+          "batch": 6,
+          "position": 18,
+          "question_text": "When an active DSS operative falls in the line of duty, the internal pension division pays death benefits and gratuities to the Next-of-Kin (NOK) through which process?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "cca0c5e3-7946-4109-a75c-ed29d5977b95",
+          "batch": 6,
+          "position": 19,
+          "question_text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "f081ecdd-29e5-41b9-8a5f-83414623e950",
+          "batch": 6,
+          "position": 20,
+          "question_text": "Retired DSS officers drawing monthly pensions remain bound by the Official Secrets Act. What is the administrative penalty if a pensioner writes a book leaking classified active operations?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "2d5a2405-191b-4e2b-ade9-c6971cd8ba64",
+          "batch": 7,
+          "position": 1,
+          "question_text": "When national minimum wage reviews are implemented across the federal public service, which agency coordinates with the DSS to update its retirement payment matrix?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "e464460c-c490-4378-955c-b28a1a396563",
+          "batch": 7,
+          "position": 2,
+          "question_text": "If a DSS personnel is permanently incapacitated during an internal security operation before hitting 10 years of service, what is their statutory pension status?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "2581c24c-b497-4ca9-b944-65d8e49e95d3",
+          "batch": 7,
+          "position": 3,
+          "question_text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "eb0fffb9-dcbd-425b-8f07-e5f9139a5fb7",
+          "batch": 7,
+          "position": 4,
+          "question_text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "ed61db6c-87bb-495b-a485-3159ec113f5d",
+          "batch": 7,
+          "position": 5,
+          "question_text": "Which statutory body retains ultimate accounting responsibility for the budgetary allocation, funding, and disbursement of pensions for retired DSS personnel?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "9ded99c6-c927-452e-8198-67d64b830622",
+          "batch": 7,
+          "position": 6,
+          "question_text": "Which internal administrative unit within the DSS manages files, documentation processing, and payment clearances for retiring intelligence officers?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "f47c4877-569b-4f85-a4cd-85e814bd66cf",
+          "batch": 7,
+          "position": 7,
+          "question_text": "Under the harmonized pension structure for security services, a retired Director-General of State Services (DGSS) is entitled to a terminal monthly pension equivalent to:",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "1aaf9a71-0a67-40dc-8142-d50abdc29cb6",
+          "batch": 7,
+          "position": 8,
+          "question_text": "Who oversees the institutional welfare and final administrative approvals for the internal pension adjustments of the DSS?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "12c28549-3254-43dc-9b8d-41aef4e1a941",
+          "batch": 7,
+          "position": 9,
+          "question_text": "To eliminate identity fraud among aging secret service veterans while preserving deep confidentiality, what method is utilized to verify retired DSS officers?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "25e57089-3cc3-4bcf-b3f6-6cf494a97b2a",
+          "batch": 7,
+          "position": 10,
+          "question_text": "Following a federal minimum-wage review, which agency supplies the salary relativity used to revise the DSS retirement-payment matrix?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "042e7343-2c83-4cf9-9ce1-262b496889b5",
+          "batch": 7,
+          "position": 11,
+          "question_text": "A DSS officer is permanently incapacitated during an internal security operation before completing ten years of service. Which pension treatment applies?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "7c44b82f-b508-4bf4-8ab0-eb8a07659e2b",
+          "batch": 7,
+          "position": 12,
+          "question_text": "Who serves as the Director-General of the National Pension Commission (PenCom), leading the ongoing high-level negotiations to improve police retirement pack relative disparities?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "400057c4-234a-459b-98be-92dccd9845ce",
+          "batch": 7,
+          "position": 13,
+          "question_text": "Which specialized organization functions as the licensed, exclusive Pension Fund Administrator (PFA) dedicated to managing the Retirement Savings Accounts (RSAs) of Nigeria Police personnel?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "b7607e95-114f-4f20-94f1-0d870940bcba",
+          "batch": 7,
+          "position": 14,
+          "question_text": "To avoid severe bottlenecks and operational delays in accessing terminal payouts, NPF Pensions Limited issued a formal notice requiring record updates for approximately how many officers expected to exit the force?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "ae6ff2ed-dbe5-4418-ad94-b5f6f9c7ec87",
+          "batch": 7,
+          "position": 15,
+          "question_text": "According to the Public Service Rules (PSR) and Police Regulations, an officer must honorably retire from the service upon attaining which of the following landmarks?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "aac18419-0852-47de-8b26-a923038c5062",
+          "batch": 7,
+          "position": 16,
+          "question_text": "Under the Pension Reform Act guidelines, federal treasury-funded employer matching components and supplementary lump-sum gratuities are domiciled in and drawn from which account?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "4254041a-0c3c-4fec-b953-1d20f8034d9c",
+          "batch": 7,
+          "position": 17,
+          "question_text": "When a police officer is killed in active service, the statutory death benefits and life insurance payouts are released to the Next-of-Kin (NOK) after producing which document to the PFA?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "47fe93a0-3dfd-4347-8948-b3314d49f9ea",
+          "batch": 7,
+          "position": 18,
+          "question_text": "If an officer is dismissed from the Nigeria Police Force following a severe disciplinary tribunal verdict, what happens to the employee's personal contributions within their PFA account?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "c5a6f68e-8d97-4f0f-b129-2d6fe58c6f5b",
+          "batch": 7,
+          "position": 19,
+          "question_text": "When the Federal Government implements a new national minimum wage, which agency works alongside the NPF Pension Office to issue relativity charts adjusting retirement payouts?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "82736e35-aecb-4d8e-a3b6-7420453d80a1",
+          "batch": 7,
+          "position": 20,
+          "question_text": "What is the primary operational grievance raised by retired police officers protesting against remaining in the Contributory Pension Scheme (CPS)?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "41fcfda0-fd55-4a85-8fa3-a05e6c205afc",
+          "batch": 8,
+          "position": 1,
+          "question_text": "An officer who is permanently incapacitated due to injuries sustained during a combat or internal security operation is eligible for retirement on medical grounds. Who must certify this status to the pension board?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "bead1c9c-994b-4de8-a85e-a29cb2ddf76e",
+          "batch": 8,
+          "position": 2,
+          "question_text": "Which specific legal instrument signed into law harmonized the retirement age and pension rights of all judicial officers of superior courts of record across Nigeria?",
+          "correct_option": "A"
+        },
+        {
+          "db_id": "75817d22-bec3-4e67-a68b-d3fb4d23a4a1",
+          "batch": 8,
+          "position": 3,
+          "question_text": "Following the enactment of the constitutional uniformity law, what is the statutory retirement age for all High Court and Customary Court judges in Nigeria?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "cbba5767-8b57-4780-88c2-76785a958ba8",
+          "batch": 8,
+          "position": 4,
+          "question_text": "All pensions, allowances, and retirement benefits due to judicial officers of superior courts of record are a direct charge upon which national fund?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "f0dc547d-4876-4664-8cf1-2743c77b0ae1",
+          "batch": 8,
+          "position": 5,
+          "question_text": "Which independent constitutional body is statutorily mandated to receive pension funds directly from the CRF and disburse them to retired judicial officers?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "e3bfc9dc-0a91-440f-8962-f890e7461de3",
+          "batch": 8,
+          "position": 6,
+          "question_text": "Under the current constitutional rules, a judicial officer must complete a minimum of how many years of active judicial service to qualify for a life pension equivalent to their last annual salary?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "da6f3429-5bcc-4675-8963-68976d783ca6",
+          "batch": 8,
+          "position": 7,
+          "question_text": "Prior to recent constitutional amendments, pensions for retired state-level High Court judges were paid by state executives. How are they paid today?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "5221f8cb-6a38-4a85-9e32-00cdef6dfbda",
+          "batch": 8,
+          "position": 8,
+          "question_text": "What pension framework model applies to Nigerian judicial officers of superior courts of record?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "4bb3cb22-a3f8-4845-bc8b-9ddb95a69f11",
+          "batch": 8,
+          "position": 9,
+          "question_text": "If a judicial officer retires at age 70 after serving for 15 years, their monthly pension payout must equal:",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "89b16c11-de0e-4703-a650-77a49a026a59",
+          "batch": 8,
+          "position": 10,
+          "question_text": "Under the provisions of the 1999 Constitution and the Public Service Rules, which body is completely barred from processing appointments, promotions, or pension clearances for Judges?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "361e7106-09c8-4621-97e3-4e1063d46d5b",
+          "batch": 8,
+          "position": 11,
+          "question_text": "If a judicial officer retires before hitting the 10-year active bench mark due to non-disciplinary reasons (on medical grounds, voluntary retirement at the age of 65 etc), how is their retirement benefit regulated?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "5ee56529-5c07-4f20-8442-cd1c04b6a475",
+          "batch": 8,
+          "position": 12,
+          "question_text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "92178ffc-354d-427d-9499-69ff0732d54a",
+          "batch": 8,
+          "position": 13,
+          "question_text": "Retired DSS officers drawing monthly pensions remain bound by the Official Secrets Act. What is the administrative penalty if a pensioner writes a book leaking classified active operations?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "a5e1317d-815c-4193-8a65-51fd96e4b188",
+          "batch": 8,
+          "position": 14,
+          "question_text": "What is the official vision of the Military Pensions Board?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "75a34b85-2c88-43e2-8080-fca372fe9c7a",
+          "batch": 8,
+          "position": 15,
+          "question_text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+          "correct_option": "D"
+        },
+        {
+          "db_id": "06a2b257-cd74-429a-a7d4-986f76f2b671",
+          "batch": 8,
+          "position": 16,
+          "question_text": "Which statutory body retains ultimate accounting responsibility for the budgetary allocation, funding, and disbursement of pensions for retired DSS personnel?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "14f6b124-e31d-46e0-aa55-42c258128776",
+          "batch": 8,
+          "position": 17,
+          "question_text": "Which internal administrative unit within the DSS manages files, documentation processing, and payment clearances for retiring intelligence officers?",
+          "correct_option": "B"
+        },
+        {
+          "db_id": "42abfda0-c4d8-4b83-874a-e7effc3bc7d9",
+          "batch": 8,
+          "position": 18,
+          "question_text": "Under the harmonized pension structure for security services, a retired Director-General of State Services (DGSS) is entitled to a terminal monthly pension equivalent to:",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "7e5c5de6-aa4b-49a2-8633-ae486dc79db0",
+          "batch": 8,
+          "position": 19,
+          "question_text": "Who oversees the institutional welfare and final administrative approvals for the internal pension adjustments of the DSS?",
+          "correct_option": "C"
+        },
+        {
+          "db_id": "549abc27-f5e3-4959-882c-53038e146731",
+          "batch": 8,
+          "position": 20,
+          "question_text": "As of mid-2026, under which primary regulatory framework does the Nigeria Police Force (NPF) administratively manage and process regular monthly retirement assets?",
+          "correct_option": "A"
+        }
+      ],
+      "answerMismatches": [],
+      "optionMismatches": [],
+      "duplicateInDb": [
+        {
+          "question_text": "Which internal department within the Military Pensions Board is primarily responsible for storing and managing historical files, operational workflows, and data necessary for pension processing?",
+          "count": 2,
+          "db_ids": [
+            "a7615665-d549-40eb-9aa6-980f30af5b31",
+            "a69bcc79-5d02-402c-a1a9-1243a37db195"
+          ],
+          "positions": [
+            10,
+            10
+          ]
+        },
+        {
+          "question_text": "Under the newly confirmed 2026 Exit Benefit Scheme (EBS), what is the formula for the lump-sum payment provided to an eligible retiring police officer?",
+          "count": 2,
+          "db_ids": [
+            "7bed75c8-6c93-495e-a004-1a2fdf11a4f6",
+            "9ee64731-d4dc-4e98-ae16-b2c5c2c09e82"
+          ],
+          "positions": [
+            11,
+            11
+          ]
+        },
+        {
+          "question_text": "What is the core target of the proposed \"Bill for an Act to Establish the Nigeria Police Force Pension Board\" passed by the National Assembly and awaiting final Executive assent?",
+          "count": 2,
+          "db_ids": [
+            "b0bf2d27-28e8-4ecc-bee2-03ea57f3281a",
+            "88ced90e-48e4-4656-93f1-c5330a259d88"
+          ],
+          "positions": [
+            12,
+            12
+          ]
+        },
+        {
+          "question_text": "Under the standard Contributory Pension Scheme (CPS) framework governing police personnel, what is the mandatory monthly percentage deducted from an officer's basic monthly salary into their Retirement Savings Account (RSA)?",
+          "count": 2,
+          "db_ids": [
+            "986658e4-2c83-407c-8af1-037dc00cb0e0",
+            "09b13bf5-c863-460b-9794-1d268690f905"
+          ],
+          "positions": [
+            13,
+            13
+          ]
+        },
+        {
+          "question_text": "To eliminate identity fraud among aging secret service veterans while preserving deep confidentiality, what method is utilized to verify retired DSS officers?",
+          "count": 3,
+          "db_ids": [
+            "96bd6da9-b13e-4dba-9504-8b5a5baa65e6",
+            "67c278db-1f55-4caf-a8b3-bfeaa3b4a60a",
+            "12c28549-3254-43dc-9b8d-41aef4e1a941"
+          ],
+          "positions": [
+            14,
+            14,
+            9
+          ]
+        },
+        {
+          "question_text": "From which designated consolidated source does the federal government draw funding to clear the monthly pension payroll of the DSS?",
+          "count": 3,
+          "db_ids": [
+            "179219d9-13fa-4acb-bef4-b2b09a99b4b2",
+            "0413fda0-57fa-4e20-b41e-0d6f54579469",
+            "cff1750f-af3d-4f65-8928-4a321d65645a"
+          ],
+          "positions": [
+            15,
+            17,
+            15
+          ]
+        },
+        {
+          "question_text": "If a DSS personnel is compulsorily retired from service on disciplinary grounds under the Public Service Rules (PSR), what is the impact on their accrued pension rights?",
+          "count": 2,
+          "db_ids": [
+            "c51a697c-5cf2-49e2-8618-37021bf6c6b5",
+            "009af9cc-e9e2-4dc7-940d-0c730d4a834d"
+          ],
+          "positions": [
+            16,
+            16
+          ]
+        },
+        {
+          "question_text": "What document is primarily utilized by the MPB to prevent the continuous payment of pension to deceased military pensioners?",
+          "count": 2,
+          "db_ids": [
+            "ab0f674f-495f-4ad6-814d-f24945702fac",
+            "99b4b6b3-984d-458d-be44-c3a01d466392"
+          ],
+          "positions": [
+            6,
+            6
+          ]
+        },
+        {
+          "question_text": "Under which statutory pension arrangement do personnel of the Department of State Services (DSS) receive post-service retirement benefits?",
+          "count": 2,
+          "db_ids": [
+            "badb9ed0-84f7-40a7-86c1-b4a85f5438c8",
+            "2581c24c-b497-4ca9-b944-65d8e49e95d3"
+          ],
+          "positions": [
+            2,
+            3
+          ]
+        },
+        {
+          "question_text": "What pension framework model applies to Nigerian judicial officers of superior courts of record?",
+          "count": 2,
+          "db_ids": [
+            "5b46fb09-8ae7-47c1-8d7a-4d1d9e6625aa",
+            "5221f8cb-6a38-4a85-9e32-00cdef6dfbda"
+          ],
+          "positions": [
+            4,
+            8
+          ]
+        },
+        {
+          "question_text": "Why do retired DSS personnel receive specialized monthly allowances alongside their standard pension packages?",
+          "count": 3,
+          "db_ids": [
+            "1702d507-73a0-47bb-8906-7004fa2497d1",
+            "bb1be136-5b08-41da-a564-ead60e8f23a3",
+            "b30e6cce-869b-4e52-9eb6-ebbb6d2b6798"
+          ],
+          "positions": [
+            19,
+            17,
+            17
+          ]
+        },
+        {
+          "question_text": "When an active DSS operative falls in the line of duty, the internal pension division pays death benefits and gratuities to the Next-of-Kin (NOK) through which process?",
+          "count": 3,
+          "db_ids": [
+            "c63669fb-1295-4246-857d-9e6a5661283c",
+            "416c94a3-2dbd-4603-923a-baddb249023e",
+            "77dbd771-c972-42ef-85ad-3898886343e1"
+          ],
+          "positions": [
+            20,
+            18,
+            18
+          ]
+        },
+        {
+          "question_text": "Under the harmonized Public Service Rules (PSR), what is the statutory retirement age or length of service (whichever comes first) for civil servants and qualifying uniformed personnel?",
+          "count": 2,
+          "db_ids": [
+            "528cfbf6-a75a-4297-8a89-4d90f6462de8",
+            "73e846a4-72ce-45de-8d50-ebec9ed838a0"
+          ],
+          "positions": [
+            1,
+            1
+          ]
+        },
+        {
+          "question_text": "What specific allowance, recently paid in tranches by the Military Pensions Board, was introduced by the Federal Government to cater to veterans and retired personnel?",
+          "count": 2,
+          "db_ids": [
+            "54ae2261-5658-459d-988c-7c3fcef645f0",
+            "3c9486b8-d144-48ba-b3e7-f2252f3125f4"
+          ],
+          "positions": [
+            2,
+            2
+          ]
+        },
+        {
+          "question_text": "Aside from disbursing monthly pensions to retired personnel, what is a key statutory function of the Military Pensions Board regarding deceased personnel?",
+          "count": 2,
+          "db_ids": [
+            "3a9f7874-286f-4740-a529-153fe419dce5",
+            "5f132a9a-937c-4469-b01c-7e97aa6f5b75"
+          ],
+          "positions": [
+            3,
+            3
+          ]
+        },
+        {
+          "question_text": "What is the primary statutory mandate of the Military Pensions Board (MPB)?",
+          "count": 2,
+          "db_ids": [
+            "86c819bb-dee2-43d1-aa05-85083dc378d7",
+            "5ce8a044-312b-4a26-9dd8-56b38ac97028"
+          ],
+          "positions": [
+            4,
+            4
+          ]
+        },
+        {
+          "question_text": "Which tier of the Nigerian civil service structure supervises the Military Pensions Board?",
+          "count": 2,
+          "db_ids": [
+            "c7c72a9f-c1a8-43d5-bbd1-207cf7c1ec55",
+            "22065134-648a-4687-a3cc-2de1ef5a4263"
+          ],
+          "positions": [
+            5,
+            5
+          ]
+        },
+        {
+          "question_text": "To eliminate the cumbersomeness and difficulties associated with traditional physical assemblies, what recent initiative did the MPB introduce for pensioners?",
+          "count": 2,
+          "db_ids": [
+            "51b2480b-2bbe-44a1-adb5-ce37303f8f67",
+            "ecd77e38-0483-4708-888f-b7864d17a16d"
+          ],
+          "positions": [
+            7,
+            7
+          ]
+        },
+        {
+          "question_text": "Aside from processing retirement benefits, what is the role of the MPB regarding deceased military personnel?",
+          "count": 2,
+          "db_ids": [
+            "cdf7b122-0b9a-44a3-bda4-96ce33f03a21",
+            "caf03f74-f8af-4be4-9afa-dec421b25655"
+          ],
+          "positions": [
+            8,
+            8
+          ]
+        },
+        {
+          "question_text": "During the early 2026 familiarization visit of the Permanent Secretary, Ministry of Defence, to the Military Pensions Board headquarters in Abuja, what was the overarching theme of the discussions?",
+          "count": 2,
+          "db_ids": [
+            "f787471a-e37e-4c58-b229-9274bea6daa7",
+            "cc2c7d23-bf01-4df2-920b-d5ab930129c1"
+          ],
+          "positions": [
+            9,
+            9
+          ]
+        },
+        {
+          "question_text": "Which security agency's pension agitation closely mirrors the autonomous model successfully utilized by the DSS?",
+          "count": 3,
+          "db_ids": [
+            "6ffbc335-1fd7-4d16-b480-47cc5eb5c283",
+            "cca0c5e3-7946-4109-a75c-ed29d5977b95",
+            "5ee56529-5c07-4f20-8442-cd1c04b6a475"
+          ],
+          "positions": [
+            19,
+            19,
+            12
+          ]
+        },
+        {
+          "question_text": "Retired DSS officers drawing monthly pensions remain bound by the Official Secrets Act. What is the administrative penalty if a pensioner writes a book leaking classified active operations?",
+          "count": 3,
+          "db_ids": [
+            "98b26601-0ba0-46d8-a19a-2e5b8be3b641",
+            "f081ecdd-29e5-41b9-8a5f-83414623e950",
+            "92178ffc-354d-427d-9499-69ff0732d54a"
+          ],
+          "positions": [
+            20,
+            20,
+            13
+          ]
+        },
+        {
+          "question_text": "What is the primary operational reason why the Federal Government completely exempted the DSS from the Contributory Pension Scheme (CPS)?",
+          "count": 2,
+          "db_ids": [
+            "eb0fffb9-dcbd-425b-8f07-e5f9139a5fb7",
+            "75a34b85-2c88-43e2-8080-fca372fe9c7a"
+          ],
+          "positions": [
+            4,
+            15
+          ]
+        },
+        {
+          "question_text": "Which statutory body retains ultimate accounting responsibility for the budgetary allocation, funding, and disbursement of pensions for retired DSS personnel?",
+          "count": 2,
+          "db_ids": [
+            "ed61db6c-87bb-495b-a485-3159ec113f5d",
+            "06a2b257-cd74-429a-a7d4-986f76f2b671"
+          ],
+          "positions": [
+            5,
+            16
+          ]
+        },
+        {
+          "question_text": "Which internal administrative unit within the DSS manages files, documentation processing, and payment clearances for retiring intelligence officers?",
+          "count": 2,
+          "db_ids": [
+            "9ded99c6-c927-452e-8198-67d64b830622",
+            "14f6b124-e31d-46e0-aa55-42c258128776"
+          ],
+          "positions": [
+            6,
+            17
+          ]
+        },
+        {
+          "question_text": "Under the harmonized pension structure for security services, a retired Director-General of State Services (DGSS) is entitled to a terminal monthly pension equivalent to:",
+          "count": 2,
+          "db_ids": [
+            "f47c4877-569b-4f85-a4cd-85e814bd66cf",
+            "42abfda0-c4d8-4b83-874a-e7effc3bc7d9"
+          ],
+          "positions": [
+            7,
+            18
+          ]
+        },
+        {
+          "question_text": "Who oversees the institutional welfare and final administrative approvals for the internal pension adjustments of the DSS?",
+          "count": 2,
+          "db_ids": [
+            "1aaf9a71-0a67-40dc-8142-d50abdc29cb6",
+            "7e5c5de6-aa4b-49a2-8633-ae486dc79db0"
+          ],
+          "positions": [
+            8,
+            19
+          ]
+        }
+      ]
+    }
+  }
+}

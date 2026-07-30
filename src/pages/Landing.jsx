@@ -4,7 +4,7 @@ import { PublicFooter, PublicNav } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { getPublicLaunchOffer, getPublicModuleCatalog } from "../lib/appApi";
 import { logAppError } from "../lib/errors";
-import { formatLaunchOfferEnd, formatModuleMoney } from "../lib/pricing";
+import { formatLaunchOfferEnd, formatLaunchOfferSavings } from "../lib/pricing";
 import { normalizePublicModules } from "../lib/publicModules";
 import { useAuth } from "../lib/useAuth";
 
@@ -137,27 +137,20 @@ export default function Landing() {
 
       <section className="landing-experience-hero">
         <div className="landing-experience-copy">
-          <h1>Practice for your public service promotion exam.</h1>
+          <h1>Practice for your promotion exam.</h1>
           <p className="landing-experience-summary">
-            Timed objective practice, oral questions, scores, and answer review by module.
+            Timed questions, oral prompts, scores, and answer review for public service promotion modules.
           </p>
           <Link className="primary-action landing-experience-action" to="/auth?mode=sign-up">Start free practice</Link>
-          <p className="landing-experience-free-note"><span aria-hidden="true">{"\u2713"}</span> First practice set is free. No payment required.</p>
-          {launchOffer && (
-            <div className="landing-launch-offer" role="status">
-              <strong>Seven-day launch price</strong>
-              <span>
-                {launchOffer.has_uniform_regular_price ? "Regular price " : "Regular prices from "}
-                <del>{formatModuleMoney(launchOffer.regular_price_kobo, launchOffer.currency)}</del>
-                {" "}<b>{formatModuleMoney(launchOffer.discounted_price_kobo, launchOffer.currency)} per module</b>
-              </span>
-              <small>Available until {formatLaunchOfferEnd(launchOffer.ends_at)} WAT.</small>
-            </div>
-          )}
-          <p className="landing-google-purpose">
-            If you choose Google sign-in, we use your name and email only for your PromotionSure account.
-            <Link to="/privacy"> Privacy Policy</Link>.
-          </p>
+          <div className="landing-experience-cta-notes">
+            <p><span aria-hidden="true">{"\u2713"}</span><span>First set is free. No payment required.</span></p>
+            {launchOffer && (
+              <p>
+                <span aria-hidden="true">{"\u23f1"}</span>
+                <span>Launch week: <strong>{formatLaunchOfferSavings(launchOffer).toLowerCase()}</strong> on all modules until {formatLaunchOfferEnd(launchOffer.ends_at)} WAT.</span>
+              </p>
+            )}
+          </div>
         </div>
 
         <PracticeExperiencePreview />

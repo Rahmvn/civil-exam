@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-07-29T23:12:21.085Z",
+  "counts": {
+    "published_sets": 65,
+    "objective_questions": 1000,
+    "oral_questions": 75,
+    "issues": 6
+  },
+  "bySubject": [
+    {
+      "slug": "pension-module",
+      "practice_type": "objective",
+      "objective": 80,
+      "oral": 0,
+      "published_sets": 9
+    },
+    {
+      "slug": "current-affairs",
+      "practice_type": "objective",
+      "objective": 220,
+      "oral": 0,
+      "published_sets": 11
+    },
+    {
+      "slug": "public-financial-management",
+      "practice_type": "objective",
+      "objective": 340,
+      "oral": 0,
+      "published_sets": 12
+    },
+    {
+      "slug": "public-service-rules",
+      "practice_type": "objective",
+      "objective": 360,
+      "oral": 0,
+      "published_sets": 18
+    },
+    {
+      "slug": "public-service-rules-oral",
+      "practice_type": "oral",
+      "objective": 0,
+      "oral": 75,
+      "published_sets": 15
+    }
+  ],
+  "issues": [
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 4,
+      "practice_type": "objective",
+      "expected": 20,
+      "actual": 14,
+      "practice_set_id": "13740713-450a-4377-96d7-18b91d627b52"
+    },
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 5,
+      "practice_type": "objective",
+      "expected": 20,
+      "actual": 6,
+      "practice_set_id": "1b6972b1-a89e-42e4-af56-b9f621331cf9"
+    },
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 6,
+      "practice_type": "objective",
+      "expected": 20,
+      "actual": 0,
+      "practice_set_id": "716a0833-44be-4391-ac0c-99db017e0358"
+    },
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 7,
+      "practice_type": "objective",
+      "expected": 20,
+      "actual": 0,
+      "practice_set_id": "5eb2f4e4-5d59-40c1-a272-879a50a939f8"
+    },
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 8,
+      "practice_type": "objective",
+      "expected": 20,
+      "actual": 0,
+      "practice_set_id": "baba8946-ebff-46f1-be7b-f3a3a02a53ee"
+    },
+    {
+      "type": "count_mismatch",
+      "subject": "pension-module",
+      "set": 9,
+      "practice_type": "objective",
+      "expected": 10,
+      "actual": 0,
+      "practice_set_id": "933daa0d-9840-4077-b5b3-3e340f393ab1"
+    }
+  ]
+}

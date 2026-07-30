@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-07-29T23:13:40.407Z",
+  "counts": {
+    "published_sets": 64,
+    "objective_questions": 1080,
+    "oral_questions": 75,
+    "issues": 0
+  },
+  "bySubject": [
+    {
+      "slug": "pension-module",
+      "practice_type": "objective",
+      "objective": 170,
+      "oral": 0,
+      "published_sets": 9
+    },
+    {
+      "slug": "current-affairs",
+      "practice_type": "objective",
+      "objective": 220,
+      "oral": 0,
+      "published_sets": 11
+    },
+    {
+      "slug": "public-financial-management",
+      "practice_type": "objective",
+      "objective": 330,
+      "oral": 0,
+      "published_sets": 11
+    },
+    {
+      "slug": "public-service-rules",
+      "practice_type": "objective",
+      "objective": 360,
+      "oral": 0,
+      "published_sets": 18
+    },
+    {
+      "slug": "public-service-rules-oral",
+      "practice_type": "oral",
+      "objective": 0,
+      "oral": 75,
+      "published_sets": 15
+    }
+  ],
+  "issues": []
+}

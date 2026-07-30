@@ -1,0 +1,160 @@
+{
+  "generated_at": "2026-07-29T22:42:17.243Z",
+  "action": "insert_psr_set_18_from_source_rows_341_360",
+  "backup": {
+    "generated_at": "2026-07-29T22:42:17.243Z",
+    "subject": {
+      "id": "02677693-129e-4a67-b3c3-1054b220a8bf",
+      "slug": "public-service-rules"
+    },
+    "existing_set": null,
+    "existing_questions": []
+  },
+  "practice_set": {
+    "id": "a5fe3e32-3ad8-4de4-9574-da1c3e39f5c0",
+    "exam_pack_id": "ce71ad9a-e142-4364-a1dc-461c58568f1a",
+    "subject_id": "02677693-129e-4a67-b3c3-1054b220a8bf",
+    "set_number": 18,
+    "expected_question_count": 20,
+    "status": "published",
+    "created_by": null,
+    "updated_by": null,
+    "published_at": "2026-07-29T22:42:17.243+00:00",
+    "archived_at": null,
+    "created_at": "2026-07-29T22:42:17.666321+00:00",
+    "updated_at": "2026-07-29T22:42:18.351849+00:00",
+    "practice_type": "objective",
+    "logical_set_key": "9cc19a2a-d900-4a22-b137-b05c76edd954",
+    "version_number": 1,
+    "replaces_practice_set_id": null,
+    "replaced_by_practice_set_id": null,
+    "ever_published": true,
+    "first_published_at": "2026-07-29T22:42:17.243+00:00",
+    "withdrawn_at": null,
+    "retired_at": null,
+    "retirement_reason": null,
+    "withdrawn_question_ids": null
+  },
+  "inserted": [
+    {
+      "id": "f53d2885-2e2d-4a5a-b65f-c6bd40629821",
+      "batch_position": 1,
+      "question_text": "What is the minimum substantive rank a civil servant must hold in the Directorate cadre to be eligible to apply for the post of Permanent Secretary in the Federal Civil Service?",
+      "correct_option": "D"
+    },
+    {
+      "id": "3e606e5b-bea3-4269-917d-b3d9a7781617",
+      "batch_position": 2,
+      "question_text": "According to the Public Service Rules (PSR), what is the minimum remaining active service requirement for a candidate applying for the post of Permanent Secretary?",
+      "correct_option": "A"
+    },
+    {
+      "id": "9eec955f-4045-416a-a70c-bc02e9fc56a4",
+      "batch_position": 3,
+      "question_text": "What are the primary stages involved in the selection and promotion process for Permanent Secretaries in the Federal Civil Service?",
+      "correct_option": "B"
+    },
+    {
+      "id": "b751856f-3229-4280-a6b5-f6a844f0b49d",
+      "batch_position": 4,
+      "question_text": "Can a civil servant with a pending disciplinary case or active interdiction apply for the post of Permanent Secretary?",
+      "correct_option": "C"
+    },
+    {
+      "id": "bec21de1-cc1c-41bd-9087-9c5edb0df4d8",
+      "batch_position": 5,
+      "question_text": "According to the Constitution of the Federal Republic of Nigeria, who is empowered to appoint a person to the office of Permanent Secretary in the Federal Civil Service?",
+      "correct_option": "B"
+    },
+    {
+      "id": "6cb78063-0a44-4c83-8e58-cb44d3395cfc",
+      "batch_position": 6,
+      "question_text": "In the context of the civil service, which of the following best describes the primary role of a Permanent Secretary?",
+      "correct_option": "A"
+    },
+    {
+      "id": "dd3db458-623c-4de9-9e69-fbccf912b3e2",
+      "batch_position": 7,
+      "question_text": "What policy principle guides the appointment of Permanent Secretaries at the Federal level to ensure inclusivity and geographical spread?",
+      "correct_option": "B"
+    },
+    {
+      "id": "d6b7f6ae-dd3b-4a3a-be1c-1ac1ba3214a9",
+      "batch_position": 8,
+      "question_text": "In the promotion examination for the post of Permanent Secretary, which of the following is typically the main focus of the Policy and Administration paper?",
+      "correct_option": "C"
+    },
+    {
+      "id": "b96313f0-7692-44a8-85ad-10803dfa520f",
+      "batch_position": 9,
+      "question_text": "Why is continuous participation in management and leadership courses (such as those from ASCON) highly regarded in the selection process for Permanent Secretaries?",
+      "correct_option": "B"
+    },
+    {
+      "id": "17e2e776-02d2-479e-80ab-f9c74d95e91f",
+      "batch_position": 10,
+      "question_text": "Why has the ICT Assessment become a critical stage in the Permanent Secretary promotion examination?",
+      "correct_option": "C"
+    },
+    {
+      "id": "e0b66435-572a-42e1-bb73-49c5a8060910",
+      "batch_position": 11,
+      "question_text": "Which body is primarily responsible for the final approval of conversion of officers on Grade Level 07 to 13 in the Federal Civil Service?",
+      "correct_option": "D"
+    },
+    {
+      "id": "2f7a18ec-729c-46e7-841c-4abb5ca76e2d",
+      "batch_position": 12,
+      "question_text": "What is the fundamental distinction between \"Reinstatement\" and \"Condonation of Service\" under the Nigerian Public Service Rules (PSR)?",
+      "correct_option": "B"
+    },
+    {
+      "id": "314b0ef0-311d-489d-b2e6-c88d0a2b6a51",
+      "batch_position": 13,
+      "question_text": "What is the specific role of the Head of the Civil Service of the Federation (HCSF) in processing an application for condonation of service for a senior officer?",
+      "correct_option": "C"
+    },
+    {
+      "id": "c10afac4-ace5-4ff0-b187-4462ce81d094",
+      "batch_position": 14,
+      "question_text": "What is the primary implication of condonation of service on a civil servant's retirement benefits?",
+      "correct_option": "B"
+    },
+    {
+      "id": "0b89b704-4023-497b-92fd-a82f0276ca33",
+      "batch_position": 15,
+      "question_text": "What is the fundamental difference between the \"Termination of Appointment\" and \"Dismissal\" in the civil service?",
+      "correct_option": "B"
+    },
+    {
+      "id": "85b19c6a-7442-4386-87af-3420fcaa3d2c",
+      "batch_position": 16,
+      "question_text": "An officer on a probationary appointment can have their appointment terminated by the Commission. What notice or remuneration is standard in lieu of notice?",
+      "correct_option": "C"
+    },
+    {
+      "id": "03ab90ec-2a9b-4e45-b5e3-1a191aa383aa",
+      "batch_position": 17,
+      "question_text": "If a permanent, pensionable officer's position is completely eliminated due to government restructuring, what is the appropriate term for their exit from service?",
+      "correct_option": "B"
+    },
+    {
+      "id": "388602ed-5351-4c97-91ff-72a8bd238012",
+      "batch_position": 18,
+      "question_text": "Which of the following is considered an act of \"Serious Misconduct\" that can lead directly to dismissal rather than a simple termination?",
+      "correct_option": "C"
+    },
+    {
+      "id": "a1797bab-7035-4a25-bdf8-44ce6944e44a",
+      "batch_position": 19,
+      "question_text": "Who has the ultimate statutory authority to terminate or dismiss a civil servant on Grade Level 07 and above?",
+      "correct_option": "B"
+    },
+    {
+      "id": "e45f25ef-03db-43a7-9069-2e838dd9d46c",
+      "batch_position": 20,
+      "question_text": "When an officer's appointment is terminated due to general inefficiency, what entitlement does the officer typically retain regarding retirement benefits, unlike a dismissed officer?",
+      "correct_option": "B"
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+position,question_text,option_a,option_b,option_c,option_d,correct_answer,explanation,reference,difficulty
+1,The North-East Development Commission (NEDC) has its main headquarters located in which State...........................,Adamawa State,Kaduna State,Bauchi State,Borno State,D,,,medium
+2,"The three Nations sharing FIFA tournament hosting duties..............., ................. and ....................","China, Belgium and Morroco","United States, Canada, and Mexico","Cuba, France and Germany","Brazil, China and Japan",B,,,medium
+3,FIFA suspended a red card ban on ................... who is USA striker.,Raheem Sterlin,Victor Osimhen,Folarin Balogun,Taiwo Olaogun,C,,,medium
+4,The current Minister of Finance and Coordinating Minister of the Economy is..........................,Chief Wale Edun.,Dr. Zach Adelabu Adedeji,Bianca Ojukwu,Taiwo Oyedele,D,,,medium
+5,................was the former Boss of the allegedly fictitious government entity known as the Presidential Foreign Intervention Promotion Council (PFIPC) or the Presidential Economic Advisory Council (PEAC),Prince Aderemi Adeniji Maxwell,Prince Adeniyi Adeyemi Matthew,Prince Adeogun Ajose Emmanuel,Prince Adedeji Aderinle Mathew,B,,,medium
+6,The South-East Development Commission (NEDC) has its main headquarters located in which State...........................,Edo State,Abia State,Ebonyi State,Enugu State,D,,,medium
+7,The current Minister of Housing and Urban Development is ..................................,Ahmed Musa Dangiwa.,Balarabe Musa,Muttaqha Rabe Darma,Bayo Onanuga,C,,,medium
+8,The South-West Development Commission (NEDC) has its main headquarters located in which State...........................,Ondo State,Lagos State,Osun State,Oyo State,D,,,medium
+9,The current Minister of Minister of Power is ..................................,Joseph Olasunkanmi Tegbe .,Ambassador Sola Enikanolaiye,Bianca Odumegwu-Ojukwu,Chief Adebayo Adelabu,A,,,medium
+10,The South-South Development Commission (NEDC) has its main headquarters located in which State...........................,Delta State,Rivers State,Calabar State,Akwa-Ibom State,D,,,medium
+11,..........students and ............teachers in Oyo State were kidnapped on Friday..........,"60 students, 19 teachers, 2nd April, 2026.","39 students, 7 teachers, 15th May, 2026.","47 students, 13 teachers, 25th June, 2026.","43 students, 11 teachers, 23rd May, 2026.",B,,,medium
+12,The mass abduction of students and teachers took place in ................ schools at.............. and .............. in.................Local Government Area of Oyo State,"three schools, Esiele, Yawota, Oriire.","2 schools, Isalu, Ekunle, Olohunda","4 schools, Oke-esa, Irewole, Sangotedo","5 schools, Tede, Igboho Okeho",A,,,medium
+13,Oyo State kidnapped victims regained their freedom on Friday...................,"13th July, 2026.","16th July, 2026","7th July, 2026","10th July, 2026.",D,,,medium
+14,How many lawmakers are there in the Nigerian National Assembly?,449,409,502,469,D,,,medium
+15,The current National Assembly of the Federal Republic of Nigeria is the ...............,7th Assembly.,12th Assembly.,10th Assembly.,8th Assembly.,C,,,medium
+16,"The term,......................is a system of government where the lawmaking body is divided into two separate assemblies.",Multi-cameral legislature,Duo-cameral legislature,Mono-cameral legislature,Bicameral legislature.,D,,,medium
+17,The current Inspector General of Police is..................,Kayode Egbetokun,Usman Alkali Baba,Tunji Disu,Mohammed Abubakar Adamu,C,,,medium
+18,Who is the current Minister of Defence of the Federal Republic of Nigeria?,Mohammed Badaru Abubakar,Gen. Christopher Musa (rtd),Maj. Gen. Bashir Salihi Magashi (rtd),Brig. Gen. Mansur Muhammad Dan-Ali (rtd).,B,,,medium
+19,"The Strait of Hormuz is a narrow, highly strategic waterway located in the Middle East between ............ and..............",Israel and Iran,Egypt and Iran,Oman and Iran,Iraq and Iran,C,,,medium
+20,..............is the current Minister of State for Defence in Nigeria.,Brigadier General Mansur Muhammad Dan-Ali (Rtd),Dr. Muhammad Mahmud Abubakar,Senator Musiliu Olatunde Obanikoro,Dr. Bello Mohammed Matawalle,D,,,medium
+21,The current Chief Justice of the Supreme Court of Nigeria is...................,Justice Ibrahim Tanko Muhammad,Justice Olukayode Ariwoola,Justice Kudirat Kekere-Ekun,Justice Walter Onnoghen,C,,,medium
+22,Which State has the highest number of local government areas in Nigeria?,Lagos,Kano,Katsina,Akwa Ibom,B,,,medium
+23,Which year did Nigeria become a Republic?,"1st October, 1960","1st January, 1945","1st October, 1963","31st March, 1966",C,,,medium
+24,The Nigerian Coat of Arms represents the following except.,Gallantry,sovereignty,unity,natural wealth,A,,,medium
+25,Who was the first Senate President of Nigeria?,Dr. Joseph Wayas,Dr. Nwafor Orizu,Dr. Godswill Akpabio,Dr. Nnamdi Azikiwe,D,,,medium
+26,.....................was the first elected Executive President of the Federal Republic of Nigeria.,Olusegun Obasanjo,Ahmadu Bello,Alhaji Shehu Shagari,Ibrahim Babangida,C,,,medium
+27,Who was the first and only prime minister of Nigeria?,Chief Obafemi Awolowo,Sir Abubakar Tafawa Balewa,Alhaji Ahmadu Bello,Lieutenant Colonel Francis Adekunle Fajuyi,B,,,medium
+28,Who was the first indigenous Speaker of the House of Representatives in Nigeria?,Jaja Wachuku,Obafemi Awolowo,Nnamdi Azikwe,Sir Ahmadu Bello,A,,,medium
+29,What are the four countries surrounding Nigeria?,"Guinea, Liberia, Mali and Senegal.","Benin, Niger, Chad and Cameroon","Cabo Verde, Côte d'Ivoire, The Gambia and Ghana","Senegal, Sierra Leone, Togo and Mauritania",B,,,medium
+30,The senior Nigeria women's national football team is officially called?,Banyana Banyana,Black Queens,Super Falcons,Harambee Starlets,C,,,medium
+31,The first ceremonial president of Nigeria was....................,Chief Obafemi Awolowo,Dr. Nnamdi Azikiwe.,Chief Ladoke Akintola,Sir Ahmadu Bello.,B,,,medium
+32,................is the oldest degree-awarding University in Nigeria.,University of Lagos,Ahmadu Bello University,University of Ibadan,Obafemi Awolowo University,C,,,medium
+33,The motto of Nigeria is..................,"Strength, rebirth, willpower, and knowledge.","Unity and Faith, Peace and Progress","Freedom, Justice, Strength and agricultural wealth",None of the above.,B,,,medium
+34,".................Nigeria's blueprint to transform the public sector into a world-class, digital, and performance-driven institution.",Federal Civil Service Fiscal Strategy Plan (FCS_FSP),Federal Civil Service Performance Evaluation Appraisal System (FCSPEAS),Federal Civil Service Strategy and Implementation Plan (FCSSIP),Federal Civil Service Pre-Retirement Financial Management Policy (FCSPFMP),C,,,medium
+35,The longest river in Nigeria is the ...............,Gongola River,Benue River,Oyan River,Niger River,D,,,medium
+36,Nigeria is located entirely ...................,East of the Equator.,South of the Equator.,North of the Equator.,West of the Equator.,C,,,medium
+37,The Place where the River Niger and River Benue met is called.............,The Confluence,The Circumference,The Concurrence,The Coherence,A,,,medium
+38,The River Niger originates from................,River Ogun,Mount Stanley of Uganda,Mount Kilimanjaro of Tanzania,Futa Jalon highlands of Guinea,D,,,medium
+39,In which hemisphere does Nigeria lie?,Both the Northern Hemisphere and the Eastern Hemisphere,Southern Hemisphere only.,Western Hemisphere only.,None of the above.,A,,,medium
+40,The major economic policy announced by President Bola Ahmed Tinubu in his inauguration speech on 29th May 2023 was.....................,Unification of all Nigerians.,Construction of Lagos-Calabar Coaster Road.,Removal of fuel subsidy.,Establishment of one-party system.,C,,,medium
+41,The Economic Community of West African States (ECOWAS) was founded in............,1960,1966,1993.,1975,D,,,medium
+42,Which ECOWAS members announced their intention to withdraw from the bloc in 2025?,"Senegal, Sierra Leone and Togo","Burkina Faso, Mali, and Niger","Liberia, Nigeria and the Gambia","Cabo Verde, Côte d'Ivoire and Ghana",B,,,medium
+43,"Who wrote the lyrics of ""Nigeria, We Hail Thee"", the recently readopted National Anthem of Nigeria?",Lillian Jean Williams,P.O. Aderibigbe,O.A. OgunnaikeJo,John Ilechukwu,A,,,medium
+44,The maximum number of justices on the Supreme Court of Nigeria is ....................,30 (29 + Chief Justice of Nigeria),109 (108 + Chief Justice of Nigeria),10 (9 + Chief Justice of Nigeria),21 (20 + Chief Justice of Nigeria),D,,,medium
+45,What is the current national minimum wage in Nigeria?,"₦30,000 per month","₦100,000 per month","₦70,000 per month","₦50,000 per month",C,,,medium
+46,Nigeria's longest bridge is ...............,"AYA Bridge, Federal Capital Territory (FCT), Abuja","Lekki-Ikoyi Link Bridge, Lagos",Second Niger Bridge (Asaba/Onitsha),"Third Mainland Bridge, Lagos.",D,,,medium
+47,The minimum age to run for the office of the President in Nigeria is...............,35 years,60 years,18 years,65 years,A,,,medium
+48,ERGP stands for.........................,Economic Redesign and Growth Policy.,Economic Renaissance and Great Programme,Economic Recovery and Growth Plan,Econometric Recovery and Grand Policy,C,,,medium
+49,The minimum age to run for the office of the House of Representatives in Nigeria is .............,45 years,60 years,18 years,25 years,D,,,medium
+50,The West African contries which formed the Alliance of Sahel States (AES) in 2023 are,"Liberia, Nigeria and the Gambia","Senegal, Sierra Leone and Togo","Burkina Faso, Mali, and Niger","Cabo Verde, Côte d'Ivoire and Ghana",C,,,medium
+51,The 60th anniversary is also called...................,Platinum Jubilee,Diamond Jubilee,Ruby Jubilee,Octogenary Jubilee.,B,,,medium
+52,The tallest mountain in Africa is ..................,Mount Kenya in Kenya.,Rwenzori Mountains in Uganda/DRC.,Mount Kilimanjaro in Tanzania.,Simien Mountains in Ethiopia.,C,,,medium
+53,........... is the highest national honorary grant in the country exclusively conferred on Nigerian Presidents,Commander of the Order of the Federal Republic (CFR),Member of the Order of the Federal Republic (MFR),Commander of the Order of the Niger (CON),Grand Commander of the Order of the Federal Republic (GCFR),D,,,medium
+54,The Aba Women's Riot took place in..........,1945,1929,1960,1971,B,,,medium
+55,Nigeria's first indigenous chartered accountant is....................,Chief M.K.O. Abiola,Chief Rotimi Williams,Senator Ben Bruce,Chief Akintola Williams.,D,,,medium
+56,Nigeria's women under-17 football team is officially known as .....................,The Flamingos,The Atlas Lionesses,The Black Maidens,The Super Eaglets,A,,,medium
+57,GSM was officially launched in Nigeria on ..............,"29th May, 1999","6th August, 2001","12th June, 1993","1st October, 2000",B,,,medium
+58,The Nigeria's Federal Capital Territory (FCT) was created on ..............,"1st October, 1960","29th May, 1999","12th June, 1993","3rd February, 1976.",D,,,medium
+59,..............is the first Nigerian to win a Nobel Prize.,Chief Chinua Achebe,"Chief Afe Babalola, SAN",Professor Wole Soyinka,Fela Anikulapo Kuti,C,,,medium
+60,"Within a legislative system, the Senate is referred to as.............while the House of Representatives is also known as..............","Yellow Chamber, Brown Chamber","Red Chamber, Green Chamber","Blue Chamber, White Chamber","Pink Chamber, Black Chamber.",B,,,medium
+61,Who is the current Registrar/ CEO of the Joint Admissions and Matriculation Board (JAMB)?,Prof. Tahir Mamman,Prof. Is-haq Oloyede,Prof. Sam Egwu,Prof. Segun Aina,D,,,medium
+62,.................... accounts for the vast majority of Nigeria's export revenue.,Agricultural products.,Animal Products.,Hydrocarbon products.,Cement and sugar products,C,,,medium
+63,"In compliance with international standards, the Federal Government recently introduced an educational system called.................",6-3-3-4 system of education,12-year uninterrupted basic education model,6-5-4 system of education.,None of the above,B,,,medium
+64,The Nigerian Education Loan Fund (NELFUND) is a pivotal financial institution established under the............................,"Federal Loans Board Act, 2021.","Federal Ministry of Education Act, 1999.","Students Loans (Access to Higher Education) Act, 2024",None of the above,C,,,medium
+65,"In Nigeria, Crude Oil was first discovered in commercial quantity in............at.........., Bayelsa State.","1956, Oloibiri","1963, Yenagoa","1990, Southern Ijaw","1972, Nembe",A,,,medium
+66,The current Minister of Education is......................,Prof. Ruqayyah Ahmed Rufai,Prof. Is-haq Oloyede,Prof. Tahir Mamman,Dr. Maruf Tunji Alausa,D,,,medium
+67,"The Argungu Fishing Festival, which was initiated in 1934, is celebrated in which State?",Bauchi State.,Sokoto State,Kebbi State,Kano State.,C,,,medium
+68,Which Nigerian Presidents ruled as Military Head of States and Democratic Presidents?,Chief Olusegun Obasanjo only.,Gen. Muhammadu Buhari only.,Gen. Ibrahim Babangida only.,Both options a and b only.,D,,,medium
+69,The full meaning of ASUU is...................,Association of Staff Union in the University.,Association of Students Union of the University,Academic Staff Union of Universities,None of the above.,C,,,medium
+70,UNICEF means............................,United Nations Inter-agency Children's Evacuation Finance,United Nations International Champions's Enumeration Fund,United Nations International Children's Emergency Fund,None of the above.,C,,,medium
+71,What is the full meaning of FESTAC?,Federal Establishment of Science and Culture,Festival of Arts and Culture,Option a only,None of the above.,B,,,medium
+72,Where was the first television station located in Nigeria.,"Abeokuta, Ogun State","Ikeja, Lagos State.","Kano, Kano State","Ibadan, Oyo State.",D,,,medium
+73,The first female Chief Justice of Nigeria was .......................,Justice Aloma Mariam Mukhtar.,Justice Kudirat Kekere-Ekun.,Justice Chidiebere Uwa,Justice Jummai Sankey,A,,,medium
+74,The first female elected senator in Nigeria is................,Senator Zainab Kure,Senator Natasha Uduaghan.,Senator Franca Afegbua,None of the above.,C,,,medium
+75,Who was the first woman to drive a car in Nigeria?,Funmilayo Ransome Kuti,Kudirat Abiola,Mariam Babangida,Stella Obasanjo,A,,,medium
+76,A law passed by a local government in Nigeria is called............,Constitution,Bye-law,Fiat,None of the above.,B,,,medium
+77,The transfer of authority to a local government council is known as .............,Decongestion,De-labouring,Devolution,None of the above.,C,,,medium
+78,Which constitution recognized local government as the third tier of government in Nigeria?,The 1969 Constitution,The 1979 constitution,The 1989 constitution,The 1999 constitution,B,,,medium
+79,A bill that applies to the whole population and is intended to promote the general welfare is called ............,A National Bill,A Mass Population Bill,A public bill,None of the above.,C,,,medium
+80,Each State of the Federation is divided into how many senatorial districts?,Six Senatorial Districts,Five Senatorial Districts,Four Senatorial Districts,Three Senatorial Districts,D,,,medium
+81,When last did Nigeria redesign and introduce new naira notes?,"29th May, 2023","15th December, 2022","1st October, 1999","12th June, 2000.",B,,,medium
+82,What does the eagle in the Nigerian coat of arms represent?,Strength,Capacity,Togetherness,Salutation,A,,,medium
+83,How many colours does the Nigerian flag have?,Red and Purple,Brown and Black,Green and White,Pink and Red,C,,,medium
+84,Which are the current Ministers of Petroleum of the Federal Republic of Nigeria?,President Bola Ahmed Tinubu as the substantive Minister of Petroleum Resources of the Federal Republic of Nigeria.,"Senator Heineken Lokpobiri as the Minister of State, Petroleum Resources (Oil)","Rt. Hon. Ekperikpe Ekpo as the Minister of State, Petroleum Resources (Gas)",All of the above.,D,,,medium
+85,"...........formally received the prestigious 2026 Central Bank of the Year Award in London on June 10, 2026.",Fmr.CBN Governor Charles Soludo,Fmr.CBN Governor Sanusi Lamido Sanusi,CBN Governor Olayemi Cardoso,"Mr. Taiwo Oyedele, Hon. Minister of Finance and Coordinating Minister of the Economy.",C,,,medium
+86,........... is the current Deputy Senate President of Nigeria,Rt. Hon. Benjamin Okezie Kalu.,Senator Barau Jibrin,"Senator Solomon Olamilekan Adeola, FCA",Senator Idiat Oluranti Adebule,B,,,medium
+87,Who was the first Nigerian to win a Grammy Award?,"Ayodeji Ibrahim Balogun, known professionally as Wizkid.",Chief Ebenezer Obey,"Helen Folasade Adu, known professionally as Sade Adu.",None of the above.,C,,,medium
+88,..............is the current Executive Chairman of the Economic and Financial Crimes Commission (EFCC).,Nuhu Ribadu,Olanipekun Olukoyede,Abdulrasheed Bawa,Ibrahim Magu,B,,,medium
+89,......is the company that first discovered oil in Nigeria,Mobile Petroleum,African Petroleum,Total Petroleum,Shell British Petroleum.,D,,,medium
+90,Who is the current chairman of the Independent Corrupt Practices and Other Related Offences Commission (ICPC),"Dr. Musa Adamu Aliyu, SAN.",Dr. Rose Abang-Wushishi,"Professor Bolaji Owasanoye, SAN",Professor Musa Usman Abubakar,A,,,medium
+91,what is the largest state in nigeria by land mass?,Osun State,Abia State,Niger State,Kogi State,C,,,medium
+92,"The green, white, and green flag of Nigeria was first officially hoisted on................","1st January, 1955","1st October, 1960","12th June, 1963.",None of the above.,B,,,medium
+93,The 'Y' shape on the Nigerian coat of arms represents .............and ...............,The River Niger and the River Benue,The River Osun and the River Ogun,The River Oyan and the River Ikere,All of the above.,A,,,medium
+94,What is the largest state in nigeria by population?,Lagos State,Abia State,Kano State,Kogi State,C,,,medium
+95,Nigeria shares its longest land border with ...........,Ghana,Senegal,Chad,Cameroon,D,,,medium
+96,........... is Nigeria's highest revenue-generating State.,Kano,Federal Capital Territory (FCT),Lagos State,Rivers State.,C,,,medium
+97,.............. was the longest-serving senate President in the history of Nigeria.,Dr. Nnamdi Azikiwe,Dr. Iyorchia Ayu,Dr. Chuba Okadigbo,Sen. David Mark,D,,,medium
+98,Who was the first indigenous Governor of the Central Bank of Nigeria (CBN)?,Adamu Ciroma,Joseph Oladele Sanusi,Alhaji Aliyu Mai-Bornu,Sarah Alade,C,,,medium
+99,..................is the oldest polytechnic in Nigeria.,"Kaduna Polytechnic, Kaduna State.","Federal Polytechnic, Oko, Anambra State.","Yaba College of Technology (Yabatech), Lagos State.","Iree Polytechnic, Osun State.",C,,,medium
+100,"................was the Nigerian Military Head of State who overthrew the democratically elected government on December 31, 1983.",Gen. Ibrahim Babangida,Major General Muhammadu Buhari,Gen. Olusegun Obasanjo,Johnson Thomas Umunnakwe Aguiyi-Ironsi.,B,,,medium
+101,.................State is also called ‘The Treasure Base of the Nation’.,Rivers,EBonyi,Abia,Anambra,A,,,medium
+102,"Gen. Muhammadu Buhari, the immediate past President of Nigeria died on..................","1st January, 2025","29th April, 2024","12th June, 1993","13th July, 2025",D,,,medium
+103,How many States were created by General Yakubu Gowon in May 1967?,19,12,21,36,B,,,medium
+104,What is the full meaning of NNPCL,Nigerian National Petroleum Company Limited,Naigerian National Petroleum Corporation Limited,Nigerian National Petrolchemical Company Limited,Nigerian National Petroleum Cooperative Limited,A,,,medium
+105,"The first Nigerian oil refinery was built in............. at Alesa-Eleme, near Port Harcourt, Rivers State.",1999,1958,1965,1976,C,,,medium
+106,The continent of Africa has ......................countries.,51,54,56,59,B,,,medium
+107,.................State is also known as ‘The New World’.,Nasarawa,Kaduna,Jigawa,Kwara,C,,,medium
+108,Lagos State was created in the year.........,1962,1967,1977,1956,B,,,medium
+109,Who successfully fought against the killing of twins in Nigeria?,Mary Jay,Thomas Jefferson,Mary Slessor,Mungo Park.,C,,,medium
+110,Abuja officially became the Federal capital of Nigeria,"January 1, 1989","December 12, 1991","October 1, 1996","October 1, 1991",B,,,medium
+111,......................... is the national space agency of Nigeria,National Space Research and Development Agency (NASRDA),Nigerian Aeronautics and Space Administration (NASA-NG),Nigerian Space Exploration and Development Agency (NSEDA),National Aeronautics and Space Exploration Agency (NASE),A,,,medium
+112,Which Nigerian state is also called ‘The Sunshine State’?,Rivers State,Osun State,Jigawa State,Ondo State.,D,,,medium
+113,Where is the Kainji Dam located in Nigeria?,Kogi State,Niger State,Kwara State,Benue State.,B,,,medium
+114,Who gave Nigeria her name?,Mary Slessor,Lord Lugard,Martin Luther,Ms Flora Shaw,D,,,medium
+115,The Nigerian House of Representatives is also known as.............,Red Chamber,Yellow Chamber,Green Chamber,Purple Chamber,C,,,medium
+116,..............is the smallest state in Nigeria by landmass.,Abia State,Imo State,Jigawa State,Lagos State,D,,,medium
+117,What was the first official capital city of unified Nigeria?,Lokoja,Calabar,Lagos,Port-Harcourt.,C,,,medium
+118,Who amalgamated the Northern and Southern Protectorates of Nigeria?,Lord Frederick Lugard,Mary Slessor,Martin Luther,Ms Flora Shaw,A,,,medium
+119,What is the second line in the first stanza of the reintroduced Nigerian National Anthem?,"To be faithful, loyal and honest",Our own dear Native Land,To serve our fatherland,With love and strength and faith,B,,,medium
+120,Which state has the smallest population in Nigeria?,Katsina State,Plateau State,Bayelsa State,Zamfara State,C,,,medium
+121,The Northern and Southern Protectorates of Nigeria were amalgamated on..................,"1st January, 1945","1st October, 1963","27th May, 1960.","1st January, 1914",D,,,medium
+122,The Nigerian Naira and Kobo were introduced on.................,"1st October, 1960","1st January, 1973","27th May, 1966","1st January, 1914",B,,,medium
+123,The full meaning of FRSC is..................,Federal Roads Safety Corps,Federal Road Safety Commission,Federal Road Safety Corps,Federal Road Safety Corporation,C,,,medium
+124,The Economic and Financial Crimes Commission (EFCC) was established in................,1999,2007,2003,2000,C,,,medium
+125,"Which devastating natural disaster affected Nigeria in September 2024, displacing over 400,000 people?",Landslides in Lagos State,Flooding in Borno State,Earthquake in Benue State,Drought in Katsina State,B,,,medium
+126,In what year was the Independent Corrupt Practices and Other Related Offences Commission (ICPC) established?,2000,2007,1999,2022,A,,,medium
+127,What was Nigeria’s major role in ECOMOG peacekeeping operations in West Africa?,Diplomatic Dispute Resolution,Bi-lateral Arbitration,Deployment of the Largest troops and huge financial support,Bi-Lateral mediation,C,,,medium
+128,The eight (8) international goals that were officially established by the Millennium Summit of the United Nations in 2000 is also called.............,United Nations Poverty Alleviation and Universal Development Goals,Millennium Development Goals (MDG),Global Accelerated Development and Wealth Creation Programme,Sustainable Development Goals (SDG),B,,,medium
+129,The Secretary General of OPEC serves a tenure of .............in the first instance.,four years,one year,three years,two years.,C,,,medium
+130,What medal did Nigeria win at AFCON 2025?,Bronze,Silver,Gold,None of the above.,A,,,medium
+131,Which Nigerian state is also referred to as ‘Glory of All Lands'?,Cross River State,Bauchi State,Bayelsa State,Enugu State,C,,,medium
+132,The Super Falcons of Nigeria won their first official Women’s Africa Cup of Nations (WAFCON) title in ................,1995,1992,1990,1998,D,,,medium
+133,The current General Secretary of the Nigeria Football Federation (NFF) is ....................,Sani Lulu,Taiwo Ogunjobi,Mohammed Sanusi,Bolaji Ojo-Oba,C,,,medium
+134,"....................was the first Nigerian-born player to win an NBA championship,",Jordan Nwora,Hakeem Olajuwon,O.G. Anunoby,None of the above.,B,,,medium
+135,Which Nigerian state is also referred to as ‘The People's Paradise'?,Cross River State,Abia State,Kaduna State,Benue State,A,,,medium
+136,The full meaning of NFF is...........................,National Football Federation,National Football Faction,Nigeria Football Federation,National Football Felicitation,C,,,medium
+137,.............. is Nigeria's all-time leading goalscorer in the Super Eagles.,Yakubu Aiyegbeni,Segun Odegbami,Victor Osimhen,Rashidi Yekini,D,,,medium
+138,Which Nigerian athlete broke a world record in 2022?,Ikechukwu Uche,Rashidat Ajibade,Tobi Amusan,Alex Iwobi,C,,,medium
+139,Which Nigerian state is also called ‘Home of Hospitality'?,Katsina State,Kebbi State,Borno State,Nasarawa State.,A,,,medium
+140,"............... was named the 2023 CAF Men's Player of the Year at the Confederation of African Football (CAF) Awards ceremony held in Marrakesh, Morocco.",Wilfred Ndidi,Victor Osimhen,Ademola Lookman,Alex Iwobi,B,,,medium
+141,The head coach of the Nigeria Super Eagles is.............,Sunday Oliseh,Clemens Westerhof,Éric Chelle,Finidi George,C,,,medium
+142,"The ""State of Harmony"" is the official nickname for.............",Ebonyi State,Kwara State,Oyo State,Cross-river State,B,,,medium
+143,Nigeria’s most-capped female footballer is...........,Tobi Amusan,Rashidat Ajibade,Onome Ebi,José Peseiro,C,,,medium
+144,...............won the 2024 CAF Men's Player of the Year award.,Ademola Lookman,Alex Iwobi,Wilfred Ndidi,None of the above.,A,,,medium
+145,............was crowned the 2023 CAF African Best Women's Player of the Year Award.,Chiamaka Nnadozie,Mercy Akide,Michelle Alozie,Asisat Oshoala,D,,,medium
+146,..............is the Nigerian Professional Football League (NPFL) club nicknamed “The People's Elephant”.,Niger Tornadoes F.C.,Enyimba F.C.,El-Kanemi Warriors F.C.,Bayelsa United F.C.,B,,,medium
+147,The full meaning of AfCFTA is.............................,African Commerce and Free Trading Area,African Continental Free Trade Agreement,Africa Continental Free Trade Association,African Continental Free Trade Area,D,,,medium
+148,.............. is the largest continent in the world,Australia,Europe,Asia,North America,C,,,medium
+149,NDLEA means...............................,National Drug Law Enforcement Agency,Nigerian Drug Law Enforcement Agency,National Drugs Law Enforcement Agency,National Drug Law Enforcement Association,A,,,medium
+150,The meaning of NUPENG is.......................,National Union of Petroleums and Natural Gas Workers,Nigerian Union of Petroleum and Natural Gas Staff,Nigeria Union of Petroleum and Natural Gas Workers,Nigeria Union of Petrols and Natural Gas Workers.,C,,,medium
+151,NIWA stands for the....................,National Inland Waterways Authority,Nigerian Inland Waterway Authority,National Interland Waterways Authority,Nigerian Interland Waterways Authority,A,,,medium
+152,which continent is the smallest in the world?,Africa,Antarctica,Asia,Australia,D,,,medium
+153,"Which international organization releases the ""Global Economic Outlook""?",United States Agency for International Development (USAID),The International Monetary Fund (IMF).,Department for International Development (DFID),Amnesty International.,B,,,medium
+154,What are the primary tenets/characteristics that the Nigerian Civil Service relies on?,"Integrity, Solidarity and Freedom.","Permanence, Anonymity, and Neutrality.","Confidentiality, Submission and Reliability.",All of the above.,B,,,medium
+155,"Since gaining independence in 1960, how many times has Nigeria changed its national anthem ?",Four times,Once,Thrice,Twice,D,,,medium
+156,"Which policy directive focuses heavily on minimizing the cost of governance by merging Ministries, Departments and Agencies (MDAs) with redundancies and overlapping functionss?",National Economic Outlook,Oronsaye Committee Report,Implementation of International Public Sector Accounting Standrads (IPSAS).,Review of Financial Regulations.,B,,,medium
+157,"In line with the INEC revised time-table, which date will the Presidential and National Assembly Elections hold in Nigeria?","27th February, 2027.","2nd January, 2027.","16th January, 2027.","13th February, 2027.",C,,,medium
+158,The full meaning of NDIC is................,National Democratic Insurance Commission.,National Deposit Insurance Company.,Nigeria Deposit Infrastrural Council.,Nigeria Deposit Insurance Corporation,D,,,medium
+159,What date is for the Governorship and State Houses of Assembly Elections in Nigeria?,"1st March, 2027.","22nd February, 2027.","10th January, 2027.","6th February, 2027.",D,,,medium
+160,What is the full meaning of PENCOM?,Nigerian Pensioners' Commission,National Pension Corporation,Nigeria Pension Commission,National Pension Commission,D,,,medium
+161,Which date will Osun State Governorship Election hold?,"7th July, 2026.","22nd September, 2026.","11th February, 2027.","15th August, 2026.",D,,,medium
+162,Which country won the 2026 FIFA World Cup tournament?,Morrocco,Spain,England,Argentina,B,,,medium
+163,NMDPRA stands for?,Nigerian Midstream and Downstream Petroleum Regulatory Authority,National Midstreams and Downstreams Petroleum Regulatory Agency,Nigerian Midstream and Downstream Petrolchemical Regulatory Authority,National Midstream and Downstream Petroleum Regulatory Agency.,A,,,medium
+164,On what date was the final match of the 2026 FIFA World Cup played?,"July 19, 2026","July 12, 2026","July 22, 2026","July 17, 2026",A,,,medium
+165,What does PTDF stands for?,Petroleum Technology Development Facility.,Petroleum Technology Development Fund.,Petroleum Technical Development Foundation.,Petroleum Technologies Development Finance,B,,,medium
+166,What was the official venue for the 2026 World Cup final?,"Olympic City Stadium, Stratford, London.","SoFi Stadium, Los Angeles","AT&T Stadium, Dallas",New York New Jersey Stadium (MetLife Stadium),D,,,medium
+167,NEMA stands for what?,National Emergency Management Association.,Nigerian Emergency Management Agency.,National Emergency Management Authority,National Emergency Management Agency.,D,,,medium
+168,Who scored the winning goal in the 2026 World Cup final?,Mohamed Salah,Ferran Torres,Kylian Mbappé,Lionel Messi,B,,,medium
+169,The full meaning of APC is?,All Progressive Confraternity (APC).,All Progressive Council (APC).,All Progressive Corporation (APC).,All Progressives Congress (APC).,D,,,medium
+170,What was the exact final scoreline of the match between Spain and Argentina?,Spain 2–3 Argentina,Spain 1–0 Argentina,Spain 1–2 Argentina,Spain 3–1 Argentina,B,,,medium
+171,What does TRCN represent?,Teachers Registration Community of Nigeria,Teaching Records Council of Nigeria,Teaching Research Council of Nigeria,Teachers Registration Council of Nigeria,D,,,medium
+172,"Which Argentinian player was sent off during second-half stoppage time, forcing them to finish extra time with 10 men?",Enzo Fernández,Lionel Messi,Leandro Paredes,Cristian Romero,A,,,medium
+173,The full meaning of LASIEC is?,Lagos State Independent Electioneering Commission,Lagos Independent Electoral Committee,Lagos State Independent Election Commission,Lagos State Independent Electoral Commission,D,,,medium
+174,What does NEPC represent?,National Election Promotion Council,Nigerian Export Promotion Community,Nigerian Export Promotion Council,National Export Promotion Council,C,,,medium
+175,"How many teams participated in the 2026 FIFA World Cup, making it the largest in history?",42,38,48,36,C,,,medium
+176,The full meaning of NPA is?,Nigerian Pots Authority,Nigerian Perks Authority,National Ports Authority,Nigerian Ports Authority,D,,,medium
+177,Which three nations jointly hosted the 2026 FIFA World Cup?,"Mexico, Canada and United States","Morrocco, Argentina, and Uruguay","Scotland, Brazil and Wales","Oman, Israel and Iran",A,,,medium
+178,"What does the acronym, NTA mean?",National Transitional Authority,Nigerian Television Authority,National Television Agency,Nigerian Telecomference Authority,B,,,medium
+179,What is the full meaning of DSS?,Department of State Services,Development of Security Services,Directorate of State Services,Department of Secured Services,A,,,medium
+180,How many total matches were played across the entire 2026 tournament?,104,86,94,108,A,,,medium
+181,The NYSC stands for?,Nigerian Youth Service Corpes,Nigerian Youth Services Corporation,National Youth Service Community,National Youth Service Corps,D,,,medium
+182,"........National Assembly was inaugurated on June 13, 2023.",7th,9th,12th,10th,D,,,medium
+183,NFF stands for?,Nigeria Football Federalism.,National Football Federation.,Nigeria Football Federation.,National Football Fund,C,,,medium
+184,"Which country won the third-place play-off bronze medal match on July 18, 2026?",France,Morocco,Mali,England,D,,,medium
+185,The full meaning of NECO is?,Nigeria Examinations Council,Nigeria Examinations Corporation,National Examinations Council,National Examinations Confederation.,C,,,medium
+186,What is the full meaning of NACCIMA?,"National Association of Chambers of Commerce, Industry, Mines and Agriculture","National Association of Chamber of Commerce, Industry, Mines and Agriculture","Nigerian Association of Chamber of Commercial, Industry, Mines and Agriculture","Nigerian Association of Chambers of Commerce, Industry, Mines, and Agriculture",D,,,medium
+187,What does ASERA stand for?,Association of Electricity Regulatory Agencies,Abia State Electricity Regulatory Authority,Abuja Statutory Enterprises Regulatory Agency,Association of Electrical Renaissance Authorities.,B,,,medium
+188,The full meaning of SMEDAN is?,Small and Medium Enterprises Development Authority of Nigeria,Small and Macro Enterprises Development Association of Nigeria,Small and Micro Enterprises Directorate Authority of Nigeria,Small and Medium Enterprises Development Agency of Nigeria,D,,,medium
+189,What does FAAN stand for?,Federation Airpots Authority of Nigeria,Federal Airports Agency of Nigeria,Federation Airspace Agency of Nigeria,Federal Airports Authority of Nigeria,D,,,medium
+190,What is the full meaning of NMCN?,Nursery and Midwifery Council of Nigeria,Nurses and Midwives Corporation of Nigeria,Nurses and Midwives Council of Nigeria,Nursing and Midwifery Council of Nigeria,D,,,medium
+191,What is the full meaning of PSC.,Public Service Career,Police Search Concurrence.,Public Security Council.,Police Service Commission.,D,,,medium
+192,What does IPSAS represent?,"Institute of Personnel, Secretaries And Administrators Sector.",International Public Sector Accounting Standards,International Pension Securities and Sustainability.,International Public Sensitization and Accountability Strategies.,B,,,medium
+193,OAU is internationally referred to?,Obafemi Awolowo University (OAU),Oba Awon University (OAU),Organisation of African Unity (OAU),Obafemi Arowolo University (OAU),C,,,medium
+194,What is the full meaning of NUC?,Nigerian Universities Commission,National Universities Corporation,National Universities Communities,National Universities Commission,D,,,medium
+195,What does NHIS stand for?,Nigerian Height Insurance System,National Health Insurance Standards,National Health Insurance Scheme,National Heart Insurance Scheme,C,,,medium
+196,What does NBC signify?,National Broadcasting Corporation,Nigerian Broadcasting Commission,National Broadcasting Community,National Broadcasting Commission.,D,,,medium
+197,What is the full meaning of ICRC,Infrastructure Concession Regulatory Commission (ICRC),International Corporation of the Red Cross (ICRC),International Committee of Research Councils (ICRC),None of the above.,A,,,medium
+198,What is the full meaning of PFIPC?,Pensioners' Fund Investment Preponderance Committee,Presidential Financial Inclusion Promotion Corporation,Presidential Foreign Investment Promotion Council,None of the above.,C,,,medium
+199,Where is the stadium that has the same name with Enyimba F.C. located?,"Uyo, Akwa Ibom State.","Markudi, Benue State","Aba, Abia State.","Abakaliki, Ebonyi State.",C,,,medium
+200,NPFL stands for what?,Nigerian Professional Football League,National Premier Football Legend,National Professional Football League,Nigeria Premier Football League.,D,,,medium

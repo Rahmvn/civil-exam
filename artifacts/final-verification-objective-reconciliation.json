@@ -1,0 +1,990 @@
+{
+  "generated_at": "2026-07-29T23:13:52.735Z",
+  "mode": "dry-run",
+  "source_file": "C:\\Users\\USER\\Downloads\\2026 PROMOTION (FINANCIAL REGULATIONS, PSR & CURRENT AFFAIRS) (1).txt",
+  "target_host": "beapcfiofyrhsxwxcmyd.supabase.co",
+  "note": "No database writes were performed. Objective explanation/reference/source fields are intentionally optional.",
+  "totals": {
+    "objective_rows_in_db": 1310,
+    "oral_rows_in_db": 80,
+    "practice_sets_in_db": 76,
+    "proposed_objective_actions": 20,
+    "safe_auto_objective_actions": 10,
+    "manual_review_objective_actions": 10,
+    "objective_warnings": 1,
+    "oral_warnings": 0
+  },
+  "objective": {
+    "public-financial-management": {
+      "slug": "public-financial-management",
+      "source_count": 340,
+      "db_published_count": 330,
+      "proposed_count": 12,
+      "warning_count": 0,
+      "proposed": [
+        {
+          "action": "update_question_fields",
+          "slug": "public-financial-management",
+          "db_id": "14fb4ea5-d26c-42b8-92fd-6357beffd98b",
+          "source_number": 105,
+          "batch_number": 4,
+          "batch_position": 15,
+          "question_text": "Federation Account maintains...............after the revenue sharing at the end of every month.",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "Deficit Balance",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-financial-management",
+          "db_id": "4d744014-41e9-4040-af92-8d4cd8722cbe",
+          "source_number": 110,
+          "batch_number": 4,
+          "batch_position": 20,
+          "question_text": "The membership of the Plenary Session comprise the any of the following:",
+          "changes": [
+            {
+              "field": "option_c",
+              "from": "ONLY the States' Accountant General as well as States' Commissioner for Finance.",
+              "to": "All of the above."
+            },
+            {
+              "field": "option_d",
+              "from": "All of the above.",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 331,
+          "batch_position": 331,
+          "question": {
+            "question_text": "Which statutory officer is responsible for supervising the accounting operations of all ministries and extra-ministerial offices to ensure compliance with financial rules?",
+            "option_a": "The Head of Civil Service",
+            "option_b": "The Auditor General for the Federation",
+            "option_c": "The Accountant General of the Federation",
+            "option_d": "The Director of Finance and Accounts",
+            "correct_option": "C"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 332,
+          "batch_position": 332,
+          "question": {
+            "question_text": "What is the constitutional or statutory role of the Finance Minister concerning the annual budget?",
+            "option_a": "To audit the budget implementation at the end of the year",
+            "option_b": "To pass the Appropriation Bill into law",
+            "option_c": "To investigate corruption allegations against accounting officers",
+            "option_d": "To prepare and present the budget estimates to the legislature on behalf of the President",
+            "correct_option": "D"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 333,
+          "batch_position": 333,
+          "question": {
+            "question_text": "Which of the following documents is the Director of Finance and Accounts (DFA) required to prepare periodically to aid the Accounting Officer in monitoring the ministry's budget?",
+            "option_a": "The National Economic Blueprint",
+            "option_b": "The Federation Account Allocation Committee (FAAC) Report",
+            "option_c": "The Annual Audit Report",
+            "option_d": "Monthly Expenditure Returns / Revenue and Expenditure Transcripts",
+            "correct_option": "D"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 334,
+          "batch_position": 334,
+          "question": {
+            "question_text": "In terms of administrative reporting, why is the Head of Internal Audit expected to have a direct line of communication with the Accounting Officer?",
+            "option_a": "To ensure independence and objectivity in reviewing financial controls and transactions",
+            "option_b": "To assist the Accounting Officer in approving payments",
+            "option_c": "To help in drafting fiscal policies for the Ministry",
+            "option_d": "To take over administrative control when the Permanent Secretary is away.",
+            "correct_option": "A"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 335,
+          "batch_position": 335,
+          "question": {
+            "question_text": "According to the Financial Regulations, when should a Revenue Collector remit the funds they have collected to the Sub-Treasurer or designated bank?",
+            "option_a": "Once a week, specifically on Fridays",
+            "option_b": "At the end of every month",
+            "option_c": "Daily or at stipulated regular intervals",
+            "option_d": "Whenever their receipt book is completely filled up",
+            "correct_option": "C"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 336,
+          "batch_position": 336,
+          "question": {
+            "question_text": "Under the Pension Reform Act, which category of federal public service employees remains exempted from the Contributory Pension Scheme (CPS) and is still covered under the old Defined Benefits Scheme (DBS)?",
+            "option_a": "All civil servants who joined the service after June 2004.",
+            "option_b": "Only officers who have attained Salary Grade Level 15 and above.",
+            "option_c": "All employees of federal parastatals and research institutes.",
+            "option_d": "Judicial officers, members of the Armed Forces, and employees who had 3 years or less to retire as of June 2004.",
+            "correct_option": "D"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 337,
+          "batch_position": 337,
+          "question": {
+            "question_text": "According to the revised provisions of the Pension Reform Act, what is the mandatory minimum percentage of an employee's monthly emoluments that the Federal Government (Employer) and the Civil Servant (Employee) must contribute respectively into the Retirement Savings Account (RSA)?",
+            "option_a": "7.5% by the Employer; 7.5% by the Employee.",
+            "option_b": "12% by the Employer; 6% by the Employee.",
+            "option_c": "10% by the Employer; 8% by the Employee.",
+            "option_d": "15% by the Employer; 5% by the Employee.",
+            "correct_option": "C"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 338,
+          "batch_position": 338,
+          "question": {
+            "question_text": "Which organ of the Federal Government is legally mandated to oversee the direct administration, verification, and payment of pensions to retirees under the old Defined Benefits Scheme (DBS)?",
+            "option_a": "National Pension Commission (PENCOM)",
+            "option_b": "Office of the Head of the Civil Service of the Federation (OHCSF)",
+            "option_c": "Federal Civil Service Commission (FCSC)",
+            "option_d": "Pension Transitional Arrangement Directorate (PTAD)",
+            "correct_option": "D"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 339,
+          "batch_position": 339,
+          "question": {
+            "question_text": "From a public finance perspective, what is the fundamental structural difference between the funding mechanisms of the DBS and the CPS that prompted the 2004 pension reform?",
+            "option_a": "DBS relies on a \"Pay-As-You-Go\" budgetary allocation from the Consolidated Revenue Fund, while CPS is a fully funded, individualized asset scheme.",
+            "option_b": "DBS is fully funded by private insurance companies, while CPS is funded by the Central Bank.",
+            "option_c": "DBS allows civil servants to withdraw 100% of their cash at any time, while CPS freezes all funds until age 70.",
+            "option_d": "CPS is entirely optional for junior staff, whereas DBS was mandatory for all.",
+            "correct_option": "A"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        },
+        {
+          "action": "insert_missing_question",
+          "slug": "public-financial-management",
+          "source_number": 340,
+          "batch_position": 340,
+          "question": {
+            "question_text": "Under the Contributory Pension Scheme, an officer who is disengaged from the civil service or retires before the age of 50, and is unable to secure another job within four (4) months, is legally permitted to withdraw what maximum percentage from their RSA balance?",
+            "option_a": "10% as a temporary relief fund.",
+            "option_b": "25% of the total balance as a lump sum.",
+            "option_c": "50% of the total balance to start a business.",
+            "option_d": "No withdrawal is permitted under any circumstances until the officer reaches age 60.",
+            "correct_option": "B"
+          },
+          "reason": "Source question is not present in the published DB rows for this module."
+        }
+      ],
+      "warnings": []
+    },
+    "public-service-rules": {
+      "slug": "public-service-rules",
+      "source_count": 360,
+      "db_published_count": 360,
+      "proposed_count": 8,
+      "warning_count": 1,
+      "proposed": [
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "da39780f-1149-491e-b5c1-f994e9f10b7c",
+          "source_number": 1,
+          "batch_number": 1,
+          "batch_position": 1,
+          "question_text": "All officers must take the confirmation examination within...........years from the date of assuming duty.",
+          "changes": [
+            {
+              "field": "correct_option",
+              "from": "D",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "52a9a580-2fae-4535-839b-e89eebada52f",
+          "source_number": 66,
+          "batch_number": 4,
+          "batch_position": 6,
+          "question_text": "Any Officer that fails to proceed on posting would be regarded as a ...............",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "Complicity",
+              "to": "Complicity c Connivance"
+            },
+            {
+              "field": "option_c",
+              "from": "Connivance",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "c5073bfc-4b3b-43cf-9f85-2179baccbefc",
+          "source_number": 84,
+          "batch_number": 5,
+          "batch_position": 4,
+          "question_text": "Public Service of the Federation is.........................",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+              "to": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc."
+            },
+            {
+              "field": "option_c",
+              "from": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "aecac819-8c86-4007-813b-e0f9376d9220",
+          "source_number": 137,
+          "batch_number": 7,
+          "batch_position": 17,
+          "question_text": "The following officers are entitled to responsibility allowance except:",
+          "changes": [
+            {
+              "field": "option_d",
+              "from": "[MISSING IN SOURCE — REVIEW REQUIRED]",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "ec99d3b4-95d0-40cf-b4d0-d826c83ead12",
+          "source_number": 139,
+          "batch_number": 7,
+          "batch_position": 19,
+          "question_text": "Payment for overtime on weekends would be at the rate of ................of the normal overtime rate whereas on public holidays, the rate would be ............ the normal overtime rate.",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "3.5 percent, triple",
+              "to": "0.9 percent, Quadruple"
+            },
+            {
+              "field": "option_d",
+              "from": "0.9 percent, Quadruple",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "99e05f3a-2907-4c2a-ad90-644ad720f0ce",
+          "source_number": 157,
+          "batch_number": 8,
+          "batch_position": 17,
+          "question_text": "The Chairman of the Junior Staff Committee (Headquarters) must me the Director, Personnel/Human Resources Management with other members not below Salary Grade Level 12 and ............................",
+          "changes": [
+            {
+              "field": "option_a",
+              "from": "a Representative of the Ministry of Labour and Employment.",
+              "to": "a Representative of the Ministry of Labour and Employment. b a Representative of the Office of the Head of the Civil Service of the Federation"
+            },
+            {
+              "field": "option_b",
+              "from": "a Representative of the Office of the Head of the Civil Service of the Federation",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "719da2eb-c362-47f0-add3-92a3eaef5100",
+          "source_number": 293,
+          "batch_number": 15,
+          "batch_position": 13,
+          "question_text": "What is the maximum statutory timeline required for an officer to submit a written representation in response to an official query?",
+          "changes": [
+            {
+              "field": "option_d",
+              "from": "36 hours.",
+              "to": "36 hours. e."
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "b447bc6f-de04-4528-8a80-8be203ba2d21",
+          "source_number": 299,
+          "batch_number": 15,
+          "batch_position": 19,
+          "question_text": "An officer in the Nigerian Public Service can proceed on voluntary retirement after reaching what minimum age?",
+          "changes": [
+            {
+              "field": "option_c",
+              "from": "55 years",
+              "to": "50 years"
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        }
+      ],
+      "warnings": [
+        {
+          "type": "duplicate_db_question_text",
+          "slug": "public-service-rules",
+          "count": 2,
+          "question_text": "Which body is primarily responsible for the final approval of conversion of officers on Grade Level 07 to 13 in the Federal Civil Service?",
+          "db_ids": [
+            "6f0a5c06-7f3d-4898-97a8-996d9b714532",
+            "e0b66435-572a-42e1-bb73-49c5a8060910"
+          ],
+          "positions": [
+            20,
+            11
+          ]
+        }
+      ]
+    },
+    "current-affairs": {
+      "slug": "current-affairs",
+      "source_count": 220,
+      "db_published_count": 220,
+      "proposed_count": 0,
+      "warning_count": 0,
+      "proposed": [],
+      "warnings": []
+    }
+  },
+  "oral": {
+    "oral_count": 80,
+    "warnings": [],
+    "summary": {}
+  },
+  "repair_plan": {
+    "safe_auto_count": 10,
+    "manual_review_count": 10,
+    "safe_auto_summary": {
+      "public-financial-management:insert_missing_question": 10
+    },
+    "manual_review_summary": {
+      "public-financial-management:update_question_fields": 2,
+      "public-service-rules:update_question_fields": 8
+    },
+    "safe_auto": [
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 331,
+        "batch_position": 331,
+        "question": {
+          "question_text": "Which statutory officer is responsible for supervising the accounting operations of all ministries and extra-ministerial offices to ensure compliance with financial rules?",
+          "option_a": "The Head of Civil Service",
+          "option_b": "The Auditor General for the Federation",
+          "option_c": "The Accountant General of the Federation",
+          "option_d": "The Director of Finance and Accounts",
+          "correct_option": "C"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 332,
+        "batch_position": 332,
+        "question": {
+          "question_text": "What is the constitutional or statutory role of the Finance Minister concerning the annual budget?",
+          "option_a": "To audit the budget implementation at the end of the year",
+          "option_b": "To pass the Appropriation Bill into law",
+          "option_c": "To investigate corruption allegations against accounting officers",
+          "option_d": "To prepare and present the budget estimates to the legislature on behalf of the President",
+          "correct_option": "D"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 333,
+        "batch_position": 333,
+        "question": {
+          "question_text": "Which of the following documents is the Director of Finance and Accounts (DFA) required to prepare periodically to aid the Accounting Officer in monitoring the ministry's budget?",
+          "option_a": "The National Economic Blueprint",
+          "option_b": "The Federation Account Allocation Committee (FAAC) Report",
+          "option_c": "The Annual Audit Report",
+          "option_d": "Monthly Expenditure Returns / Revenue and Expenditure Transcripts",
+          "correct_option": "D"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 334,
+        "batch_position": 334,
+        "question": {
+          "question_text": "In terms of administrative reporting, why is the Head of Internal Audit expected to have a direct line of communication with the Accounting Officer?",
+          "option_a": "To ensure independence and objectivity in reviewing financial controls and transactions",
+          "option_b": "To assist the Accounting Officer in approving payments",
+          "option_c": "To help in drafting fiscal policies for the Ministry",
+          "option_d": "To take over administrative control when the Permanent Secretary is away.",
+          "correct_option": "A"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 335,
+        "batch_position": 335,
+        "question": {
+          "question_text": "According to the Financial Regulations, when should a Revenue Collector remit the funds they have collected to the Sub-Treasurer or designated bank?",
+          "option_a": "Once a week, specifically on Fridays",
+          "option_b": "At the end of every month",
+          "option_c": "Daily or at stipulated regular intervals",
+          "option_d": "Whenever their receipt book is completely filled up",
+          "correct_option": "C"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 336,
+        "batch_position": 336,
+        "question": {
+          "question_text": "Under the Pension Reform Act, which category of federal public service employees remains exempted from the Contributory Pension Scheme (CPS) and is still covered under the old Defined Benefits Scheme (DBS)?",
+          "option_a": "All civil servants who joined the service after June 2004.",
+          "option_b": "Only officers who have attained Salary Grade Level 15 and above.",
+          "option_c": "All employees of federal parastatals and research institutes.",
+          "option_d": "Judicial officers, members of the Armed Forces, and employees who had 3 years or less to retire as of June 2004.",
+          "correct_option": "D"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 337,
+        "batch_position": 337,
+        "question": {
+          "question_text": "According to the revised provisions of the Pension Reform Act, what is the mandatory minimum percentage of an employee's monthly emoluments that the Federal Government (Employer) and the Civil Servant (Employee) must contribute respectively into the Retirement Savings Account (RSA)?",
+          "option_a": "7.5% by the Employer; 7.5% by the Employee.",
+          "option_b": "12% by the Employer; 6% by the Employee.",
+          "option_c": "10% by the Employer; 8% by the Employee.",
+          "option_d": "15% by the Employer; 5% by the Employee.",
+          "correct_option": "C"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 338,
+        "batch_position": 338,
+        "question": {
+          "question_text": "Which organ of the Federal Government is legally mandated to oversee the direct administration, verification, and payment of pensions to retirees under the old Defined Benefits Scheme (DBS)?",
+          "option_a": "National Pension Commission (PENCOM)",
+          "option_b": "Office of the Head of the Civil Service of the Federation (OHCSF)",
+          "option_c": "Federal Civil Service Commission (FCSC)",
+          "option_d": "Pension Transitional Arrangement Directorate (PTAD)",
+          "correct_option": "D"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 339,
+        "batch_position": 339,
+        "question": {
+          "question_text": "From a public finance perspective, what is the fundamental structural difference between the funding mechanisms of the DBS and the CPS that prompted the 2004 pension reform?",
+          "option_a": "DBS relies on a \"Pay-As-You-Go\" budgetary allocation from the Consolidated Revenue Fund, while CPS is a fully funded, individualized asset scheme.",
+          "option_b": "DBS is fully funded by private insurance companies, while CPS is funded by the Central Bank.",
+          "option_c": "DBS allows civil servants to withdraw 100% of their cash at any time, while CPS freezes all funds until age 70.",
+          "option_d": "CPS is entirely optional for junior staff, whereas DBS was mandatory for all.",
+          "correct_option": "A"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      },
+      {
+        "action": "insert_missing_question",
+        "slug": "public-financial-management",
+        "source_number": 340,
+        "batch_position": 340,
+        "question": {
+          "question_text": "Under the Contributory Pension Scheme, an officer who is disengaged from the civil service or retires before the age of 50, and is unable to secure another job within four (4) months, is legally permitted to withdraw what maximum percentage from their RSA balance?",
+          "option_a": "10% as a temporary relief fund.",
+          "option_b": "25% of the total balance as a lump sum.",
+          "option_c": "50% of the total balance to start a business.",
+          "option_d": "No withdrawal is permitted under any circumstances until the officer reaches age 60.",
+          "correct_option": "B"
+        },
+        "reason": "Source question is not present in the published DB rows for this module.",
+        "classification_reason": "Source question is missing from DB and has complete objective fields."
+      }
+    ],
+    "manual_review": [
+      {
+        "action": "update_question_fields",
+        "slug": "public-financial-management",
+        "db_id": "14fb4ea5-d26c-42b8-92fd-6357beffd98b",
+        "source_number": 105,
+        "batch_number": 4,
+        "batch_position": 15,
+        "question_text": "Federation Account maintains...............after the revenue sharing at the end of every month.",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "Deficit Balance",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-financial-management",
+        "db_id": "4d744014-41e9-4040-af92-8d4cd8722cbe",
+        "source_number": 110,
+        "batch_number": 4,
+        "batch_position": 20,
+        "question_text": "The membership of the Plenary Session comprise the any of the following:",
+        "changes": [
+          {
+            "field": "option_c",
+            "from": "ONLY the States' Accountant General as well as States' Commissioner for Finance.",
+            "to": "All of the above."
+          },
+          {
+            "field": "option_d",
+            "from": "All of the above.",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_c, option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "da39780f-1149-491e-b5c1-f994e9f10b7c",
+        "source_number": 1,
+        "batch_number": 1,
+        "batch_position": 1,
+        "question_text": "All officers must take the confirmation examination within...........years from the date of assuming duty.",
+        "changes": [
+          {
+            "field": "correct_option",
+            "from": "D",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Source correct_option is not A, B, C, or D; answer-key verification required."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "52a9a580-2fae-4535-839b-e89eebada52f",
+        "source_number": 66,
+        "batch_number": 4,
+        "batch_position": 6,
+        "question_text": "Any Officer that fails to proceed on posting would be regarded as a ...............",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "Complicity",
+            "to": "Complicity c Connivance"
+          },
+          {
+            "field": "option_c",
+            "from": "Connivance",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_c."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "c5073bfc-4b3b-43cf-9f85-2179baccbefc",
+        "source_number": 84,
+        "batch_number": 5,
+        "batch_position": 4,
+        "question_text": "Public Service of the Federation is.........................",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+            "to": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc."
+          },
+          {
+            "field": "option_c",
+            "from": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_c."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "aecac819-8c86-4007-813b-e0f9376d9220",
+        "source_number": 137,
+        "batch_number": 7,
+        "batch_position": 17,
+        "question_text": "The following officers are entitled to responsibility allowance except:",
+        "changes": [
+          {
+            "field": "option_d",
+            "from": "[MISSING IN SOURCE — REVIEW REQUIRED]",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "ec99d3b4-95d0-40cf-b4d0-d826c83ead12",
+        "source_number": 139,
+        "batch_number": 7,
+        "batch_position": 19,
+        "question_text": "Payment for overtime on weekends would be at the rate of ................of the normal overtime rate whereas on public holidays, the rate would be ............ the normal overtime rate.",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "3.5 percent, triple",
+            "to": "0.9 percent, Quadruple"
+          },
+          {
+            "field": "option_d",
+            "from": "0.9 percent, Quadruple",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "99e05f3a-2907-4c2a-ad90-644ad720f0ce",
+        "source_number": 157,
+        "batch_number": 8,
+        "batch_position": 17,
+        "question_text": "The Chairman of the Junior Staff Committee (Headquarters) must me the Director, Personnel/Human Resources Management with other members not below Salary Grade Level 12 and ............................",
+        "changes": [
+          {
+            "field": "option_a",
+            "from": "a Representative of the Ministry of Labour and Employment.",
+            "to": "a Representative of the Ministry of Labour and Employment. b a Representative of the Office of the Head of the Civil Service of the Federation"
+          },
+          {
+            "field": "option_b",
+            "from": "a Representative of the Office of the Head of the Civil Service of the Federation",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_a, option_b."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "719da2eb-c362-47f0-add3-92a3eaef5100",
+        "source_number": 293,
+        "batch_number": 15,
+        "batch_position": 13,
+        "question_text": "What is the maximum statutory timeline required for an officer to submit a written representation in response to an official query?",
+        "changes": [
+          {
+            "field": "option_d",
+            "from": "36 hours.",
+            "to": "36 hours. e."
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "b447bc6f-de04-4528-8a80-8be203ba2d21",
+        "source_number": 299,
+        "batch_number": 15,
+        "batch_position": 19,
+        "question_text": "An officer in the Nigerian Public Service can proceed on voluntary retirement after reaching what minimum age?",
+        "changes": [
+          {
+            "field": "option_c",
+            "from": "55 years",
+            "to": "50 years"
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_c."
+      }
+    ]
+  },
+  "replacement_plan": {
+    "replacement_set_count": 0,
+    "groups": []
+  },
+  "missing_question_plan": {
+    "target_set_count": 1,
+    "groups": [
+      {
+        "slug": "public-financial-management",
+        "target_set_number": 12,
+        "target_practice_set_id": "68981abb-da15-43e1-8428-cb7e280f8a31",
+        "target_set_status": "withdrawn",
+        "expected_question_count": 10,
+        "missing_questions": [
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 331,
+            "batch_position": 331,
+            "question": {
+              "question_text": "Which statutory officer is responsible for supervising the accounting operations of all ministries and extra-ministerial offices to ensure compliance with financial rules?",
+              "option_a": "The Head of Civil Service",
+              "option_b": "The Auditor General for the Federation",
+              "option_c": "The Accountant General of the Federation",
+              "option_d": "The Director of Finance and Accounts",
+              "correct_option": "C"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 1
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 332,
+            "batch_position": 332,
+            "question": {
+              "question_text": "What is the constitutional or statutory role of the Finance Minister concerning the annual budget?",
+              "option_a": "To audit the budget implementation at the end of the year",
+              "option_b": "To pass the Appropriation Bill into law",
+              "option_c": "To investigate corruption allegations against accounting officers",
+              "option_d": "To prepare and present the budget estimates to the legislature on behalf of the President",
+              "correct_option": "D"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 2
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 333,
+            "batch_position": 333,
+            "question": {
+              "question_text": "Which of the following documents is the Director of Finance and Accounts (DFA) required to prepare periodically to aid the Accounting Officer in monitoring the ministry's budget?",
+              "option_a": "The National Economic Blueprint",
+              "option_b": "The Federation Account Allocation Committee (FAAC) Report",
+              "option_c": "The Annual Audit Report",
+              "option_d": "Monthly Expenditure Returns / Revenue and Expenditure Transcripts",
+              "correct_option": "D"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 3
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 334,
+            "batch_position": 334,
+            "question": {
+              "question_text": "In terms of administrative reporting, why is the Head of Internal Audit expected to have a direct line of communication with the Accounting Officer?",
+              "option_a": "To ensure independence and objectivity in reviewing financial controls and transactions",
+              "option_b": "To assist the Accounting Officer in approving payments",
+              "option_c": "To help in drafting fiscal policies for the Ministry",
+              "option_d": "To take over administrative control when the Permanent Secretary is away.",
+              "correct_option": "A"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 4
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 335,
+            "batch_position": 335,
+            "question": {
+              "question_text": "According to the Financial Regulations, when should a Revenue Collector remit the funds they have collected to the Sub-Treasurer or designated bank?",
+              "option_a": "Once a week, specifically on Fridays",
+              "option_b": "At the end of every month",
+              "option_c": "Daily or at stipulated regular intervals",
+              "option_d": "Whenever their receipt book is completely filled up",
+              "correct_option": "C"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 5
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 336,
+            "batch_position": 336,
+            "question": {
+              "question_text": "Under the Pension Reform Act, which category of federal public service employees remains exempted from the Contributory Pension Scheme (CPS) and is still covered under the old Defined Benefits Scheme (DBS)?",
+              "option_a": "All civil servants who joined the service after June 2004.",
+              "option_b": "Only officers who have attained Salary Grade Level 15 and above.",
+              "option_c": "All employees of federal parastatals and research institutes.",
+              "option_d": "Judicial officers, members of the Armed Forces, and employees who had 3 years or less to retire as of June 2004.",
+              "correct_option": "D"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 6
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 337,
+            "batch_position": 337,
+            "question": {
+              "question_text": "According to the revised provisions of the Pension Reform Act, what is the mandatory minimum percentage of an employee's monthly emoluments that the Federal Government (Employer) and the Civil Servant (Employee) must contribute respectively into the Retirement Savings Account (RSA)?",
+              "option_a": "7.5% by the Employer; 7.5% by the Employee.",
+              "option_b": "12% by the Employer; 6% by the Employee.",
+              "option_c": "10% by the Employer; 8% by the Employee.",
+              "option_d": "15% by the Employer; 5% by the Employee.",
+              "correct_option": "C"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 7
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 338,
+            "batch_position": 338,
+            "question": {
+              "question_text": "Which organ of the Federal Government is legally mandated to oversee the direct administration, verification, and payment of pensions to retirees under the old Defined Benefits Scheme (DBS)?",
+              "option_a": "National Pension Commission (PENCOM)",
+              "option_b": "Office of the Head of the Civil Service of the Federation (OHCSF)",
+              "option_c": "Federal Civil Service Commission (FCSC)",
+              "option_d": "Pension Transitional Arrangement Directorate (PTAD)",
+              "correct_option": "D"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 8
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 339,
+            "batch_position": 339,
+            "question": {
+              "question_text": "From a public finance perspective, what is the fundamental structural difference between the funding mechanisms of the DBS and the CPS that prompted the 2004 pension reform?",
+              "option_a": "DBS relies on a \"Pay-As-You-Go\" budgetary allocation from the Consolidated Revenue Fund, while CPS is a fully funded, individualized asset scheme.",
+              "option_b": "DBS is fully funded by private insurance companies, while CPS is funded by the Central Bank.",
+              "option_c": "DBS allows civil servants to withdraw 100% of their cash at any time, while CPS freezes all funds until age 70.",
+              "option_d": "CPS is entirely optional for junior staff, whereas DBS was mandatory for all.",
+              "correct_option": "A"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 9
+          },
+          {
+            "action": "insert_missing_question",
+            "slug": "public-financial-management",
+            "source_number": 340,
+            "batch_position": 340,
+            "question": {
+              "question_text": "Under the Contributory Pension Scheme, an officer who is disengaged from the civil service or retires before the age of 50, and is unable to secure another job within four (4) months, is legally permitted to withdraw what maximum percentage from their RSA balance?",
+              "option_a": "10% as a temporary relief fund.",
+              "option_b": "25% of the total balance as a lump sum.",
+              "option_c": "50% of the total balance to start a business.",
+              "option_d": "No withdrawal is permitted under any circumstances until the officer reaches age 60.",
+              "correct_option": "B"
+            },
+            "reason": "Source question is not present in the published DB rows for this module.",
+            "classification_reason": "Source question is missing from DB and has complete objective fields.",
+            "target_batch_position": 10
+          }
+        ],
+        "insert_count": 10,
+        "max_target_batch_position": 10,
+        "proposed_expected_question_count": 10,
+        "execution_outline": [
+          "use existing withdrawn practice set 12",
+          "admin_import_questions(target_practice_set_id, missing_questions)",
+          "admin_transition_practice_set_v2(target_practice_set_id, 'review')",
+          "admin_transition_practice_set_v2(target_practice_set_id, 'published') or existing publish flow"
+        ]
+      }
+    ]
+  }
+}

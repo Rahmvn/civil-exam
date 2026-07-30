@@ -1,0 +1,488 @@
+{
+  "generated_at": "2026-07-29T22:58:15.351Z",
+  "mode": "dry-run",
+  "source_file": "C:\\Users\\USER\\Downloads\\2026 PROMOTION (FINANCIAL REGULATIONS, PSR & CURRENT AFFAIRS) (1).txt",
+  "target_host": "beapcfiofyrhsxwxcmyd.supabase.co",
+  "note": "No database writes were performed. Objective explanation/reference/source fields are intentionally optional.",
+  "totals": {
+    "objective_rows_in_db": 1310,
+    "oral_rows_in_db": 80,
+    "practice_sets_in_db": 76,
+    "proposed_objective_actions": 10,
+    "safe_auto_objective_actions": 0,
+    "manual_review_objective_actions": 10,
+    "objective_warnings": 1,
+    "oral_warnings": 0
+  },
+  "objective": {
+    "public-financial-management": {
+      "slug": "public-financial-management",
+      "source_count": 340,
+      "db_published_count": 340,
+      "proposed_count": 2,
+      "warning_count": 0,
+      "proposed": [
+        {
+          "action": "update_question_fields",
+          "slug": "public-financial-management",
+          "db_id": "14fb4ea5-d26c-42b8-92fd-6357beffd98b",
+          "source_number": 105,
+          "batch_number": 4,
+          "batch_position": 15,
+          "question_text": "Federation Account maintains...............after the revenue sharing at the end of every month.",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "Deficit Balance",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-financial-management",
+          "db_id": "4d744014-41e9-4040-af92-8d4cd8722cbe",
+          "source_number": 110,
+          "batch_number": 4,
+          "batch_position": 20,
+          "question_text": "The membership of the Plenary Session comprise the any of the following:",
+          "changes": [
+            {
+              "field": "option_c",
+              "from": "ONLY the States' Accountant General as well as States' Commissioner for Finance.",
+              "to": "All of the above."
+            },
+            {
+              "field": "option_d",
+              "from": "All of the above.",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        }
+      ],
+      "warnings": []
+    },
+    "public-service-rules": {
+      "slug": "public-service-rules",
+      "source_count": 360,
+      "db_published_count": 360,
+      "proposed_count": 8,
+      "warning_count": 1,
+      "proposed": [
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "da39780f-1149-491e-b5c1-f994e9f10b7c",
+          "source_number": 1,
+          "batch_number": 1,
+          "batch_position": 1,
+          "question_text": "All officers must take the confirmation examination within...........years from the date of assuming duty.",
+          "changes": [
+            {
+              "field": "correct_option",
+              "from": "D",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "52a9a580-2fae-4535-839b-e89eebada52f",
+          "source_number": 66,
+          "batch_number": 4,
+          "batch_position": 6,
+          "question_text": "Any Officer that fails to proceed on posting would be regarded as a ...............",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "Complicity",
+              "to": "Complicity c Connivance"
+            },
+            {
+              "field": "option_c",
+              "from": "Connivance",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "c5073bfc-4b3b-43cf-9f85-2179baccbefc",
+          "source_number": 84,
+          "batch_number": 5,
+          "batch_position": 4,
+          "question_text": "Public Service of the Federation is.........................",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+              "to": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc."
+            },
+            {
+              "field": "option_c",
+              "from": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "aecac819-8c86-4007-813b-e0f9376d9220",
+          "source_number": 137,
+          "batch_number": 7,
+          "batch_position": 17,
+          "question_text": "The following officers are entitled to responsibility allowance except:",
+          "changes": [
+            {
+              "field": "option_d",
+              "from": "[MISSING IN SOURCE — REVIEW REQUIRED]",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "ec99d3b4-95d0-40cf-b4d0-d826c83ead12",
+          "source_number": 139,
+          "batch_number": 7,
+          "batch_position": 19,
+          "question_text": "Payment for overtime on weekends would be at the rate of ................of the normal overtime rate whereas on public holidays, the rate would be ............ the normal overtime rate.",
+          "changes": [
+            {
+              "field": "option_b",
+              "from": "3.5 percent, triple",
+              "to": "0.9 percent, Quadruple"
+            },
+            {
+              "field": "option_d",
+              "from": "0.9 percent, Quadruple",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "99e05f3a-2907-4c2a-ad90-644ad720f0ce",
+          "source_number": 157,
+          "batch_number": 8,
+          "batch_position": 17,
+          "question_text": "The Chairman of the Junior Staff Committee (Headquarters) must me the Director, Personnel/Human Resources Management with other members not below Salary Grade Level 12 and ............................",
+          "changes": [
+            {
+              "field": "option_a",
+              "from": "a Representative of the Ministry of Labour and Employment.",
+              "to": "a Representative of the Ministry of Labour and Employment. b a Representative of the Office of the Head of the Civil Service of the Federation"
+            },
+            {
+              "field": "option_b",
+              "from": "a Representative of the Office of the Head of the Civil Service of the Federation",
+              "to": ""
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "719da2eb-c362-47f0-add3-92a3eaef5100",
+          "source_number": 293,
+          "batch_number": 15,
+          "batch_position": 13,
+          "question_text": "What is the maximum statutory timeline required for an officer to submit a written representation in response to an official query?",
+          "changes": [
+            {
+              "field": "option_d",
+              "from": "36 hours.",
+              "to": "36 hours. e."
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        },
+        {
+          "action": "update_question_fields",
+          "slug": "public-service-rules",
+          "db_id": "b447bc6f-de04-4528-8a80-8be203ba2d21",
+          "source_number": 299,
+          "batch_number": 15,
+          "batch_position": 19,
+          "question_text": "An officer in the Nigerian Public Service can proceed on voluntary retirement after reaching what minimum age?",
+          "changes": [
+            {
+              "field": "option_c",
+              "from": "55 years",
+              "to": "50 years"
+            }
+          ],
+          "reason": "DB row differs from the parsed source row."
+        }
+      ],
+      "warnings": [
+        {
+          "type": "duplicate_db_question_text",
+          "slug": "public-service-rules",
+          "count": 2,
+          "question_text": "Which body is primarily responsible for the final approval of conversion of officers on Grade Level 07 to 13 in the Federal Civil Service?",
+          "db_ids": [
+            "6f0a5c06-7f3d-4898-97a8-996d9b714532",
+            "e0b66435-572a-42e1-bb73-49c5a8060910"
+          ],
+          "positions": [
+            20,
+            11
+          ]
+        }
+      ]
+    },
+    "current-affairs": {
+      "slug": "current-affairs",
+      "source_count": 220,
+      "db_published_count": 220,
+      "proposed_count": 0,
+      "warning_count": 0,
+      "proposed": [],
+      "warnings": []
+    }
+  },
+  "oral": {
+    "oral_count": 80,
+    "warnings": [],
+    "summary": {}
+  },
+  "repair_plan": {
+    "safe_auto_count": 0,
+    "manual_review_count": 10,
+    "safe_auto_summary": {},
+    "manual_review_summary": {
+      "public-financial-management:update_question_fields": 2,
+      "public-service-rules:update_question_fields": 8
+    },
+    "safe_auto": [],
+    "manual_review": [
+      {
+        "action": "update_question_fields",
+        "slug": "public-financial-management",
+        "db_id": "14fb4ea5-d26c-42b8-92fd-6357beffd98b",
+        "source_number": 105,
+        "batch_number": 4,
+        "batch_position": 15,
+        "question_text": "Federation Account maintains...............after the revenue sharing at the end of every month.",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "Deficit Balance",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-financial-management",
+        "db_id": "4d744014-41e9-4040-af92-8d4cd8722cbe",
+        "source_number": 110,
+        "batch_number": 4,
+        "batch_position": 20,
+        "question_text": "The membership of the Plenary Session comprise the any of the following:",
+        "changes": [
+          {
+            "field": "option_c",
+            "from": "ONLY the States' Accountant General as well as States' Commissioner for Finance.",
+            "to": "All of the above."
+          },
+          {
+            "field": "option_d",
+            "from": "All of the above.",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_c, option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "da39780f-1149-491e-b5c1-f994e9f10b7c",
+        "source_number": 1,
+        "batch_number": 1,
+        "batch_position": 1,
+        "question_text": "All officers must take the confirmation examination within...........years from the date of assuming duty.",
+        "changes": [
+          {
+            "field": "correct_option",
+            "from": "D",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Source correct_option is not A, B, C, or D; answer-key verification required."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "52a9a580-2fae-4535-839b-e89eebada52f",
+        "source_number": 66,
+        "batch_number": 4,
+        "batch_position": 6,
+        "question_text": "Any Officer that fails to proceed on posting would be regarded as a ...............",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "Complicity",
+            "to": "Complicity c Connivance"
+          },
+          {
+            "field": "option_c",
+            "from": "Connivance",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_c."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "c5073bfc-4b3b-43cf-9f85-2179baccbefc",
+        "source_number": 84,
+        "batch_number": 5,
+        "batch_position": 4,
+        "question_text": "Public Service of the Federation is.........................",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "The service of the Federation in any capacity in respect of the Government of the Federation as defined in part 4 Section 318 of 1999 Constitution (as amended).",
+            "to": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc."
+          },
+          {
+            "field": "option_c",
+            "from": "All staff of the Nigerian National Petroleum Corporation (NNPC) Plc.",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_c."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "aecac819-8c86-4007-813b-e0f9376d9220",
+        "source_number": 137,
+        "batch_number": 7,
+        "batch_position": 17,
+        "question_text": "The following officers are entitled to responsibility allowance except:",
+        "changes": [
+          {
+            "field": "option_d",
+            "from": "[MISSING IN SOURCE — REVIEW REQUIRED]",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "ec99d3b4-95d0-40cf-b4d0-d826c83ead12",
+        "source_number": 139,
+        "batch_number": 7,
+        "batch_position": 19,
+        "question_text": "Payment for overtime on weekends would be at the rate of ................of the normal overtime rate whereas on public holidays, the rate would be ............ the normal overtime rate.",
+        "changes": [
+          {
+            "field": "option_b",
+            "from": "3.5 percent, triple",
+            "to": "0.9 percent, Quadruple"
+          },
+          {
+            "field": "option_d",
+            "from": "0.9 percent, Quadruple",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_b, option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "99e05f3a-2907-4c2a-ad90-644ad720f0ce",
+        "source_number": 157,
+        "batch_number": 8,
+        "batch_position": 17,
+        "question_text": "The Chairman of the Junior Staff Committee (Headquarters) must me the Director, Personnel/Human Resources Management with other members not below Salary Grade Level 12 and ............................",
+        "changes": [
+          {
+            "field": "option_a",
+            "from": "a Representative of the Ministry of Labour and Employment.",
+            "to": "a Representative of the Ministry of Labour and Employment. b a Representative of the Office of the Head of the Civil Service of the Federation"
+          },
+          {
+            "field": "option_b",
+            "from": "a Representative of the Office of the Head of the Civil Service of the Federation",
+            "to": ""
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_a, option_b."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "719da2eb-c362-47f0-add3-92a3eaef5100",
+        "source_number": 293,
+        "batch_number": 15,
+        "batch_position": 13,
+        "question_text": "What is the maximum statutory timeline required for an officer to submit a written representation in response to an official query?",
+        "changes": [
+          {
+            "field": "option_d",
+            "from": "36 hours.",
+            "to": "36 hours. e."
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_d."
+      },
+      {
+        "action": "update_question_fields",
+        "slug": "public-service-rules",
+        "db_id": "b447bc6f-de04-4528-8a80-8be203ba2d21",
+        "source_number": 299,
+        "batch_number": 15,
+        "batch_position": 19,
+        "question_text": "An officer in the Nigerian Public Service can proceed on voluntary retirement after reaching what minimum age?",
+        "changes": [
+          {
+            "field": "option_c",
+            "from": "55 years",
+            "to": "50 years"
+          }
+        ],
+        "reason": "DB row differs from the parsed source row.",
+        "classification_reason": "Field changes require human review: option_c."
+      }
+    ]
+  },
+  "replacement_plan": {
+    "replacement_set_count": 0,
+    "groups": []
+  },
+  "missing_question_plan": {
+    "target_set_count": 0,
+    "groups": []
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "generated_at": "2026-07-29T22:36:18.712Z",
+  "mode": "dry-run",
+  "service_direct": true,
+  "plan_file": "C:\\dev\\civil-exam-app\\artifacts\\replacement-and-tail-set-dry-run-plan.json",
+  "target_host": "beapcfiofyrhsxwxcmyd.supabase.co",
+  "skipped_tail_slugs": [
+    "public-service-rules"
+  ],
+  "results": [
+    {
+      "type": "replacement",
+      "slug": "public-financial-management",
+      "source_practice_set_id": "b27606b0-3c57-4296-b281-4cbc42733247",
+      "set_number": 10,
+      "dry_run": true,
+      "operations": [
+        "Would create replacement for b27606b0-3c57-4296-b281-4cbc42733247",
+        "Would update 3 copied draft question(s)",
+        "Would transition replacement to review",
+        "Would publish replacement"
+      ]
+    },
+    {
+      "type": "replacement",
+      "slug": "public-financial-management",
+      "source_practice_set_id": "bce97ce7-d9fc-43e8-a320-df5f726a1d25",
+      "set_number": 11,
+      "dry_run": true,
+      "operations": [
+        "Would create replacement for bce97ce7-d9fc-43e8-a320-df5f726a1d25",
+        "Would update 24 copied draft question(s)",
+        "Would transition replacement to review",
+        "Would publish replacement"
+      ]
+    },
+    {
+      "type": "replacement",
+      "slug": "public-service-rules",
+      "source_practice_set_id": "c4236fb2-cccc-41da-917b-77b1e6a4c243",
+      "set_number": 1,
+      "dry_run": true,
+      "operations": [
+        "Would create replacement for c4236fb2-cccc-41da-917b-77b1e6a4c243",
+        "Would update 1 copied draft question(s)",
+        "Would transition replacement to review",
+        "Would publish replacement"
+      ]
+    },
+    {
+      "type": "missing_tail_set",
+      "slug": "current-affairs",
+      "set_number": 11,
+      "dry_run": true,
+      "operations": [
+        "Would use existing draft set d77b0ce0-5e21-4648-9a05-3c349b84b1f2",
+        "Would import 20 missing question(s)",
+        "Would transition set to review",
+        "Would publish set"
+      ]
+    },
+    {
+      "type": "missing_tail_set",
+      "slug": "public-financial-management",
+      "set_number": 12,
+      "dry_run": true,
+      "operations": [
+        "Would create set 12 with expected 10",
+        "Would import 10 missing question(s)",
+        "Would transition set to review",
+        "Would publish set"
+      ]
+    },
+    {
+      "type": "missing_tail_set_direct",
+      "slug": "public-service-rules",
+      "set_number": 18,
+      "skipped": true,
+      "reason": "Skipped because this tail set has an unresolved manual-review source row."
+    }
+  ]
+}

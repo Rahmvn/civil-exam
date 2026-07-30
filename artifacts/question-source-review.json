@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-07-29T21:58:44.727Z",
+  "scope": "tracked source JSON files, not live DB",
+  "counts": [
+    {
+      "file": "content\\questions\\current-affairs.json",
+      "count": 3
+    },
+    {
+      "file": "content\\questions\\public-financial-management.json",
+      "count": 3
+    },
+    {
+      "file": "content\\questions\\public-service-rules.json",
+      "count": 3
+    },
+    {
+      "file": "contents\\import-ready\\public-financial-management.batch1.cleaned.json",
+      "count": 30
+    },
+    {
+      "file": "contents\\import-ready\\public-financial-management.batch2.cleaned.json",
+      "count": 30
+    },
+    {
+      "file": "contents\\import-ready\\public-financial-management.batch3.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch1.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch2.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch3.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch4.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch5.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch6.cleaned.json",
+      "count": 20
+    },
+    {
+      "file": "contents\\import-ready\\public-service-rules.batch7.cleaned.json",
+      "count": 20
+    }
+  ],
+  "issueSummary": {
+    "bySeverity": {
+      "low": 6
+    },
+    "byType": {
+      "question_punctuation": 6
+    }
+  },
+  "issues": [
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-financial-management.batch3.cleaned.json",
+      "index": 12,
+      "subject": "public-financial-management",
+      "status": "draft",
+      "batch": 3,
+      "position": 12,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "Who endorsed the Preface of the 2009 Financial Regulations."
+    },
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-service-rules.batch1.cleaned.json",
+      "index": 2,
+      "subject": "public-service-rules",
+      "status": "draft",
+      "batch": 1,
+      "position": 2,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "Where Gazette of 1st Appointment and Confirmation of Appointment are not ready within.........years, COMPRO examination result should be used in their place."
+    },
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-service-rules.batch2.cleaned.json",
+      "index": 20,
+      "subject": "public-service-rules",
+      "status": "draft",
+      "batch": 2,
+      "position": 20,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "When a newly appointed Officer assumes duty, he must enter his personal particulars on.........."
+    },
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-service-rules.batch3.cleaned.json",
+      "index": 2,
+      "subject": "public-service-rules",
+      "status": "draft",
+      "batch": 3,
+      "position": 2,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "Which of the membership of the following association can be regarded as an act of serious misconduct in the Public Service."
+    },
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-service-rules.batch6.cleaned.json",
+      "index": 6,
+      "subject": "public-service-rules",
+      "status": "draft",
+      "batch": 6,
+      "position": 6,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "When a pensionable officer dies in Service, the Government will pay.......percent of his total annual emolument to the deceased family as burial expenses."
+    },
+    {
+      "severity": "low",
+      "type": "question_punctuation",
+      "file": "contents\\import-ready\\public-service-rules.batch6.cleaned.json",
+      "index": 9,
+      "subject": "public-service-rules",
+      "status": "draft",
+      "batch": 6,
+      "position": 9,
+      "detail": "Interrogative wording without final question mark",
+      "question_text": "Where medical treatment is to occur in Nigeria but outside the Officer's duty post, he must be provided with.........at the prevailing rate."
+    }
+  ]
+}
