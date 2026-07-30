@@ -60,11 +60,27 @@ test("sitemap contains only intentional public routes", async () => {
 test("source homepage exposes canonical metadata and entity data without JavaScript", async () => {
   const html = await readFile(projectFile("index.html"), "utf8");
 
+  assert.match(html, /rel="icon" href="\/favicon\.ico" sizes="any"/);
+  assert.match(html, /rel="icon" type="image\/png" href="\/favicon-48x48\.png" sizes="48x48"/);
+  assert.match(html, /rel="apple-touch-icon" href="\/apple-touch-icon\.png" sizes="180x180"/);
+  assert.match(html, /rel="manifest" href="\/site\.webmanifest"/);
   assert.match(html, /rel="canonical" href="https:\/\/promotionsure\.com\.ng\/"/);
   assert.match(html, /name="robots" content="index, follow, max-image-preview:large"/);
   assert.match(html, /property="og:url" content="https:\/\/promotionsure\.com\.ng\/"/);
   assert.match(html, /"@type": "WebSite"/);
   assert.match(html, /"@type": "OnlineBusiness"/);
+});
+
+test("public favicon assets include crawler-friendly square icons", async () => {
+  const manifest = JSON.parse(await readFile(projectFile("public/site.webmanifest"), "utf8"));
+  const iconSizes = manifest.icons.map((icon) => icon.sizes);
+
+  assert.ok(iconSizes.includes("48x48"));
+  assert.ok(iconSizes.includes("96x96"));
+  assert.ok(iconSizes.includes("192x192"));
+  await readFile(projectFile("public/favicon.ico"));
+  await readFile(projectFile("public/favicon-48x48.png"));
+  await readFile(projectFile("public/apple-touch-icon.png"));
 });
 
 test("deployment serves explicit public snapshots and does not rewrite unknown URLs", async () => {

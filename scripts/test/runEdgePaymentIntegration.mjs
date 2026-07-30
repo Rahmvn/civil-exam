@@ -76,6 +76,39 @@ function refreshLocalGateway() {
   if (restarted.status !== 0) fail(`Could not refresh the local Supabase gateway: ${restarted.stderr}`);
 }
 
+function resetLocalEdgeRateLimits(userIds) {
+  if (!userIds.every((userId) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId))) {
+    fail("Refusing to reset edge rate limits for invalid local test user ids.");
+  }
+
+  const containers = spawnSync("docker", ["ps", "--filter", "name=supabase_db_", "--format", "{{.Names}}"], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  const database = containers.stdout?.split(/\r?\n/).find(Boolean);
+  if (!database) fail("The local Supabase database container is not running.");
+
+  const quotedUserIds = userIds.map((userId) => `'${userId}'`).join(",");
+  const reset = spawnSync("docker", [
+    "exec",
+    database,
+    "psql",
+    "-U",
+    "postgres",
+    "-d",
+    "postgres",
+    "-c",
+    `delete from private.edge_rate_limits where user_id in (${quotedUserIds});`,
+  ], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+
+  if (reset.status !== 0) {
+    fail(`Could not reset local edge payment rate limits: ${reset.stderr || reset.stdout}`);
+  }
+}
+
 async function jsonBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -268,6 +301,8 @@ async function main() {
       fail(`Second payment test sign-in failed: ${otherLogin.error?.message ?? "no session"}`);
     }
     const otherToken = otherLogin.data.session.access_token;
+    const otherUserId = otherLogin.data.user.id;
+    resetLocalEdgeRateLimits([userId, otherUserId]);
 
     const unauthenticated = await invoke(apiUrl, "initialize-paystack-payment", null, { subject_slug: "public-financial-management" });
     if (unauthenticated.ok) fail("Unauthenticated payment initialization was accepted.");
@@ -360,6 +395,7 @@ async function main() {
     }
     if (pausedPayment?.ok) fail("A paused module was accepted for payment.");
 
+    resetLocalEdgeRateLimits([userId]);
     const oral = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-oral-questions" });
     if (!oral.ok) fail(`Published oral module payment initialization failed: ${await oral.text()}`);
     const oralBody = await oral.json();

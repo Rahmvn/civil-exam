@@ -86,7 +86,7 @@ npm run launch:check
 npm run launch:check:full
 ```
 
-`npm audit --audit-level=high` currently reports a React Router RSC advisory. The app is a Vite client-side SPA and does not use React Router RSC/server APIs, so this is documented as a launch exception in `docs/LAUNCH_READINESS.md`. Do not run `npm audit fix --force` for this advisory.
+`npm run test:security` runs the tracked-secret scan plus a strict dependency audit wrapper. The wrapper currently allows only the documented React Router RSC advisory while the app remains a Vite client-side SPA with no React Router RSC/server APIs. Do not run `npm audit fix --force` for this advisory.
 
 ## Operational smoke checks
 

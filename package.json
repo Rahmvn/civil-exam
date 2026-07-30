@@ -30,7 +30,7 @@
     "test:load:full": "node scripts/test/runLoadTest.mjs --full",
     "test:load:soak": "node scripts/test/runLoadTest.mjs --soak",
     "test:regression": "npm run test:unit && npm run test:db && npm run test:e2e",
-    "test:security": "npm run test:secrets && npm audit --audit-level=high",
+    "test:security": "npm run test:secrets && node scripts/test/checkDependencyAudit.mjs",
     "launch:check": "node scripts/test/runLaunchReadiness.mjs",
     "launch:check:full": "node scripts/test/runLaunchReadiness.mjs --full",
     "test:sdet": "npm run lint && npm run build && npm run test:security && npm run test:unit:coverage && npm run test:db && npm run test:edge && npm run test:e2e && npm run test:load:full",
@@ -52,7 +52,7 @@
     "jspdf": "^4.2.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.1",
+    "react-router-dom": "^7.18.2",
     "ws": "^8.21.0"
   },
   "devDependencies": {

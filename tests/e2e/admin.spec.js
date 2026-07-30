@@ -481,7 +481,7 @@ test("admin payment attention queue identifies paid access mismatches", async ({
   });
 
   await page.goto("/admin/payments");
-  await expect(page.getByRole("heading", { name: "Payment attention", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payment issues", exact: true })).toBeVisible();
   await expect(page.getByText("PS-ATTENTION-E2E", { exact: true })).toBeVisible();
   await expect(page.getByText("Affected Candidate", { exact: true })).toBeVisible();
   await expect(page.getByText("Access issue", { exact: true })).toBeVisible();

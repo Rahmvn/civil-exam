@@ -34,8 +34,6 @@ Deno.serve(async (request) => {
   try {
     const user = await getAuthedUser(request);
     const adminClient = getAdminClient();
-    await enforceEdgeRateLimit(adminClient, user.id, "payment_initialize", 12, 600);
-    const pack = await getActivePack(adminClient);
     const requestBody = await readJsonBody(request, 2_048) as Record<string, unknown>;
     const subjectSlug = requestBody?.subject_slug;
     const expectedPriceKobo = requestBody?.expected_price_kobo;
@@ -47,6 +45,9 @@ Deno.serve(async (request) => {
     ) {
       return jsonResponse({ error: "Choose a module to unlock" }, 400);
     }
+
+    await enforceEdgeRateLimit(adminClient, user.id, "payment_initialize", 12, 600);
+    const pack = await getActivePack(adminClient);
 
     const { offering, subject } = await getModuleOffering(adminClient, pack.id, subjectSlug);
     const existingAccess = await getActiveModuleAccess(
