@@ -6397,14 +6397,14 @@ button.admin-danger-link {
 }
 
 .access-unlock-modal {
-  width: min(520px, 100%);
+  width: min(390px, 100%);
   display: grid;
-  gap: 14px;
-  padding: clamp(22px, 4vw, 28px);
+  gap: 18px;
+  padding: 24px;
   border: 1px solid var(--color-border);
-  border-radius: 24px;
+  border-radius: 18px;
   background: var(--color-surface);
-  box-shadow: 0 24px 70px rgba(10, 31, 24, 0.18);
+  box-shadow: 0 18px 46px rgba(20, 33, 48, 0.14);
 }
 
 .access-unlock-header {
@@ -6419,47 +6419,24 @@ button.admin-danger-link {
 }
 
 .access-unlock-header h2 {
-  margin: 4px 0 6px;
+  margin: 0;
   color: var(--color-text);
-  font-size: clamp(1.42rem, 4vw, 1.9rem);
+  font-size: 1.35rem;
   font-weight: 850;
   letter-spacing: -0.02em;
   text-transform: none;
 }
 
-.access-unlock-header p {
-  max-width: 38ch;
-  margin: 0;
-  color: var(--color-text-soft);
-  font-size: 0.92rem;
-  line-height: 1.55;
-}
-
-.access-unlock-kicker {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-height: 25px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-primary-soft) 72%, white);
-  color: var(--color-primary-dark);
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 button.access-unlock-close {
-  width: 38px;
-  min-width: 38px;
-  min-height: 38px;
+  width: 34px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--color-surface);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
   color: var(--color-text-muted);
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   font-weight: 450;
   line-height: 1;
   text-decoration: none;
@@ -6468,7 +6445,7 @@ button.access-unlock-close {
 
 button.access-unlock-close:hover,
 button.access-unlock-close:focus-visible {
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border);
   background: var(--color-bg);
   color: var(--color-text);
   box-shadow: none;
@@ -6476,37 +6453,17 @@ button.access-unlock-close:focus-visible {
 
 .access-unlock-copy {
   margin: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-bg) 72%, white);
   color: var(--color-text-soft);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
-.access-unlock-value-card {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
-  border-radius: 18px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary-soft) 54%, white), white 72%),
-    var(--color-surface);
-}
-
-.access-unlock-value-card .access-unlock-offer-end {
-  margin: 0;
-}
-
 .access-unlock-price {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 0;
-  border: 0;
+  display: grid;
+  justify-items: center;
+  padding: 4px 0 2px;
+  border: 1px solid var(--color-border);
+  border-inline: 0;
   background: transparent;
 }
 
@@ -6517,58 +6474,36 @@ button.access-unlock-close:focus-visible {
 }
 
 .access-unlock-price strong {
-  color: var(--color-text);
-  font-size: clamp(1.55rem, 5vw, 2rem);
-  font-weight: 850;
-}
-
-.access-unlock-benefits {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  margin: 2px 0;
-}
-
-.access-unlock-benefits span {
-  position: relative;
-  min-height: 36px;
-  padding: 8px 10px 8px 34px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: 0.88rem;
-  font-weight: 750;
-}
-
-.access-unlock-benefits span::before {
-  content: "✓";
-  position: absolute;
-  left: 10px;
-  top: 8px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: white;
-  font-size: 0.72rem;
+  color: var(--color-primary-dark);
+  font-size: clamp(2.1rem, 7vw, 2.65rem);
   font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.access-unlock-price-stack {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.access-unlock-regular-price {
+  color: var(--color-text-muted);
+  font-size: 0.98rem;
+  font-weight: 700;
 }
 
 .access-unlock-actions {
   display: grid;
-  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
-  gap: 10px;
 }
 
 .access-unlock-actions button,
 .access-unlock-actions .secondary-action {
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 0.95rem;
 }
 
@@ -6712,20 +6647,6 @@ button.access-unlock-close:focus-visible {
     overflow: auto;
     padding: 22px 18px max(20px, env(safe-area-inset-bottom));
     border-radius: 22px 22px 0 0;
-  }
-
-  .access-unlock-header {
-    gap: 12px;
-  }
-
-  .access-unlock-value-card {
-    padding: 14px;
-  }
-
-  .access-unlock-price {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
   }
 
   .access-receipt-details > div {
