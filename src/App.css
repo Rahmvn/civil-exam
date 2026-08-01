@@ -14027,9 +14027,9 @@ button.dashboard-module-toggle:focus-visible {
 .module-card-info-button,
 button.module-card-info-button {
   position: relative;
-  width: 22px;
-  min-width: 22px;
-  min-height: 22px;
+  width: 18px;
+  min-width: 18px;
+  min-height: 18px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -14055,8 +14055,8 @@ button.module-card-info-button[aria-expanded="true"] {
 
 .module-card-info-button svg,
 .account-info-hint button svg {
-  width: 15px;
-  height: 15px;
+  width: 12px;
+  height: 12px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -14228,6 +14228,20 @@ button.module-info-close:focus-visible {
   .module-info-facts dd {
     font-size: 0.92rem;
     text-align: left;
+  }
+
+  .module-card-meta-actions {
+    flex: 0 0 auto;
+    max-width: 42%;
+  }
+
+  .module-access-state {
+    order: 1;
+  }
+
+  .module-card-info-button,
+  button.module-card-info-button {
+    order: 2;
   }
 }
 
