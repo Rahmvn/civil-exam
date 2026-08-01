@@ -14027,9 +14027,9 @@ button.dashboard-module-toggle:focus-visible {
 .module-card-info-button,
 button.module-card-info-button {
   position: relative;
-  width: 26px;
-  min-width: 26px;
-  min-height: 26px;
+  width: 22px;
+  min-width: 22px;
+  min-height: 22px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -14048,18 +14048,18 @@ button.module-card-info-button {
 button.module-card-info-button:hover,
 button.module-card-info-button:focus-visible,
 button.module-card-info-button[aria-expanded="true"] {
-  color: var(--color-primary-dark);
-  background: color-mix(in srgb, var(--color-primary-soft) 36%, transparent);
+  color: var(--color-text);
+  background: transparent;
   box-shadow: none;
 }
 
 .module-card-info-button svg,
 .account-info-hint button svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -14183,8 +14183,8 @@ button.module-info-close:focus-visible {
 
   .module-info-dialog {
     width: 100%;
-    gap: 14px;
-    padding: 9px 18px max(18px, env(safe-area-inset-bottom));
+    gap: 16px;
+    padding: 10px 22px max(22px, env(safe-area-inset-bottom));
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
@@ -14194,17 +14194,40 @@ button.module-info-close:focus-visible {
 
   .module-info-handle,
   button.module-info-handle {
-    width: 42px;
-    height: 5px;
-    min-height: 5px;
+    width: 36px;
+    height: 4px;
+    min-height: 4px;
     display: block;
     justify-self: center;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--color-text-muted) 34%, transparent);
+    background: color-mix(in srgb, var(--color-text-muted) 24%, transparent);
   }
 
   button.module-info-close {
     display: none;
+  }
+
+  .module-info-header h2 {
+    font-size: 1.02rem;
+  }
+
+  .module-info-facts {
+    gap: 12px;
+  }
+
+  .module-info-facts div {
+    display: grid;
+    justify-content: stretch;
+    gap: 3px;
+  }
+
+  .module-info-facts dt {
+    font-size: 0.74rem;
+  }
+
+  .module-info-facts dd {
+    font-size: 0.92rem;
+    text-align: left;
   }
 }
 
