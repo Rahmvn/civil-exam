@@ -6470,6 +6470,32 @@ button.access-unlock-close:focus-visible {
   line-height: 1.5;
 }
 
+.access-unlock-includes {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-block: 1px solid var(--color-border);
+}
+
+.access-unlock-includes span {
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.access-unlock-includes ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-soft);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.access-unlock-includes li {
+  padding-left: 2px;
+}
 .access-unlock-price {
   display: grid;
   justify-items: center;

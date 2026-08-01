@@ -378,7 +378,7 @@ export default function Dashboard() {
     return `${selectedCard?.displayName ?? "One module"} selected for free practice.`;
   })();
   const moduleChoiceCopy = !hasSelectedFreeModule
-    ? "Try one module free, or unlock any module now."
+    ? "Try one module free, or unlock any module for all published practice sets."
     : unlockedModuleCount > 0
       ? "Continue practising or unlock another module."
       : "Continue your free module or unlock any module.";

@@ -65,6 +65,14 @@ export function UnlockModuleModal({
           </p>
         )}
 
+        <div className="access-unlock-includes" aria-label="What module access includes">
+          <span>Module access includes</span>
+          <ul>
+            <li>All published practice sets in this module</li>
+            <li>Retries, answer review, and progress tracking</li>
+          </ul>
+        </div>
+
         <p className="access-unlock-copy">
           Pay securely with Paystack. Access opens automatically after payment.
         </p>
