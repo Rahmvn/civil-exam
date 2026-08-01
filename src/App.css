@@ -14011,6 +14011,87 @@ button.dashboard-module-toggle:focus-visible {
   font-size: 1.16rem;
 }
 
+.module-card-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.module-card-title-wrap h3 {
+  min-width: 0;
+}
+
+.module-card-info-button,
+button.module-card-info-button {
+  position: relative;
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.module-card-info-button:hover,
+.module-card-info-button:focus-visible,
+button.module-card-info-button:hover,
+button.module-card-info-button:focus-visible,
+button.module-card-info-button[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+  color: var(--color-primary-dark);
+  box-shadow: none;
+}
+
+.module-card-info-popover {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 8px);
+  left: 50%;
+  width: min(240px, calc(100vw - 40px));
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.42;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition: opacity 160ms ease, transform 160ms ease;
+  box-shadow: 0 14px 34px rgba(20, 33, 48, 0.14);
+}
+
+.module-card-info-popover strong {
+  color: var(--color-text);
+  font-size: 0.82rem;
+}
+
+.module-card-info-popover span {
+  color: var(--color-text-soft);
+}
+
+.module-card-info-button:hover .module-card-info-popover,
+.module-card-info-button:focus-visible .module-card-info-popover,
+.module-card-info-button[aria-expanded="true"] .module-card-info-popover {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
 .module-access-state {
   flex: 0 0 auto;
   min-height: 28px;

@@ -38,6 +38,13 @@ import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
 import { useAuth } from "../lib/useAuth";
 
+function formatPracticeSetCount(count) {
+  const safeCount = Number(count ?? 0);
+  if (safeCount >= 10) return "10+ practice sets";
+  if (safeCount === 1) return "1 practice set";
+  return `${safeCount} practice sets`;
+}
+
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const location = useLocation();
@@ -60,6 +67,7 @@ export default function Dashboard() {
   const [payingModule, setPayingModule] = useState("");
   const [ctaError, setCtaError] = useState("");
   const [paymentError, setPaymentError] = useState(null);
+  const [openModuleInfoSlug, setOpenModuleInfoSlug] = useState("");
 
   const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading && mountedRef.current) setLoading(true);
@@ -333,6 +341,7 @@ export default function Dashboard() {
     return {
       subject,
       displayName: getModuleDisplayName(subject.name),
+      batchSize: Number(subject.batch_size ?? 0),
       completedCount,
       publishedCount: publishedRows.length,
       progressPercent,
@@ -464,7 +473,31 @@ export default function Dashboard() {
             {moduleCards.map((card) => (
               <article className={`module-card-v3 module-card-progressive ${card.hasUsableModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
                 <div className="module-card-v3-head">
-                  <h3>{card.displayName}</h3>
+                  <div className="module-card-title-wrap">
+                    <h3>{card.displayName}</h3>
+                    {!card.isComingSoon && (
+                      <button
+                        aria-expanded={openModuleInfoSlug === card.subject.slug}
+                        aria-label={`${card.displayName} details`}
+                        className="module-card-info-button"
+                        onBlur={() => setOpenModuleInfoSlug("")}
+                        onClick={() => setOpenModuleInfoSlug((currentSlug) => (
+                          currentSlug === card.subject.slug ? "" : card.subject.slug
+                        ))}
+                        type="button"
+                      >
+                        i
+                        <span className="module-card-info-popover" role="tooltip">
+                          <strong>{formatPracticeSetCount(card.publishedCount)}</strong>
+                          {card.batchSize > 0 ? (
+                            <span>{`Each set has ${card.batchSize} questions.`}</span>
+                          ) : (
+                            <span>Question count may vary by set.</span>
+                          )}
+                        </span>
+                      </button>
+                    )}
+                  </div>
                   {card.hasUsableModuleAccess && !card.isComplete && (
                     <span className="module-access-state">Unlocked</span>
                   )}
