@@ -1584,7 +1584,7 @@ pre,
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -6400,15 +6400,23 @@ button.admin-danger-link {
   width: min(370px, 100%);
   display: grid;
   gap: 16px;
-  padding: 24px;
+  padding: 22px;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--color-surface);
-  box-shadow: 0 18px 46px rgba(20, 33, 48, 0.14);
+  box-shadow: 0 20px 54px rgba(20, 33, 48, 0.16);
 }
 
 .access-unlock-drag-handle {
   display: none;
+}
+
+button.access-unlock-drag-handle {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
 }
 
 .access-unlock-header {
@@ -6465,7 +6473,7 @@ button.access-unlock-close:focus-visible {
 .access-unlock-price {
   display: grid;
   justify-items: center;
-  padding: 2px 0 0;
+  padding: 6px 0 2px;
   border: 1px solid var(--color-border);
   border-inline: 0;
   background: transparent;
@@ -6505,10 +6513,10 @@ button.access-unlock-close:focus-visible {
 .access-unlock-actions button,
 .access-unlock-actions .secondary-action {
   width: 100%;
-  min-height: 46px;
+  min-height: 44px;
   justify-content: center;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
 }
 
 @media (max-width: 760px) {
@@ -6630,6 +6638,76 @@ button.access-unlock-close:focus-visible {
   .access-payment-section {
     padding: 0;
   }
+
+  .access-unlock-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .access-unlock-modal {
+    width: 100%;
+    max-height: calc(100dvh - 12px);
+    overflow: auto;
+    gap: 13px;
+    padding: 10px 20px max(18px, env(safe-area-inset-bottom));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -18px 48px rgba(10, 31, 24, 0.18);
+  }
+
+  .access-unlock-drag-handle {
+    display: block;
+    justify-self: center;
+    width: 44px;
+    height: 5px;
+    margin: 0 0 5px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-border-strong) 70%, white);
+    box-shadow: none;
+    cursor: pointer;
+  }
+
+  button.access-unlock-drag-handle:hover,
+  button.access-unlock-drag-handle:focus-visible {
+    background: color-mix(in srgb, var(--color-text-muted) 70%, white);
+    box-shadow: none;
+  }
+
+  button.access-unlock-close {
+    display: none;
+  }
+
+  .access-unlock-header {
+    display: block;
+  }
+
+  .access-unlock-header h2 {
+    font-size: 1rem;
+  }
+
+  .access-unlock-price {
+    padding: 5px 0 1px;
+  }
+
+  .access-unlock-price strong {
+    font-size: clamp(1.78rem, 10vw, 2.05rem);
+  }
+
+  .access-unlock-copy {
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .access-unlock-actions button,
+  .access-unlock-actions .secondary-action {
+    min-height: 44px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+  }
 }
 
 @media (max-width: 420px) {
@@ -6643,24 +6721,6 @@ button.access-unlock-close:focus-visible {
     max-height: calc(100dvh - 18px);
     padding: 22px 18px max(20px, env(safe-area-inset-bottom));
     border-radius: 22px 22px 0 0;
-  }
-
-  .access-unlock-modal {
-    width: 100%;
-    max-height: calc(100dvh - 18px);
-    overflow: auto;
-    padding: 12px 18px max(20px, env(safe-area-inset-bottom));
-    border-radius: 22px 22px 0 0;
-  }
-
-  .access-unlock-drag-handle {
-    display: block;
-    justify-self: center;
-    width: 42px;
-    height: 5px;
-    margin: 0 0 6px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-border-strong) 70%, white);
   }
 
   .access-receipt-details > div {

@@ -36,7 +36,7 @@ export function UnlockModuleModal({
   const offerEnd = module.launch_offer_ends_at ? formatLaunchOfferEnd(module.launch_offer_ends_at) : "";
 
   return (
-    <div className="access-receipt-backdrop" role="presentation" onClick={onClose}>
+    <div className="access-receipt-backdrop access-unlock-backdrop" role="presentation" onClick={onClose}>
       <section
         aria-labelledby="unlock-module-title"
         aria-modal="true"
@@ -44,7 +44,7 @@ export function UnlockModuleModal({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
-        <div className="access-unlock-drag-handle" aria-hidden="true" />
+        <button className="access-unlock-drag-handle" aria-label="Close payment modal" onClick={onClose} type="button" />
         <header className="access-unlock-header">
           <div>
             <h2 id="unlock-module-title">{moduleName}</h2>
