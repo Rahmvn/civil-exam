@@ -49,17 +49,19 @@ function getOfferSubtitle(offer) {
   return `Any ${getOfferModuleCount(offer)} modules`;
 }
 
+function getOfferActionCopy(offer) {
+  if (offer?.offer_type === "full_bundle") return "Review full bundle";
+  return "Choose modules";
+}
+
 export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
   if (!offer) return null;
-
-  const savings = getOfferSavings(offer);
 
   return (
     <button className={`bundle-offer-trigger is-${variant}`} onClick={() => onChoose(offer)} type="button">
       <GiftMark />
       <span>
         <strong>Bundle offer</strong>
-        <small>{savings || getOfferSubtitle(offer)}</small>
       </span>
     </button>
   );
@@ -83,8 +85,9 @@ export function BundleOffers({ offers = [], onChoose }) {
             <article className="bundle-offer-card" key={offer.offer_id}>
               <GiftMark />
               <div className="bundle-offer-card-copy">
+                <span>Bundle offer</span>
                 <h3>{offer.offer_name}</h3>
-                <p>{isFullBundle ? `All ${offer.available_module_count} modules` : `Choose any ${offer.selection_count} modules`}</p>
+                <p>{isFullBundle ? "Unlock every available module" : `Choose any ${offer.selection_count} modules`}</p>
               </div>
               <div className="bundle-offer-price">
                 {comparisonPrice && <del>{formatModuleMoney(comparisonPrice, offer.currency)} separately</del>}
@@ -92,7 +95,7 @@ export function BundleOffers({ offers = [], onChoose }) {
                 {savings && <span>{savings}</span>}
               </div>
               <button className="bundle-offer-card-action" type="button" onClick={() => onChoose(offer)}>
-                View bundle
+                {getOfferActionCopy(offer)}
               </button>
             </article>
           );
@@ -169,7 +172,11 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
           <span>{savings || getOfferSubtitle(offer)}</span>
         </div>
 
-        {!isFullBundle && <p className="bundle-checkout-select-note">{selected.length} of {requiredCount} selected</p>}
+        {!isFullBundle && (
+          <p className="bundle-checkout-select-note">
+            {selected.length === requiredCount ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`}
+          </p>
+        )}
 
         <div className="bundle-checkout-modules" aria-label="Modules in bundle">
           {modules.map((module) => {
@@ -184,7 +191,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
                 type="button"
               >
                 <span className="bundle-module-check" aria-hidden="true">{selectedModule ? "✓" : ""}</span>
-                <span>{getModuleDisplayName(module.subject_name)}</span>
+                <span className="bundle-module-name">{getModuleDisplayName(module.subject_name)}</span>
               </button>
             );
           })}
