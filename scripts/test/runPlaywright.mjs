@@ -1,43 +1,18 @@
 import { spawnSync } from "node:child_process";
+import { readLocalSupabaseEnvironment } from "./localSupabaseEnvironment.mjs";
 
 function fail(message) {
   console.error(message);
   process.exit(1);
 }
 
-function parseSupabaseEnvironment(output) {
-  return Object.fromEntries(
-    output
-      .split(/\r?\n/)
-      .map((line) => line.match(/^([A-Z0-9_]+)=(?:"(.*)"|(.*))$/))
-      .filter(Boolean)
-      .map((match) => [match[1], match[2] ?? match[3] ?? ""]),
-  );
+let local;
+try {
+  local = readLocalSupabaseEnvironment();
+} catch (error) {
+  fail(error.message);
 }
-
-const status = spawnSync("supabase", ["status", "-o", "env"], {
-  cwd: process.cwd(),
-  encoding: "utf8",
-  shell: process.platform === "win32",
-});
-
-if (status.status !== 0) {
-  fail("Local Supabase is not ready. Run `supabase start` before the E2E suite.");
-}
-
-const local = parseSupabaseEnvironment(status.stdout);
-const apiUrl = local.API_URL;
-const publicKey = local.PUBLISHABLE_KEY || local.ANON_KEY;
-const secretKey = local.SECRET_KEY || local.SERVICE_ROLE_KEY;
-
-if (!apiUrl || !publicKey || !secretKey) {
-  fail("The local Supabase URL or test keys could not be resolved.");
-}
-
-const hostname = new URL(apiUrl).hostname;
-if (hostname !== "127.0.0.1" && hostname !== "localhost") {
-  fail("Regression tests refused to run because Supabase is not local.");
-}
+const { apiUrl, publicKey, secretKey } = local;
 
 const command = process.platform === "win32" ? "npx.cmd" : "npx";
 const requestedArgs = process.argv.slice(2);

@@ -6,35 +6,13 @@ import WebSocket from "ws";
 import globalSetup from "../../tests/e2e/global-setup.js";
 import { TEST_PASSWORD, TEST_USERS } from "../../tests/e2e/test-data.js";
 import { createPaystackSignature } from "../../supabase/functions/_shared/payment-validation.js";
+import { readLocalSupabaseEnvironment } from "./localSupabaseEnvironment.mjs";
 
 function fail(message) {
   throw new Error(message);
 }
 
 let publishableApiKey = "";
-
-function parseEnvironment(output) {
-  return Object.fromEntries(output.split(/\r?\n/)
-    .map((line) => line.match(/^([A-Z0-9_]+)=(?:"(.*)"|(.*))$/))
-    .filter(Boolean)
-    .map((match) => [match[1], match[2] ?? match[3] ?? ""]));
-}
-
-function localEnvironment() {
-  const status = spawnSync("supabase", ["status", "-o", "env"], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  if (status.status !== 0) fail("Local Supabase is not ready. Run `supabase start` first.");
-  const values = parseEnvironment(status.stdout);
-  const apiUrl = values.API_URL;
-  const publicKey = values.PUBLISHABLE_KEY || values.ANON_KEY;
-  const secretKey = values.SECRET_KEY || values.SERVICE_ROLE_KEY;
-  if (!apiUrl || !publicKey || !secretKey) fail("Local Supabase test credentials are unavailable.");
-  if (!['127.0.0.1', 'localhost'].includes(new URL(apiUrl).hostname)) fail("Edge tests require local Supabase.");
-  return { apiUrl, publicKey, secretKey };
-}
 
 function resolveSupabaseExecutable() {
   if (process.platform !== "win32") return "supabase";
@@ -239,7 +217,7 @@ async function invoke(apiUrl, functionName, accessToken, body, headers = {}) {
 }
 
 async function main() {
-  const { apiUrl, publicKey, secretKey } = localEnvironment();
+  const { apiUrl, publicKey, secretKey } = readLocalSupabaseEnvironment();
   publishableApiKey = publicKey;
   process.env.E2E_LOCAL_SUPABASE = "true";
   process.env.E2E_SUPABASE_URL = apiUrl;
@@ -267,6 +245,10 @@ async function main() {
   edge.stdout.on("data", (chunk) => logs.push(chunk.toString()));
   edge.stderr.on("data", (chunk) => logs.push(chunk.toString()));
 
+  let cleanupService = null;
+  const bundleTestUserIds = [];
+  const bundleTestOfferIds = [];
+
   try {
     await waitForRuntimeLog(edge, logs);
     refreshLocalGateway();
@@ -279,6 +261,7 @@ async function main() {
       auth: { persistSession: false, autoRefreshToken: false },
       realtime: { transport: WebSocket },
     });
+    cleanupService = service;
     async function sendPaystackEvent(payload) {
       const body = JSON.stringify(payload);
       const signature = await createPaystackSignature(body, "sk_test_local-edge-payment-secret");
@@ -512,6 +495,85 @@ async function main() {
       .eq("user_id", userId)
       .eq("status", "active");
     if (entitlements.error || entitlements.count !== 1) fail("Verification replay created an invalid entitlement count.");
+
+    const bundleEmail = `bundle-edge-${crypto.randomUUID()}@example.test`;
+    const bundleUser = await service.auth.admin.createUser({
+      email: bundleEmail,
+      password: TEST_PASSWORD,
+      email_confirm: true,
+      user_metadata: { full_name: "Bundle Edge Candidate" },
+    });
+    if (bundleUser.error || !bundleUser.data.user) {
+      fail(`Could not create the bundle payment candidate: ${bundleUser.error?.message ?? "unknown error"}`);
+    }
+    bundleTestUserIds.push(bundleUser.data.user.id);
+    const bundleCandidate = createClient(apiUrl, publicKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { transport: WebSocket },
+    });
+    const bundleLogin = await bundleCandidate.auth.signInWithPassword({ email: bundleEmail, password: TEST_PASSWORD });
+    if (bundleLogin.error || !bundleLogin.data.session) fail("Bundle payment candidate could not sign in.");
+    const bundleToken = bundleLogin.data.session.access_token;
+    const bundleUserId = bundleLogin.data.user.id;
+    resetLocalEdgeRateLimits([bundleUserId]);
+
+    const bundleModuleCatalog = await bundleCandidate.rpc("get_module_access_catalog_v2");
+    if (bundleModuleCatalog.error) fail(`Bundle module catalogue failed: ${bundleModuleCatalog.error.message}`);
+    const bundleModules = bundleModuleCatalog.data.filter((module) => module.can_purchase && !module.has_module_access).slice(0, 3);
+    if (bundleModules.length !== 3) fail("The edge bundle test requires three purchasable module fixtures.");
+    const separatePrice = bundleModules.reduce((total, module) => total + Number(module.price_kobo), 0);
+    const bundlePrice = Math.max(1, Math.floor(separatePrice * 0.6));
+    const createdOffer = await service.from("purchase_offers").insert({
+      exam_pack_id: activePack.data.id,
+      name: "Edge Any 3",
+      offer_type: "pick_n_modules",
+      selection_count: 3,
+      price_kobo: bundlePrice,
+      currency: "NGN",
+      enabled: true,
+    }).select("id").single();
+    if (createdOffer.error || !createdOffer.data) fail(`Could not create bundle fixture: ${createdOffer.error?.message}`);
+    bundleTestOfferIds.push(createdOffer.data.id);
+
+    const visibleBundles = await bundleCandidate.rpc("get_bundle_offer_catalog");
+    if (visibleBundles.error || !visibleBundles.data.some((offer) => offer.offer_id === createdOffer.data.id)) {
+      fail("The enabled choose-three offer was not visible to an eligible candidate.");
+    }
+
+    const initializedBundle = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
+      purchase_type: "bundle_offer",
+      purchase_offer_id: createdOffer.data.id,
+      subject_slugs: bundleModules.map((module) => module.subject_slug),
+      expected_price_kobo: bundlePrice,
+    });
+    if (!initializedBundle.ok) fail(`Bundle payment initialization failed: ${await initializedBundle.text()}`);
+    const initializedBundleBody = await initializedBundle.json();
+    const verifiedBundle = await invoke(apiUrl, "verify-paystack-payment", bundleToken, {
+      reference: initializedBundleBody.reference,
+    });
+    if (!verifiedBundle.ok) fail(`Bundle payment verification failed: ${await verifiedBundle.text()}`);
+    const verifiedBundleBody = await verifiedBundle.json();
+    if (verifiedBundleBody.purchase_type !== "bundle_offer" || verifiedBundleBody.unlocked_count !== 3) {
+      fail("Bundle verification did not report all three unlocked modules.");
+    }
+    const bundleOrder = await service.from("payment_orders")
+      .select("id, fulfillment_status, payment_order_items(count)")
+      .eq("provider_reference", initializedBundleBody.reference)
+      .single();
+    const bundleEntitlements = await service.from("module_entitlements")
+      .select("id", { count: "exact", head: true })
+      .eq("payment_order_id", bundleOrder.data?.id);
+    if (
+      bundleOrder.error
+      || bundleOrder.data.fulfillment_status !== "fulfilled"
+      || bundleOrder.data.payment_order_items?.[0]?.count !== 3
+      || bundleEntitlements.error
+      || bundleEntitlements.count !== 3
+    ) {
+      fail("Bundle payment did not persist one order with three fulfilled items.");
+    }
+    await service.from("purchase_offers").update({ enabled: false }).eq("id", createdOffer.data.id);
+    await service.auth.admin.deleteUser(bundleUserId);
 
     const invalidWebhook = await invoke(apiUrl, "paystack-webhook", null, { event: "charge.success" }, {
       "x-paystack-signature": "invalid",
@@ -766,6 +828,14 @@ async function main() {
 
     console.log("Edge payment integration passed: payment, refund, dispute, replay, and webhook security lifecycles.");
   } finally {
+    if (cleanupService) {
+      for (const userIdToDelete of bundleTestUserIds) {
+        await cleanupService.auth.admin.deleteUser(userIdToDelete).catch(() => null);
+      }
+      if (bundleTestOfferIds.length > 0) {
+        await cleanupService.from("purchase_offers").delete().in("id", bundleTestOfferIds);
+      }
+    }
     stopProcessTree(edge);
     mock.server.closeAllConnections?.();
     await new Promise((resolve) => mock.server.close(resolve));

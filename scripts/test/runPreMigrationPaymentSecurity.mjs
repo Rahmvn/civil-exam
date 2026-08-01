@@ -8,34 +8,10 @@ import WebSocket from "ws";
 import globalSetup from "../../tests/e2e/global-setup.js";
 import { TEST_PASSWORD, TEST_USERS } from "../../tests/e2e/test-data.js";
 import { createPaystackSignature } from "../../supabase/functions/_shared/payment-validation.js";
+import { readLocalSupabaseEnvironment } from "./localSupabaseEnvironment.mjs";
 
 function fail(message) {
   throw new Error(message);
-}
-
-function parseEnvironment(output) {
-  return Object.fromEntries(output.split(/\r?\n/)
-    .map((line) => line.match(/^([A-Z0-9_]+)=(?:"(.*)"|(.*))$/))
-    .filter(Boolean)
-    .map((match) => [match[1], match[2] ?? match[3] ?? ""]));
-}
-
-function localEnvironment() {
-  const status = spawnSync("supabase", ["status", "-o", "env"], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  if (status.status !== 0) fail("Local Supabase is not ready. Run `supabase start` first.");
-  const values = parseEnvironment(status.stdout);
-  const apiUrl = values.API_URL;
-  const publicKey = values.PUBLISHABLE_KEY || values.ANON_KEY;
-  const secretKey = values.SECRET_KEY || values.SERVICE_ROLE_KEY;
-  if (!apiUrl || !publicKey || !secretKey) fail("Local Supabase test credentials are unavailable.");
-  if (!["127.0.0.1", "localhost"].includes(new URL(apiUrl).hostname)) {
-    fail("Compatibility tests require local Supabase.");
-  }
-  return { apiUrl, publicKey, secretKey };
 }
 
 function resolveSupabaseExecutable() {
@@ -141,7 +117,7 @@ async function invoke(apiUrl, publicKey, functionName, token, body, headers = {}
 }
 
 async function main() {
-  const { apiUrl, publicKey, secretKey } = localEnvironment();
+  const { apiUrl, publicKey, secretKey } = readLocalSupabaseEnvironment();
   process.env.E2E_LOCAL_SUPABASE = "true";
   process.env.E2E_SUPABASE_URL = apiUrl;
   process.env.E2E_SUPABASE_PUBLIC_KEY = publicKey;

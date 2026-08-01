@@ -7,7 +7,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/runLocalDev.mjs",
     "build": "vite build && node scripts/generateSeoPages.mjs",
     "lint": "eslint .",
     "test:unit": "node --test \"tests/unit/*.test.js\"",

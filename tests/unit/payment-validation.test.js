@@ -55,6 +55,35 @@ test("module payment validation accepts only an exact owned order", () => {
   });
 });
 
+test("bundle payment validation binds the verified transaction to its saved offer", () => {
+  const bundleOrder = {
+    ...order,
+    subject_id: null,
+    purchase_type: "bundle_offer",
+    purchase_offer_id: "offer-1",
+  };
+  const bundlePayment = {
+    ...payment,
+    metadata: {
+      payment_order_id: "order-1",
+      user_id: "user-1",
+      purchase_type: "bundle_offer",
+      purchase_offer_id: "offer-1",
+      subject_id: null,
+    },
+  };
+
+  assert.doesNotThrow(() => validateModulePaymentData(bundleOrder, bundlePayment));
+  assert.throws(() => validateModulePaymentData(bundleOrder, {
+    ...bundlePayment,
+    metadata: { ...bundlePayment.metadata, purchase_offer_id: "offer-2" },
+  }), /does not match/);
+  assert.throws(() => validateModulePaymentData(bundleOrder, {
+    ...bundlePayment,
+    metadata: { ...bundlePayment.metadata, purchase_type: "single_module" },
+  }), /does not match/);
+});
+
 test("legacy payment validation binds the active pack, price, and currency", () => {
   const pack = { id: "pack-1", price_kobo: 500000, currency: "NGN" };
   const legacyPayment = { ...payment, amount: 500000 };

@@ -8,10 +8,13 @@ import {
   FreeBatchConfirmationModal,
   ScoreRing,
 } from "../components/DashboardUi";
+import { BundleCheckoutModal, BundleOfferTrigger } from "../components/BundleOffers";
 import { UnlockModuleModal } from "../components/UnlockModuleModal";
 import {
   getCandidateSummary,
+  getBundleOfferCatalog,
   initializePayment,
+  initializeBundlePayment,
   getModuleAccessCatalog,
   getModuleBatchAccess,
   getRecentAttempts,
@@ -103,6 +106,8 @@ export default function Dashboard() {
   const [subjects, setSubjects] = useState([]);
   const [moduleAccessCatalog, setModuleAccessCatalog] = useState([]);
   const [moduleBatchAccess, setModuleBatchAccess] = useState([]);
+  const [bundleOffers, setBundleOffers] = useState([]);
+  const [selectedBundle, setSelectedBundle] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [reviewQueue, setReviewQueue] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,6 +132,7 @@ export default function Dashboard() {
       { key: "subjects", promise: getSubjects() },
       { key: "catalog", promise: getModuleAccessCatalog() },
       { key: "batchAccess", promise: getModuleBatchAccess() },
+      { key: "bundleOffers", promise: getBundleOfferCatalog() },
       { key: "attempts", promise: getRecentAttempts(12) },
       { key: "review", promise: getReviewQueue(6) },
     ];
@@ -145,6 +151,7 @@ export default function Dashboard() {
         }
         if (request.key === "catalog") setModuleAccessCatalog(Array.isArray(result.value) ? result.value : []);
         if (request.key === "batchAccess") setModuleBatchAccess(Array.isArray(result.value) ? result.value : []);
+        if (request.key === "bundleOffers") setBundleOffers(Array.isArray(result.value) ? result.value : []);
         if (request.key === "attempts") {
           setAttempts(Array.isArray(result.value) ? result.value : []);
           setAttemptsNotice("");
@@ -167,6 +174,7 @@ export default function Dashboard() {
       }
       if (request.key === "catalog") setModuleAccessCatalog([]);
       if (request.key === "batchAccess") setModuleBatchAccess([]);
+      if (request.key === "bundleOffers") setBundleOffers([]);
       if (request.key === "attempts") {
         setAttempts([]);
         setAttemptsNotice("Recent attempts could not be loaded right now.");
@@ -288,6 +296,35 @@ export default function Dashboard() {
       logAppError("Dashboard payment start", paymentRequestError);
       setPaymentError({
         subjectSlug,
+        message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
+      });
+    } finally {
+      setPayingModule("");
+    }
+  }
+
+  async function startBundlePayment(offer, subjectSlugs) {
+    const paymentKey = `bundle:${offer.offer_id}`;
+    if (payingModule) return;
+    setPayingModule(paymentKey);
+    setPaymentError(null);
+
+    try {
+      const payment = await initializeBundlePayment({
+        offerId: offer.offer_id,
+        subjectSlugs,
+        expectedPriceKobo: Number(offer.price_kobo),
+      });
+      if (payment.already_paid) {
+        await loadDashboardData({ showLoading: false });
+        setSelectedBundle(null);
+        return;
+      }
+      window.location.assign(payment.authorization_url);
+    } catch (paymentRequestError) {
+      logAppError("Dashboard bundle payment start", paymentRequestError);
+      setPaymentError({
+        subjectSlug: paymentKey,
         message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
       });
     } finally {
@@ -424,6 +461,11 @@ export default function Dashboard() {
     };
   }).filter((card) => card.isVisibleToCandidate);
   const unlockedModuleCount = moduleCards.filter((card) => card.hasUsableModuleAccess).length;
+  const lockedPurchasableCount = moduleCards.filter((card) => !card.hasUsableModuleAccess && card.canPurchase && !card.isComingSoon && !card.isPaused).length;
+  const featuredBundleOffer = bundleOffers.find((offer) => {
+    if (offer.offer_type === "full_bundle") return lockedPurchasableCount > 0;
+    return lockedPurchasableCount >= Number(offer.selection_count ?? 0);
+  }) ?? null;
 
   const accessCopy = (() => {
     if (unlockedModuleCount > 0) {
@@ -506,6 +548,13 @@ export default function Dashboard() {
               <h2>Modules</h2>
               <p className="dashboard-module-choice-copy">{moduleChoiceCopy}</p>
             </div>
+            <BundleOfferTrigger
+              offer={featuredBundleOffer}
+              onChoose={(offer) => {
+                setPaymentError(null);
+                setSelectedBundle(offer);
+              }}
+            />
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}
           </div>
 
@@ -614,11 +663,27 @@ export default function Dashboard() {
         subject={startConfirmSubject}
       />
       <UnlockModuleModal
+        bundleOffer={featuredBundleOffer}
         error={paymentError && unlockModule && paymentError.subjectSlug === unlockModule.subject_slug ? paymentError.message : ""}
         module={unlockModule}
         onClose={closeUnlockModule}
+        onChooseBundle={(offer) => {
+          closeUnlockModule();
+          setSelectedBundle(offer);
+        }}
         onStartPayment={startPayment}
         paying={payingModule === unlockModule?.subject_slug}
+      />
+      <BundleCheckoutModal
+        error={paymentError?.subjectSlug === `bundle:${selectedBundle?.offer_id}` ? paymentError.message : ""}
+        offer={selectedBundle}
+        onClose={() => {
+          if (payingModule) return;
+          setPaymentError(null);
+          setSelectedBundle(null);
+        }}
+        onPay={startBundlePayment}
+        paying={payingModule === `bundle:${selectedBundle?.offer_id}`}
       />
       <ModuleInfoDialog module={infoModule} onClose={() => setInfoModule(null)} />
     </AppFrame>

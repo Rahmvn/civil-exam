@@ -33,3 +33,31 @@ test("practice hub lets a new candidate choose free practice or payment directly
   await expect(page.getByText("Current Affairs", { exact: true })).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
 });
+
+test("choose-three checkout uses a full-width mobile sheet with an exact selection", async ({ page }) => {
+  await page.goto("/access#bundles");
+
+  await expect(page.getByRole("heading", { name: "Bundle and save" })).toBeVisible();
+  const offer = page.locator("article").filter({ hasText: "Any 3 modules" }).first();
+  await expect(offer.getByText("₦5,000", { exact: true })).toBeVisible();
+  await offer.getByRole("button", { name: "Choose modules" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Any 3 modules" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".bundle-checkout-handle")).toBeVisible();
+  await expect(dialog.locator(".bundle-checkout-header > button")).toBeHidden();
+
+  const viewport = page.viewportSize();
+  const sheet = await dialog.boundingBox();
+  expect(sheet.x).toBeLessThanOrEqual(1);
+  expect(sheet.width).toBeGreaterThanOrEqual(viewport.width - 1);
+
+  const moduleChoices = dialog.locator(".bundle-checkout-modules > button");
+  await expect(moduleChoices).toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
+
+  await expect(dialog.getByText("3 of 3 selected")).toBeVisible();
+  await expect(dialog.getByText("₦7,500", { exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
+  await expectNoHorizontalOverflow(page);
+});

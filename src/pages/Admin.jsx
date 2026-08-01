@@ -4,6 +4,7 @@ import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
 import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminLaunchOfferPanel } from "../components/admin/AdminLaunchOfferPanel";
+import { AdminPurchaseOffersPanel } from "../components/admin/AdminPurchaseOffersPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
 import { BrandLogo } from "../components/BrandLogo";
@@ -20,6 +21,7 @@ import {
   deleteEmptyAdminModule,
   deleteEmptyAdminPracticeSet,
   endAdminLaunchOffer,
+  getAdminPurchaseOffers,
   getAdminAuditLogs,
   getAdminContentModules,
   getAdminLaunchOffer,
@@ -33,10 +35,12 @@ import {
   publishAdminPracticeSetReplacement,
   publishAdminQuestionRevision,
   reconcileAdminSupportPayment,
+  saveAdminPurchaseOffer,
   saveAdminQuestion,
   republishAdminPracticeSet,
   retireAdminPracticeSet,
   transitionAdminPracticeSet,
+  setAdminPurchaseOfferEnabled,
   updateAdminModule,
   updateAdminModuleAvailability,
   updateAdminModuleLifecycle,
@@ -226,12 +230,15 @@ function AdminFeedback({ feedback, onDismiss }) {
 
 function ModuleCatalogue({
   launchOffer,
+  purchaseOffers,
   modules,
   onCreate,
   onEndLaunchOffer,
   onManage,
   onQueryChange,
   onScheduleLaunchOffer,
+  onSavePurchaseOffer,
+  onTogglePurchaseOffer,
   query,
   working,
 }) {
@@ -274,6 +281,13 @@ function ModuleCatalogue({
         offer={launchOffer}
         onEnd={onEndLaunchOffer}
         onSchedule={onScheduleLaunchOffer}
+      />
+
+      <AdminPurchaseOffersPanel
+        busy={working}
+        offers={purchaseOffers}
+        onSave={onSavePurchaseOffer}
+        onToggle={onTogglePurchaseOffer}
       />
 
       <div className="admin-filter-tabs" aria-label="Filter modules">
@@ -1609,6 +1623,7 @@ export default function Admin() {
 
   const [modules, setModules] = useState([]);
   const [launchOffer, setLaunchOffer] = useState(null);
+  const [purchaseOffers, setPurchaseOffers] = useState([]);
   const [practiceSets, setPracticeSets] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [validation, setValidation] = useState(null);
@@ -1648,16 +1663,18 @@ export default function Admin() {
 
     async function loadAdmin() {
       try {
-        const [nextModules, nextAuditLogs, nextLaunchOffer] = await Promise.all([
+        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPurchaseOffers] = await Promise.all([
           getAdminContentModules(),
           getAdminAuditLogs(),
           getAdminLaunchOffer(),
+          getAdminPurchaseOffers(),
         ]);
 
         if (!active) return;
         setModules(nextModules);
         setAuditLogs(nextAuditLogs);
         setLaunchOffer(nextLaunchOffer);
+        setPurchaseOffers(nextPurchaseOffers);
       } catch (error) {
         if (!active) return;
         logAppError("Admin content load", error);
@@ -1880,6 +1897,44 @@ export default function Admin() {
     const nextOffer = await getAdminLaunchOffer();
     setLaunchOffer(nextOffer);
     return nextOffer;
+  }
+
+  async function refreshPurchaseOffers() {
+    const nextOffers = await getAdminPurchaseOffers();
+    setPurchaseOffers(nextOffers);
+    return nextOffers;
+  }
+
+  function handleSavePurchaseOffer(offer, onSaved) {
+    requestConfirmation({
+      title: offer.enabled ? "Save and publish this bundle?" : "Save this bundle?",
+      body: offer.enabled
+        ? "Eligible candidates will see this bundle immediately or at its scheduled start. Checkout will enforce the price and module rules on the server."
+        : "The bundle will remain hidden until you enable it.",
+      label: offer.offerId ? "Save changes" : "Create bundle",
+      action: async () => {
+        await saveAdminPurchaseOffer(offer);
+        await Promise.all([refreshPurchaseOffers(), refreshAudit()]);
+        onSaved?.();
+        setFeedback({ tone: "success", message: offer.enabled ? "Bundle saved and enabled." : "Bundle saved." });
+      },
+    });
+  }
+
+  function handleTogglePurchaseOffer(offer, enabled) {
+    requestConfirmation({
+      title: enabled ? "Enable this bundle?" : "Disable this bundle?",
+      body: enabled
+        ? "Eligible candidates will be able to start new checkouts at this bundle price."
+        : "New bundle checkouts will stop. Existing Paystack checkout links retain their agreed order.",
+      label: enabled ? "Enable bundle" : "Disable bundle",
+      tone: enabled ? "default" : "danger",
+      action: async () => {
+        await setAdminPurchaseOfferEnabled(offer.offer_id, enabled);
+        await Promise.all([refreshPurchaseOffers(), refreshAudit()]);
+        setFeedback({ tone: "success", message: enabled ? "Bundle enabled." : "Bundle disabled." });
+      },
+    });
   }
 
   function handleScheduleLaunchOffer(config) {
@@ -2386,6 +2441,7 @@ export default function Admin() {
             ) : (
               <ModuleCatalogue
                 launchOffer={launchOffer}
+                purchaseOffers={purchaseOffers}
                 modules={modules}
                 query={shellSearch}
                 onCreate={() => setModuleEditor({})}
@@ -2393,6 +2449,8 @@ export default function Admin() {
                 onEndLaunchOffer={handleEndLaunchOffer}
                 onQueryChange={setShellSearch}
                 onScheduleLaunchOffer={handleScheduleLaunchOffer}
+                onSavePurchaseOffer={handleSavePurchaseOffer}
+                onTogglePurchaseOffer={handleTogglePurchaseOffer}
                 working={working}
               />
             )}

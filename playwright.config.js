@@ -113,6 +113,12 @@ export default defineConfig({
       use: { ...devices["Pixel 5"], storageState: ".playwright-auth/free.json" },
     },
     {
+      name: "bundle-desktop",
+      dependencies: ["setup-free"],
+      testMatch: /bundle-offers-desktop\.spec\.js/,
+      use: { ...devices["Desktop Chrome"], storageState: ".playwright-auth/free.json" },
+    },
+    {
       name: "free-iphone",
       dependencies: ["setup-free"],
       testMatch: /free-mobile\.spec\.js/,

@@ -1,10 +1,10 @@
-import { spawnSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { createClient } from "@supabase/supabase-js";
 import WebSocket from "ws";
 import globalSetup from "../../tests/e2e/global-setup.js";
 import { TEST_PASSWORD, TEST_USERS } from "../../tests/e2e/test-data.js";
+import { readLocalSupabaseEnvironment } from "./localSupabaseEnvironment.mjs";
 
 const fullRun = process.argv.includes("--full");
 const soakRun = process.argv.includes("--soak");
@@ -12,36 +12,6 @@ const outputPath = "test-results/load-test-report.json";
 
 function fail(message) {
   throw new Error(message);
-}
-
-function parseEnvironment(output) {
-  return Object.fromEntries(
-    output.split(/\r?\n/)
-      .map((line) => line.match(/^([A-Z0-9_]+)=(?:"(.*)"|(.*))$/))
-      .filter(Boolean)
-      .map((match) => [match[1], match[2] ?? match[3] ?? ""]),
-  );
-}
-
-function localEnvironment() {
-  const status = spawnSync("supabase", ["status", "-o", "env"], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  if (status.status !== 0) fail("Local Supabase is not ready. Run `supabase start` first.");
-
-  const values = parseEnvironment(status.stdout);
-  const apiUrl = values.API_URL;
-  const publicKey = values.PUBLISHABLE_KEY || values.ANON_KEY;
-  const secretKey = values.SECRET_KEY || values.SERVICE_ROLE_KEY;
-  if (!apiUrl || !publicKey || !secretKey) fail("Local Supabase test credentials are unavailable.");
-
-  const hostname = new URL(apiUrl).hostname;
-  if (!['127.0.0.1', 'localhost'].includes(hostname)) {
-    fail("Load tests refused to run because Supabase is not local.");
-  }
-  return { apiUrl, publicKey, secretKey };
 }
 
 function percentile(values, percentileValue) {
@@ -137,7 +107,7 @@ function printSummary(summary) {
 }
 
 async function main() {
-  const { apiUrl, publicKey, secretKey } = localEnvironment();
+  const { apiUrl, publicKey, secretKey } = readLocalSupabaseEnvironment();
   process.env.E2E_LOCAL_SUPABASE = "true";
   process.env.E2E_SUPABASE_URL = apiUrl;
   process.env.E2E_SUPABASE_PUBLIC_KEY = publicKey;

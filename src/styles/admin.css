@@ -160,6 +160,142 @@
   }
 }
 
+.admin-purchase-offers {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 16px;
+  background: var(--admin-panel, #fff);
+}
+
+.admin-purchase-offers > header,
+.admin-purchase-offer-list > article,
+.admin-purchase-offer-actions,
+.admin-purchase-offer-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-purchase-offers h2,
+.admin-purchase-offers h3,
+.admin-purchase-offers p {
+  margin: 0;
+}
+
+.admin-purchase-offers > header p,
+.admin-purchase-offer-list p,
+.admin-purchase-offer-value small {
+  margin-top: 4px;
+  color: var(--admin-muted, #667067);
+}
+
+.admin-purchase-offer-list {
+  display: grid;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-purchase-offer-list > article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 14px;
+}
+
+.admin-purchase-offer-list > article + article {
+  border-top: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-purchase-offer-list h3 {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
+.admin-purchase-offer-value {
+  display: grid;
+  justify-items: end;
+}
+
+.admin-purchase-offer-value strong {
+  color: var(--admin-green, #0f6747);
+  font-size: 1.15rem;
+}
+
+.admin-purchase-offer-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-purchase-offer-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--admin-muted, #667067);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-purchase-offer-form input,
+.admin-purchase-offer-form select {
+  min-width: 0;
+}
+
+.admin-purchase-offer-form .admin-purchase-offer-enabled {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  min-height: 42px;
+}
+
+.admin-purchase-offer-enabled input {
+  width: auto;
+}
+
+.admin-purchase-offer-form-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+}
+
+@media (max-width: 900px) {
+  .admin-purchase-offer-list > article {
+    grid-template-columns: 1fr auto;
+  }
+
+  .admin-purchase-offer-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .admin-purchase-offer-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-purchase-offers > header,
+  .admin-purchase-offer-list > article {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-purchase-offers > header {
+    flex-direction: column;
+  }
+
+  .admin-purchase-offer-value {
+    justify-items: start;
+  }
+
+  .admin-purchase-offer-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-content-manager {
   width: min(1420px, calc(100% - 24px));
   padding: 8px 0 28px;

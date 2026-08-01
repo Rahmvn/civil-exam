@@ -275,7 +275,7 @@ export async function getModulePaymentOrder(reference: string) {
   const adminClient = getAdminClient();
   const { data, error } = await adminClient
     .from("payment_orders")
-    .select("id, user_id, exam_pack_id, subject_id, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status, review_status")
+    .select("id, user_id, exam_pack_id, subject_id, purchase_type, purchase_offer_id, purchase_label, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status, review_status")
     .eq("provider_reference", reference)
     .maybeSingle();
 
@@ -427,9 +427,10 @@ export async function activateModulePurchase(
   });
 
   if (error) throw error;
-  const result = data?.[0];
-  if (!result) throw new Error("Module access could not be activated");
-  return result;
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("Module access could not be activated");
+  }
+  return data;
 }
 
 export async function activateEntitlement(

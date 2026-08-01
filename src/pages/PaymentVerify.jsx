@@ -27,9 +27,11 @@ export default function PaymentVerify() {
         if (!active) return;
         setState("success");
         setModuleSlug(result?.subject_slug ?? "");
-        setMessage(result?.subject_name
-          ? `${result.subject_name} is now unlocked.`
-          : "Your access is now active.");
+        setMessage(result?.purchase_type === "bundle_offer"
+          ? `${result.purchase_label || `${result.unlocked_count} modules`} is now unlocked.`
+          : result?.subject_name
+            ? `${result.subject_name} is now unlocked.`
+            : "Your access is now active.");
       } catch (error) {
         if (!active) return;
         logAppError("Payment verification", error);

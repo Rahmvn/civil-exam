@@ -3,9 +3,11 @@ import { getModuleDisplayName } from "../lib/moduleDisplay";
 import { formatLaunchOfferEnd, formatModuleMoney } from "../lib/pricing";
 
 export function UnlockModuleModal({
+  bundleOffer,
   error,
   module,
   onClose,
+  onChooseBundle,
   onStartPayment,
   paying,
 }) {
@@ -76,6 +78,12 @@ export function UnlockModuleModal({
         <p className="access-unlock-copy">
           Pay securely with Paystack. Access opens automatically after payment.
         </p>
+
+        {bundleOffer && onChooseBundle && (
+          <button className="access-unlock-bundle-link" onClick={() => onChooseBundle(bundleOffer)} type="button">
+            Save more with bundle
+          </button>
+        )}
 
         <div className="access-unlock-actions">
           <button

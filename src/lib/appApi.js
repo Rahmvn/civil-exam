@@ -427,6 +427,21 @@ export async function initializePayment(subjectSlug, expectedPriceKobo) {
   }));
 }
 
+export async function getBundleOfferCatalog() {
+  return ensureArray(requireData(await supabase.rpc("get_bundle_offer_catalog")));
+}
+
+export async function initializeBundlePayment({ offerId, subjectSlugs, expectedPriceKobo }) {
+  return requireFunctionData(await supabase.functions.invoke("initialize-paystack-payment", {
+    body: {
+      purchase_type: "bundle_offer",
+      purchase_offer_id: offerId,
+      subject_slugs: ensureArray(subjectSlugs),
+      expected_price_kobo: expectedPriceKobo,
+    },
+  }));
+}
+
 export async function getAdminLaunchOffer() {
   const rows = ensureArray(requireData(await supabase.rpc("get_admin_launch_offer")));
   return rows[0] ?? null;
@@ -445,6 +460,30 @@ export async function configureAdminLaunchOffer({ modulePrices, startsAt, endsAt
 
 export async function endAdminLaunchOffer() {
   return requireData(await supabase.rpc("admin_end_launch_offer"));
+}
+
+export async function getAdminPurchaseOffers() {
+  return ensureArray(requireData(await supabase.rpc("get_admin_purchase_offers")));
+}
+
+export async function saveAdminPurchaseOffer(offer) {
+  return requireData(await supabase.rpc("admin_save_purchase_offer", {
+    requested_offer_id: offer.offerId ?? null,
+    requested_name: offer.name,
+    requested_offer_type: offer.offerType,
+    requested_selection_count: offer.offerType === "pick_n_modules" ? offer.selectionCount : null,
+    requested_price_kobo: offer.priceKobo,
+    requested_starts_at: offer.startsAt ?? null,
+    requested_ends_at: offer.endsAt ?? null,
+    requested_enabled: Boolean(offer.enabled),
+  }));
+}
+
+export async function setAdminPurchaseOfferEnabled(offerId, enabled) {
+  return requireData(await supabase.rpc("admin_set_purchase_offer_enabled", {
+    requested_offer_id: offerId,
+    requested_enabled: Boolean(enabled),
+  }));
 }
 
 export async function verifyPayment(reference) {

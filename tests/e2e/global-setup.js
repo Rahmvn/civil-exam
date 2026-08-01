@@ -341,6 +341,11 @@ export default async function globalSetup() {
     realtime: { transport: WebSocket },
   });
 
+  requireResult(
+    await client.from("purchase_offers").delete().eq("id", "ee000000-0000-4000-8000-000000000001"),
+    "Clear bundle offer fixture",
+  );
+
   await clearAdminContentFixtures(client);
 
   const packs = requireResult(
@@ -392,6 +397,21 @@ export default async function globalSetup() {
       { onConflict: "exam_pack_id,subject_id" },
     ),
     "Create module offers",
+  );
+
+  requireResult(
+    await client.from("purchase_offers").insert({
+      id: "ee000000-0000-4000-8000-000000000001",
+      exam_pack_id: packs[0].id,
+      name: "Any 3 modules",
+      offer_type: "pick_n_modules",
+      selection_count: 3,
+      price_kobo: 500000,
+      currency: "NGN",
+      enabled: true,
+      created_by: adminUser.id,
+    }),
+    "Create bundle offer fixture",
   );
 
   const paidModule = subjects.find((subject) => subject.slug === "public-financial-management");

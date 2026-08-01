@@ -33,7 +33,7 @@ function formatDate(value: unknown) {
 }
 
 function paymentSuccessTemplate(details: Record<string, unknown>) {
-  const subjectName = escapeHtml(details.subject_name || "your module");
+  const subjectName = escapeHtml(details.subject_name || "your access");
   const reference = escapeHtml(details.provider_reference);
   const amount = escapeHtml(formatMoney(details.amount_kobo, details.currency));
   const expiresAt = escapeHtml(formatDate(details.expires_at));
@@ -43,28 +43,28 @@ function paymentSuccessTemplate(details: Record<string, unknown>) {
     text: [
       "Your PromotionSure payment was confirmed.",
       "",
-      `Module: ${subjectName}`,
+      `Access: ${subjectName}`,
       `Amount: ${amount}`,
       `Reference: ${reference}`,
       `Access valid until: ${expiresAt}`,
       "",
-      "You can now open the module from your dashboard or Access and payment page.",
+      "You can now open your modules from the dashboard or Access and payment page.",
       `For help, contact ${SUPPORT_EMAIL} and include the payment reference.`,
     ].join("\n"),
     html: `
       <p>Your PromotionSure payment was confirmed.</p>
-      <p><strong>Module:</strong> ${subjectName}<br>
+      <p><strong>Access:</strong> ${subjectName}<br>
       <strong>Amount:</strong> ${amount}<br>
       <strong>Reference:</strong> ${reference}<br>
       <strong>Access valid until:</strong> ${expiresAt}</p>
-      <p>You can now open the module from your dashboard or Access and payment page.</p>
+      <p>You can now open your modules from the dashboard or Access and payment page.</p>
       <p>For help, contact <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> and include the payment reference.</p>
     `,
   };
 }
 
 function paymentAccessIssueTemplate(details: Record<string, unknown>) {
-  const subjectName = escapeHtml(details.subject_name || "your module");
+  const subjectName = escapeHtml(details.subject_name || "your access");
   const reference = escapeHtml(details.provider_reference);
   const amount = escapeHtml(formatMoney(details.amount_kobo, details.currency));
 
@@ -73,19 +73,19 @@ function paymentAccessIssueTemplate(details: Record<string, unknown>) {
     text: [
       "PromotionSure received your payment, but module access still needs attention.",
       "",
-      `Module: ${subjectName}`,
+      `Access: ${subjectName}`,
       `Amount: ${amount}`,
       `Reference: ${reference}`,
       "",
-      "Please do not pay again for the same module while this is being reviewed.",
+      "Please do not pay again for the same access while this is being reviewed.",
       `For help, contact ${SUPPORT_EMAIL} and include the payment reference.`,
     ].join("\n"),
     html: `
       <p>PromotionSure received your payment, but module access still needs attention.</p>
-      <p><strong>Module:</strong> ${subjectName}<br>
+      <p><strong>Access:</strong> ${subjectName}<br>
       <strong>Amount:</strong> ${amount}<br>
       <strong>Reference:</strong> ${reference}</p>
-      <p>Please do not pay again for the same module while this is being reviewed.</p>
+      <p>Please do not pay again for the same access while this is being reviewed.</p>
       <p>For help, contact <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> and include the payment reference.</p>
     `,
   };
@@ -312,17 +312,21 @@ export async function getPaymentEmailDetails(reference: string) {
   const adminClient = getAdminClient();
   const { data: order, error } = await adminClient
     .from("payment_orders")
-    .select("id, user_id, subject_id, provider_reference, amount_kobo, currency")
+    .select("id, user_id, subject_id, purchase_type, purchase_label, provider_reference, amount_kobo, currency")
     .eq("provider_reference", reference)
     .maybeSingle();
 
   if (error) throw error;
   if (!order) return null;
 
+  const subjectRequest = order.subject_id
+    ? adminClient.from("subjects").select("name, slug").eq("id", order.subject_id).maybeSingle()
+    : Promise.resolve({ data: null, error: null });
+
   const [{ data: profile, error: profileError }, { data: subject, error: subjectError }, { data: entitlement, error: entitlementError }] =
     await Promise.all([
       adminClient.from("profiles").select("email").eq("id", order.user_id).maybeSingle(),
-      adminClient.from("subjects").select("name, slug").eq("id", order.subject_id).maybeSingle(),
+      subjectRequest,
       adminClient
         .from("module_entitlements")
         .select("expires_at")
@@ -343,8 +347,8 @@ export async function getPaymentEmailDetails(reference: string) {
     provider_reference: order.provider_reference,
     amount_kobo: order.amount_kobo,
     currency: order.currency,
-    subject_name: subject?.name,
-    subject_slug: subject?.slug,
+    subject_name: order.purchase_type === "bundle_offer" ? order.purchase_label : subject?.name,
+    subject_slug: order.purchase_type === "single_module" ? subject?.slug : null,
     expires_at: entitlement?.expires_at ?? null,
   };
 }

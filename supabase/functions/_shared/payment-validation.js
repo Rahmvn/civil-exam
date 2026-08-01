@@ -66,7 +66,18 @@ export function validateModulePaymentData(order, paymentData) {
     !metadata
     || metadata.payment_order_id !== order.id
     || metadata.user_id !== order.user_id
-    || metadata.subject_id !== order.subject_id
+    || (
+      order.purchase_type === "bundle_offer"
+      && metadata.purchase_type !== "bundle_offer"
+    )
+  ) {
+    throw new Error("The verified payment does not match this module order");
+  }
+
+  if (
+    order.purchase_type === "bundle_offer"
+      ? metadata.purchase_offer_id !== order.purchase_offer_id
+      : metadata.subject_id !== order.subject_id
   ) {
     throw new Error("The verified payment does not match this module order");
   }

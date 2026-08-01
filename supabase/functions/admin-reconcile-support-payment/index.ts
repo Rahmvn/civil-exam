@@ -103,13 +103,17 @@ Deno.serve(async (request) => {
         throw new Error("Payment metadata does not match the candidate");
       }
       validateModulePayment(order, payload.data);
-      const entitlement = await activateModulePurchase(order.provider_reference, payload.data);
+      const entitlements = await activateModulePurchase(order.provider_reference, payload.data);
+      const primaryEntitlement = entitlements[0];
 
       return jsonResponse({
         status: "active",
         verified: true,
-        expires_at: entitlement.expires_at,
-        subject_name: entitlement.subject_name,
+        expires_at: primaryEntitlement.expires_at,
+        subject_name: order.purchase_type === "single_module"
+          ? primaryEntitlement.subject_name
+          : order.purchase_label,
+        unlocked_count: entitlements.length,
       });
     } catch (fulfillmentError) {
       if (order.fulfillment_status !== "fulfilled") {

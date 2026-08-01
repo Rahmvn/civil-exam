@@ -108,7 +108,8 @@ Deno.serve(async (request) => {
         throw new Error("Payment metadata does not match the payment order");
       }
       validateModulePayment(order, payload.data);
-      const entitlement = await activateModulePurchase(reference, payload.data);
+      const entitlements = await activateModulePurchase(reference, payload.data);
+      const primaryEntitlement = entitlements[0];
       const emailDetails = await getPaymentEmailDetails(reference);
       if (emailDetails) {
         await sendPaymentSuccessEmail(emailDetails).catch((emailError) => {
@@ -121,9 +122,12 @@ Deno.serve(async (request) => {
 
       return jsonResponse({
         status: "active",
-        expires_at: entitlement.expires_at,
-        subject_name: entitlement.subject_name,
-        subject_slug: entitlement.subject_slug,
+        expires_at: primaryEntitlement.expires_at,
+        purchase_type: order.purchase_type,
+        purchase_label: order.purchase_label,
+        unlocked_count: entitlements.length,
+        subject_name: order.purchase_type === "single_module" ? primaryEntitlement.subject_name : null,
+        subject_slug: order.purchase_type === "single_module" ? primaryEntitlement.subject_slug : null,
       });
     } catch (fulfillmentError) {
       await markModulePaymentFulfillmentFailed(reference, fulfillmentError);

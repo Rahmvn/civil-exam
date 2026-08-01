@@ -15,8 +15,13 @@ Use Node 22 or later.
 
 ```bash
 npm install
+supabase start
 npm run dev
 ```
+
+`npm run dev` is deliberately local-only. It reads the URL and browser key
+from the running local Supabase stack and refuses to start against a hosted
+project. This prevents manual development from changing real candidate data.
 
 For the local Supabase-backed test flows:
 
