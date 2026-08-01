@@ -47,6 +47,53 @@ function formatPracticeSetCount(count) {
   return `${safeCount} practice sets`;
 }
 
+function ModuleInfoDialog({ module, onClose }) {
+  useEffect(() => {
+    if (!module) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [module, onClose]);
+
+  if (!module) return null;
+
+  return (
+    <div className="module-info-backdrop" role="presentation" onClick={onClose}>
+      <section
+        aria-labelledby="module-info-title"
+        aria-modal="true"
+        className="module-info-dialog"
+        role="dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button className="module-info-handle" aria-label="Close module details" onClick={onClose} type="button" />
+        <header className="module-info-header">
+          <h2 id="module-info-title">{module.displayName}</h2>
+          <button className="module-info-close" aria-label="Close module details" onClick={onClose} type="button">&times;</button>
+        </header>
+        <dl className="module-info-facts">
+          <div>
+            <dt>Practice sets</dt>
+            <dd>{formatPracticeSetCount(module.publishedCount)}</dd>
+          </div>
+          <div>
+            <dt>Questions per set</dt>
+            <dd>{module.batchSize > 0 ? module.batchSize : "Varies"}</dd>
+          </div>
+          <div>
+            <dt>Progress</dt>
+            <dd>Saves after each attempt</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { profile, user } = useAuth();
   const location = useLocation();
@@ -69,7 +116,7 @@ export default function Dashboard() {
   const [payingModule, setPayingModule] = useState("");
   const [ctaError, setCtaError] = useState("");
   const [paymentError, setPaymentError] = useState(null);
-  const [openModuleInfoSlug, setOpenModuleInfoSlug] = useState("");
+  const [infoModule, setInfoModule] = useState(null);
 
   const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading && mountedRef.current) setLoading(true);
@@ -482,13 +529,9 @@ export default function Dashboard() {
                     )}
                     {!card.isComingSoon && (
                       <button
-                        aria-expanded={openModuleInfoSlug === card.subject.slug}
                         aria-label={`${card.displayName} details`}
                         className="module-card-info-button"
-                        onBlur={() => setOpenModuleInfoSlug("")}
-                        onClick={() => setOpenModuleInfoSlug((currentSlug) => (
-                          currentSlug === card.subject.slug ? "" : card.subject.slug
-                        ))}
+                        onClick={() => setInfoModule(card)}
                         type="button"
                       >
                         <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
@@ -496,11 +539,6 @@ export default function Dashboard() {
                           <path d="M12 16v-5" />
                           <path d="M12 8h.01" />
                         </svg>
-                        <span className="module-card-info-popover" role="tooltip">
-                          {card.batchSize > 0
-                            ? `${formatPracticeSetCount(card.publishedCount)} available, ${card.batchSize} questions each.`
-                            : `${formatPracticeSetCount(card.publishedCount)} available.`}
-                        </span>
                       </button>
                     )}
                   </div>
@@ -582,6 +620,7 @@ export default function Dashboard() {
         onStartPayment={startPayment}
         paying={payingModule === unlockModule?.subject_slug}
       />
+      <ModuleInfoDialog module={infoModule} onClose={() => setInfoModule(null)} />
     </AppFrame>
   );
 }
