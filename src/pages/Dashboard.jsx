@@ -473,8 +473,8 @@ export default function Dashboard() {
             {moduleCards.map((card) => (
               <article className={`module-card-v3 module-card-progressive ${card.hasUsableModuleAccess ? "is-unlocked" : ""} ${card.isComplete ? "is-complete" : ""}`.trim()} key={card.subject.id}>
                 <div className="module-card-v3-head">
-                  <div className="module-card-title-wrap">
-                    <h3>{card.displayName}</h3>
+                  <h3>{card.displayName}</h3>
+                  <div className="module-card-meta-actions">
                     {!card.isComingSoon && (
                       <button
                         aria-expanded={openModuleInfoSlug === card.subject.slug}
@@ -486,21 +486,25 @@ export default function Dashboard() {
                         ))}
                         type="button"
                       >
-                        i
+                        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-5" />
+                          <path d="M12 8h.01" />
+                        </svg>
                         <span className="module-card-info-popover" role="tooltip">
-                          <strong>{formatPracticeSetCount(card.publishedCount)}</strong>
-                          {card.batchSize > 0 ? (
-                            <span>{`Each set has ${card.batchSize} questions.`}</span>
-                          ) : (
-                            <span>Question count may vary by set.</span>
-                          )}
+                          <span><b>Practice sets</b>{formatPracticeSetCount(card.publishedCount)}</span>
+                          <span>
+                            <b>Questions per set</b>
+                            {card.batchSize > 0 ? `${card.batchSize} questions` : "Varies by set"}
+                          </span>
+                          <span><b>Flow</b>Pass a set to continue</span>
                         </span>
                       </button>
                     )}
+                    {card.hasUsableModuleAccess && !card.isComplete && (
+                      <span className="module-access-state">Unlocked</span>
+                    )}
                   </div>
-                  {card.hasUsableModuleAccess && !card.isComplete && (
-                    <span className="module-access-state">Unlocked</span>
-                  )}
                 </div>
 
                 <div className={`module-card-progressive-body ${card.showProgress ? "has-progress" : ""}`.trim()}>

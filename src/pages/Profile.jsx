@@ -111,7 +111,11 @@ export default function Profile() {
                     onClick={() => setShowDetailsHelp((current) => !current)}
                     type="button"
                   >
-                    i
+                    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 16v-5" />
+                      <path d="M12 8h.01" />
+                    </svg>
                   </button>
                   <span
                     className="account-info-popover"
