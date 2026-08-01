@@ -3,7 +3,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { UnlockModuleModal } from "../components/UnlockModuleModal";
-import { ModulePrice } from "../components/ModulePrice";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import {
   getModuleAccessCatalog,
@@ -552,7 +551,6 @@ export default function Access() {
                   </div>
 
                   <div className="access-module-action">
-                    {!hasUsableModuleAccess && module.can_purchase && <ModulePrice compact module={module} />}
                     {isComingSoon ? (
                       <span className="access-module-coming-soon">Not available yet</span>
                     ) : hasUsableModuleAccess ? (
