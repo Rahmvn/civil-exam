@@ -189,7 +189,7 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
         </div>
       </section>
     </div>
-  );
+  )
 }
 
 export function SkipAheadConfirmationModal({
