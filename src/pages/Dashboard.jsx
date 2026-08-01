@@ -40,7 +40,9 @@ import { useAuth } from "../lib/useAuth";
 
 function formatPracticeSetCount(count) {
   const safeCount = Number(count ?? 0);
+  if (safeCount >= 15) return "15+ practice sets";
   if (safeCount >= 10) return "10+ practice sets";
+  if (safeCount >= 7) return "7+ practice sets";
   if (safeCount === 1) return "1 practice set";
   return `${safeCount} practice sets`;
 }
@@ -475,6 +477,9 @@ export default function Dashboard() {
                 <div className="module-card-v3-head">
                   <h3>{card.displayName}</h3>
                   <div className="module-card-meta-actions">
+                    {card.hasUsableModuleAccess && !card.isComplete && (
+                      <span className="module-access-state">Unlocked</span>
+                    )}
                     {!card.isComingSoon && (
                       <button
                         aria-expanded={openModuleInfoSlug === card.subject.slug}
@@ -492,17 +497,11 @@ export default function Dashboard() {
                           <path d="M12 8h.01" />
                         </svg>
                         <span className="module-card-info-popover" role="tooltip">
-                          <span><b>Practice sets</b>{formatPracticeSetCount(card.publishedCount)}</span>
-                          <span>
-                            <b>Questions per set</b>
-                            {card.batchSize > 0 ? `${card.batchSize} questions` : "Varies by set"}
-                          </span>
-                          <span><b>Flow</b>Pass a set to continue</span>
+                          {card.batchSize > 0
+                            ? `${formatPracticeSetCount(card.publishedCount)} available, ${card.batchSize} questions each.`
+                            : `${formatPracticeSetCount(card.publishedCount)} available.`}
                         </span>
                       </button>
-                    )}
-                    {card.hasUsableModuleAccess && !card.isComplete && (
-                      <span className="module-access-state">Unlocked</span>
                     )}
                   </div>
                 </div>

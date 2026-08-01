@@ -13976,6 +13976,7 @@ button.dashboard-module-toggle:focus-visible {
 }
 
 .module-card-progressive {
+  position: relative;
   grid-template-rows: auto 1fr;
   align-content: start;
   gap: 20px;
@@ -14007,6 +14008,8 @@ button.dashboard-module-toggle:focus-visible {
 }
 
 .module-card-progressive .module-card-v3-head h3 {
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 36rem;
   font-size: 1.16rem;
 }
@@ -14017,21 +14020,22 @@ button.dashboard-module-toggle:focus-visible {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .module-card-info-button,
 button.module-card-info-button {
   position: relative;
-  width: 24px;
-  min-width: 24px;
-  min-height: 24px;
+  width: 26px;
+  min-width: 26px;
+  min-height: 26px;
   display: inline-grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--color-border);
+  border: 0;
   border-radius: 999px;
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text-muted);
   font-size: 0.7rem;
   font-weight: 850;
@@ -14044,15 +14048,15 @@ button.module-card-info-button {
 button.module-card-info-button:hover,
 button.module-card-info-button:focus-visible,
 button.module-card-info-button[aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
   color: var(--color-primary-dark);
+  background: color-mix(in srgb, var(--color-primary-soft) 36%, transparent);
   box-shadow: none;
 }
 
 .module-card-info-button svg,
 .account-info-hint button svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -14065,17 +14069,16 @@ button.module-card-info-button[aria-expanded="true"] {
   z-index: 5;
   top: calc(100% + 8px);
   right: 0;
-  width: min(260px, calc(100vw - 40px));
-  display: grid;
-  gap: 8px;
-  padding: 12px;
+  width: max-content;
+  max-width: min(220px, calc(100vw - 40px));
+  padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
-  color: var(--color-text-soft);
-  font-size: 0.78rem;
-  font-weight: 650;
-  line-height: 1.42;
+  color: var(--color-text);
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.35;
   text-align: left;
   opacity: 0;
   pointer-events: none;
@@ -14084,18 +14087,6 @@ button.module-card-info-button[aria-expanded="true"] {
   box-shadow: 0 14px 34px rgba(20, 33, 48, 0.14);
 }
 
-.module-card-info-popover span {
-  display: grid;
-  gap: 2px;
-  color: var(--color-text);
-}
-
-.module-card-info-popover b {
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
 
 .module-card-info-button:hover .module-card-info-popover,
 .module-card-info-button:focus-visible .module-card-info-popover,
@@ -14103,6 +14094,23 @@ button.module-card-info-button[aria-expanded="true"] {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .module-card-meta-actions,
+  .module-card-info-button,
+  button.module-card-info-button {
+    position: static;
+  }
+
+  .module-card-info-popover {
+    top: 58px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-width: none;
+    padding: 9px 10px;
+  }
 }
 
 .module-access-state {
