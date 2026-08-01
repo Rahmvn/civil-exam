@@ -6397,7 +6397,7 @@ button.admin-danger-link {
 }
 
 .access-unlock-modal {
-  width: min(390px, 100%);
+  width: min(370px, 100%);
   display: grid;
   gap: 16px;
   padding: 24px;
@@ -6479,7 +6479,7 @@ button.access-unlock-close:focus-visible {
 
 .access-unlock-price strong {
   color: var(--color-primary-dark);
-  font-size: clamp(1.95rem, 6vw, 2.28rem);
+  font-size: clamp(1.9rem, 6vw, 2.18rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.02;
@@ -6488,13 +6488,13 @@ button.access-unlock-close:focus-visible {
 .access-unlock-price-stack {
   display: grid;
   justify-items: center;
-  gap: 4px;
+  gap: 6px;
   text-align: center;
 }
 
 .access-unlock-regular-price {
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
