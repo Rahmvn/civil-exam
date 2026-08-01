@@ -477,10 +477,6 @@ export default function Dashboard() {
                     <p className="module-card-availability">Practice for this module is coming soon.</p>
                   ) : card.showProgress ? (
                     <div className="module-progress-summary">
-                      <div className="module-progress-summary-copy">
-                        <span>{card.isComplete ? "Completed" : "Module progress"}</span>
-                        <strong>{`${card.completedCount} of ${card.publishedCount} practice sets completed`}</strong>
-                      </div>
                       <AnimatedProgressBar value={card.progressPercent} />
                     </div>
                   ) : null}
