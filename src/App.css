@@ -6399,12 +6399,16 @@ button.admin-danger-link {
 .access-unlock-modal {
   width: min(390px, 100%);
   display: grid;
-  gap: 18px;
+  gap: 16px;
   padding: 24px;
   border: 1px solid var(--color-border);
   border-radius: 18px;
   background: var(--color-surface);
   box-shadow: 0 18px 46px rgba(20, 33, 48, 0.14);
+}
+
+.access-unlock-drag-handle {
+  display: none;
 }
 
 .access-unlock-header {
@@ -6461,7 +6465,7 @@ button.access-unlock-close:focus-visible {
 .access-unlock-price {
   display: grid;
   justify-items: center;
-  padding: 4px 0 2px;
+  padding: 2px 0 0;
   border: 1px solid var(--color-border);
   border-inline: 0;
   background: transparent;
@@ -6475,7 +6479,7 @@ button.access-unlock-close:focus-visible {
 
 .access-unlock-price strong {
   color: var(--color-primary-dark);
-  font-size: clamp(2.1rem, 7vw, 2.65rem);
+  font-size: clamp(1.95rem, 6vw, 2.28rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.02;
@@ -6490,7 +6494,7 @@ button.access-unlock-close:focus-visible {
 
 .access-unlock-regular-price {
   color: var(--color-text-muted);
-  font-size: 0.98rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -6501,7 +6505,7 @@ button.access-unlock-close:focus-visible {
 .access-unlock-actions button,
 .access-unlock-actions .secondary-action {
   width: 100%;
-  min-height: 48px;
+  min-height: 46px;
   justify-content: center;
   border-radius: 12px;
   font-size: 0.95rem;
@@ -6645,8 +6649,18 @@ button.access-unlock-close:focus-visible {
     width: 100%;
     max-height: calc(100dvh - 18px);
     overflow: auto;
-    padding: 22px 18px max(20px, env(safe-area-inset-bottom));
+    padding: 12px 18px max(20px, env(safe-area-inset-bottom));
     border-radius: 22px 22px 0 0;
+  }
+
+  .access-unlock-drag-handle {
+    display: block;
+    justify-self: center;
+    width: 42px;
+    height: 5px;
+    margin: 0 0 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-border-strong) 70%, white);
   }
 
   .access-receipt-details > div {

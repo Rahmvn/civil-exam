@@ -44,6 +44,7 @@ export function UnlockModuleModal({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
+        <div className="access-unlock-drag-handle" aria-hidden="true" />
         <header className="access-unlock-header">
           <div>
             <h2 id="unlock-module-title">{moduleName}</h2>
