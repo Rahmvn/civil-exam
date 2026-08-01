@@ -44,14 +44,19 @@ function getOfferSavings(offer, selectedListPrice = null) {
   return `Save ${formatModuleMoney(comparison - price, offer.currency)}`;
 }
 
-function getOfferSubtitle(offer) {
-  if (offer?.offer_type === "full_bundle") return `All ${getOfferModuleCount(offer)} modules`;
+function getOfferDescriptor(offer) {
+  if (offer?.offer_type === "full_bundle") return "All available modules";
   return `Any ${getOfferModuleCount(offer)} modules`;
 }
 
+function getOfferBodyCopy(offer) {
+  if (offer?.offer_type === "full_bundle") return "Unlock every available module.";
+  return `Choose ${getOfferModuleCount(offer)} modules in one payment.`;
+}
+
 function getOfferActionCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "Review full bundle";
-  return "Choose modules";
+  if (offer?.offer_type === "full_bundle") return "Review";
+  return "Choose";
 }
 
 export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
@@ -60,9 +65,7 @@ export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
   return (
     <button className={`bundle-offer-trigger is-${variant}`} onClick={() => onChoose(offer)} type="button">
       <GiftMark />
-      <span>
-        <strong>Bundle offer</strong>
-      </span>
+      <span>Bundle offer</span>
     </button>
   );
 }
@@ -73,28 +76,30 @@ export function BundleOffers({ offers = [], onChoose }) {
   return (
     <section className="bundle-offers" id="bundles" aria-labelledby="bundle-offers-title">
       <header className="bundle-offers-heading">
-        <h2 id="bundle-offers-title">Bundle offers</h2>
+        <div>
+          <span>Bundle offer</span>
+          <h2 id="bundle-offers-title">Save when unlocking multiple modules</h2>
+        </div>
       </header>
-      <div className="bundle-offer-grid">
+
+      <div className="bundle-offer-list">
         {offers.map((offer) => {
-          const isFullBundle = offer.offer_type === "full_bundle";
           const comparisonPrice = getOfferComparisonPrice(offer);
           const savings = getOfferSavings(offer);
 
           return (
-            <article className="bundle-offer-card" key={offer.offer_id}>
+            <article className="bundle-offer-row" key={offer.offer_id}>
               <GiftMark />
-              <div className="bundle-offer-card-copy">
-                <span>Bundle offer</span>
+              <div className="bundle-offer-row-copy">
                 <h3>{offer.offer_name}</h3>
-                <p>{isFullBundle ? "Unlock every available module" : `Choose any ${offer.selection_count} modules`}</p>
+                <p>{getOfferBodyCopy(offer)}</p>
               </div>
-              <div className="bundle-offer-price">
-                {comparisonPrice && <del>{formatModuleMoney(comparisonPrice, offer.currency)} separately</del>}
+              <div className="bundle-offer-row-price">
                 <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
+                {comparisonPrice && <small>{formatModuleMoney(comparisonPrice, offer.currency)} separately</small>}
                 {savings && <span>{savings}</span>}
               </div>
-              <button className="bundle-offer-card-action" type="button" onClick={() => onChoose(offer)}>
+              <button className="bundle-offer-row-action" type="button" onClick={() => onChoose(offer)}>
                 {getOfferActionCopy(offer)}
               </button>
             </article>
@@ -133,6 +138,9 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
   const savings = selectionComplete
     ? getOfferSavings(offer, selectedListPrice)
     : getOfferSavings(offer);
+  const selectionLabel = isFullBundle
+    ? `${modules.length} modules included`
+    : selectionComplete ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`;
 
   function toggleModule(subjectSlug) {
     if (paying || isFullBundle) return;
@@ -151,63 +159,71 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
       <section
         aria-labelledby="bundle-checkout-title"
         aria-modal="true"
-        className="bundle-checkout-modal"
+        className="bundle-checkout-sheet"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
         <button className="bundle-checkout-handle" aria-label="Close bundle checkout" onClick={onClose} type="button" />
-        <header className="bundle-checkout-header">
-          <div>
-            <span className="bundle-checkout-kicker"><GiftMark /> Bundle offer</span>
+
+        <header className="bundle-checkout-head">
+          <div className="bundle-checkout-title-block">
+            <span><GiftMark /> Bundle offer</span>
             <h2 id="bundle-checkout-title">{offer.offer_name}</h2>
+            <p>{getOfferDescriptor(offer)}</p>
           </div>
-          <button aria-label="Close bundle checkout" disabled={paying} onClick={onClose} type="button">&times;</button>
+          <button className="bundle-checkout-close" aria-label="Close bundle checkout" disabled={paying} onClick={onClose} type="button">&times;</button>
         </header>
 
-        <div className="bundle-checkout-price" aria-label="Bundle price">
-          <div>
-            {comparisonPrice && <del>{formatModuleMoney(comparisonPrice, offer.currency)} separately</del>}
+        <div className="bundle-checkout-body">
+          <section className="bundle-checkout-summary" aria-label="Bundle price">
             <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
-          </div>
-          <span>{savings || getOfferSubtitle(offer)}</span>
+            <div>
+              {comparisonPrice && <span>{formatModuleMoney(comparisonPrice, offer.currency)} separately</span>}
+              {savings && <span>{savings}</span>}
+            </div>
+            {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
+          </section>
+
+          <section className="bundle-module-picker" aria-labelledby="bundle-module-picker-title">
+            <header>
+              <h3 id="bundle-module-picker-title">{isFullBundle ? "Included modules" : `Choose ${requiredCount} modules`}</h3>
+              <span>{selectionLabel}</span>
+            </header>
+
+            <div className="bundle-module-list" aria-label={isFullBundle ? "Included modules" : "Choose modules"}>
+              {modules.map((module) => {
+                const selectedModule = selectedSlugs.includes(module.subject_slug);
+                return (
+                  <button
+                    aria-pressed={selectedModule}
+                    className={selectedModule ? "is-selected" : ""}
+                    disabled={isFullBundle || paying}
+                    key={module.subject_id}
+                    onClick={() => toggleModule(module.subject_slug)}
+                    type="button"
+                  >
+                    <span className="bundle-module-check" aria-hidden="true">{selectedModule ? "✓" : ""}</span>
+                    <span className="bundle-module-name">{getModuleDisplayName(module.subject_name)}</span>
+                    {isFullBundle && <small>Included</small>}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         </div>
 
-        {!isFullBundle && (
-          <p className="bundle-checkout-select-note">
-            {selected.length === requiredCount ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`}
-          </p>
-        )}
-
-        <div className="bundle-checkout-modules" aria-label="Modules in bundle">
-          {modules.map((module) => {
-            const selectedModule = selectedSlugs.includes(module.subject_slug);
-            return (
-              <button
-                aria-pressed={selectedModule}
-                className={selectedModule ? "is-selected" : ""}
-                disabled={isFullBundle || paying}
-                key={module.subject_id}
-                onClick={() => toggleModule(module.subject_slug)}
-                type="button"
-              >
-                <span className="bundle-module-check" aria-hidden="true">{selectedModule ? "✓" : ""}</span>
-                <span className="bundle-module-name">{getModuleDisplayName(module.subject_name)}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {offer.ends_at && <p className="bundle-checkout-end">Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
-        {error && <p className="action-error" role="alert">{error}</p>}
-        <button
-          aria-busy={paying}
-          className="bundle-checkout-pay"
-          disabled={paying || !selectionComplete}
-          onClick={() => void onPay(offer, selectedSlugs)}
-          type="button"
-        >
-          {paying ? "Preparing payment..." : "Continue to payment"}
-        </button>
+        <footer className="bundle-checkout-footer">
+          {error && <p className="action-error" role="alert">{error}</p>}
+          <button
+            aria-busy={paying}
+            className="bundle-checkout-pay"
+            disabled={paying || !selectionComplete}
+            onClick={() => void onPay(offer, selectedSlugs)}
+            type="button"
+          >
+            {paying ? "Preparing payment..." : "Continue to payment"}
+          </button>
+        </footer>
       </section>
     </div>
   );
