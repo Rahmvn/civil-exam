@@ -6,7 +6,7 @@ test("choose-three checkout stays compact and centred on desktop", async ({ page
 
   const offer = page.locator("article").filter({ hasText: "Any 3 modules" }).first();
   await expect(offer).toBeVisible();
-  await offer.getByRole("button", { name: "Choose" }).click();
+  await offer.getByRole("button", { name: "Choose modules" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Any 3 modules" });
   await expect(dialog).toBeVisible();

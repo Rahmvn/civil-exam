@@ -34,9 +34,9 @@ function getOfferComparisonPrice(offer, selectedListPrice = null) {
   return null;
 }
 
-function getOfferDescriptor(offer) {
-  if (offer?.offer_type === "full_bundle") return "All available modules.";
-  return `Choose any ${getOfferModuleCount(offer)} modules.`;
+function getOfferCardCopy(offer) {
+  if (offer?.offer_type === "full_bundle") return "Unlock every available module.";
+  return "Pick your modules at checkout.";
 }
 
 function getOfferModalCopy(offer) {
@@ -45,8 +45,8 @@ function getOfferModalCopy(offer) {
 }
 
 function getOfferActionCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "Review";
-  return "Choose";
+  if (offer?.offer_type === "full_bundle") return "Review bundle";
+  return "Choose modules";
 }
 
 function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
@@ -80,19 +80,16 @@ export function BundleOffers({ offers = [], onChoose }) {
 
       <div className="bundle-offer-list">
         {offers.map((offer) => {
-          const comparisonPrice = getOfferComparisonPrice(offer);
           const isApplicable = offer.is_applicable !== false;
 
           return (
             <article className={`bundle-offer-row${isApplicable ? "" : " is-unavailable"}`} key={offer.offer_id}>
-              <BundleMark />
               <div className="bundle-offer-row-copy">
                 <h3>{offer.offer_name}</h3>
-                <p>{isApplicable ? getOfferDescriptor(offer) : offer.eligibility_message}</p>
+                <p>{isApplicable ? getOfferCardCopy(offer) : offer.eligibility_message}</p>
               </div>
               <div className="bundle-offer-row-price">
                 <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
-                {comparisonPrice && <small>{formatModuleMoney(comparisonPrice, offer.currency)} separately</small>}
               </div>
               {isApplicable ? (
                 <button className="bundle-offer-row-action" type="button" onClick={() => onChoose(offer)}>
@@ -194,7 +191,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <div className="bundle-checkout-body">
           <section className="bundle-checkout-summary" aria-label="Bundle price">
             <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
-            {comparisonPrice && <span>{formatModuleMoney(comparisonPrice, offer.currency)} separately</span>}
+            {comparisonPrice && <span>Individual total: {formatModuleMoney(comparisonPrice, offer.currency)}</span>}
             {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
           </section>
 
