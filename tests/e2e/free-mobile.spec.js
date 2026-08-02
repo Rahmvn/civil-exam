@@ -40,7 +40,7 @@ test("choose-three checkout uses a full-width mobile sheet with an exact selecti
   await expect(page.getByRole("heading", { name: "Bundle offers" })).toBeVisible();
   const offer = page.locator("article").filter({ hasText: "Any 3 modules" }).first();
   await expect(offer.getByText(/5,000/)).toBeVisible();
-  await offer.getByRole("button", { name: "Choose modules" }).click();
+  await offer.getByRole("button", { name: "View" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Any 3 modules" });
   await expect(dialog).toBeVisible();

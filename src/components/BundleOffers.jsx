@@ -35,8 +35,8 @@ function getOfferComparisonPrice(offer, selectedListPrice = null) {
 }
 
 function getOfferCardCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "Unlock every available module.";
-  return "Pick your modules at checkout.";
+  if (offer?.offer_type === "full_bundle") return "All modules in one payment.";
+  return `Select any ${getOfferModuleCount(offer)} modules.`;
 }
 
 function getOfferModalCopy(offer) {
@@ -45,8 +45,8 @@ function getOfferModalCopy(offer) {
 }
 
 function getOfferActionCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "Review bundle";
-  return "Choose modules";
+  if (offer?.offer_type === "full_bundle") return "View";
+  return "View";
 }
 
 function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
