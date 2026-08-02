@@ -252,7 +252,11 @@
 .bundle-offers {
   width: min(100%, 920px);
   display: grid;
-  gap: 10px;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--color-surface) 82%, var(--color-bg));
 }
 
 .bundle-offers-heading {
@@ -270,25 +274,24 @@
 .bundle-offers-heading h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 0.94rem;
-  font-weight: 780;
+  font-size: 1rem;
+  font-weight: 800;
   line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
 .bundle-offers-heading p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 520;
   line-height: 1.4;
 }
 
 .bundle-offer-list {
-  overflow: hidden;
   display: grid;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .bundle-offer-row {
@@ -298,19 +301,17 @@
     "copy copy"
     "price action";
   align-items: end;
-  gap: 14px 18px;
-  min-height: 104px;
-  padding: 18px 20px;
-  background: transparent;
+  gap: 18px 16px;
+  min-height: 142px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
   box-shadow: none;
 }
 
 .bundle-offer-row.is-unavailable {
-  background: color-mix(in srgb, var(--color-bg) 36%, var(--color-surface));
-}
-
-.bundle-offer-row + .bundle-offer-row {
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 82%, white);
+  background: color-mix(in srgb, var(--color-bg) 46%, var(--color-surface));
 }
 
 .bundle-offer-row.is-unavailable .bundle-offer-row-price {
@@ -342,7 +343,7 @@
   grid-area: copy;
   min-width: 0;
   display: grid;
-  gap: 2px;
+  gap: 4px;
 }
 
 .bundle-offer-row-copy h3,
@@ -353,17 +354,18 @@
 }
 
 .bundle-offer-row-copy h3 {
-  font-size: 0.94rem;
-  font-weight: 780;
+  font-size: 1rem;
+  font-weight: 800;
   line-height: 1.25;
+  letter-spacing: -0.012em;
 }
 
 .bundle-offer-row-copy p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 520;
-  line-height: 1.35;
+  line-height: 1.38;
 }
 
 .bundle-offer-row-price {
@@ -376,7 +378,7 @@
 
 .bundle-offer-row-price strong {
   color: var(--color-primary-dark);
-  font-size: 1.28rem;
+  font-size: 1.34rem;
   line-height: 1;
   letter-spacing: -0.035em;
 }
@@ -768,17 +770,23 @@
 }
 
 @media (max-width: 760px) {
+  .bundle-offers {
+    gap: 13px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
   .bundle-offers-heading h2 {
-    font-size: 0.92rem;
+    font-size: 0.96rem;
   }
 
   .bundle-offers-heading p {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
   }
 
   .bundle-offer-list {
-    gap: 0;
-    border-radius: 16px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .bundle-offer-row {
@@ -788,8 +796,8 @@
       "price action";
     gap: 12px 13px;
     min-height: 0;
-    padding: 16px 15px;
-    border-radius: 0;
+    padding: 15px;
+    border-radius: 16px;
   }
 
   .bundle-offer-row-copy {

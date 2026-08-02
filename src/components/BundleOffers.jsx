@@ -76,7 +76,7 @@ export function BundleOffers({ offers = [], onChoose }) {
       <header className="bundle-offers-heading">
         <div>
           <h2 id="bundle-offers-title">Bundle offers</h2>
-          <p>Save when unlocking multiple modules.</p>
+          <p>Save when buying modules together.</p>
         </div>
       </header>
 
