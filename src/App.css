@@ -250,8 +250,9 @@
 
 /* Bundle purchase options */
 .bundle-offers {
+  width: min(100%, 920px);
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .bundle-offers-heading {
@@ -292,11 +293,14 @@
 
 .bundle-offer-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 16px;
-  min-height: 72px;
-  padding: 15px 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "copy copy"
+    "price action";
+  align-items: end;
+  gap: 14px 18px;
+  min-height: 104px;
+  padding: 18px 20px;
   background: transparent;
   box-shadow: none;
 }
@@ -335,6 +339,7 @@
 }
 
 .bundle-offer-row-copy {
+  grid-area: copy;
   min-width: 0;
   display: grid;
   gap: 2px;
@@ -362,8 +367,9 @@
 }
 
 .bundle-offer-row-price {
+  grid-area: price;
   display: grid;
-  justify-items: end;
+  justify-items: start;
   gap: 2px;
   min-width: 96px;
 }
@@ -382,6 +388,8 @@
 }
 
 .bundle-offer-row-action {
+  grid-area: action;
+  justify-self: end;
   min-width: 78px;
   min-height: 38px;
   padding: 8px 18px;
@@ -401,6 +409,8 @@
 }
 
 .bundle-offer-row-status {
+  grid-area: action;
+  justify-self: end;
   min-width: 104px;
   min-height: 36px;
   display: inline-flex;
@@ -774,11 +784,11 @@
   .bundle-offer-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "copy price"
-      "copy action";
-    gap: 7px 13px;
+      "copy copy"
+      "price action";
+    gap: 12px 13px;
     min-height: 0;
-    padding: 14px 15px;
+    padding: 16px 15px;
     border-radius: 0;
   }
 
@@ -788,8 +798,8 @@
 
   .bundle-offer-row-price {
     grid-area: price;
-    align-self: start;
-    justify-items: end;
+    align-self: end;
+    justify-items: start;
     min-width: 0;
   }
 
