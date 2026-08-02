@@ -1,4 +1,4 @@
-.app-shell,
+﻿.app-shell,
 .admin-shell,
 .practice-shell,
 .state-shell,
@@ -406,13 +406,13 @@
 }
 
 .bundle-checkout-sheet {
-  width: min(500px, 100%);
+  width: min(520px, 100%);
   max-height: min(760px, calc(100dvh - 40px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--color-surface);
   box-shadow: 0 24px 70px rgba(10, 31, 24, 0.22);
 }
@@ -426,7 +426,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
-  padding: 22px 24px 18px;
+  padding: 24px 28px 18px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -437,7 +437,7 @@
 }
 
 .bundle-checkout-title-block h2 {
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   line-height: 1.12;
   letter-spacing: -0.03em;
 }
@@ -476,22 +476,22 @@
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 16px;
-  padding: 18px 24px;
+  gap: 18px;
+  padding: 20px 28px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 .bundle-checkout-summary {
   display: grid;
-  gap: 6px;
-  padding: 0 0 16px;
+  gap: 7px;
+  padding: 0 0 18px;
   border-bottom: 1px solid var(--color-border);
 }
 
 .bundle-checkout-summary strong {
-  color: var(--color-primary-dark);
-  font-size: clamp(1.9rem, 5vw, 2.25rem);
+  color: var(--color-text);
+  font-size: clamp(1.85rem, 4.6vw, 2.25rem);
   line-height: 0.98;
   letter-spacing: -0.045em;
 }
@@ -512,7 +512,7 @@
 .bundle-module-picker {
   min-height: 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bundle-module-picker header {
@@ -523,7 +523,8 @@
 }
 
 .bundle-module-picker h3 {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 850;
 }
 
 .bundle-module-picker header span {
@@ -535,30 +536,36 @@
 
 .bundle-module-list {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .bundle-module-list > button {
-  min-height: 48px;
+  min-height: 52px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 11px 13px;
+  padding: 12px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
   box-shadow: none;
-  font-size: 0.9rem;
+  font-size: 0.91rem;
   font-weight: 800;
 }
 
 .bundle-module-list > button.is-selected {
-  border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary-soft) 34%, white);
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-soft) 48%, white);
   color: var(--color-primary-dark);
+}
+
+.bundle-module-list > button:not(:disabled):hover,
+.bundle-module-list > button:not(:disabled):focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-soft) 28%, white);
 }
 
 .bundle-module-list > button:disabled {
@@ -567,15 +574,13 @@
 }
 
 .bundle-module-check {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
-  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 52%, white);
-  border-radius: 7px;
-  color: #fff;
-  font-size: 0;
-  font-weight: 900;
+  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 58%, white);
+  border-radius: 999px;
+  background: var(--color-surface);
 }
 
 .is-selected > .bundle-module-check {
@@ -584,9 +589,13 @@
 }
 
 .is-selected > .bundle-module-check::after {
-  content: "✓";
-  font-size: 0.72rem;
-  line-height: 1;
+  content: "";
+  width: 8px;
+  height: 4px;
+  margin-top: -1px;
+  border: solid #fff;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
 }
 
 .bundle-module-name {
@@ -605,21 +614,27 @@
 .bundle-checkout-footer {
   display: grid;
   gap: 10px;
-  padding: 14px 24px 20px;
+  padding: 14px 28px 22px;
   border-top: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-surface) 92%, white);
+  background: var(--color-surface);
 }
 
 .bundle-checkout-pay {
   width: 100%;
-  min-height: 48px;
+  min-height: 50px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--color-primary);
   color: #fff;
   box-shadow: none;
   font-size: 0.94rem;
   font-weight: 850;
+}
+
+.bundle-checkout-pay:disabled {
+  background: color-mix(in srgb, var(--color-text-muted) 22%, white);
+  color: color-mix(in srgb, var(--color-text-muted) 92%, white);
+  cursor: not-allowed;
 }
 
 .access-unlock-bundle-link {
@@ -692,7 +707,7 @@
   }
 
   .bundle-checkout-head {
-    padding: 13px 18px 15px;
+    padding: 14px 20px 15px;
   }
 
   .bundle-checkout-close {
@@ -705,11 +720,11 @@
 
   .bundle-checkout-body {
     gap: 14px;
-    padding: 16px 18px;
+    padding: 16px 20px;
   }
 
   .bundle-checkout-summary strong {
-    font-size: 2.1rem;
+    font-size: 2rem;
   }
 
   .bundle-module-picker header {
@@ -719,11 +734,11 @@
   }
 
   .bundle-module-list > button {
-    min-height: 50px;
+    min-height: 52px;
   }
 
   .bundle-checkout-footer {
-    padding: 12px 18px max(18px, env(safe-area-inset-bottom));
+    padding: 12px 20px max(18px, env(safe-area-inset-bottom));
   }
 
   .bundle-offer-trigger.is-dashboard {

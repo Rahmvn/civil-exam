@@ -191,7 +191,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
                     onClick={() => toggleModule(module.subject_slug)}
                     type="button"
                   >
-                    <span className="bundle-module-check" aria-hidden="true">{selectedModule ? "✓" : ""}</span>
+                    <span className="bundle-module-check" aria-hidden="true" />
                     <span className="bundle-module-name">{getModuleDisplayName(module.subject_name)}</span>
                     {isFullBundle && <small>Included</small>}
                   </button>
