@@ -64,7 +64,7 @@ export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
   return (
     <button className={`bundle-offer-trigger is-${variant}`} onClick={() => onChoose(offer)} type="button">
       <BundleMark />
-      <span>View bundle offers</span>
+      <span>Bundle offers</span>
     </button>
   );
 }
