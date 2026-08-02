@@ -250,8 +250,9 @@ async function sendTrackedTransactionalEmail({
   eventType: string;
   message: { subject: string; text: string; html: string };
 }) {
+  const eventKey = `${eventType}:${details.provider_reference}`;
   const event = await createOrClaimEmailEvent(
-    `${eventType}:${details.provider_reference}`,
+    eventKey,
     eventType,
     details,
   );

@@ -8,6 +8,7 @@ test("Resend sends use the database event key as a provider idempotency key", as
   const source = await readFile(sourcePath, "utf8");
 
   assert.match(source, /"Idempotency-Key": idempotencyKey/);
+  assert.match(source, /const eventKey = `\$\{eventType\}:\$\{details\.provider_reference\}`;/);
   assert.match(
     source,
     /sendWithResend\(String\(details\.recipient_email\), message, eventKey\)/,
