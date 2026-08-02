@@ -10,9 +10,9 @@ function BundleMark({ className = "" }) {
   return (
     <span className={`bundle-mark ${className}`.trim()} aria-hidden="true">
       <svg focusable="false" viewBox="0 0 24 24">
-        <path d="M6 7.5h12" />
-        <path d="M7 12h10" />
-        <path d="M8 16.5h8" />
+        <path d="M7 6.5h10v5H7z" />
+        <path d="M5.5 10.5h13v6.5h-13z" />
+        <path d="M9 14h6" />
       </svg>
     </span>
   );
@@ -39,8 +39,12 @@ function getOfferDescriptor(offer) {
   return `Choose any ${getOfferModuleCount(offer)} modules.`;
 }
 
+function getOfferModalCopy(offer) {
+  if (offer?.offer_type === "full_bundle") return "Review included modules before payment.";
+  return `Select ${getOfferModuleCount(offer)} modules to continue.`;
+}
+
 function getOfferActionCopy(offer) {
-  if (offer?.is_applicable === false) return "Unavailable";
   if (offer?.offer_type === "full_bundle") return "Review";
   return "Choose";
 }
@@ -60,7 +64,7 @@ export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
   return (
     <button className={`bundle-offer-trigger is-${variant}`} onClick={() => onChoose(offer)} type="button">
       <BundleMark />
-      <span>Bundle offers</span>
+      <span>View bundle offers</span>
     </button>
   );
 }
@@ -90,14 +94,13 @@ export function BundleOffers({ offers = [], onChoose }) {
                 <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
                 {comparisonPrice && <small>{formatModuleMoney(comparisonPrice, offer.currency)} separately</small>}
               </div>
-              <button
-                className="bundle-offer-row-action"
-                disabled={!isApplicable}
-                type="button"
-                onClick={() => onChoose(offer)}
-              >
-                {getOfferActionCopy(offer)}
-              </button>
+              {isApplicable ? (
+                <button className="bundle-offer-row-action" type="button" onClick={() => onChoose(offer)}>
+                  {getOfferActionCopy(offer)}
+                </button>
+              ) : (
+                <span className="bundle-offer-row-status">Not available</span>
+              )}
             </article>
           );
         })}
@@ -175,7 +178,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <header className="bundle-checkout-head">
           <div className="bundle-checkout-title-block">
             <h2 id="bundle-checkout-title">{offer.offer_name}</h2>
-            <p>{getOfferDescriptor(offer)}</p>
+            <p>{getOfferModalCopy(offer)}</p>
           </div>
           <button
             aria-label="Close bundle checkout"

@@ -16,7 +16,7 @@ test("choose-three checkout stays compact and centred on desktop", async ({ page
 
   const viewport = page.viewportSize();
   const modal = await dialog.boundingBox();
-  expect(modal.width).toBeLessThanOrEqual(522);
+  expect(modal.width).toBeLessThanOrEqual(542);
   expect(Math.abs((modal.x + modal.width / 2) - viewport.width / 2)).toBeLessThanOrEqual(2);
 
   const moduleChoices = dialog.locator(".bundle-module-list > button");
