@@ -24,16 +24,6 @@ function getOfferModuleCount(offer) {
   return Number(offer.selection_count ?? 0);
 }
 
-function getOfferComparisonPrice(offer, selectedListPrice = null) {
-  const selectedComparison = Number(selectedListPrice);
-  const directComparison = Number(offer?.list_price_kobo ?? offer?.minimum_comparison_price_kobo);
-  const price = Number(offer?.price_kobo);
-
-  if (Number.isFinite(selectedComparison) && selectedComparison > price) return selectedComparison;
-  if (Number.isFinite(directComparison) && directComparison > price) return directComparison;
-  return null;
-}
-
 function getOfferCardCopy(offer) {
   if (offer?.offer_type === "full_bundle") return "All modules in one payment.";
   return `Select any ${getOfferModuleCount(offer)} modules.`;
@@ -126,11 +116,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
     ? selectionState.slugs
     : isFullBundle ? modules.map((module) => module.subject_slug) : [];
   const selected = modules.filter((module) => selectedSlugs.includes(module.subject_slug));
-  const selectedListPrice = selected.reduce((sum, module) => sum + Number(module.price_kobo), 0);
   const selectionComplete = selected.length === requiredCount;
-  const comparisonPrice = selectionComplete
-    ? getOfferComparisonPrice(offer, selectedListPrice)
-    : getOfferComparisonPrice(offer);
   const selectionLabel = isFullBundle
     ? `${modules.length} modules included`
     : selectionComplete ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`;
@@ -191,7 +177,6 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <div className="bundle-checkout-body">
           <section className="bundle-checkout-summary" aria-label="Bundle price">
             <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
-            {comparisonPrice && <span>Normally {formatModuleMoney(comparisonPrice, offer.currency)}</span>}
             {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
           </section>
 
