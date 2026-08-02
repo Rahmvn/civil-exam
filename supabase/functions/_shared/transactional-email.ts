@@ -200,7 +200,7 @@ async function markEmailEvent(
   if (error) throw error;
 }
 
-async function sendWithResend(
+export async function sendWithResend(
   to: string,
   message: { subject: string; text: string; html: string },
   idempotencyKey: string,

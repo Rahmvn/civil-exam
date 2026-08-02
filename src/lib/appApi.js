@@ -855,6 +855,58 @@ export async function getAdminUserDirectory({ segment = "all", query = "", limit
   };
 }
 
+export async function createAdminEmailCampaign({
+  campaignType = "payment_started_support_checkin",
+  segment = "payment_started_unpaid",
+  subject = null,
+  bodyText = null,
+} = {}) {
+  return requireData(await supabase.rpc("admin_create_email_campaign", {
+    requested_campaign_type: campaignType,
+    requested_segment: segment,
+    requested_subject: subject,
+    requested_body_text: bodyText,
+  }));
+}
+
+export async function getAdminEmailCampaign(campaignId) {
+  return requireData(await supabase.rpc("get_admin_email_campaign", {
+    requested_campaign_id: campaignId,
+  }));
+}
+
+export async function getAdminEmailCampaigns(limit = 20) {
+  const data = await readWithPolicy(`admin-email-campaigns:${limit}`, async () =>
+    requireData(await supabase.rpc("get_admin_email_campaigns", { requested_limit: limit })),
+  );
+  return ensureArray(data?.items);
+}
+
+export async function cancelAdminEmailCampaign(campaignId) {
+  return requireData(await supabase.rpc("admin_cancel_email_campaign", {
+    requested_campaign_id: campaignId,
+  }));
+}
+
+export async function sendAdminEmailCampaignTest(campaignId, testEmail) {
+  return requireFunctionData(await supabase.functions.invoke("admin-email-campaign", {
+    body: {
+      action: "send_test",
+      campaign_id: campaignId,
+      test_email: testEmail,
+    },
+  }));
+}
+
+export async function sendAdminEmailCampaign(campaignId) {
+  return requireFunctionData(await supabase.functions.invoke("admin-email-campaign", {
+    body: {
+      action: "send_campaign",
+      campaign_id: campaignId,
+    },
+  }));
+}
+
 export async function updateSupportRequest(requestId, status, resolutionNote) {
   return requireData(await supabase.rpc("update_support_request", {
     requested_id: requestId,

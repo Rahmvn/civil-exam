@@ -14,6 +14,7 @@ import {
   archiveAdminQuestion,
   configureAdminLaunchOffer,
   createAdminModule,
+  createAdminEmailCampaign,
   createAdminPracticeSet,
   createAdminPracticeSetReplacement,
   createAdminQuestionRevision,
@@ -31,14 +32,19 @@ import {
   getAdminPaymentAttention,
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
+  getAdminEmailCampaign,
+  getAdminEmailCampaigns,
   getAdminSupportQueue,
   getAdminSupportDiagnostics,
   importAdminQuestions,
   publishAdminPracticeSetReplacement,
   publishAdminQuestionRevision,
   reconcileAdminSupportPayment,
+  cancelAdminEmailCampaign,
   saveAdminPurchaseOffer,
   saveAdminQuestion,
+  sendAdminEmailCampaign,
+  sendAdminEmailCampaignTest,
   republishAdminPracticeSet,
   retireAdminPracticeSet,
   transitionAdminPracticeSet,
@@ -1486,6 +1492,14 @@ const USER_SEGMENT_LABELS = {
   one_module_unlocked: "One module",
 };
 
+const EMAIL_CAMPAIGN_STATUS_LABELS = {
+  draft: "Draft",
+  tested: "Tested",
+  sending: "Sending",
+  sent: "Sent",
+  cancelled: "Cancelled",
+};
+
 function formatAdminDateTime(value) {
   if (!value) return "Not yet";
   return new Date(value).toLocaleString("en-NG");
@@ -1593,18 +1607,28 @@ function AdminEmailDiagnosticsPanel({
 }
 
 function AdminUsersView({
+  activeCampaign,
+  campaignLoading,
   directory,
   loading,
+  onCancelCampaign,
+  onCreateCampaign,
   onPageChange,
   onQueryChange,
   onRefresh,
+  onRefreshCampaign,
+  onSendCampaign,
+  onSendCampaignTest,
   onSegmentChange,
   query,
   refreshing,
   segment,
 }) {
+  const [testEmail, setTestEmail] = useState("");
   const firstResult = directory.total === 0 ? 0 : directory.offset + 1;
   const lastResult = Math.min(directory.offset + directory.items.length, directory.total);
+  const campaignRecipients = ensureAdminArray(activeCampaign?.recipients);
+  const canCreatePaymentCampaign = segment === "payment_started_unpaid" && directory.counts.payment_started_unpaid > 0;
 
   return (
     <>
@@ -1623,6 +1647,77 @@ function AdminUsersView({
         { label: "Practised, unpaid", value: directory.counts.practiced_unpaid },
         { label: "Payment started", value: directory.counts.payment_started_unpaid },
       ]} />
+      <section className="admin-campaign-board">
+        <header>
+          <div>
+            <h2>Support check-in</h2>
+            <p>Create a controlled email for users who started payment but did not complete it.</p>
+          </div>
+          {!activeCampaign ? (
+            <button disabled={campaignLoading || !canCreatePaymentCampaign} onClick={onCreateCampaign} type="button">
+              {campaignLoading ? "Preparing..." : "Create payment check-in"}
+            </button>
+          ) : (
+            <button disabled={campaignLoading} onClick={onRefreshCampaign} type="button">
+              {campaignLoading ? "Refreshing..." : "Refresh campaign"}
+            </button>
+          )}
+        </header>
+        {!canCreatePaymentCampaign && !activeCampaign ? (
+          <p className="admin-campaign-note">Choose the Payment started segment when there are users to contact.</p>
+        ) : null}
+        {activeCampaign && (
+          <div className={`admin-campaign-preview is-${activeCampaign.status}`}>
+            <div className="admin-campaign-preview-head">
+              <div>
+                <span className={`admin-campaign-status is-${activeCampaign.status}`}>
+                  {EMAIL_CAMPAIGN_STATUS_LABELS[activeCampaign.status] ?? activeCampaign.status}
+                </span>
+                <h3>{activeCampaign.subject}</h3>
+                <p>{activeCampaign.counts?.all ?? campaignRecipients.length} selected users</p>
+              </div>
+              <div className="admin-campaign-actions">
+                <button disabled={campaignLoading || activeCampaign.status === "sent" || activeCampaign.status === "cancelled"} onClick={onCancelCampaign} type="button">
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <pre className="admin-campaign-copy">{activeCampaign.body_text}</pre>
+            <div className="admin-campaign-send-tools">
+              <label>
+                <span>Test email</span>
+                <input
+                  onChange={(event) => setTestEmail(event.target.value)}
+                  placeholder="promotionsureapp@gmail.com"
+                  type="email"
+                  value={testEmail}
+                />
+              </label>
+              <button disabled={campaignLoading || !testEmail.trim() || !["draft", "tested"].includes(activeCampaign.status)} onClick={() => onSendCampaignTest(testEmail)} type="button">
+                Send test
+              </button>
+              <button disabled={campaignLoading || activeCampaign.status !== "tested" || Number(activeCampaign.counts?.pending ?? 0) === 0} onClick={onSendCampaign} type="button">
+                Send to selected users
+              </button>
+            </div>
+            <dl className="admin-campaign-counts">
+              <div><dt>Pending</dt><dd>{activeCampaign.counts?.pending ?? 0}</dd></div>
+              <div><dt>Sent</dt><dd>{activeCampaign.counts?.sent ?? 0}</dd></div>
+              <div><dt>Failed</dt><dd>{activeCampaign.counts?.failed ?? 0}</dd></div>
+              <div><dt>Skipped</dt><dd>{activeCampaign.counts?.skipped ?? 0}</dd></div>
+            </dl>
+            {campaignRecipients.length > 0 && (
+              <div className="admin-campaign-recipients">
+                {campaignRecipients.slice(0, 10).map((recipient) => (
+                  <span key={recipient.id}>
+                    {recipient.recipient_name || "Candidate"} <small>{recipient.recipient_email}</small>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
       <section className="admin-users-board">
         <div className="admin-list-toolbar">
           <label className="admin-inline-search">
@@ -1953,6 +2048,8 @@ export default function Admin() {
   const [userSegment, setUserSegment] = useState("all");
   const [userPage, setUserPage] = useState(0);
   const [userLoading, setUserLoading] = useState(false);
+  const [activeEmailCampaign, setActiveEmailCampaign] = useState(null);
+  const [campaignLoading, setCampaignLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
   const [contentKey, setContentKey] = useState(null);
   const [validationKey, setValidationKey] = useState(null);
@@ -2117,6 +2214,40 @@ export default function Admin() {
       window.clearTimeout(timer);
     };
   }, [currentView, shellSearch, userPage, userSegment]);
+
+  useEffect(() => {
+    if (currentView !== "users") return undefined;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setCampaignLoading(true);
+      getAdminEmailCampaigns(10)
+        .then((campaigns) => {
+          if (!active) return;
+          const nextCampaign = campaigns.find((campaign) => ["draft", "tested", "sending"].includes(campaign.status));
+          if (!nextCampaign?.id) {
+            setActiveEmailCampaign(null);
+            return null;
+          }
+          return getAdminEmailCampaign(nextCampaign.id).then((campaign) => {
+            if (active) setActiveEmailCampaign(campaign);
+            return campaign;
+          });
+        })
+        .catch((error) => {
+          if (!active) return;
+          logAppError("Admin email campaign load", error);
+          setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Email campaign controls could not be loaded.") });
+        })
+        .finally(() => {
+          if (active) setCampaignLoading(false);
+        });
+    }, 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [currentView]);
 
   useEffect(() => {
     let active = true;
@@ -2294,6 +2425,87 @@ export default function Admin() {
     } finally {
       setUserLoading(false);
     }
+  }
+
+  async function refreshActiveEmailCampaign(campaignId = activeEmailCampaign?.id) {
+    if (!campaignId) return null;
+    setCampaignLoading(true);
+    try {
+      const campaign = await getAdminEmailCampaign(campaignId);
+      setActiveEmailCampaign(["draft", "tested", "sending"].includes(campaign.status) ? campaign : null);
+      return campaign;
+    } catch (error) {
+      reportError("Admin email campaign refresh", error, "Email campaign could not be refreshed.");
+      return null;
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
+  async function handleCreatePaymentCheckinCampaign() {
+    setCampaignLoading(true);
+    try {
+      const campaign = await createAdminEmailCampaign();
+      setActiveEmailCampaign(campaign);
+      setFeedback({ tone: "success", message: "Payment check-in campaign prepared. Send a test email before sending to users." });
+    } catch (error) {
+      reportError("Admin create email campaign", error, "The payment check-in campaign could not be prepared.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
+  async function handleSendCampaignTest(testEmail) {
+    if (!activeEmailCampaign?.id) return;
+    setCampaignLoading(true);
+    try {
+      const result = await sendAdminEmailCampaignTest(activeEmailCampaign.id, testEmail);
+      await refreshActiveEmailCampaign(activeEmailCampaign.id);
+      setFeedback({
+        tone: result.skipped ? "error" : "success",
+        message: result.skipped ? `Test email skipped: ${result.reason}` : "Test email sent.",
+      });
+    } catch (error) {
+      reportError("Admin send campaign test", error, "The test email could not be sent.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
+  function handleSendCampaign() {
+    if (!activeEmailCampaign?.id) return;
+    requestConfirmation({
+      title: "Send this support check-in?",
+      body: `This will email ${formatCount(activeEmailCampaign.counts?.pending)} selected users who started payment but do not have paid access. Send only if the test email looked correct.`,
+      label: "Send email",
+      action: async () => {
+        const result = await sendAdminEmailCampaign(activeEmailCampaign.id);
+        const campaign = await refreshActiveEmailCampaign(activeEmailCampaign.id);
+        await refreshUserDirectory();
+        setFeedback({
+          tone: result.failed > 0 ? "error" : "success",
+          message: result.complete
+            ? `Campaign finished. Sent ${formatCount(result.sent)}, failed ${formatCount(result.failed)}, skipped ${formatCount(result.skipped)}.`
+            : `Batch sent. ${formatCount(result.pending)} still pending.`,
+        });
+        if (campaign?.status === "sent") setActiveEmailCampaign(null);
+      },
+    });
+  }
+
+  function handleCancelCampaign() {
+    if (!activeEmailCampaign?.id) return;
+    requestConfirmation({
+      title: "Cancel this email campaign?",
+      body: "Pending recipients will be skipped. Sent emails cannot be recalled.",
+      label: "Cancel campaign",
+      tone: "danger",
+      action: async () => {
+        await cancelAdminEmailCampaign(activeEmailCampaign.id);
+        setActiveEmailCampaign(null);
+        setFeedback({ tone: "success", message: "Email campaign cancelled." });
+      },
+    });
   }
 
   function openLinkedPaymentSupport(reference) {
@@ -2813,11 +3025,18 @@ export default function Admin() {
               <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
             ) : currentView === "users" ? (
               <AdminUsersView
+                activeCampaign={activeEmailCampaign}
+                campaignLoading={campaignLoading}
                 directory={userDirectory}
                 loading={userLoading}
+                onCancelCampaign={handleCancelCampaign}
+                onCreateCampaign={() => void handleCreatePaymentCheckinCampaign()}
                 onPageChange={(direction) => setUserPage((current) => Math.max(0, current + direction))}
                 onQueryChange={handleUserQueryChange}
                 onRefresh={() => void refreshUserDirectory()}
+                onRefreshCampaign={() => void refreshActiveEmailCampaign()}
+                onSendCampaign={handleSendCampaign}
+                onSendCampaignTest={(email) => void handleSendCampaignTest(email)}
                 onSegmentChange={handleUserSegmentChange}
                 query={shellSearch}
                 refreshing={userLoading}
