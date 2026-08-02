@@ -551,9 +551,9 @@ export default function Dashboard() {
             </div>
             <BundleOfferTrigger
               offer={featuredBundleOffer}
-              onChoose={(offer) => {
+              onChoose={() => {
                 setPaymentError(null);
-                setSelectedBundle(offer);
+                navigate("/access#bundles");
               }}
             />
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}

@@ -207,7 +207,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
                 return (
                   <button
                     aria-pressed={selectedModule}
-                    className={selectedModule ? "is-selected" : ""}
+                    className={`bundle-module-option${selectedModule ? " is-selected" : ""}`}
                     disabled={isFullBundle || paying}
                     key={module.subject_id}
                     onClick={() => toggleModule(module.subject_slug)}

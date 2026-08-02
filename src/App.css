@@ -264,7 +264,7 @@
 .bundle-offers-heading h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 1.02rem;
+  font-size: 1.08rem;
   font-weight: 850;
   line-height: 1.35;
 }
@@ -272,7 +272,7 @@
 .bundle-offer-list {
   overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--color-surface);
 }
 
@@ -281,8 +281,8 @@
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 13px;
-  min-height: 78px;
-  padding: 15px 18px;
+  min-height: 82px;
+  padding: 17px 18px;
   background: transparent;
 }
 
@@ -334,7 +334,7 @@
 }
 
 .bundle-offer-row-copy h3 {
-  font-size: 1rem;
+  font-size: 1.02rem;
   line-height: 1.35;
 }
 
@@ -354,7 +354,7 @@
 
 .bundle-offer-row-price strong {
   color: var(--color-primary-dark);
-  font-size: 1.35rem;
+  font-size: 1.42rem;
   line-height: 1;
   letter-spacing: -0.04em;
 }
@@ -370,11 +370,11 @@
   min-height: 40px;
   padding: 8px 14px;
   border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-primary-dark);
   box-shadow: none;
-  font-size: 0.84rem;
+  font-size: 0.83rem;
   font-weight: 850;
 }
 
@@ -496,6 +496,23 @@
   padding: 20px 28px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--color-text-muted) 34%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.bundle-checkout-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.bundle-checkout-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.bundle-checkout-body::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-muted) 34%, transparent);
+  background-clip: content-box;
 }
 
 .bundle-checkout-summary {
@@ -555,36 +572,36 @@
   gap: 9px;
 }
 
-.bundle-module-list > button {
-  min-height: 52px;
+.bundle-module-option {
+  min-height: 54px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 13px;
+  padding: 12px 15px;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
+  border-radius: 13px;
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
   box-shadow: none;
-  font-size: 0.91rem;
-  font-weight: 800;
+  font-size: 0.93rem;
+  font-weight: 760;
 }
 
-.bundle-module-list > button.is-selected {
-  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary-soft) 48%, white);
+.bundle-module-option.is-selected {
+  border-color: color-mix(in srgb, var(--color-primary) 46%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-soft) 52%, white);
   color: var(--color-primary-dark);
 }
 
-.bundle-module-list > button:not(:disabled):hover,
-.bundle-module-list > button:not(:disabled):focus-visible {
+.bundle-module-option:not(:disabled):hover,
+.bundle-module-option:not(:disabled):focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary-soft) 28%, white);
+  background: color-mix(in srgb, var(--color-primary-soft) 34%, white);
 }
 
-.bundle-module-list > button:disabled {
+.bundle-module-option:disabled {
   cursor: default;
   opacity: 1;
 }
@@ -638,8 +655,8 @@
 .bundle-checkout-trust {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.74rem;
+  font-weight: 650;
   text-align: center;
 }
 
@@ -680,7 +697,7 @@
 
 @media (max-width: 760px) {
   .bundle-offers-heading h2 {
-    font-size: 0.94rem;
+    font-size: 1rem;
   }
 
   .bundle-offer-row {
@@ -757,7 +774,7 @@
     gap: 3px;
   }
 
-  .bundle-module-list > button {
+  .bundle-module-option {
     min-height: 52px;
   }
 
@@ -2107,7 +2124,7 @@ pre,
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-module-option):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
