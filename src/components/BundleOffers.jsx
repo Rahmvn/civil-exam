@@ -65,7 +65,10 @@ export function BundleOffers({ offers = [], onChoose }) {
   return (
     <section className="bundle-offers" id="bundles" aria-labelledby="bundle-offers-title">
       <header className="bundle-offers-heading">
-        <h2 id="bundle-offers-title">Bundle offers</h2>
+        <div>
+          <h2 id="bundle-offers-title">Bundle offers</h2>
+          <p>Unlock multiple modules in one payment.</p>
+        </div>
       </header>
 
       <div className="bundle-offer-list">
