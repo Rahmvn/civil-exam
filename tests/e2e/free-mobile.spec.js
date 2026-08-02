@@ -37,7 +37,7 @@ test("practice hub lets a new candidate choose free practice or payment directly
 test("choose-three checkout uses a full-width mobile sheet with an exact selection", async ({ page }) => {
   await page.goto("/access#bundles");
 
-  await expect(page.getByRole("heading", { name: "Save when unlocking multiple modules" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bundle offers" })).toBeVisible();
   const offer = page.locator("article").filter({ hasText: "Any 3 modules" }).first();
   await expect(offer.getByText(/5,000/)).toBeVisible();
   await offer.getByRole("button", { name: "Choose" }).click();
