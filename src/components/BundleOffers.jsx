@@ -30,8 +30,8 @@ function getOfferCardCopy(offer) {
 }
 
 function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
-  if (offer?.offer_type === "full_bundle") return "Review included modules before payment.";
-  return hasHiddenUnlockedModules ? "Pick from modules you have not unlocked." : `Select any ${getOfferModuleCount(offer)} modules.`;
+  if (offer?.offer_type === "full_bundle") return "One payment for all included modules.";
+  return hasHiddenUnlockedModules ? "Only locked modules are shown." : "One payment for selected modules.";
 }
 
 function getOfferActionCopy(offer) {
@@ -203,10 +203,9 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
 
           <section className="bundle-module-picker" aria-labelledby="bundle-module-picker-title">
             <header>
-              <h3 id="bundle-module-picker-title">{isFullBundle ? "Included modules" : `Choose ${requiredCount} modules`}</h3>
+              <h3 id="bundle-module-picker-title">Modules</h3>
               <span>{selectionLabel}</span>
             </header>
-            {hasHiddenUnlockedModules && <p className="bundle-module-picker-note">Unlocked modules are hidden.</p>}
 
             <div className="bundle-module-list" aria-label={isFullBundle ? "Included modules" : "Choose modules"}>
               {modules.map((module) => {

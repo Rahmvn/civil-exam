@@ -480,22 +480,22 @@
 .bundle-checkout-title-block {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .bundle-checkout-title-block h2 {
-  font-size: 1.34rem;
-  line-height: 1.08;
+  font-size: 1.26rem;
+  line-height: 1.12;
   letter-spacing: -0.025em;
-  font-weight: 820;
+  font-weight: 780;
 }
 
 .bundle-checkout-title-block p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.86rem;
-  font-weight: 560;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  font-weight: 530;
+  line-height: 1.4;
 }
 
 .bundle-checkout-close {
@@ -559,7 +559,7 @@
 
 .bundle-checkout-summary strong {
   color: var(--color-text);
-  font-size: clamp(1.62rem, 3.8vw, 1.88rem);
+  font-size: clamp(1.56rem, 3.5vw, 1.78rem);
   line-height: 1.08;
   letter-spacing: -0.035em;
 }
@@ -599,14 +599,14 @@
 }
 
 .bundle-module-picker h3 {
-  font-size: 0.88rem;
-  font-weight: 780;
+  font-size: 0.82rem;
+  font-weight: 760;
 }
 
 .bundle-module-picker header span {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 730;
+  font-size: 0.76rem;
+  font-weight: 670;
   white-space: nowrap;
 }
 
@@ -640,8 +640,8 @@
   color: var(--color-text);
   text-align: left;
   box-shadow: none;
-  font-size: 0.92rem;
-  font-weight: 660;
+  font-size: 0.9rem;
+  font-weight: 640;
 }
 
 .bundle-module-option + .bundle-module-option {
