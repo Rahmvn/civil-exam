@@ -875,6 +875,11 @@ export async function getAdminEmailCampaign(campaignId) {
   }));
 }
 
+export async function getAdminEmailCampaignCatalog() {
+  const data = await requireData(await supabase.rpc("get_admin_email_campaign_catalog"));
+  return ensureArray(data?.items);
+}
+
 export async function getAdminEmailCampaigns(limit = 20) {
   const data = await readWithPolicy(`admin-email-campaigns:${limit}`, async () =>
     requireData(await supabase.rpc("get_admin_email_campaigns", { requested_limit: limit })),
@@ -893,6 +898,14 @@ export async function updateAdminEmailCampaignCopy(campaignId, { subject, bodyTe
     requested_campaign_id: campaignId,
     requested_subject: subject,
     requested_body_text: bodyText,
+  }));
+}
+
+export async function setAdminEmailCampaignRecipientIncluded(campaignId, recipientId, included) {
+  return requireData(await supabase.rpc("admin_set_email_campaign_recipient_included", {
+    requested_campaign_id: campaignId,
+    requested_recipient_id: recipientId,
+    requested_included: Boolean(included),
   }));
 }
 

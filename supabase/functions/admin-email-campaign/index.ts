@@ -58,10 +58,20 @@ async function requireAdmin(adminClient: ReturnType<typeof getAdminClient>, user
   }
 }
 
+async function writeAudit(
+  adminClient: ReturnType<typeof getAdminClient>,
+  payload: Record<string, unknown>,
+) {
+  const { error } = await adminClient.from("admin_audit_logs").insert(payload);
+  if (error) {
+    console.warn("Email campaign audit write failed", { message: error.message });
+  }
+}
+
 async function getCampaign(adminClient: ReturnType<typeof getAdminClient>, campaignId: string) {
   const { data, error } = await adminClient
     .from("email_campaigns")
-    .select("id, campaign_type, segment, subject, body_text, status")
+    .select("id, campaign_type, segment, priority, subject, body_text, status, updated_at")
     .eq("id", campaignId)
     .maybeSingle();
 
@@ -97,11 +107,15 @@ async function sendTest({
         text,
         html: toHtml(text),
       },
-      `campaign-test:${campaign.id}:${testEmail}`,
+      `campaign-test:${campaign.id}:${crypto.randomUUID()}`,
     );
+
+    if (result.skipped) {
+      throw new Error(result.reason || "Email delivery is not configured");
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Test email failed";
-    await adminClient.from("admin_audit_logs").insert({
+    await writeAudit(adminClient, {
       actor_id: adminUserId,
       action: "email_campaign_test_failed",
       entity_type: "email_campaign",
@@ -114,15 +128,11 @@ async function sendTest({
     throw new RequestBodyError(message, 502);
   }
 
-  const update = result.skipped
-    ? {
-        test_recipient_email: testEmail,
-      }
-    : {
-        status: "tested",
-        test_recipient_email: testEmail,
-        tested_at: new Date().toISOString(),
-      };
+  const update = {
+    status: "tested",
+    test_recipient_email: testEmail,
+    tested_at: new Date().toISOString(),
+  };
 
   const { error: updateError } = await adminClient
     .from("email_campaigns")
@@ -131,19 +141,30 @@ async function sendTest({
 
   if (updateError) throw updateError;
 
-  await adminClient.from("admin_audit_logs").insert({
+  await writeAudit(adminClient, {
     actor_id: adminUserId,
-    action: result.skipped ? "email_campaign_test_skipped" : "email_campaign_test_sent",
+    action: "email_campaign_test_sent",
     entity_type: "email_campaign",
     entity_id: campaign.id,
     metadata: {
       recipient_email: testEmail,
-      reason: result.skipped ? result.reason : null,
       provider_message_id: result.providerMessageId ?? null,
     },
   });
 
-  return { sent: !result.skipped, skipped: Boolean(result.skipped), reason: result.reason ?? null };
+  return { sent: true, skipped: false, reason: null };
+}
+
+async function updateRecipient(
+  adminClient: ReturnType<typeof getAdminClient>,
+  recipientId: string,
+  updates: Record<string, unknown>,
+) {
+  const { error } = await adminClient
+    .from("email_campaign_recipients")
+    .update(updates)
+    .eq("id", recipientId);
+  if (error) throw error;
 }
 
 async function sendCampaign({
@@ -160,120 +181,144 @@ async function sendCampaign({
     throw new RequestBodyError("Send a test email before sending this campaign");
   }
 
-  const { error: startError } = await adminClient
+  const { data: claimedCampaign, error: startError } = await adminClient
     .from("email_campaigns")
     .update({ status: "sending" })
     .eq("id", campaign.id)
-    .eq("status", "tested");
+    .eq("status", "tested")
+    .select("id")
+    .maybeSingle();
 
   if (startError) throw startError;
+  if (!claimedCampaign) {
+    throw new RequestBodyError("This campaign is already being sent", 409);
+  }
 
-  const { data: recipients, error: recipientsError } = await adminClient
-    .from("email_campaign_recipients")
-    .select("id, user_id, recipient_email, recipient_name, status")
-    .eq("campaign_id", campaign.id)
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(MAX_BATCH_SIZE);
+  try {
+    const { error: retryError } = await adminClient
+      .from("email_campaign_recipients")
+      .update({ status: "pending", error_message: null })
+      .eq("campaign_id", campaign.id)
+      .eq("included", true)
+      .eq("status", "failed");
+    if (retryError) throw retryError;
 
-  if (recipientsError) throw recipientsError;
+    const { error: revalidateError } = await adminClient.rpc(
+      "system_revalidate_email_campaign_recipients",
+      { requested_campaign_id: campaign.id },
+    );
+    if (revalidateError) throw revalidateError;
 
-  let sent = 0;
-  let failed = 0;
-  let skipped = 0;
+    const { data: recipients, error: recipientsError } = await adminClient
+      .from("email_campaign_recipients")
+      .select("id, user_id, recipient_email, recipient_name, status")
+      .eq("campaign_id", campaign.id)
+      .eq("included", true)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .limit(MAX_BATCH_SIZE);
 
-  for (const recipient of recipients ?? []) {
-    const attemptedAt = new Date().toISOString();
-    const text = personalize(campaign.body_text, recipient.recipient_name);
+    if (recipientsError) throw recipientsError;
 
-    try {
-      const result = await sendWithResend(
-        recipient.recipient_email,
-        {
-          subject: campaign.subject,
-          text,
-          html: toHtml(text),
-        },
-        `campaign:${campaign.id}:${recipient.id}`,
-      );
+    let sent = 0;
+    let failed = 0;
 
-      if (result.skipped) {
-        skipped += 1;
-        await adminClient
-          .from("email_campaign_recipients")
-          .update({
-            status: "skipped",
-            provider: "resend",
-            skipped_reason: result.reason,
-            attempted_at: attemptedAt,
-          })
-          .eq("id", recipient.id);
-      } else {
+    for (const recipient of recipients ?? []) {
+      const attemptedAt = new Date().toISOString();
+      const text = personalize(campaign.body_text, recipient.recipient_name);
+
+      try {
+        const result = await sendWithResend(
+          recipient.recipient_email,
+          {
+            subject: campaign.subject,
+            text,
+            html: toHtml(text),
+          },
+          `campaign:${campaign.id}:${recipient.id}`,
+        );
+
+        if (result.skipped) {
+          throw new Error(result.reason || "Email delivery is not configured");
+        }
+
         sent += 1;
-        await adminClient
-          .from("email_campaign_recipients")
-          .update({
-            status: "sent",
-            provider: "resend",
-            provider_message_id: result.providerMessageId,
-            attempted_at: attemptedAt,
-            sent_at: new Date().toISOString(),
-          })
-          .eq("id", recipient.id);
-      }
-    } catch (error) {
-      failed += 1;
-      await adminClient
-        .from("email_campaign_recipients")
-        .update({
+        await updateRecipient(adminClient, recipient.id, {
+          status: "sent",
+          provider: "resend",
+          provider_message_id: result.providerMessageId,
+          error_message: null,
+          attempted_at: attemptedAt,
+          sent_at: new Date().toISOString(),
+        });
+      } catch (error) {
+        failed += 1;
+        await updateRecipient(adminClient, recipient.id, {
           status: "failed",
           provider: "resend",
           error_message: (error instanceof Error ? error.message : "Email send failed").slice(0, 500),
           attempted_at: attemptedAt,
-        })
-        .eq("id", recipient.id);
+        });
+      }
     }
-  }
 
-  const { count: pendingCount, error: pendingError } = await adminClient
-    .from("email_campaign_recipients")
-    .select("id", { count: "exact", head: true })
-    .eq("campaign_id", campaign.id)
-    .eq("status", "pending");
+    const [{ count: pendingCount, error: pendingError }, { count: failedCount, error: failedCountError }] =
+      await Promise.all([
+        adminClient
+          .from("email_campaign_recipients")
+          .select("id", { count: "exact", head: true })
+          .eq("campaign_id", campaign.id)
+          .eq("included", true)
+          .eq("status", "pending"),
+        adminClient
+          .from("email_campaign_recipients")
+          .select("id", { count: "exact", head: true })
+          .eq("campaign_id", campaign.id)
+          .eq("included", true)
+          .eq("status", "failed"),
+      ]);
 
-  if (pendingError) throw pendingError;
+    if (pendingError) throw pendingError;
+    if (failedCountError) throw failedCountError;
 
-  const nextStatus = Number(pendingCount ?? 0) > 0 ? "tested" : "sent";
-  const { error: finishError } = await adminClient
-    .from("email_campaigns")
-    .update({
-      status: nextStatus,
-      sent_at: nextStatus === "sent" ? new Date().toISOString() : null,
-    })
-    .eq("id", campaign.id);
+    const pending = Number(pendingCount ?? 0);
+    const totalFailed = Number(failedCount ?? 0);
+    const nextStatus = pending > 0 || totalFailed > 0 ? "tested" : "sent";
+    const { error: finishError } = await adminClient
+      .from("email_campaigns")
+      .update({
+        status: nextStatus,
+        sent_at: nextStatus === "sent" ? new Date().toISOString() : null,
+      })
+      .eq("id", campaign.id)
+      .eq("status", "sending");
 
-  if (finishError) throw finishError;
+    if (finishError) throw finishError;
 
-  await adminClient.from("admin_audit_logs").insert({
-    actor_id: adminUserId,
-    action: "email_campaign_batch_sent",
-    entity_type: "email_campaign",
-    entity_id: campaign.id,
-    metadata: {
+    await writeAudit(adminClient, {
+      actor_id: adminUserId,
+      action: "email_campaign_batch_sent",
+      entity_type: "email_campaign",
+      entity_id: campaign.id,
+      metadata: { sent, failed, pending, total_failed: totalFailed },
+    });
+
+    return {
       sent,
       failed,
-      skipped,
-      pending: Number(pendingCount ?? 0),
-    },
-  });
-
-  return {
-    sent,
-    failed,
-    skipped,
-    pending: Number(pendingCount ?? 0),
-    complete: nextStatus === "sent",
-  };
+      skipped: 0,
+      pending,
+      total_failed: totalFailed,
+      complete: nextStatus === "sent",
+    };
+  } catch (error) {
+    await adminClient
+      .from("email_campaigns")
+      .update({ status: "tested" })
+      .eq("id", campaign.id)
+      .eq("status", "sending");
+    throw error;
+  }
 }
 
 Deno.serve(async (request) => {
@@ -317,9 +362,7 @@ Deno.serve(async (request) => {
     console.warn("Admin email campaign request failed", {
       message,
     });
-    return jsonResponse(
-      { error: message },
-      status,
-    );
+    const code = status >= 500 ? "EMAIL_PROVIDER_ERROR" : "EMAIL_CAMPAIGN_ERROR";
+    return jsonResponse({ error: message, code }, status);
   }
 });

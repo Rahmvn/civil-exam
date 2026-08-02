@@ -21,3 +21,10 @@ test("transactional email remains optional when Resend is not configured", async
   assert.match(source, /Deno\.env\.get\("RESEND_API_KEY"\)/);
   assert.match(source, /skipped: true, reason: "RESEND_API_KEY is not configured"/);
 });
+
+test("transactional email uses the verified PromotionSure sender and support reply address", async () => {
+  const source = await readFile(sourcePath, "utf8");
+
+  assert.match(source, /PromotionSure <team@auth\.promotionsure\.com\.ng>/);
+  assert.match(source, /reply_to: Deno\.env\.get\("TRANSACTIONAL_EMAIL_REPLY_TO"\) \|\| SUPPORT_EMAIL/);
+});

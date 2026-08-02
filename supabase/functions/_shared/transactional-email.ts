@@ -1,6 +1,6 @@
 import { getAdminClient } from "./paystack.ts";
 
-const DEFAULT_FROM = "PromotionSure <support@promotionsure.com.ng>";
+const DEFAULT_FROM = "PromotionSure <team@auth.promotionsure.com.ng>";
 const SUPPORT_EMAIL = "promotionsureapp@gmail.com";
 
 function escapeHtml(value: unknown) {
@@ -219,6 +219,7 @@ export async function sendWithResend(
     body: JSON.stringify({
       from,
       to: [to],
+      reply_to: Deno.env.get("TRANSACTIONAL_EMAIL_REPLY_TO") || SUPPORT_EMAIL,
       subject: message.subject,
       text: message.text,
       html: message.html,

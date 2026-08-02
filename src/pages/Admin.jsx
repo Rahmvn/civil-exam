@@ -33,6 +33,7 @@ import {
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
   getAdminEmailCampaign,
+  getAdminEmailCampaignCatalog,
   getAdminEmailCampaigns,
   getAdminSupportQueue,
   getAdminSupportDiagnostics,
@@ -45,6 +46,7 @@ import {
   saveAdminQuestion,
   sendAdminEmailCampaign,
   sendAdminEmailCampaignTest,
+  setAdminEmailCampaignRecipientIncluded,
   updateAdminEmailCampaignCopy,
   republishAdminPracticeSet,
   retireAdminPracticeSet,
@@ -109,6 +111,7 @@ function adminErrorMessage(error, fallback) {
 
   // Business-rule exceptions are deliberately written for administrators.
   if (error?.code === "P0001" && rawMessage) return rawMessage;
+  if (error?.code === "EMAIL_PROVIDER_ERROR" && rawMessage) return `Email provider: ${rawMessage}`;
   return friendlyErrorMessage(error, fallback);
 }
 
@@ -1501,6 +1504,12 @@ const EMAIL_CAMPAIGN_STATUS_LABELS = {
   cancelled: "Cancelled",
 };
 
+const EMAIL_CAMPAIGN_TYPE_LABELS = {
+  payment_started_support_checkin: "Payment check-in",
+  practice_support_checkin: "Practice check-in",
+  getting_started_support_checkin: "Getting started",
+};
+
 function formatAdminDateTime(value) {
   if (!value) return "Not yet";
   return new Date(value).toLocaleString("en-NG");
@@ -1609,6 +1618,8 @@ function AdminEmailDiagnosticsPanel({
 
 function AdminUsersView({
   activeCampaign,
+  campaignCatalog,
+  campaignHistory,
   campaignLoading,
   campaignDraft,
   directory,
@@ -1623,16 +1634,19 @@ function AdminUsersView({
   onSaveCampaignCopy,
   onSendCampaign,
   onSendCampaignTest,
+  onToggleCampaignRecipient,
   onSegmentChange,
   query,
   refreshing,
   segment,
 }) {
-  const [testEmail, setTestEmail] = useState("");
+  const [testEmail, setTestEmail] = useState("promotionsureapp@gmail.com");
   const firstResult = directory.total === 0 ? 0 : directory.offset + 1;
   const lastResult = Math.min(directory.offset + directory.items.length, directory.total);
   const campaignRecipients = ensureAdminArray(activeCampaign?.recipients);
-  const canCreatePaymentCampaign = segment === "payment_started_unpaid" && directory.counts.payment_started_unpaid > 0;
+  const selectedRecipientCount = Number(activeCampaign?.counts?.selected ?? 0);
+  const failedRecipientCount = Number(activeCampaign?.counts?.failed ?? 0);
+  const sendableRecipientCount = Number(activeCampaign?.counts?.pending ?? 0) + failedRecipientCount;
 
   return (
     <>
@@ -1654,22 +1668,36 @@ function AdminUsersView({
       <section className="admin-campaign-board">
         <header>
           <div>
-            <h2>Support check-in</h2>
-            <p>Create a controlled email for users who started payment but did not complete it.</p>
+            <h2>Email follow-up</h2>
+            <p>Prepare one focused message at a time. Paid users, internal accounts, opt-outs, and recent duplicates are filtered out.</p>
           </div>
-          {!activeCampaign ? (
-            <button disabled={campaignLoading || !canCreatePaymentCampaign} onClick={onCreateCampaign} type="button">
-              {campaignLoading ? "Preparing..." : "Create payment check-in"}
-            </button>
-          ) : (
+          {activeCampaign ? (
             <button disabled={campaignLoading} onClick={onRefreshCampaign} type="button">
               {campaignLoading ? "Refreshing..." : "Refresh campaign"}
             </button>
-          )}
+          ) : null}
         </header>
-        {!canCreatePaymentCampaign && !activeCampaign ? (
-          <p className="admin-campaign-note">Choose the Payment started segment when there are users to contact.</p>
-        ) : null}
+        {!activeCampaign && (
+          <div className="admin-campaign-scenarios">
+            {campaignCatalog.map((scenario) => (
+              <article key={scenario.campaign_type}>
+                <div className="admin-campaign-priority">Priority {scenario.priority}</div>
+                <div>
+                  <h3>{scenario.title}</h3>
+                  <p>{scenario.description}</p>
+                </div>
+                <strong>{formatCount(scenario.recipient_count)} users</strong>
+                <button
+                  disabled={campaignLoading || Number(scenario.recipient_count) === 0}
+                  onClick={() => onCreateCampaign(scenario)}
+                  type="button"
+                >
+                  Prepare email
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
         {activeCampaign && (
           <div className={`admin-campaign-preview is-${activeCampaign.status}`}>
             <div className="admin-campaign-preview-head">
@@ -1677,8 +1705,8 @@ function AdminUsersView({
                 <span className={`admin-campaign-status is-${activeCampaign.status}`}>
                   {EMAIL_CAMPAIGN_STATUS_LABELS[activeCampaign.status] ?? activeCampaign.status}
                 </span>
-                <h3>{activeCampaign.subject}</h3>
-                <p>{activeCampaign.counts?.all ?? campaignRecipients.length} selected users</p>
+                <h3>{EMAIL_CAMPAIGN_TYPE_LABELS[activeCampaign.campaign_type] ?? "Email campaign"}</h3>
+                <p>{formatCount(selectedRecipientCount)} selected from {formatCount(activeCampaign.counts?.all ?? campaignRecipients.length)} eligible users</p>
               </div>
               <div className="admin-campaign-actions">
                 <button disabled={campaignLoading || activeCampaign.status === "sent" || activeCampaign.status === "cancelled"} onClick={onCancelCampaign} type="button">
@@ -1743,25 +1771,53 @@ function AdminUsersView({
               >
                 Send test
               </button>
-              <button disabled={campaignLoading || activeCampaign.status !== "tested" || Number(activeCampaign.counts?.pending ?? 0) === 0} onClick={onSendCampaign} type="button">
-                Send to selected users
+              <button disabled={campaignLoading || activeCampaign.status !== "tested" || sendableRecipientCount === 0} onClick={onSendCampaign} type="button">
+                {failedRecipientCount > 0
+                  ? `Retry ${formatCount(failedRecipientCount)} failed`
+                  : `Send to ${formatCount(sendableRecipientCount)} users`}
               </button>
             </div>
             <dl className="admin-campaign-counts">
-              <div><dt>Pending</dt><dd>{activeCampaign.counts?.pending ?? 0}</dd></div>
+              <div><dt>Selected</dt><dd>{selectedRecipientCount}</dd></div>
+              <div><dt>Excluded</dt><dd>{activeCampaign.counts?.excluded ?? 0}</dd></div>
               <div><dt>Sent</dt><dd>{activeCampaign.counts?.sent ?? 0}</dd></div>
               <div><dt>Failed</dt><dd>{activeCampaign.counts?.failed ?? 0}</dd></div>
-              <div><dt>Skipped</dt><dd>{activeCampaign.counts?.skipped ?? 0}</dd></div>
             </dl>
             {campaignRecipients.length > 0 && (
               <div className="admin-campaign-recipients">
-                {campaignRecipients.slice(0, 10).map((recipient) => (
-                  <span key={recipient.id}>
-                    {recipient.recipient_name || "Candidate"} <small>{recipient.recipient_email}</small>
-                  </span>
+                <div className="admin-campaign-recipient-head">
+                  <h3>Recipients</h3>
+                  <p>Clear anyone who should not receive this email.</p>
+                </div>
+                {campaignRecipients.map((recipient) => (
+                  <label className={`admin-campaign-recipient is-${recipient.status}`} key={recipient.id}>
+                    <input
+                      checked={Boolean(recipient.included)}
+                      disabled={campaignLoading || !["draft", "tested"].includes(activeCampaign.status) || !["pending", "failed"].includes(recipient.status)}
+                      onChange={(event) => onToggleCampaignRecipient(recipient.id, event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>
+                      <strong>{recipient.recipient_name || "Candidate"}</strong>
+                      <small>{recipient.recipient_email}</small>
+                    </span>
+                    <em>{recipient.status}</em>
+                  </label>
                 ))}
               </div>
             )}
+          </div>
+        )}
+        {campaignHistory.length > 0 && (
+          <div className="admin-campaign-history">
+            <h3>Recent campaigns</h3>
+            {campaignHistory.slice(0, 5).map((campaign) => (
+              <div key={campaign.id}>
+                <span>{EMAIL_CAMPAIGN_TYPE_LABELS[campaign.campaign_type] ?? campaign.subject}</span>
+                <small>{formatAdminDateTime(campaign.sent_at || campaign.cancelled_at || campaign.created_at)}</small>
+                <strong>{EMAIL_CAMPAIGN_STATUS_LABELS[campaign.status] ?? campaign.status}</strong>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -2096,6 +2152,8 @@ export default function Admin() {
   const [userPage, setUserPage] = useState(0);
   const [userLoading, setUserLoading] = useState(false);
   const [activeEmailCampaign, setActiveEmailCampaign] = useState(null);
+  const [emailCampaignCatalog, setEmailCampaignCatalog] = useState([]);
+  const [emailCampaignHistory, setEmailCampaignHistory] = useState([]);
   const [emailCampaignDraft, setEmailCampaignDraft] = useState({ subject: "", bodyText: "" });
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
@@ -2268,10 +2326,12 @@ export default function Admin() {
     let active = true;
     const timer = window.setTimeout(() => {
       setCampaignLoading(true);
-      getAdminEmailCampaigns(10)
-        .then((campaigns) => {
+      Promise.all([getAdminEmailCampaigns(10), getAdminEmailCampaignCatalog()])
+        .then(([campaigns, catalog]) => {
           if (!active) return;
+          setEmailCampaignCatalog(catalog);
           const nextCampaign = campaigns.find((campaign) => ["draft", "tested", "sending"].includes(campaign.status));
+          setEmailCampaignHistory(campaigns.filter((campaign) => campaign.id !== nextCampaign?.id));
           if (!nextCampaign?.id) {
             syncActiveEmailCampaign(null);
             return null;
@@ -2499,14 +2559,27 @@ export default function Admin() {
     }
   }
 
-  async function handleCreatePaymentCheckinCampaign() {
+  async function refreshEmailCampaignOverview(activeCampaignId = activeEmailCampaign?.id) {
+    const [campaigns, catalog] = await Promise.all([
+      getAdminEmailCampaigns(10),
+      getAdminEmailCampaignCatalog(),
+    ]);
+    setEmailCampaignCatalog(catalog);
+    setEmailCampaignHistory(campaigns.filter((campaign) => campaign.id !== activeCampaignId));
+  }
+
+  async function handleCreateEmailCampaign(scenario) {
     setCampaignLoading(true);
     try {
-      const campaign = await createAdminEmailCampaign();
+      const campaign = await createAdminEmailCampaign({
+        campaignType: scenario.campaign_type,
+        segment: scenario.segment,
+      });
       syncActiveEmailCampaign(campaign);
-      setFeedback({ tone: "success", message: "Payment check-in campaign prepared. Send a test email before sending to users." });
+      await refreshEmailCampaignOverview(campaign.id);
+      setFeedback({ tone: "success", message: `${scenario.title} prepared. Review the recipients and send a test email.` });
     } catch (error) {
-      reportError("Admin create email campaign", error, "The payment check-in campaign could not be prepared.");
+      reportError("Admin create email campaign", error, "The email campaign could not be prepared.");
     } finally {
       setCampaignLoading(false);
     }
@@ -2524,6 +2597,23 @@ export default function Admin() {
       });
     } catch (error) {
       reportError("Admin send campaign test", error, "The test email could not be sent.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
+  async function handleToggleCampaignRecipient(recipientId, included) {
+    if (!activeEmailCampaign?.id) return;
+    setCampaignLoading(true);
+    try {
+      const campaign = await setAdminEmailCampaignRecipientIncluded(
+        activeEmailCampaign.id,
+        recipientId,
+        included,
+      );
+      syncActiveEmailCampaign(campaign);
+    } catch (error) {
+      reportError("Admin update campaign recipient", error, "The recipient selection could not be updated.");
     } finally {
       setCampaignLoading(false);
     }
@@ -2552,19 +2642,32 @@ export default function Admin() {
 
   function handleSendCampaign() {
     if (!activeEmailCampaign?.id) return;
+    const sendableCount = Number(activeEmailCampaign.counts?.pending ?? 0)
+      + Number(activeEmailCampaign.counts?.failed ?? 0);
     requestConfirmation({
-      title: "Send this support check-in?",
-      body: `This will email ${formatCount(activeEmailCampaign.counts?.pending)} selected users who started payment but do not have paid access. Send only if the test email looked correct.`,
-      label: "Send email",
+      title: `Send ${EMAIL_CAMPAIGN_TYPE_LABELS[activeEmailCampaign.campaign_type] ?? "this campaign"}?`,
+      body: `This will email ${formatCount(sendableCount)} selected users. Eligibility is checked again before each batch. Continue only if the test email looked correct.`,
+      label: `Send to ${formatCount(sendableCount)} users`,
       action: async () => {
-        const result = await sendAdminEmailCampaign(activeEmailCampaign.id);
+        const totals = { sent: 0, failed: 0, skipped: 0 };
+        let result = null;
+        for (let batch = 0; batch < 10; batch += 1) {
+          result = await sendAdminEmailCampaign(activeEmailCampaign.id);
+          totals.sent += Number(result.sent ?? 0);
+          totals.failed = Number(result.total_failed ?? result.failed ?? 0);
+          totals.skipped += Number(result.skipped ?? 0);
+          if (result.complete || totals.failed > 0 || Number(result.pending ?? 0) === 0) break;
+        }
         const campaign = await refreshActiveEmailCampaign(activeEmailCampaign.id);
         await refreshUserDirectory();
+        await refreshEmailCampaignOverview(campaign?.status === "sent" ? null : activeEmailCampaign.id);
         setFeedback({
-          tone: result.failed > 0 ? "error" : "success",
+          tone: totals.failed > 0 ? "error" : "success",
           message: result.complete
-            ? `Campaign finished. Sent ${formatCount(result.sent)}, failed ${formatCount(result.failed)}, skipped ${formatCount(result.skipped)}.`
-            : `Batch sent. ${formatCount(result.pending)} still pending.`,
+            ? `Campaign finished. Sent ${formatCount(totals.sent)} email${totals.sent === 1 ? "" : "s"}.`
+            : totals.failed > 0
+              ? `Sent ${formatCount(totals.sent)}. ${formatCount(totals.failed)} failed and can be retried.`
+              : `Sent ${formatCount(totals.sent)}. ${formatCount(result.pending)} remain pending.`,
         });
         if (campaign?.status === "sent") syncActiveEmailCampaign(null);
       },
@@ -2581,6 +2684,7 @@ export default function Admin() {
       action: async () => {
         await cancelAdminEmailCampaign(activeEmailCampaign.id);
         syncActiveEmailCampaign(null);
+        await refreshEmailCampaignOverview(null);
         setFeedback({ tone: "success", message: "Email campaign cancelled." });
       },
     });
@@ -3104,12 +3208,14 @@ export default function Admin() {
             ) : currentView === "users" ? (
               <AdminUsersView
                 activeCampaign={activeEmailCampaign}
+                campaignCatalog={emailCampaignCatalog}
                 campaignDraft={emailCampaignDraft}
+                campaignHistory={emailCampaignHistory}
                 campaignLoading={campaignLoading}
                 directory={userDirectory}
                 loading={userLoading}
                 onCancelCampaign={handleCancelCampaign}
-                onCreateCampaign={() => void handleCreatePaymentCheckinCampaign()}
+                onCreateCampaign={(scenario) => void handleCreateEmailCampaign(scenario)}
                 onDraftChange={handleCampaignDraftChange}
                 onPageChange={(direction) => setUserPage((current) => Math.max(0, current + direction))}
                 onQueryChange={handleUserQueryChange}
@@ -3118,6 +3224,7 @@ export default function Admin() {
                 onSaveCampaignCopy={() => void handleSaveCampaignCopy()}
                 onSendCampaign={handleSendCampaign}
                 onSendCampaignTest={(email) => void handleSendCampaignTest(email)}
+                onToggleCampaignRecipient={(recipientId, included) => void handleToggleCampaignRecipient(recipientId, included)}
                 onSegmentChange={handleUserSegmentChange}
                 query={shellSearch}
                 refreshing={userLoading}
