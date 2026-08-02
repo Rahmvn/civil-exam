@@ -191,7 +191,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <div className="bundle-checkout-body">
           <section className="bundle-checkout-summary" aria-label="Bundle price">
             <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
-            {comparisonPrice && <span>Individual total: {formatModuleMoney(comparisonPrice, offer.currency)}</span>}
+            {comparisonPrice && <span>Normally {formatModuleMoney(comparisonPrice, offer.currency)}</span>}
             {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
           </section>
 
