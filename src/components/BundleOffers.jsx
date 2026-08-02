@@ -48,6 +48,15 @@ function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
   return `Continue - ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
 }
 
+function toPositiveNumber(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
+}
+
+function getSelectedModuleTotal(modules) {
+  return modules.reduce((total, module) => total + toPositiveNumber(module.price_kobo), 0);
+}
+
 export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
   if (!offer) return null;
 
@@ -120,6 +129,9 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
     : isFullBundle ? modules.map((module) => module.subject_slug) : [];
   const selected = modules.filter((module) => selectedSlugs.includes(module.subject_slug));
   const selectionComplete = selected.length === requiredCount;
+  const selectedModuleTotal = selectionComplete ? getSelectedModuleTotal(selected) : 0;
+  const offerPrice = toPositiveNumber(offer.price_kobo);
+  const savedAmount = selectedModuleTotal > offerPrice ? selectedModuleTotal - offerPrice : 0;
   const selectionLabel = isFullBundle
     ? `${modules.length} modules included`
     : selectionComplete ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`;
@@ -180,6 +192,11 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <div className="bundle-checkout-body">
           <section className="bundle-checkout-summary" aria-label="Bundle price">
             <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
+            {savedAmount > 0 && (
+              <span className="bundle-checkout-savings">
+                You save {formatModuleMoney(savedAmount, offer.currency)}
+              </span>
+            )}
             {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
           </section>
 
