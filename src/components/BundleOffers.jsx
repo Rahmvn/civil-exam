@@ -31,7 +31,7 @@ function getOfferCardCopy(offer) {
 
 function getOfferModalCopy(offer) {
   if (offer?.offer_type === "full_bundle") return "Review included modules before payment.";
-  return `Select ${getOfferModuleCount(offer)} modules to continue.`;
+  return "Choose the modules you want to unlock.";
 }
 
 function getOfferActionCopy(offer) {
