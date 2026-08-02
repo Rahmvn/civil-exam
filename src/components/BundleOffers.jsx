@@ -29,9 +29,9 @@ function getOfferCardCopy(offer) {
   return `Select any ${getOfferModuleCount(offer)} modules.`;
 }
 
-function getOfferModalCopy(offer) {
+function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
   if (offer?.offer_type === "full_bundle") return "Review included modules before payment.";
-  return "Choose the modules you want to unlock.";
+  return hasHiddenUnlockedModules ? "Pick from modules you have not unlocked." : `Select any ${getOfferModuleCount(offer)} modules.`;
 }
 
 function getOfferActionCopy(offer) {
@@ -132,6 +132,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
   const selectedModuleTotal = selectionComplete ? getSelectedModuleTotal(selected) : 0;
   const offerPrice = toPositiveNumber(offer.price_kobo);
   const savedAmount = selectedModuleTotal > offerPrice ? selectedModuleTotal - offerPrice : 0;
+  const hasHiddenUnlockedModules = !isFullBundle && toPositiveNumber(offer.owned_module_count) > 0;
   const selectionLabel = isFullBundle
     ? `${modules.length} modules included`
     : selectionComplete ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`;
@@ -176,7 +177,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         <header className="bundle-checkout-head">
           <div className="bundle-checkout-title-block">
             <h2 id="bundle-checkout-title">{offer.offer_name}</h2>
-            <p>{getOfferModalCopy(offer)}</p>
+            <p>{getOfferModalCopy(offer, hasHiddenUnlockedModules)}</p>
           </div>
           <button
             aria-label="Close bundle checkout"
@@ -205,6 +206,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
               <h3 id="bundle-module-picker-title">{isFullBundle ? "Included modules" : `Choose ${requiredCount} modules`}</h3>
               <span>{selectionLabel}</span>
             </header>
+            {hasHiddenUnlockedModules && <p className="bundle-module-picker-note">Unlocked modules are hidden.</p>}
 
             <div className="bundle-module-list" aria-label={isFullBundle ? "Included modules" : "Choose modules"}>
               {modules.map((module) => {

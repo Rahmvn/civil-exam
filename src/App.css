@@ -610,6 +610,14 @@
   white-space: nowrap;
 }
 
+.bundle-module-picker-note {
+  margin: -2px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 580;
+  line-height: 1.35;
+}
+
 .bundle-module-list {
   display: grid;
   gap: 9px;
