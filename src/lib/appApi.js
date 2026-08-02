@@ -799,6 +799,62 @@ export async function getAdminPaymentAttention(limit = 100) {
   )));
 }
 
+export async function getAdminTransactionalEmailEvents({ status = "all", query = "", limit = 50, offset = 0 } = {}) {
+  const data = await readWithPolicy(
+    `admin-transactional-email-events:${status}:${query}:${limit}:${offset}`,
+    async () => requireData(await supabase.rpc("get_admin_transactional_email_events", {
+      requested_status: status,
+      requested_query: query || null,
+      requested_limit: limit,
+      requested_offset: offset,
+    })),
+  );
+
+  return {
+    items: ensureArray(data?.items),
+    total: Number(data?.total) || 0,
+    counts: {
+      all: Number(data?.counts?.all) || 0,
+      pending: Number(data?.counts?.pending) || 0,
+      sent: Number(data?.counts?.sent) || 0,
+      failed: Number(data?.counts?.failed) || 0,
+      skipped: Number(data?.counts?.skipped) || 0,
+    },
+    limit: Number(data?.limit) || limit,
+    offset: Number(data?.offset) || 0,
+    hasMore: Boolean(data?.has_more),
+  };
+}
+
+export async function getAdminUserDirectory({ segment = "all", query = "", limit = 50, offset = 0 } = {}) {
+  const data = await readWithPolicy(
+    `admin-user-directory:${segment}:${query}:${limit}:${offset}`,
+    async () => requireData(await supabase.rpc("get_admin_user_directory", {
+      requested_segment: segment,
+      requested_query: query || null,
+      requested_limit: limit,
+      requested_offset: offset,
+    })),
+  );
+
+  return {
+    items: ensureArray(data?.items),
+    total: Number(data?.total) || 0,
+    counts: {
+      all: Number(data?.counts?.all) || 0,
+      unpaid: Number(data?.counts?.unpaid) || 0,
+      paid: Number(data?.counts?.paid) || 0,
+      never_practiced: Number(data?.counts?.never_practiced) || 0,
+      practiced_unpaid: Number(data?.counts?.practiced_unpaid) || 0,
+      payment_started_unpaid: Number(data?.counts?.payment_started_unpaid) || 0,
+      one_module_unlocked: Number(data?.counts?.one_module_unlocked) || 0,
+    },
+    limit: Number(data?.limit) || limit,
+    offset: Number(data?.offset) || 0,
+    hasMore: Boolean(data?.has_more),
+  };
+}
+
 export async function updateSupportRequest(requestId, status, resolutionNote) {
   return requireData(await supabase.rpc("update_support_request", {
     requested_id: requestId,

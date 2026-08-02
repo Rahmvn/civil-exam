@@ -3068,6 +3068,120 @@ button.admin-danger-link {
   color: #89928d;
 }
 
+.admin-users-board {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-users-table-shell {
+  overflow: hidden;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.admin-users-table-shell.is-loading {
+  opacity: 0.66;
+  pointer-events: none;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.admin-users-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--admin-border, #d9dfdc);
+  background: #f7f8f7;
+  color: #5c6962;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.admin-users-table th:first-child { width: 24%; }
+.admin-users-table th:nth-child(2) { width: 18%; }
+.admin-users-table th:nth-child(3) { width: 17%; }
+.admin-users-table th:nth-child(4) { width: 13%; }
+.admin-users-table th:nth-child(5) { width: 17%; }
+.admin-users-table th:last-child { width: 11%; }
+
+.admin-users-table td {
+  overflow: hidden;
+  padding: 13px 12px;
+  border-bottom: 1px solid #e5e9e7;
+  color: #26362e;
+  font-size: 0.8rem;
+  vertical-align: top;
+  text-overflow: ellipsis;
+}
+
+.admin-users-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-users-table tbody tr:hover {
+  background: #fafbfa;
+}
+
+.admin-users-table td strong,
+.admin-users-table td span,
+.admin-users-table td small,
+.admin-users-table td time {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-users-table td strong {
+  color: #11261c;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-users-table td span,
+.admin-users-table td small,
+.admin-users-table td time {
+  margin-top: 3px;
+  color: #6b7771;
+  font-size: 0.72rem;
+}
+
+.admin-user-payment-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef1ef;
+  color: #536159;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.admin-user-payment-status.is-paid {
+  background: #dff1e7;
+  color: #105a3b;
+}
+
+.admin-user-payment-status.is-started {
+  background: #fff1cc;
+  color: #6b4b00;
+}
+
+.admin-user-payment-status.is-unpaid {
+  background: #f1f3f2;
+  color: #59645e;
+}
+
 .admin-support-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -3386,11 +3500,26 @@ button.admin-danger-link {
     display: none;
   }
 
+  .admin-users-table th:nth-child(2),
+  .admin-users-table td:nth-child(2),
+  .admin-users-table th:nth-child(5),
+  .admin-users-table td:nth-child(5),
+  .admin-users-table th:last-child,
+  .admin-users-table td:last-child {
+    display: none;
+  }
+
   .admin-support-table th:first-child { width: 68%; }
   .admin-support-table th:nth-child(4) { width: 32%; }
 
+  .admin-users-table th:first-child { width: 48%; }
+  .admin-users-table th:nth-child(3) { width: 27%; }
+  .admin-users-table th:nth-child(4) { width: 25%; }
+
   .admin-support-table th,
-  .admin-support-table td {
+  .admin-support-table td,
+  .admin-users-table th,
+  .admin-users-table td {
     padding: 10px 8px;
   }
 
@@ -3522,6 +3651,35 @@ button.admin-danger-link {
   gap: 14px;
 }
 
+.admin-email-board,
+.admin-email-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-email-board {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-email-board-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-email-board-head h2,
+.admin-email-board-head p {
+  margin: 0;
+}
+
+.admin-email-board-head p {
+  margin-top: 4px;
+  color: var(--admin-muted, #667067);
+}
+
 .admin-payment-note {
   display: grid;
   gap: 8px;
@@ -3630,8 +3788,101 @@ button.admin-danger-link {
   color: #7d2929;
 }
 
+.admin-email-row {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-left: 4px solid #91a097;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.admin-email-row.is-failed {
+  border-left-color: #b23b3b;
+}
+
+.admin-email-row.is-skipped {
+  border-left-color: #b2782f;
+}
+
+.admin-email-row.is-sent {
+  border-left-color: #2f7c55;
+}
+
+.admin-email-row header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-email-row h3,
+.admin-email-row p {
+  margin: 0;
+}
+
+.admin-email-row header p,
+.admin-email-row time {
+  color: var(--admin-muted, #667067);
+}
+
+.admin-email-row time {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+}
+
+.admin-email-status {
+  display: inline-flex;
+  margin-bottom: 4px;
+  color: #526158;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-email-status.is-failed {
+  color: #8d2e2e;
+}
+
+.admin-email-status.is-skipped {
+  color: #8a5a1d;
+}
+
+.admin-email-status.is-sent {
+  color: #24704b;
+}
+
+.admin-email-row dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-email-row dt {
+  color: var(--admin-muted, #667067);
+  font-size: 0.76rem;
+}
+
+.admin-email-row dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.admin-email-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff4f1;
+  color: #7d2929;
+}
+
 @media (max-width: 900px) {
-  .admin-payment-attention-row dl {
+  .admin-payment-attention-row dl,
+  .admin-email-row dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -3639,12 +3890,15 @@ button.admin-danger-link {
 @media (max-width: 560px) {
   .admin-payment-heading,
   .admin-payment-attention-row header,
-  .admin-payment-attention-row footer {
+  .admin-payment-attention-row footer,
+  .admin-email-board-head,
+  .admin-email-row header {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .admin-payment-attention-row dl {
+  .admin-payment-attention-row dl,
+  .admin-email-row dl {
     grid-template-columns: 1fr;
   }
 }

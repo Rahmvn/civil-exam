@@ -29,6 +29,8 @@ import {
   getAdminPracticeSetValidation,
   getAdminQuestions,
   getAdminPaymentAttention,
+  getAdminTransactionalEmailEvents,
+  getAdminUserDirectory,
   getAdminSupportQueue,
   getAdminSupportDiagnostics,
   importAdminQuestions,
@@ -132,6 +134,14 @@ function AdminChromeIcon({ name }) {
         <path d="M8 15h3" />
       </>
     ),
+    users: (
+      <>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="10" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </>
+    ),
     guide: (
       <>
         <path d="M7 5.5A2.5 2.5 0 0 1 9.5 3H19v16h-9.5A2.5 2.5 0 0 0 7 21" />
@@ -187,6 +197,14 @@ function AdminRail({ currentView, navigate }) {
         >
           <AdminChromeIcon name="activity" />
           <strong>Activity</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "users" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/users")}
+        >
+          <AdminChromeIcon name="users" />
+          <strong>Users</strong>
         </button>
         <button
           className={`admin-rail-link${currentView === "payments" ? " is-active" : ""}`}
@@ -1424,7 +1442,287 @@ const EMPTY_SUPPORT_QUEUE = {
   hasMore: false,
 };
 
-function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefresh, query, refreshing }) {
+const EMPTY_EMAIL_EVENTS = {
+  items: [],
+  total: 0,
+  counts: { all: 0, pending: 0, sent: 0, failed: 0, skipped: 0 },
+  limit: 50,
+  offset: 0,
+  hasMore: false,
+};
+
+const EMAIL_STATUS_LABELS = {
+  all: "All",
+  pending: "Pending",
+  sent: "Sent",
+  failed: "Failed",
+  skipped: "Skipped",
+};
+
+const EMPTY_USER_DIRECTORY = {
+  items: [],
+  total: 0,
+  counts: {
+    all: 0,
+    unpaid: 0,
+    paid: 0,
+    never_practiced: 0,
+    practiced_unpaid: 0,
+    payment_started_unpaid: 0,
+    one_module_unlocked: 0,
+  },
+  limit: 50,
+  offset: 0,
+  hasMore: false,
+};
+
+const USER_SEGMENT_LABELS = {
+  all: "All users",
+  unpaid: "Unpaid",
+  paid: "Paid",
+  never_practiced: "Never practised",
+  practiced_unpaid: "Practised, unpaid",
+  payment_started_unpaid: "Payment started",
+  one_module_unlocked: "One module",
+};
+
+function formatAdminDateTime(value) {
+  if (!value) return "Not yet";
+  return new Date(value).toLocaleString("en-NG");
+}
+
+function joinModuleNames(modules, fallback = "None") {
+  const names = ensureAdminArray(modules).map((item) => item.subject_name).filter(Boolean);
+  if (names.length === 0) return fallback;
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
+function ensureAdminArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function emailEventTitle(event) {
+  const label = activityLabel(event.event_type);
+  const subject = event.purchase_type === "bundle_offer"
+    ? event.purchase_label
+    : event.subject_name;
+  return subject ? `${label} - ${subject}` : label;
+}
+
+function AdminEmailDiagnosticsPanel({
+  emailEvents,
+  emailLoading,
+  emailQuery,
+  emailStatus,
+  onEmailPageChange,
+  onEmailQueryChange,
+  onEmailStatusChange,
+  onRefresh,
+}) {
+  const firstResult = emailEvents.total === 0 ? 0 : emailEvents.offset + 1;
+  const lastResult = Math.min(emailEvents.offset + emailEvents.items.length, emailEvents.total);
+
+  return (
+    <section className="admin-email-board" aria-labelledby="admin-email-title">
+      <header className="admin-email-board-head">
+        <div>
+          <h2 id="admin-email-title">Email diagnostics</h2>
+          <p>Recent payment, access, refund, and dispute email events.</p>
+        </div>
+        <button disabled={emailLoading} onClick={onRefresh} type="button">
+          {emailLoading ? "Refreshing..." : "Refresh emails"}
+        </button>
+      </header>
+      <AdminSummaryStrip items={[
+        { label: "Failed", value: emailEvents.counts.failed, tone: emailEvents.counts.failed > 0 ? "attention" : "success" },
+        { label: "Skipped", value: emailEvents.counts.skipped },
+        { label: "Sent", value: emailEvents.counts.sent },
+      ]} />
+      <div className="admin-list-toolbar">
+        <label className="admin-inline-search">
+          <span className="sr-only">Search email diagnostics</span>
+          <input onChange={(event) => onEmailQueryChange(event.target.value)} placeholder="Search recipient, reference, event, or error..." type="search" value={emailQuery} />
+        </label>
+        <select aria-label="Email status filter" onChange={(event) => onEmailStatusChange(event.target.value)} value={emailStatus}>
+          {Object.entries(EMAIL_STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label} ({emailEvents.counts[value] ?? 0})</option>
+          ))}
+        </select>
+        <span>{emailLoading ? "Loading..." : `${emailEvents.total} events`}</span>
+      </div>
+      {emailLoading && emailEvents.items.length === 0 ? <LoadingState /> : emailEvents.items.length === 0 ? (
+        <div className="admin-empty-state">
+          <h2>No matching email events</h2>
+          <p>Transactional payment emails will appear here after sends are attempted.</p>
+        </div>
+      ) : (
+        <div className="admin-email-list">
+          {emailEvents.items.map((event) => (
+            <article className={`admin-email-row is-${event.status}`} key={event.id}>
+              <header>
+                <div>
+                  <span className={`admin-email-status is-${event.status}`}>{EMAIL_STATUS_LABELS[event.status] ?? event.status}</span>
+                  <h3>{emailEventTitle(event)}</h3>
+                  <p>{event.recipient_email}</p>
+                </div>
+                <time dateTime={event.attempted_at || event.created_at}>
+                  {new Date(event.attempted_at || event.created_at).toLocaleString("en-NG")}
+                </time>
+              </header>
+              <dl>
+                <div><dt>Reference</dt><dd className="is-technical">{event.provider_reference || "Not linked"}</dd></div>
+                <div><dt>Provider</dt><dd>{event.provider || "Unknown"}</dd></div>
+                <div><dt>Message ID</dt><dd className="is-technical">{event.provider_message_id || "Not recorded"}</dd></div>
+                <div><dt>Sent</dt><dd>{event.sent_at ? new Date(event.sent_at).toLocaleString("en-NG") : "Not sent"}</dd></div>
+              </dl>
+              {event.error_message && <p className="admin-email-error">{event.error_message}</p>}
+            </article>
+          ))}
+        </div>
+      )}
+      <footer className="admin-support-table-footer">
+        <span>{firstResult}-{lastResult} of {emailEvents.total}</span>
+        <nav className="admin-support-pagination" aria-label="Email event pages">
+          <button disabled={emailLoading || emailEvents.offset === 0} onClick={() => onEmailPageChange(-1)} type="button">Previous</button>
+          <button disabled={emailLoading || !emailEvents.hasMore} onClick={() => onEmailPageChange(1)} type="button">Next</button>
+        </nav>
+      </footer>
+    </section>
+  );
+}
+
+function AdminUsersView({
+  directory,
+  loading,
+  onPageChange,
+  onQueryChange,
+  onRefresh,
+  onSegmentChange,
+  query,
+  refreshing,
+  segment,
+}) {
+  const firstResult = directory.total === 0 ? 0 : directory.offset + 1;
+  const lastResult = Math.min(directory.offset + directory.items.length, directory.total);
+
+  return (
+    <>
+      <section className="admin-page-heading admin-users-heading">
+        <div>
+          <h1>Users</h1>
+          <p>See candidate activity, payment status, and the segments we can use later for careful email follow-up.</p>
+        </div>
+        <button disabled={refreshing} onClick={onRefresh} type="button">
+          {refreshing ? "Refreshing..." : "Refresh users"}
+        </button>
+      </section>
+      <AdminSummaryStrip items={[
+        { label: "All users", value: directory.counts.all },
+        { label: "Unpaid", value: directory.counts.unpaid, tone: directory.counts.unpaid > 0 ? "attention" : undefined },
+        { label: "Practised, unpaid", value: directory.counts.practiced_unpaid },
+        { label: "Payment started", value: directory.counts.payment_started_unpaid },
+      ]} />
+      <section className="admin-users-board">
+        <div className="admin-list-toolbar">
+          <label className="admin-inline-search">
+            <span className="sr-only">Search users</span>
+            <input onChange={(event) => onQueryChange(event.target.value)} placeholder="Search name, email, module, or status..." type="search" value={query} />
+          </label>
+          <select aria-label="User segment" onChange={(event) => onSegmentChange(event.target.value)} value={segment}>
+            {Object.entries(USER_SEGMENT_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label} ({directory.counts[value] ?? 0})</option>
+            ))}
+          </select>
+          <span>{loading ? "Loading..." : `${directory.total} users`}</span>
+        </div>
+        {loading && directory.items.length === 0 ? <LoadingState /> : directory.items.length === 0 ? (
+          <div className="admin-empty-state">
+            <h2>No matching users</h2>
+            <p>Try another segment or search term.</p>
+          </div>
+        ) : (
+          <div className={`admin-users-table-shell${loading ? " is-loading" : ""}`}>
+            <table className="admin-users-table">
+              <thead>
+                <tr>
+                  <th>Candidate</th>
+                  <th>Practice</th>
+                  <th>Access</th>
+                  <th>Payment</th>
+                  <th>Last email</th>
+                  <th>Last activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {directory.items.map((user) => {
+                  const hasPaid = Number(user.active_module_count) > 0 || Number(user.successful_payment_count) > 0;
+                  const paymentLabel = hasPaid
+                    ? "Paid"
+                    : Number(user.pending_payment_count) > 0
+                      ? "Started"
+                      : "Unpaid";
+                  return (
+                    <tr key={user.id}>
+                      <td>
+                        <strong>{user.full_name || "Candidate"}</strong>
+                        <span>{user.email}</span>
+                        {user.service_level && <small>{user.service_level}</small>}
+                      </td>
+                      <td>
+                        <strong>{formatCount(user.total_attempt_count)} attempt{Number(user.total_attempt_count) === 1 ? "" : "s"}</strong>
+                        <span>{joinModuleNames(user.attempted_modules, "No practice yet")}</span>
+                      </td>
+                      <td>
+                        <strong>{formatCount(user.active_module_count)} module{Number(user.active_module_count) === 1 ? "" : "s"}</strong>
+                        <span>{joinModuleNames(user.active_modules, "No paid access")}</span>
+                      </td>
+                      <td>
+                        <span className={`admin-user-payment-status is-${paymentLabel.toLowerCase()}`}>{paymentLabel}</span>
+                        <small>{user.last_provider_status || "No checkout"}</small>
+                      </td>
+                      <td>
+                        <strong>{user.last_email_type ? activityLabel(user.last_email_type) : "None"}</strong>
+                        <span>{user.last_email_at ? `${user.last_email_status || "Attempted"} - ${formatAdminDateTime(user.last_email_at)}` : "No email event"}</span>
+                      </td>
+                      <td>
+                        <time dateTime={user.last_activity_at || user.created_at}>{formatAdminDateTime(user.last_activity_at || user.created_at)}</time>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <footer className="admin-support-table-footer">
+              <span>{firstResult}-{lastResult} of {directory.total}</span>
+              <nav className="admin-support-pagination" aria-label="User pages">
+                <button disabled={loading || directory.offset === 0} onClick={() => onPageChange(-1)} type="button">Previous</button>
+                <button disabled={loading || !directory.hasMore} onClick={() => onPageChange(1)} type="button">Next</button>
+              </nav>
+            </footer>
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+
+function AdminPaymentAttentionView({
+  emailEvents,
+  emailLoading,
+  emailQuery,
+  emailStatus,
+  items,
+  onEmailPageChange,
+  onEmailQueryChange,
+  onEmailStatusChange,
+  onOpenSupport,
+  onQueryChange,
+  onRefresh,
+  onRefreshEmails,
+  query,
+  refreshing,
+}) {
   const normalizedQuery = query.trim().toLowerCase();
   const visibleItems = items.filter((item) => [
     item.requester_name,
@@ -1509,6 +1807,16 @@ function AdminPaymentAttentionView({ items, onOpenSupport, onQueryChange, onRefr
           </div>
         )}
       </section>
+      <AdminEmailDiagnosticsPanel
+        emailEvents={emailEvents}
+        emailLoading={emailLoading}
+        emailQuery={emailQuery}
+        emailStatus={emailStatus}
+        onEmailPageChange={onEmailPageChange}
+        onEmailQueryChange={onEmailQueryChange}
+        onEmailStatusChange={onEmailStatusChange}
+        onRefresh={onRefreshEmails}
+      />
     </>
   );
 }
@@ -1613,6 +1921,8 @@ export default function Admin() {
   const selectedSetId = routeSetId ?? searchParams.get("set");
   const currentView = location.pathname === "/admin/activity" || searchParams.get("view") === "activity"
     ? "activity"
+    : location.pathname === "/admin/users" || searchParams.get("view") === "users"
+      ? "users"
     : location.pathname === "/admin/payments" || searchParams.get("view") === "payments"
       ? "payments"
     : location.pathname === "/admin/help" || searchParams.get("view") === "support"
@@ -1634,6 +1944,15 @@ export default function Admin() {
   const [supportLoading, setSupportLoading] = useState(false);
   const [paymentAttention, setPaymentAttention] = useState([]);
   const [paymentAttentionLoading, setPaymentAttentionLoading] = useState(false);
+  const [emailEvents, setEmailEvents] = useState(EMPTY_EMAIL_EVENTS);
+  const [emailStatus, setEmailStatus] = useState("all");
+  const [emailQuery, setEmailQuery] = useState("");
+  const [emailPage, setEmailPage] = useState(0);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [userDirectory, setUserDirectory] = useState(EMPTY_USER_DIRECTORY);
+  const [userSegment, setUserSegment] = useState("all");
+  const [userPage, setUserPage] = useState(0);
+  const [userLoading, setUserLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
   const [contentKey, setContentKey] = useState(null);
   const [validationKey, setValidationKey] = useState(null);
@@ -1717,21 +2036,87 @@ export default function Admin() {
     if (currentView !== "payments") return undefined;
     let active = true;
 
-    getAdminPaymentAttention(100)
-      .then((rows) => {
-        if (active) setPaymentAttention(rows);
-      })
-      .catch((error) => {
-        if (!active) return;
-        logAppError("Admin payment attention load", error);
-        setFeedback({ tone: "error", message: friendlyErrorMessage(error, "The payment attention queue could not be loaded.") });
-      })
-      .finally(() => {
-        if (active) setPaymentAttentionLoading(false);
-      });
+    const timer = window.setTimeout(() => {
+      setPaymentAttentionLoading(true);
+      getAdminPaymentAttention(100)
+        .then((rows) => {
+          if (active) setPaymentAttention(rows);
+        })
+        .catch((error) => {
+          if (!active) return;
+          logAppError("Admin payment attention load", error);
+          setFeedback({ tone: "error", message: friendlyErrorMessage(error, "The payment attention queue could not be loaded.") });
+        })
+        .finally(() => {
+          if (active) setPaymentAttentionLoading(false);
+        });
+    }, 0);
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [currentView]);
+
+  useEffect(() => {
+    if (currentView !== "payments") return undefined;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setEmailLoading(true);
+      getAdminTransactionalEmailEvents({
+        status: emailStatus,
+        query: emailQuery.trim(),
+        limit: 50,
+        offset: emailPage * 50,
+      })
+        .then((nextEvents) => {
+          if (active) setEmailEvents(nextEvents);
+        })
+        .catch((error) => {
+          if (!active) return;
+          logAppError("Admin email diagnostics load", error);
+          setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Email diagnostics could not be loaded.") });
+        })
+        .finally(() => {
+          if (active) setEmailLoading(false);
+        });
+    }, emailQuery.trim() ? 300 : 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [currentView, emailPage, emailQuery, emailStatus]);
+
+  useEffect(() => {
+    if (currentView !== "users") return undefined;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setUserLoading(true);
+      getAdminUserDirectory({
+        segment: userSegment,
+        query: shellSearch.trim(),
+        limit: 50,
+        offset: userPage * 50,
+      })
+        .then((nextDirectory) => {
+          if (active) setUserDirectory(nextDirectory);
+        })
+        .catch((error) => {
+          if (!active) return;
+          logAppError("Admin user directory load", error);
+          setFeedback({ tone: "error", message: friendlyErrorMessage(error, "Users could not be loaded.") });
+        })
+        .finally(() => {
+          if (active) setUserLoading(false);
+        });
+    }, shellSearch.trim() ? 300 : 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [currentView, shellSearch, userPage, userSegment]);
 
   useEffect(() => {
     let active = true;
@@ -1803,6 +2188,8 @@ export default function Admin() {
   const setContentLoading = Boolean(routeContentKey && contentKey !== routeContentKey);
   const shellSearchPlaceholder = currentView === "activity"
     ? "Search activity..."
+    : currentView === "users"
+      ? "Search users..."
     : currentView === "payments"
       ? "Search payment attention..."
     : currentView === "support"
@@ -1852,6 +2239,60 @@ export default function Admin() {
       reportError("Admin payment attention refresh", error, "The payment attention queue could not be refreshed.");
     } finally {
       setPaymentAttentionLoading(false);
+    }
+  }
+
+  async function refreshEmailEvents() {
+    setEmailLoading(true);
+    try {
+      setEmailEvents(await getAdminTransactionalEmailEvents({
+        status: emailStatus,
+        query: emailQuery.trim(),
+        limit: 50,
+        offset: emailPage * 50,
+      }));
+      setFeedback({ tone: "success", message: "Email diagnostics refreshed." });
+    } catch (error) {
+      reportError("Admin email diagnostics refresh", error, "Email diagnostics could not be refreshed.");
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
+  function handleEmailStatusChange(status) {
+    setEmailStatus(status);
+    setEmailPage(0);
+  }
+
+  function handleEmailQueryChange(value) {
+    setEmailQuery(value);
+    setEmailPage(0);
+  }
+
+  function handleUserSegmentChange(segment) {
+    setUserSegment(segment);
+    setUserPage(0);
+  }
+
+  function handleUserQueryChange(value) {
+    setShellSearch(value);
+    setUserPage(0);
+  }
+
+  async function refreshUserDirectory() {
+    setUserLoading(true);
+    try {
+      setUserDirectory(await getAdminUserDirectory({
+        segment: userSegment,
+        query: shellSearch.trim(),
+        limit: 50,
+        offset: userPage * 50,
+      }));
+      setFeedback({ tone: "success", message: "Users refreshed." });
+    } catch (error) {
+      reportError("Admin user directory refresh", error, "Users could not be refreshed.");
+    } finally {
+      setUserLoading(false);
     }
   }
 
@@ -2345,7 +2786,13 @@ export default function Admin() {
                 <input
                   type="search"
                   value={shellSearch}
-                  onChange={(event) => setShellSearch(event.target.value)}
+                  onChange={(event) => {
+                    if (currentView === "users") {
+                      handleUserQueryChange(event.target.value);
+                    } else {
+                      setShellSearch(event.target.value);
+                    }
+                  }}
                   placeholder={shellSearchPlaceholder}
                 />
               </label>
@@ -2364,12 +2811,32 @@ export default function Admin() {
           <div className="admin-page">
             {currentView === "activity" ? (
               <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
+            ) : currentView === "users" ? (
+              <AdminUsersView
+                directory={userDirectory}
+                loading={userLoading}
+                onPageChange={(direction) => setUserPage((current) => Math.max(0, current + direction))}
+                onQueryChange={handleUserQueryChange}
+                onRefresh={() => void refreshUserDirectory()}
+                onSegmentChange={handleUserSegmentChange}
+                query={shellSearch}
+                refreshing={userLoading}
+                segment={userSegment}
+              />
             ) : currentView === "payments" ? (
               <AdminPaymentAttentionView
+                emailEvents={emailEvents}
+                emailLoading={emailLoading}
+                emailQuery={emailQuery}
+                emailStatus={emailStatus}
                 items={paymentAttention}
+                onEmailPageChange={(direction) => setEmailPage((current) => Math.max(0, current + direction))}
+                onEmailQueryChange={handleEmailQueryChange}
+                onEmailStatusChange={handleEmailStatusChange}
                 onOpenSupport={openLinkedPaymentSupport}
                 onQueryChange={setShellSearch}
                 onRefresh={() => void refreshPaymentAttention()}
+                onRefreshEmails={() => void refreshEmailEvents()}
                 query={shellSearch}
                 refreshing={paymentAttentionLoading}
               />

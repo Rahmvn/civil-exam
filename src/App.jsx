@@ -109,6 +109,10 @@ const router = createBrowserRouter([
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
       {
+        path: "/admin/users",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
         path: "/admin/guide",
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },

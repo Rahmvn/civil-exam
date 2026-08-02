@@ -203,6 +203,7 @@ async function markEmailEvent(
 async function sendWithResend(
   to: string,
   message: { subject: string; text: string; html: string },
+  idempotencyKey: string,
 ) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return { skipped: true, reason: "RESEND_API_KEY is not configured" };
@@ -213,6 +214,7 @@ async function sendWithResend(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
     },
     body: JSON.stringify({
       from,
@@ -256,7 +258,7 @@ async function sendTrackedTransactionalEmail({
   if (!event?.id) return { sent: false, duplicate: true };
 
   try {
-    const result = await sendWithResend(String(details.recipient_email), message);
+    const result = await sendWithResend(String(details.recipient_email), message, eventKey);
     if (result.skipped) {
       await markEmailEvent(event.id, {
         status: "skipped",
