@@ -25,8 +25,8 @@ function getOfferModuleCount(offer) {
 }
 
 function getOfferCardCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "All modules in one payment.";
-  return `Select any ${getOfferModuleCount(offer)} modules.`;
+  if (offer?.offer_type === "full_bundle") return "Available before buying modules.";
+  return `Select any ${getOfferModuleCount(offer)} locked modules.`;
 }
 
 function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
@@ -76,7 +76,7 @@ export function BundleOffers({ offers = [], onChoose }) {
       <header className="bundle-offers-heading">
         <div>
           <h2 id="bundle-offers-title">Bundle offers</h2>
-          <p>Unlock multiple modules in one payment.</p>
+          <p>Save when unlocking multiple modules.</p>
         </div>
       </header>
 

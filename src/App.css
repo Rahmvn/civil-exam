@@ -251,7 +251,7 @@
 /* Bundle purchase options */
 .bundle-offers {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .bundle-offers-heading {
@@ -263,21 +263,21 @@
 
 .bundle-offers-heading > div {
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .bundle-offers-heading h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 0.98rem;
-  font-weight: 820;
+  font-size: 0.94rem;
+  font-weight: 780;
   line-height: 1.25;
 }
 
 .bundle-offers-heading p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 520;
   line-height: 1.4;
 }
@@ -286,7 +286,7 @@
   overflow: hidden;
   display: grid;
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  border-radius: 16px;
   background: var(--color-surface);
 }
 
@@ -294,15 +294,15 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 16px;
-  min-height: 74px;
-  padding: 15px 16px;
+  gap: 14px;
+  min-height: 66px;
+  padding: 13px 15px;
   background: transparent;
   box-shadow: none;
 }
 
 .bundle-offer-row.is-unavailable {
-  background: color-mix(in srgb, var(--color-bg) 48%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-bg) 36%, var(--color-surface));
 }
 
 .bundle-offer-row + .bundle-offer-row {
@@ -337,7 +337,7 @@
 .bundle-offer-row-copy {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 2px;
 }
 
 .bundle-offer-row-copy h3,
@@ -348,31 +348,31 @@
 }
 
 .bundle-offer-row-copy h3 {
-  font-size: 0.96rem;
-  font-weight: 780;
+  font-size: 0.9rem;
+  font-weight: 760;
   line-height: 1.25;
 }
 
 .bundle-offer-row-copy p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 520;
-  line-height: 1.42;
+  line-height: 1.35;
 }
 
 .bundle-offer-row-price {
   display: grid;
   justify-items: end;
   gap: 2px;
-  min-width: 100px;
+  min-width: 82px;
 }
 
 .bundle-offer-row-price strong {
   color: var(--color-primary-dark);
-  font-size: 1.2rem;
+  font-size: 1.02rem;
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.025em;
 }
 
 .bundle-offer-row-price small {
@@ -382,16 +382,16 @@
 }
 
 .bundle-offer-row-action {
-  min-width: 64px;
-  min-height: 34px;
-  padding: 7px 12px;
+  min-width: 52px;
+  min-height: 30px;
+  padding: 5px 11px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
   border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-primary-dark);
   box-shadow: none;
-  font-size: 0.78rem;
-  font-weight: 820;
+  font-size: 0.74rem;
+  font-weight: 790;
 }
 
 .bundle-offer-row-action:hover,
@@ -401,18 +401,18 @@
 }
 
 .bundle-offer-row-status {
-  min-width: 104px;
-  min-height: 32px;
+  min-width: 86px;
+  min-height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 11px;
+  padding: 5px 10px;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, white);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-bg) 68%, white);
+  background: color-mix(in srgb, var(--color-bg) 52%, white);
   color: var(--color-text-muted);
-  font-size: 0.74rem;
-  font-weight: 760;
+  font-size: 0.7rem;
+  font-weight: 740;
 }
 
 .bundle-offer-trigger {
@@ -748,11 +748,11 @@
 
 @media (max-width: 760px) {
   .bundle-offers-heading h2 {
-    font-size: 0.96rem;
+    font-size: 0.92rem;
   }
 
   .bundle-offers-heading p {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
   }
 
   .bundle-offer-list {
@@ -761,29 +761,39 @@
   }
 
   .bundle-offer-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 9px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "copy price"
+      "copy action";
+    gap: 6px 12px;
     min-height: 0;
-    padding: 14px 15px;
+    padding: 13px 14px;
     border-radius: 0;
   }
 
+  .bundle-offer-row-copy {
+    grid-area: copy;
+  }
+
   .bundle-offer-row-price {
-    grid-column: 1 / -1;
-    justify-items: start;
+    grid-area: price;
+    align-self: start;
+    justify-items: end;
     min-width: 0;
   }
 
   .bundle-offer-row-action {
-    grid-column: 1 / -1;
+    grid-area: action;
+    justify-self: end;
     width: fit-content;
-    min-height: 40px;
+    min-height: 29px;
     margin-top: 0;
     border-radius: 999px;
   }
 
   .bundle-offer-row-status {
-    grid-column: 1 / -1;
+    grid-area: action;
+    justify-self: end;
     width: fit-content;
     min-width: 0;
     justify-content: center;
