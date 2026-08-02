@@ -51,7 +51,7 @@ function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
     const remaining = requiredCount - selectedCount;
     return `Select ${remaining} more module${remaining === 1 ? "" : "s"}`;
   }
-  return `Continue — ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
+  return `Continue - ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
 }
 
 export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
