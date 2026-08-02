@@ -26,7 +26,7 @@ function getOfferModuleCount(offer) {
 
 function getOfferCardCopy(offer) {
   if (offer?.offer_type === "full_bundle") return "Available before buying modules.";
-  return `Select any ${getOfferModuleCount(offer)} locked modules.`;
+  return `Select ${getOfferModuleCount(offer)} locked modules.`;
 }
 
 function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
@@ -35,8 +35,8 @@ function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
 }
 
 function getOfferActionCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "View";
-  return "View";
+  if (offer?.offer_type === "full_bundle") return "Choose";
+  return "Choose";
 }
 
 function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {

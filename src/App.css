@@ -294,9 +294,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
-  min-height: 66px;
-  padding: 13px 15px;
+  gap: 16px;
+  min-height: 72px;
+  padding: 15px 18px;
   background: transparent;
   box-shadow: none;
 }
@@ -348,8 +348,8 @@
 }
 
 .bundle-offer-row-copy h3 {
-  font-size: 0.9rem;
-  font-weight: 760;
+  font-size: 0.94rem;
+  font-weight: 780;
   line-height: 1.25;
 }
 
@@ -365,14 +365,14 @@
   display: grid;
   justify-items: end;
   gap: 2px;
-  min-width: 82px;
+  min-width: 96px;
 }
 
 .bundle-offer-row-price strong {
   color: var(--color-primary-dark);
-  font-size: 1.02rem;
+  font-size: 1.28rem;
   line-height: 1;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
 }
 
 .bundle-offer-row-price small {
@@ -382,16 +382,16 @@
 }
 
 .bundle-offer-row-action {
-  min-width: 52px;
-  min-height: 30px;
-  padding: 5px 11px;
+  min-width: 78px;
+  min-height: 38px;
+  padding: 8px 18px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--color-surface);
   color: var(--color-primary-dark);
   box-shadow: none;
-  font-size: 0.74rem;
-  font-weight: 790;
+  font-size: 0.82rem;
+  font-weight: 820;
 }
 
 .bundle-offer-row-action:hover,
@@ -401,18 +401,18 @@
 }
 
 .bundle-offer-row-status {
-  min-width: 86px;
-  min-height: 28px;
+  min-width: 104px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 10px;
+  padding: 7px 14px;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, white);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-bg) 52%, white);
   color: var(--color-text-muted);
-  font-size: 0.7rem;
-  font-weight: 740;
+  font-size: 0.76rem;
+  font-weight: 760;
 }
 
 .bundle-offer-trigger {
@@ -776,9 +776,9 @@
     grid-template-areas:
       "copy price"
       "copy action";
-    gap: 6px 12px;
+    gap: 7px 13px;
     min-height: 0;
-    padding: 13px 14px;
+    padding: 14px 15px;
     border-radius: 0;
   }
 
@@ -797,9 +797,10 @@
     grid-area: action;
     justify-self: end;
     width: fit-content;
-    min-height: 29px;
+    min-height: 40px;
+    padding: 8px 17px;
     margin-top: 0;
-    border-radius: 999px;
+    border-radius: 12px;
   }
 
   .bundle-offer-row-status {
