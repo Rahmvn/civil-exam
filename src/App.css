@@ -286,6 +286,15 @@
   background: transparent;
 }
 
+.bundle-offer-row.is-unavailable {
+  background: color-mix(in srgb, var(--color-bg) 58%, var(--color-surface));
+}
+
+.bundle-offer-row.is-unavailable .bundle-mark,
+.bundle-offer-row.is-unavailable .bundle-offer-row-price {
+  opacity: 0.62;
+}
+
 .bundle-offer-row + .bundle-offer-row {
   border-top: 1px solid color-mix(in srgb, var(--color-border) 82%, white);
 }
@@ -367,6 +376,13 @@
   box-shadow: none;
   font-size: 0.84rem;
   font-weight: 850;
+}
+
+.bundle-offer-row-action:disabled {
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 .bundle-offer-trigger {
@@ -613,10 +629,18 @@
 
 .bundle-checkout-footer {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   padding: 14px 28px 22px;
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
+}
+
+.bundle-checkout-trust {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .bundle-checkout-pay {

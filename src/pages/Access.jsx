@@ -514,7 +514,7 @@ export default function Access() {
     : null;
   const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
   const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
-  const featuredBundleOffer = bundleOffers[0] ?? null;
+  const featuredBundleOffer = bundleOffers.find((offer) => offer.is_applicable !== false) ?? null;
   const unlockedCount = modulesToShow.filter((module) => {
     const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
     return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);

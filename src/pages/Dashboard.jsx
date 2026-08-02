@@ -463,6 +463,7 @@ export default function Dashboard() {
   const unlockedModuleCount = moduleCards.filter((card) => card.hasUsableModuleAccess).length;
   const lockedPurchasableCount = moduleCards.filter((card) => !card.hasUsableModuleAccess && card.canPurchase && !card.isComingSoon && !card.isPaused).length;
   const featuredBundleOffer = bundleOffers.find((offer) => {
+    if (offer.is_applicable === false) return false;
     if (offer.offer_type === "full_bundle") return lockedPurchasableCount > 0;
     return lockedPurchasableCount >= Number(offer.selection_count ?? 0);
   }) ?? null;

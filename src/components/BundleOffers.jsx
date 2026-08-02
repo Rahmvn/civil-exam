@@ -40,8 +40,18 @@ function getOfferDescriptor(offer) {
 }
 
 function getOfferActionCopy(offer) {
+  if (offer?.is_applicable === false) return "Unavailable";
   if (offer?.offer_type === "full_bundle") return "Review";
   return "Choose";
+}
+
+function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
+  if (paying) return "Preparing payment...";
+  if (selectedCount < requiredCount) {
+    const remaining = requiredCount - selectedCount;
+    return `Select ${remaining} more module${remaining === 1 ? "" : "s"}`;
+  }
+  return `Continue — ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
 }
 
 export function BundleOfferTrigger({ offer, onChoose, variant = "dashboard" }) {
@@ -67,19 +77,25 @@ export function BundleOffers({ offers = [], onChoose }) {
       <div className="bundle-offer-list">
         {offers.map((offer) => {
           const comparisonPrice = getOfferComparisonPrice(offer);
+          const isApplicable = offer.is_applicable !== false;
 
           return (
-            <article className="bundle-offer-row" key={offer.offer_id}>
+            <article className={`bundle-offer-row${isApplicable ? "" : " is-unavailable"}`} key={offer.offer_id}>
               <BundleMark />
               <div className="bundle-offer-row-copy">
                 <h3>{offer.offer_name}</h3>
-                <p>{getOfferDescriptor(offer)}</p>
+                <p>{isApplicable ? getOfferDescriptor(offer) : offer.eligibility_message}</p>
               </div>
               <div className="bundle-offer-row-price">
                 <strong>{formatModuleMoney(offer.price_kobo, offer.currency)}</strong>
                 {comparisonPrice && <small>{formatModuleMoney(comparisonPrice, offer.currency)} separately</small>}
               </div>
-              <button className="bundle-offer-row-action" type="button" onClick={() => onChoose(offer)}>
+              <button
+                className="bundle-offer-row-action"
+                disabled={!isApplicable}
+                type="button"
+                onClick={() => onChoose(offer)}
+              >
                 {getOfferActionCopy(offer)}
               </button>
             </article>
@@ -118,6 +134,12 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
   const selectionLabel = isFullBundle
     ? `${modules.length} modules included`
     : selectionComplete ? "Ready for payment" : `${selected.length} of ${requiredCount} selected`;
+  const payCopy = getBundlePayCopy({
+    offer,
+    paying,
+    selectedCount: selected.length,
+    requiredCount,
+  });
 
   function toggleModule(subjectSlug) {
     if (paying || isFullBundle) return;
@@ -202,6 +224,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         </div>
 
         <footer className="bundle-checkout-footer">
+          <p className="bundle-checkout-trust">Payment is secured by Paystack.</p>
           {error && <p className="action-error" role="alert">{error}</p>}
           <button
             aria-busy={paying}
@@ -210,7 +233,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
             onClick={() => void onPay(offer, selectedSlugs)}
             type="button"
           >
-            {paying ? "Preparing payment..." : "Continue to payment"}
+            {payCopy}
           </button>
         </footer>
       </section>

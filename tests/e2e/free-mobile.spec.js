@@ -55,10 +55,11 @@ test("choose-three checkout uses a full-width mobile sheet with an exact selecti
 
   const moduleChoices = dialog.locator(".bundle-module-list > button");
   await expect(moduleChoices).toHaveCount(3);
+  await expect(dialog.getByRole("button", { name: "Select 3 more modules" })).toBeDisabled();
   for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
 
   await expect(dialog.getByText("Ready for payment")).toBeVisible();
   await expect(dialog.getByText(/7,500/)).toBeVisible();
-  await expect(dialog.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
+  await expect(dialog.getByRole("button", { name: /Continue/ })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });
