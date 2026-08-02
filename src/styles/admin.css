@@ -3166,6 +3166,50 @@ button.admin-danger-link {
   white-space: pre-wrap;
 }
 
+.admin-campaign-editor {
+  display: grid;
+  gap: 11px;
+}
+
+.admin-campaign-editor label {
+  display: grid;
+  gap: 6px;
+  color: var(--admin-muted, #667067);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.admin-campaign-editor input,
+.admin-campaign-editor textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--admin-border, #cbd4d0);
+  border-radius: 8px;
+  background: #fff;
+  color: #1a2b23;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.admin-campaign-editor textarea {
+  min-height: 180px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.admin-campaign-editor p {
+  color: var(--admin-muted, #667067);
+  font-size: 0.76rem;
+}
+
+.admin-campaign-editor button {
+  justify-self: start;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 8px;
+}
+
 .admin-campaign-send-tools {
   align-items: flex-end;
 }

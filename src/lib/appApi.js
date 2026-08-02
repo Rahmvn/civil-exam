@@ -888,6 +888,14 @@ export async function cancelAdminEmailCampaign(campaignId) {
   }));
 }
 
+export async function updateAdminEmailCampaignCopy(campaignId, { subject, bodyText }) {
+  return requireData(await supabase.rpc("admin_update_email_campaign_copy", {
+    requested_campaign_id: campaignId,
+    requested_subject: subject,
+    requested_body_text: bodyText,
+  }));
+}
+
 export async function sendAdminEmailCampaignTest(campaignId, testEmail) {
   return requireFunctionData(await supabase.functions.invoke("admin-email-campaign", {
     body: {

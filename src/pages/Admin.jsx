@@ -45,6 +45,7 @@ import {
   saveAdminQuestion,
   sendAdminEmailCampaign,
   sendAdminEmailCampaignTest,
+  updateAdminEmailCampaignCopy,
   republishAdminPracticeSet,
   retireAdminPracticeSet,
   transitionAdminPracticeSet,
@@ -1609,14 +1610,17 @@ function AdminEmailDiagnosticsPanel({
 function AdminUsersView({
   activeCampaign,
   campaignLoading,
+  campaignDraft,
   directory,
   loading,
   onCancelCampaign,
   onCreateCampaign,
+  onDraftChange,
   onPageChange,
   onQueryChange,
   onRefresh,
   onRefreshCampaign,
+  onSaveCampaignCopy,
   onSendCampaign,
   onSendCampaignTest,
   onSegmentChange,
@@ -1682,7 +1686,40 @@ function AdminUsersView({
                 </button>
               </div>
             </div>
-            <pre className="admin-campaign-copy">{activeCampaign.body_text}</pre>
+            <div className="admin-campaign-editor">
+              <label>
+                <span>Subject</span>
+                <input
+                  disabled={campaignLoading || !["draft", "tested"].includes(activeCampaign.status)}
+                  onChange={(event) => onDraftChange({ subject: event.target.value })}
+                  value={campaignDraft.subject}
+                />
+              </label>
+              <label>
+                <span>Email body</span>
+                <textarea
+                  disabled={campaignLoading || !["draft", "tested"].includes(activeCampaign.status)}
+                  onChange={(event) => onDraftChange({ bodyText: event.target.value })}
+                  rows={9}
+                  value={campaignDraft.bodyText}
+                />
+              </label>
+              <p>Use {"{{first_name}}"} where the candidate&apos;s first name should appear.</p>
+              <button
+                disabled={
+                  campaignLoading
+                  || !["draft", "tested"].includes(activeCampaign.status)
+                  || (
+                    campaignDraft.subject.trim() === String(activeCampaign.subject ?? "").trim()
+                    && campaignDraft.bodyText.trim() === String(activeCampaign.body_text ?? "").trim()
+                  )
+                }
+                onClick={onSaveCampaignCopy}
+                type="button"
+              >
+                Save edits
+              </button>
+            </div>
             <div className="admin-campaign-send-tools">
               <label>
                 <span>Test email</span>
@@ -1693,7 +1730,17 @@ function AdminUsersView({
                   value={testEmail}
                 />
               </label>
-              <button disabled={campaignLoading || !testEmail.trim() || !["draft", "tested"].includes(activeCampaign.status)} onClick={() => onSendCampaignTest(testEmail)} type="button">
+              <button
+                disabled={
+                  campaignLoading
+                  || !testEmail.trim()
+                  || !["draft", "tested"].includes(activeCampaign.status)
+                  || campaignDraft.subject.trim() !== String(activeCampaign.subject ?? "").trim()
+                  || campaignDraft.bodyText.trim() !== String(activeCampaign.body_text ?? "").trim()
+                }
+                onClick={() => onSendCampaignTest(testEmail)}
+                type="button"
+              >
                 Send test
               </button>
               <button disabled={campaignLoading || activeCampaign.status !== "tested" || Number(activeCampaign.counts?.pending ?? 0) === 0} onClick={onSendCampaign} type="button">
@@ -2049,6 +2096,7 @@ export default function Admin() {
   const [userPage, setUserPage] = useState(0);
   const [userLoading, setUserLoading] = useState(false);
   const [activeEmailCampaign, setActiveEmailCampaign] = useState(null);
+  const [emailCampaignDraft, setEmailCampaignDraft] = useState({ subject: "", bodyText: "" });
   const [campaignLoading, setCampaignLoading] = useState(false);
   const [practiceSetsModuleId, setPracticeSetsModuleId] = useState(null);
   const [contentKey, setContentKey] = useState(null);
@@ -2225,11 +2273,11 @@ export default function Admin() {
           if (!active) return;
           const nextCampaign = campaigns.find((campaign) => ["draft", "tested", "sending"].includes(campaign.status));
           if (!nextCampaign?.id) {
-            setActiveEmailCampaign(null);
+            syncActiveEmailCampaign(null);
             return null;
           }
           return getAdminEmailCampaign(nextCampaign.id).then((campaign) => {
-            if (active) setActiveEmailCampaign(campaign);
+            if (active) syncActiveEmailCampaign(campaign);
             return campaign;
           });
         })
@@ -2343,6 +2391,15 @@ export default function Admin() {
     setFeedback({ tone: "error", message: adminErrorMessage(error, fallback) });
   }
 
+  function syncActiveEmailCampaign(campaign) {
+    const isActive = campaign && ["draft", "tested", "sending"].includes(campaign.status);
+    setActiveEmailCampaign(isActive ? campaign : null);
+    setEmailCampaignDraft({
+      subject: isActive ? String(campaign.subject ?? "") : "",
+      bodyText: isActive ? String(campaign.body_text ?? "") : "",
+    });
+  }
+
   async function handleSupportUpdate(requestId, status, resolutionNote) {
     setWorking(true);
     try {
@@ -2432,7 +2489,7 @@ export default function Admin() {
     setCampaignLoading(true);
     try {
       const campaign = await getAdminEmailCampaign(campaignId);
-      setActiveEmailCampaign(["draft", "tested", "sending"].includes(campaign.status) ? campaign : null);
+      syncActiveEmailCampaign(campaign);
       return campaign;
     } catch (error) {
       reportError("Admin email campaign refresh", error, "Email campaign could not be refreshed.");
@@ -2446,7 +2503,7 @@ export default function Admin() {
     setCampaignLoading(true);
     try {
       const campaign = await createAdminEmailCampaign();
-      setActiveEmailCampaign(campaign);
+      syncActiveEmailCampaign(campaign);
       setFeedback({ tone: "success", message: "Payment check-in campaign prepared. Send a test email before sending to users." });
     } catch (error) {
       reportError("Admin create email campaign", error, "The payment check-in campaign could not be prepared.");
@@ -2472,6 +2529,27 @@ export default function Admin() {
     }
   }
 
+  function handleCampaignDraftChange(updates) {
+    setEmailCampaignDraft((current) => ({ ...current, ...updates }));
+  }
+
+  async function handleSaveCampaignCopy() {
+    if (!activeEmailCampaign?.id) return;
+    setCampaignLoading(true);
+    try {
+      const campaign = await updateAdminEmailCampaignCopy(activeEmailCampaign.id, {
+        subject: emailCampaignDraft.subject,
+        bodyText: emailCampaignDraft.bodyText,
+      });
+      syncActiveEmailCampaign(campaign);
+      setFeedback({ tone: "success", message: "Email copy saved. Send a fresh test before sending to users." });
+    } catch (error) {
+      reportError("Admin update email campaign copy", error, "Email copy could not be saved.");
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
   function handleSendCampaign() {
     if (!activeEmailCampaign?.id) return;
     requestConfirmation({
@@ -2488,7 +2566,7 @@ export default function Admin() {
             ? `Campaign finished. Sent ${formatCount(result.sent)}, failed ${formatCount(result.failed)}, skipped ${formatCount(result.skipped)}.`
             : `Batch sent. ${formatCount(result.pending)} still pending.`,
         });
-        if (campaign?.status === "sent") setActiveEmailCampaign(null);
+        if (campaign?.status === "sent") syncActiveEmailCampaign(null);
       },
     });
   }
@@ -2502,7 +2580,7 @@ export default function Admin() {
       tone: "danger",
       action: async () => {
         await cancelAdminEmailCampaign(activeEmailCampaign.id);
-        setActiveEmailCampaign(null);
+        syncActiveEmailCampaign(null);
         setFeedback({ tone: "success", message: "Email campaign cancelled." });
       },
     });
@@ -3026,15 +3104,18 @@ export default function Admin() {
             ) : currentView === "users" ? (
               <AdminUsersView
                 activeCampaign={activeEmailCampaign}
+                campaignDraft={emailCampaignDraft}
                 campaignLoading={campaignLoading}
                 directory={userDirectory}
                 loading={userLoading}
                 onCancelCampaign={handleCancelCampaign}
                 onCreateCampaign={() => void handleCreatePaymentCheckinCampaign()}
+                onDraftChange={handleCampaignDraftChange}
                 onPageChange={(direction) => setUserPage((current) => Math.max(0, current + direction))}
                 onQueryChange={handleUserQueryChange}
                 onRefresh={() => void refreshUserDirectory()}
                 onRefreshCampaign={() => void refreshActiveEmailCampaign()}
+                onSaveCampaignCopy={() => void handleSaveCampaignCopy()}
                 onSendCampaign={handleSendCampaign}
                 onSendCampaignTest={(email) => void handleSendCampaignTest(email)}
                 onSegmentChange={handleUserSegmentChange}

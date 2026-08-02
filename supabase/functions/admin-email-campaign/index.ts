@@ -87,15 +87,32 @@ async function sendTest({
   }
 
   const text = personalize(campaign.body_text, "Candidate");
-  const result = await sendWithResend(
-    testEmail,
-    {
-      subject: campaign.subject,
-      text,
-      html: toHtml(text),
-    },
-    `campaign-test:${campaign.id}:${testEmail}`,
-  );
+  let result: Awaited<ReturnType<typeof sendWithResend>>;
+
+  try {
+    result = await sendWithResend(
+      testEmail,
+      {
+        subject: campaign.subject,
+        text,
+        html: toHtml(text),
+      },
+      `campaign-test:${campaign.id}:${testEmail}`,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Test email failed";
+    await adminClient.from("admin_audit_logs").insert({
+      actor_id: adminUserId,
+      action: "email_campaign_test_failed",
+      entity_type: "email_campaign",
+      entity_id: campaign.id,
+      metadata: {
+        recipient_email: testEmail,
+        error_message: message.slice(0, 500),
+      },
+    });
+    throw new RequestBodyError(message, 502);
+  }
 
   const update = result.skipped
     ? {
@@ -293,12 +310,16 @@ Deno.serve(async (request) => {
 
     throw new RequestBodyError("Choose a valid campaign action");
   } catch (error) {
+    const message = error instanceof Error ? error.message : "The request could not be completed.";
+    const status = ["Missing authorization header", "Invalid authorization header", "Invalid user session"].includes(message)
+      ? 401
+      : getRequestErrorStatus(error, 500);
     console.warn("Admin email campaign request failed", {
-      message: error instanceof Error ? error.message : "Unknown error",
+      message,
     });
     return jsonResponse(
-      { error: error instanceof Error ? error.message : "The request could not be completed." },
-      getRequestErrorStatus(error, 400),
+      { error: message },
+      status,
     );
   }
 });
