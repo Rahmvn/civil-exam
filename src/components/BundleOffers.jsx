@@ -47,7 +47,7 @@ function getBundlePayCopy({ offer, paying, selectedCount, requiredCount }) {
     const remaining = requiredCount - selectedCount;
     return `Select ${remaining} more module${remaining === 1 ? "" : "s"}`;
   }
-  return `Continue - ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
+  return `Continue to payment · ${formatModuleMoney(offer.price_kobo, offer.currency)}`;
 }
 
 function toPositiveNumber(value) {
@@ -240,7 +240,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
 
         <footer className="bundle-checkout-footer">
           <p className="bundle-checkout-trust">
-  Pay securely with Paystack. Access activates automatically after successful payment.
+Secure payment by Paystack. Access activates automatically.
 </p>
           {error && <p className="action-error" role="alert">{error}</p>}
           <button
