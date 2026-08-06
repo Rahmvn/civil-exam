@@ -25,12 +25,14 @@ function getOfferModuleCount(offer) {
 }
 
 function getOfferCardCopy(offer) {
-  if (offer?.offer_type === "full_bundle") return "Available before buying modules.";
+  if (offer?.offer_type === "full_bundle") return "Available only before purchasing any module or bundle.";
   return `Select ${getOfferModuleCount(offer)} locked modules.`;
 }
 
 function getOfferModalCopy(offer, hasHiddenUnlockedModules = false) {
-  if (offer?.offer_type === "full_bundle") return "One payment for all included modules.";
+  if (offer?.offer_type === "full_bundle") {
+  return "One payment for all modules listed below.";
+}
   return hasHiddenUnlockedModules ? "Only locked modules are shown." : "One payment for selected modules.";
 }
 
@@ -198,7 +200,15 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
                 You save {formatModuleMoney(savedAmount, offer.currency)}
               </span>
             )}
-            {offer.ends_at && <p>Ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>}
+            {offer.ends_at && (
+  <p>Offer ends {formatLaunchOfferEnd(offer.ends_at)} WAT.</p>
+)}
+
+<p>Access valid until 31 December 2026.</p>
+
+{isFullBundle && (
+  <p>Current price may increase as more modules are added.</p>
+)}
           </section>
 
           <section className="bundle-module-picker" aria-labelledby="bundle-module-picker-title">
@@ -230,7 +240,9 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
         </div>
 
         <footer className="bundle-checkout-footer">
-          <p className="bundle-checkout-trust">Payment is secured by Paystack.</p>
+          <p className="bundle-checkout-trust">
+  Pay securely with Paystack. Access activates automatically after successful payment.
+</p>
           {error && <p className="action-error" role="alert">{error}</p>}
           <button
             aria-busy={paying}

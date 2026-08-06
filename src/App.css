@@ -632,7 +632,11 @@
 
 .bundle-module-list {
   display: grid;
-  overflow: hidden;
+  max-height: min(320px, 42dvh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   gap: 0;
   border: 1px solid var(--color-border);
   border-radius: 14px;
