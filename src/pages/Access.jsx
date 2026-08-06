@@ -592,7 +592,7 @@ export default function Access() {
                     ) : hasUsableModuleAccess ? (
                       <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
                     ) : module.can_purchase ? (
-                      <p>All published practice sets, retries, review, and progress tracking.</p>
+                     
                     ) : (
                       <p>Practice is coming soon.</p>
                     )}
