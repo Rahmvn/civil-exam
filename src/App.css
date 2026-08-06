@@ -882,7 +882,30 @@
   .bundle-checkout-summary strong {
     font-size: 1.66rem;
   }
+  .bundle-checkout-details {
+  width: 100%;
+  flex-basis: 100%;
+  display: grid;
+  gap: 7px;
+  margin: 2px 0 0;
+  padding-left: 18px;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
 
+.bundle-checkout-details li {
+  padding-left: 2px;
+}
+
+.bundle-checkout-details li::marker {
+  color: var(--color-primary);
+}
+
+.bundle-checkout-details .is-primary {
+  color: var(--color-primary-dark);
+  font-weight: 780;
+}
   .bundle-module-picker header {
     align-items: flex-start;
     flex-direction: column;
