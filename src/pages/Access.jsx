@@ -591,9 +591,7 @@ export default function Access() {
                       <p>Practice is coming soon.</p>
                     ) : hasUsableModuleAccess ? (
                       <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
-                    ) : module.can_purchase ? (
-                     
-                    ) : (
+                    ) : module.can_purchase ? null : (
                       <p>Practice is coming soon.</p>
                     )}
                   </div>
