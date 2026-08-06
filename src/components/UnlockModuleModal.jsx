@@ -83,7 +83,7 @@ export function UnlockModuleModal({
 
         {bundleOffer && onChooseBundle && (
           <button className="access-unlock-bundle-link" onClick={() => onChooseBundle(bundleOffer)} type="button">
-            View bundle offers
+            Get better value
           </button>
         )}
 
