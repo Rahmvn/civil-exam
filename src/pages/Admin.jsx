@@ -300,6 +300,9 @@ function ModuleCatalogue({
     live: modules.filter((module) => module.lifecycle_status === "active").length,
     retired: modules.filter((module) => module.lifecycle_status === "retired").length,
   };
+  const enabledPlanCount = pricingPlans.filter((plan) => plan.enabled).length;
+  const enabledOfferCount = purchaseOffers.filter((offer) => offer.enabled).length;
+  const launchOfferStatus = launchOffer?.status ? launchOffer.status.replace("_", " ") : "not configured";
 
   return (
     <>
@@ -311,31 +314,42 @@ function ModuleCatalogue({
         <button type="button" onClick={onCreate}>Create module</button>
       </section>
 
-      <AdminLaunchOfferPanel
-        key={`${launchOffer?.updated_at ?? "launch-offer-new"}:${modules.map((module) => `${module.subject_id}:${module.price_kobo}`).join("|")}`}
-        busy={working}
-        modules={modules}
-        offer={launchOffer}
-        onEnd={onEndLaunchOffer}
-        onSchedule={onScheduleLaunchOffer}
-      />
+      <details className="admin-commerce-drawer">
+        <summary>
+          <span>
+            <strong>Commerce</strong>
+            <small>{enabledPlanCount} plans enabled / {enabledOfferCount} bundles enabled / Launch offer {launchOfferStatus}</small>
+          </span>
+          <span className="admin-commerce-drawer-action">Manage</span>
+        </summary>
+        <div className="admin-commerce-drawer-body">
+          <AdminPricingPlansPanel
+            key={pricingPlans.map((plan) => `${plan.plan_code}:${plan.updated_at}`).join("|") || "pricing-plans-empty"}
+            busy={working}
+            loading={pricingPlansLoading}
+            plans={pricingPlans}
+            onRefresh={onRefreshPricingPlans}
+            onSavePlan={onSavePricingPlan}
+            onSavePrice={onSavePricingPlanPrice}
+          />
 
-      <AdminPricingPlansPanel
-        key={pricingPlans.map((plan) => `${plan.plan_code}:${plan.updated_at}`).join("|") || "pricing-plans-empty"}
-        busy={working}
-        loading={pricingPlansLoading}
-        plans={pricingPlans}
-        onRefresh={onRefreshPricingPlans}
-        onSavePlan={onSavePricingPlan}
-        onSavePrice={onSavePricingPlanPrice}
-      />
+          <AdminLaunchOfferPanel
+            key={`${launchOffer?.updated_at ?? "launch-offer-new"}:${modules.map((module) => `${module.subject_id}:${module.price_kobo}`).join("|")}`}
+            busy={working}
+            modules={modules}
+            offer={launchOffer}
+            onEnd={onEndLaunchOffer}
+            onSchedule={onScheduleLaunchOffer}
+          />
 
-      <AdminPurchaseOffersPanel
-        busy={working}
-        offers={purchaseOffers}
-        onSave={onSavePurchaseOffer}
-        onToggle={onTogglePurchaseOffer}
-      />
+          <AdminPurchaseOffersPanel
+            busy={working}
+            offers={purchaseOffers}
+            onSave={onSavePurchaseOffer}
+            onToggle={onTogglePurchaseOffer}
+          />
+        </div>
+      </details>
 
       <div className="admin-filter-tabs" aria-label="Filter modules">
         {[

@@ -35,7 +35,7 @@ test("admin can create and safely remove unused content", async ({ page }, testI
   await page.getByRole("button", { name: "Create module" }).click();
   const moduleDialog = page.getByRole("dialog", { name: "Create module" });
   await moduleDialog.getByLabel("Module name").fill(moduleName);
-  await moduleDialog.getByLabel("Module price (NGN)").fill("1800");
+  await moduleDialog.getByLabel("Legacy base price (NGN)").fill("1800");
   await moduleDialog.getByRole("button", { name: "Create module" }).click();
 
   const moduleCard = page.locator("article").filter({ hasText: moduleName });
@@ -74,7 +74,7 @@ test("admin can bulk upload, review, and publish without silently enabling sales
   await page.getByRole("button", { name: "Create module" }).click();
   const moduleDialog = page.getByRole("dialog", { name: "Create module" });
   await moduleDialog.getByLabel("Module name").fill(moduleName);
-  await moduleDialog.getByLabel("Module price (NGN)").fill("1800");
+  await moduleDialog.getByLabel("Legacy base price (NGN)").fill("1800");
   await moduleDialog.getByRole("button", { name: "Create module" }).click();
 
   const moduleRow = page.locator(".admin-module-row").filter({ hasText: moduleName });
@@ -151,7 +151,7 @@ test("admin can create, import, review, and publish an oral practice module", as
   await moduleDialog.getByLabel("Oral practice").check();
   await expect(moduleDialog.getByLabel("Questions per practice set")).toHaveValue("5");
   await expect(moduleDialog.getByLabel("Pass mark (%)")).toHaveCount(0);
-  await moduleDialog.getByLabel("Module price (NGN)").fill("2000");
+  await moduleDialog.getByLabel("Legacy base price (NGN)").fill("2000");
   await moduleDialog.getByRole("button", { name: "Create module" }).click();
 
   const moduleRow = page.locator(".admin-module-row").filter({ hasText: moduleName });
@@ -229,7 +229,7 @@ test("admin import blocks invalid question files without saving partial content"
   await page.getByRole("button", { name: "Create module" }).click();
   const moduleDialog = page.getByRole("dialog", { name: "Create module" });
   await moduleDialog.getByLabel("Module name").fill(moduleName);
-  await moduleDialog.getByLabel("Module price (NGN)").fill("1800");
+  await moduleDialog.getByLabel("Legacy base price (NGN)").fill("1800");
   await moduleDialog.getByRole("button", { name: "Create module" }).click();
 
   const moduleRow = page.locator(".admin-module-row").filter({ hasText: moduleName });
@@ -290,7 +290,7 @@ test("admin can add, validate, preview, and remove one question without optional
   await page.getByRole("button", { name: "Create module" }).click();
   const moduleDialog = page.getByRole("dialog", { name: "Create module" });
   await moduleDialog.getByLabel("Module name").fill(moduleName);
-  await moduleDialog.getByLabel("Module price (NGN)").fill("1800");
+  await moduleDialog.getByLabel("Legacy base price (NGN)").fill("1800");
   await moduleDialog.getByRole("button", { name: "Create module" }).click();
 
   const moduleRow = page.locator(".admin-module-row").filter({ hasText: moduleName });
@@ -540,6 +540,7 @@ test("admin launch offer uses per-module prices without tablet overflow", async 
   ]) {
     await page.setViewportSize(viewport);
     await page.goto("/admin");
+    await page.locator(".admin-commerce-drawer > summary").click();
 
     const offerPanel = page.locator(".admin-launch-offer");
     await expect(offerPanel.getByRole("heading", { name: "One-time launch offer" })).toBeVisible();
