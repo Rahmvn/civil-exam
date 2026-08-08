@@ -48,6 +48,7 @@ test("choose-three checkout uses the access page with an exact selection", async
   for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
 
   await expect(page.getByText("3 of 3 selected")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Continue to payment.*6,000/ })).toBeEnabled();
+  await expect(page.locator(".access-order-summary-main")).toContainText("₦6,000");
+  await expect(page.getByRole("button", { name: "Continue to payment" })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });

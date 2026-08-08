@@ -83,6 +83,12 @@ function getSelectionLabel({ plan, selectedCount, requiredCount, isCompleteBundl
   return selectedCount > 0 ? "1 selected" : "Choose a module";
 }
 
+function getPayButtonLabel({ paying, validation }) {
+  if (paying) return "Preparing payment...";
+  if (!validation.ok) return validation.message;
+  return "Continue to payment";
+}
+
 export function AccessPurchasePanel({
   catalog = [],
   error = "",
@@ -183,7 +189,6 @@ export function AccessPurchasePanel({
       <div className="access-purchase-main">
         <header className="access-purchase-heading">
           <h2 id="access-purchase-title">Buy access</h2>
-          <p>Choose scope, module, and length.</p>
         </header>
 
         <section className="access-purchase-group" aria-labelledby="access-scope-title">
@@ -230,7 +235,7 @@ export function AccessPurchasePanel({
                     type="button"
                   >
                     <span className="access-purchase-radio" aria-hidden="true" />
-                    <span>{getModuleDisplayName(module.subject_name)}</span>
+                    <span className="access-purchase-module-name">{getModuleDisplayName(module.subject_name)}</span>
                     {module.practice_type === "oral" && <small>Oral</small>}
                   </button>
                 );
@@ -268,14 +273,16 @@ export function AccessPurchasePanel({
               <h3 id="access-included-title">Included</h3>
               <span>{selectionLabel}</span>
             </div>
-            <div className="access-purchase-included-list">
-              {includedModules.map((module) => (
-                <span key={module.subject_id ?? getModuleSlug(module)}>
-                  {getModuleDisplayName(module.subject_name ?? module.name)}
-                </span>
-              ))}
-            </div>
-            <p className="access-purchase-note">Future modules are not included automatically.</p>
+            <details className="access-purchase-included">
+              <summary>View modules</summary>
+              <div className="access-purchase-included-list">
+                {includedModules.map((module) => (
+                  <span key={module.subject_id ?? getModuleSlug(module)}>
+                    {getModuleDisplayName(module.subject_name ?? module.name)}
+                  </span>
+                ))}
+              </div>
+            </details>
           </section>
         )}
       </div>
@@ -285,11 +292,10 @@ export function AccessPurchasePanel({
           <span>Total</span>
           <strong>{selectedDuration ? formatModuleMoney(selectedDuration.price_kobo, selectedDuration.currency) : "Not available"}</strong>
         </div>
-        <p>{summaryName}{selectedDuration ? ` - ${getDurationLabel(selectedDuration.duration_months)}` : ""}</p>
+        <p className="access-order-summary-choice">{summaryName}{selectedDuration ? ` - ${getDurationLabel(selectedDuration.duration_months)}` : ""}</p>
         {selectedModules.length > 1 && (
-          <p>{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
+          <p className="access-order-summary-modules">{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
         )}
-        <p>Access starts after payment is verified.</p>
         {error && <p className="action-error" role="alert">{error}</p>}
         {!validation.ok && <p className="access-order-hint">{validation.message}</p>}
         <button
@@ -299,7 +305,7 @@ export function AccessPurchasePanel({
           onClick={submitPayment}
           type="button"
         >
-          {ctaCopy}
+          {getPayButtonLabel({ paying, validation }) || ctaCopy}
         </button>
       </aside>
     </section>

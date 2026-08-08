@@ -524,7 +524,8 @@ export default function Access() {
           paying={Boolean(payingModule)}
         />
 
-        <section className="access-module-catalog" aria-label="Available modules">
+        <section className="access-module-catalog" aria-labelledby="access-modules-title">
+          <h2 id="access-modules-title">Your access</h2>
           {modulesToShow.length === 0 ? (
             <article className="access-empty-state">
               <span className="access-empty-kicker">Access status</span>
