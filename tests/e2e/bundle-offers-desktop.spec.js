@@ -10,12 +10,13 @@ test("choose-three checkout stays inline on desktop", async ({ page }) => {
   await expect(bundleRow).toHaveClass(/is-expanded/);
   await expect(bundleRow.getByText("From ₦6,000")).toBeVisible();
 
-  const moduleChoices = bundleRow.locator(".access-bundle-module-list > button");
+  const moduleChoices = bundleRow.locator(".access-bundle-choices > button");
   await expect(moduleChoices).toHaveCount(3);
-  await expect(page.getByRole("button", { name: "Select 3 modules" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Continue to payment" })).toBeDisabled();
   for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
 
   await expect(page.getByText("3 of 3 selected")).toBeVisible();
+  await bundleRow.getByRole("radio", { name: /1 month/ }).click();
   await expect(page.getByRole("button", { name: /Continue/ })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });

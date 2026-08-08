@@ -38,18 +38,21 @@ test("paid dashboard keeps modules, account, and access connected without floati
   await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toBeVisible();
   const unlockedModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
-  await expect(unlockedModule.getByText("Unlocked", { exact: true })).toBeVisible();
+  await expect(unlockedModule.getByText(/Active through/)).toBeVisible();
   const lockedModule = page.locator("article").filter({ hasText: "Public Service Rules" }).first();
-  await expect(lockedModule.getByRole("button", { name: "Unlock module" })).toBeVisible();
+  await expect(lockedModule.getByRole("button", { name: /^Unlock/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
   await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
-  const accessRow = page.locator(".access-module-row").filter({ hasText: "Public Service Rules" }).first();
+  const accessRow = page.locator(".access-ledger-row").filter({ hasText: "Public Service Rules" }).first();
   await expect(accessRow).toHaveClass(/is-expanded/);
-  await expect(accessRow.getByRole("button", { name: /1 month/ })).toHaveAttribute("aria-pressed", "true");
+  const oneMonth = accessRow.getByRole("radio", { name: /1 month/ });
+  await expect(oneMonth).toHaveAttribute("aria-checked", "false");
   await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeDisabled();
+  await oneMonth.click();
+  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });
 

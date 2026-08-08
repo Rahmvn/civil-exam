@@ -18,7 +18,6 @@ import {
 } from "../lib/moduleDisplay";
 import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
 import {
-  DEFAULT_DURATION_MONTHS,
   PRICING_PLAN_CODES,
   buildPlanCheckoutPayload,
   chooseDefaultDuration,
@@ -441,7 +440,7 @@ export default function Access() {
   const [loadError, setLoadError] = useState("");
   const [paymentError, setPaymentError] = useState(null);
   const [expandedPurchase, setExpandedPurchase] = useState("");
-  const [durationMonths, setDurationMonths] = useState(DEFAULT_DURATION_MONTHS);
+  const [durationMonths, setDurationMonths] = useState(null);
   const [bundleSelectedSlugs, setBundleSelectedSlugs] = useState([]);
 
   useEffect(() => {
@@ -548,7 +547,7 @@ export default function Access() {
   if (loadError) {
     return (
       <AppFrame showBottomNav={false}>
-        <section className="access-page access-page-v2">
+        <section className="access-page access-page-v3">
           <article className="state-card">
             <h1>Access details unavailable</h1>
             <p role="alert">{loadError}</p>
@@ -564,6 +563,7 @@ export default function Access() {
 
   function openUnlockModule(subjectSlug) {
     setPaymentError(null);
+    setDurationMonths(null);
     setExpandedPurchase(`module:${subjectSlug}`);
     setBundleSelectedSlugs([]);
     const nextParams = {};
@@ -578,6 +578,7 @@ export default function Access() {
 
   function openBundle(scope) {
     setPaymentError(null);
+    setDurationMonths(null);
     setExpandedPurchase(`bundle:${scope}`);
     if (scope === "complete") setBundleSelectedSlugs([]);
     const nextParams = { scope };
@@ -593,10 +594,12 @@ export default function Access() {
   }
 
   function buildPaymentState({ plan, selectedSlugs }) {
-    const safeDuration = chooseDefaultDuration(plan, durationMonths);
-    const duration = getDurationPrice(plan, safeDuration);
+    const safeDuration = durationMonths ? chooseDefaultDuration(plan, durationMonths) : null;
+    const duration = safeDuration ? getDurationPrice(plan, safeDuration) : null;
     const validation = validatePlanSelection({ plan, selectedSlugs });
-    const payload = buildPlanCheckoutPayload({ plan, durationMonths: safeDuration, selectedSlugs });
+    const payload = duration && validation.ok
+      ? buildPlanCheckoutPayload({ plan, durationMonths: safeDuration, selectedSlugs })
+      : null;
     return { duration, payload, safeDuration, validation };
   }
 
@@ -612,27 +615,34 @@ export default function Access() {
 
   function renderDurationPicker({ duration, plan, safeDuration }) {
     return (
-      <div className="access-inline-duration-list">
-        {plan.durations.map((option) => {
-          const selected = Number(option.duration_months) === Number(safeDuration);
-          const badge = getDurationBadge(option);
-          return (
-            <button
-              aria-pressed={selected}
-              className={`access-inline-duration${selected ? " is-selected" : ""}`}
-              disabled={Boolean(payingModule)}
-              key={option.duration_months}
-              onClick={() => setDurationMonths(Number(option.duration_months))}
-              type="button"
-            >
-              <span>{getDurationLabel(option.duration_months)}</span>
-              <strong>{formatModuleMoney(option.price_kobo, option.currency)}</strong>
-              {badge && <small>{badge}</small>}
-            </button>
-          );
-        })}
-        {duration ? null : <p className="access-inline-error">Choose access length</p>}
-      </div>
+      <section className="access-choice-group" aria-labelledby="access-duration-title">
+        <h3 id="access-duration-title">Choose access duration</h3>
+        <div className="access-duration-choices" role="radiogroup" aria-label="Access duration">
+          {plan.durations.map((option) => {
+            const selected = Number(option.duration_months) === Number(safeDuration);
+            const badge = getDurationBadge(option);
+            return (
+              <button
+                aria-checked={selected}
+                className={`access-duration-choice${selected ? " is-selected" : ""}`}
+                disabled={Boolean(payingModule)}
+                key={option.duration_months}
+                onClick={() => setDurationMonths(Number(option.duration_months))}
+                role="radio"
+                type="button"
+              >
+                <span className="access-choice-radio" aria-hidden="true" />
+                <span className="access-choice-label">
+                  <strong>{getDurationLabel(option.duration_months)}</strong>
+                  {badge && <small>{badge}</small>}
+                </span>
+                <span className="access-choice-price">{formatModuleMoney(option.price_kobo, option.currency)}</span>
+              </button>
+            );
+          })}
+        </div>
+        {duration ? null : <p className="access-purchase-prompt">Select a duration to continue.</p>}
+      </section>
     );
   }
 
@@ -640,16 +650,18 @@ export default function Access() {
     return (
       <>
         {purchaseError && <p className="access-inline-error" role="alert">{purchaseError}</p>}
-        {!validation.ok && <p className="access-inline-hint">{validation.message}</p>}
-        <button
-          aria-busy={Boolean(payingModule)}
-          className="access-inline-pay"
-          disabled={Boolean(payingModule) || !payload}
-          onClick={() => void startPricingPlanPayment(payload)}
-          type="button"
-        >
-          {payingModule ? "Preparing payment..." : validation.ok ? "Continue to payment" : validation.message}
-        </button>
+        <div className="access-purchase-footer">
+          {!validation.ok && <p className="access-selection-hint">{validation.message}</p>}
+          <button
+            aria-busy={Boolean(payingModule)}
+            className="access-payment-action"
+            disabled={Boolean(payingModule) || !payload}
+            onClick={() => void startPricingPlanPayment(payload)}
+            type="button"
+          >
+            {payingModule ? "Preparing payment..." : "Continue to payment"}
+          </button>
+        </div>
       </>
     );
   }
@@ -659,7 +671,7 @@ export default function Access() {
     if (!plan) return <p className="access-inline-error">This module is not open for purchase yet.</p>;
     const state = buildPaymentState({ plan, selectedSlugs: [module.subject_slug] });
     return (
-      <div className="access-inline-purchase">
+      <div className="access-row-purchase">
         {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
         {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
       </div>
@@ -677,24 +689,27 @@ export default function Access() {
       : `${selectedSlugs.length} of ${pickThreeCount} selected`;
 
     return (
-      <div className="access-inline-purchase">
+      <div className="access-row-purchase">
         {!isComplete && (
           <section className="access-bundle-picker" aria-label="Choose bundle modules">
-            <div className="access-bundle-selection-count">{selectionLabel}</div>
-            <div className="access-bundle-module-list">
+            <div className="access-bundle-picker-heading">
+              <h3>Choose modules</h3>
+              <span>{selectionLabel}</span>
+            </div>
+            <div className="access-bundle-choices">
               {purchasableModules.map((module) => {
                 const selected = selectedSlugs.includes(module.subject_slug);
                 const disabled = !selected && selectedSlugs.length >= pickThreeCount;
                 return (
                   <button
                     aria-pressed={selected}
-                    className={`access-bundle-module${selected ? " is-selected" : ""}`}
+                    className={`access-bundle-choice${selected ? " is-selected" : ""}`}
                     disabled={Boolean(payingModule) || disabled}
                     key={module.subject_id ?? module.subject_slug}
                     onClick={() => toggleBundleModule(module.subject_slug)}
                     type="button"
                   >
-                    <span className="access-bundle-check" aria-hidden="true" />
+                    <span className="access-choice-check" aria-hidden="true" />
                     <span>{getModuleDisplayName(module.subject_name)}</span>
                     {module.practice_type === "oral" && <small>Oral</small>}
                   </button>
@@ -711,7 +726,7 @@ export default function Access() {
         )}
         {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
         {!isComplete && selectedModules.length > 0 && (
-          <p className="access-inline-selection">{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
+          <p className="access-selection-summary">{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
         )}
         {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
       </div>
@@ -720,11 +735,9 @@ export default function Access() {
 
   return (
     <AppFrame>
-      <section className="access-page access-page-v2">
-        <header className="access-page-intro">
-          <div>
-            <h1>Access and payment</h1>
-          </div>
+      <section className="access-page access-page-v3">
+        <header className="access-ledger-header">
+          <h1>Access and payment</h1>
           {unlockedCount < modulesToShow.length && (
             <p>{`${unlockedCount} of ${modulesToShow.length} modules unlocked.`}</p>
           )}
@@ -761,7 +774,7 @@ export default function Access() {
           </section>
         )}
 
-        <section className="access-module-catalog" aria-labelledby="access-modules-title">
+        <section className="access-ledger-section" aria-labelledby="access-modules-title">
           <h2 id="access-modules-title">Your access</h2>
           {modulesToShow.length === 0 ? (
             <article className="access-empty-state">
@@ -773,7 +786,7 @@ export default function Access() {
               <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
             </article>
           ) : (
-            <div className="access-module-list">
+            <div className="access-ledger-list">
               {modulesToShow.map((module) => {
               const displayName = getModuleDisplayName(module.subject_name);
               const isPaying = payingModule === module.subject_slug;
@@ -791,33 +804,33 @@ export default function Access() {
 
               return (
                 <article
-                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""} ${activePurchase === `module:${module.subject_slug}` ? "is-expanded" : ""}`.trim()}
+                  className={`access-ledger-row ${hasUsableModuleAccess ? "is-unlocked" : "is-locked"} ${activePurchase === `module:${module.subject_slug}` ? "is-expanded is-targeted" : ""}`.trim()}
                   id={`access-row-${module.subject_slug}`}
                   key={module.subject_id}
                 >
-                  <div className="access-module-copy">
-                    <div className="access-module-title-line">
+                  <div className="access-ledger-row-main">
+                    <div className="access-ledger-title-line">
                       <h2>{displayName}</h2>
-                      {hasUsableModuleAccess && <span className="access-module-state">Unlocked</span>}
-                      {!isComingSoon && !hasUsableModuleAccess && module.can_purchase && <span className="access-module-state is-locked">Locked</span>}
                     </div>
                     {isComingSoon ? (
                       <p>Practice is coming soon.</p>
                     ) : hasUsableModuleAccess ? (
-                      <p>{`Active through ${formatDate(module.access_expires_at)}.`}</p>
-                    ) : module.can_purchase ? null : (
+                      <p>{`Active through ${formatDate(module.access_expires_at)}`}</p>
+                    ) : module.can_purchase ? (
+                      <p>Not currently unlocked</p>
+                    ) : (
                       <p>Practice is coming soon.</p>
                     )}
                   </div>
 
-                  <div className="access-module-action">
+                  <div className="access-ledger-row-action">
                     {isComingSoon ? (
                       <span className="access-module-coming-soon">Not available yet</span>
                     ) : hasUsableModuleAccess ? (
-                      <Link className="secondary-action" to={getModulePracticeSetsRoute(module.subject_slug)}>View</Link>
+                      <Link className="access-row-link" to={getModulePracticeSetsRoute(module.subject_slug)}>View</Link>
                     ) : module.can_purchase ? (
-                      <button aria-busy={isPaying} disabled={isPaying} onClick={() => openUnlockModule(module.subject_slug)} type="button">
-                        Unlock module
+                      <button className="access-row-link" aria-busy={isPaying} disabled={isPaying} onClick={() => openUnlockModule(module.subject_slug)} type="button">
+                        Unlock <span aria-hidden="true">&rarr;</span>
                       </button>
                     ) : null}
                     {paymentError?.subjectSlug === module.subject_slug && (
@@ -834,30 +847,36 @@ export default function Access() {
         </section>
 
         {(canPickThree || canComplete) && (
-          <section className="access-bundle-offers" aria-labelledby="access-bundle-title">
+          <section className="access-offers" aria-labelledby="access-bundle-title">
             <h2 id="access-bundle-title">Bundle offers</h2>
-            <div className="access-bundle-offer-list">
+            <div className="access-offer-list">
               {canPickThree && (
-                <article className={`access-bundle-offer ${activePurchase === "bundle:pick3" ? "is-expanded" : ""}`} id="access-bundle-pick3">
-                  <div className="access-bundle-offer-main">
-                    <div>
+                <article className={`access-offer ${activePurchase === "bundle:pick3" ? "is-expanded is-targeted" : ""}`} id="access-bundle-pick3">
+                  <div className="access-offer-main">
+                    <div className="access-offer-copy">
                       <h3>{getPlanDisplayName(pickThreePlan, "Pick 3")}</h3>
-                      {pickThreeLowest && <p>{`From ${formatModuleMoney(pickThreeLowest.price_kobo, pickThreeLowest.currency)}`}</p>}
+                      <p>Choose any {pickThreeCount} available modules</p>
                     </div>
-                    <button className="access-bundle-row-action" onClick={() => openBundle("pick3")} type="button">Pick modules</button>
+                    <div className="access-offer-action">
+                      {pickThreeLowest && <span>{`From ${formatModuleMoney(pickThreeLowest.price_kobo, pickThreeLowest.currency)}`}</span>}
+                      <button className="access-row-link" onClick={() => openBundle("pick3")} type="button">Pick modules <span aria-hidden="true">&rarr;</span></button>
+                    </div>
                   </div>
                   {activePurchase === "bundle:pick3" && renderInlineBundlePurchase({ plan: pickThreePlan, scope: "pick3" })}
                 </article>
               )}
 
               {canComplete && (
-                <article className={`access-bundle-offer ${activePurchase === "bundle:complete" ? "is-expanded" : ""}`} id="access-bundle-complete">
-                  <div className="access-bundle-offer-main">
-                    <div>
+                <article className={`access-offer ${activePurchase === "bundle:complete" ? "is-expanded is-targeted" : ""}`} id="access-bundle-complete">
+                  <div className="access-offer-main">
+                    <div className="access-offer-copy">
                       <h3>{getPlanDisplayName(completePlan, "Complete")}</h3>
-                      {completeLowest && <p>{`From ${formatModuleMoney(completeLowest.price_kobo, completeLowest.currency)}`}</p>}
+                      <p>Unlock all currently available modules</p>
                     </div>
-                    <button className="access-bundle-row-action" onClick={() => openBundle("complete")} type="button">Unlock all</button>
+                    <div className="access-offer-action">
+                      {completeLowest && <span>{`From ${formatModuleMoney(completeLowest.price_kobo, completeLowest.currency)}`}</span>}
+                      <button className="access-row-link" onClick={() => openBundle("complete")} type="button">Unlock all <span aria-hidden="true">&rarr;</span></button>
+                    </div>
                   </div>
                   {activePurchase === "bundle:complete" && renderInlineBundlePurchase({ plan: completePlan, scope: "complete" })}
                 </article>
