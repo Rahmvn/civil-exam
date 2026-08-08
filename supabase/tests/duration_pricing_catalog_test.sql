@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(16);
+select plan(17);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -114,6 +114,21 @@ select
 from public.practice_sets ps
 where ps.id = 'fe100000-0000-4000-8000-000000000003';
 
+set local role anon;
+select set_config('request.jwt.claim.role', 'anon', true);
+select set_config('request.jwt.claim.sub', '', true);
+
+select is(
+  (
+    select count(*)::integer
+    from public.get_purchase_pricing_catalog_v1()
+    where is_available = true
+  ),
+  4,
+  'anonymous visitors can read available pricing plans before sign-in'
+);
+
+reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'fa100000-0000-4000-8000-000000000001', true);
