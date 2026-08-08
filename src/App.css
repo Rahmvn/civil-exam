@@ -2699,7 +2699,7 @@ pre,
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.access-plan-close):not(.access-plan-handle):not(.access-type-option):not(.access-duration-option):not(.access-plan-module-option):not(.access-plan-pay):not(.access-scope-button):not(.access-purchase-module-row):not(.access-purchase-duration-row):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-module-option):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.access-plan-close):not(.access-plan-handle):not(.access-type-option):not(.access-duration-option):not(.access-plan-module-option):not(.access-plan-pay):not(.access-scope-button):not(.access-purchase-module-row):not(.access-purchase-duration-row):not(.access-upgrade-option):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-module-option):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -24151,6 +24151,81 @@ button.practice-map-close:focus-visible {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.access-selected-module,
+.access-upgrade-options {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.access-selected-module {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 12px 14px;
+}
+
+.access-selected-module strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-selected-module span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f1f3f2;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.access-upgrade-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-surface);
+  box-shadow: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.access-upgrade-option + .access-upgrade-option {
+  border-top: 1px solid var(--color-border);
+}
+
+.access-upgrade-option:hover {
+  background: #f8fbf9;
+}
+
+.access-upgrade-options span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-upgrade-options strong {
+  color: var(--color-primary-dark);
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .access-purchase-module-row small {

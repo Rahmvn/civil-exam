@@ -44,9 +44,9 @@ test("paid dashboard keeps modules, account, and access connected without floati
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
-  await expect(page.getByRole("heading", { name: "Buy access" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "One module" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Public Service Rules" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Selected module" })).toContainText("Public Service Rules");
+  await expect(page.locator(".access-purchase-module-list")).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
