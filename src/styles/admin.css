@@ -308,6 +308,8 @@
 .admin-pricing-plans-header,
 .admin-pricing-empty,
 .admin-pricing-plan-title,
+.admin-pricing-plan-summary,
+.admin-pricing-header-actions,
 .admin-pricing-plan-toggles,
 .admin-pricing-plan-actions,
 .admin-pricing-duration,
@@ -344,26 +346,74 @@
 .admin-pricing-plan {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px;
+  gap: 0;
+  padding: 0;
   border: 1px solid var(--admin-border, #d9dfdc);
   border-radius: 12px;
   background: #fbfdfb;
+  overflow: hidden;
+}
+
+.admin-pricing-plan.is-expanded {
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.admin-pricing-plan-summary {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-pricing-plan-summary:hover {
+  background: #f4f8f5;
+}
+
+.admin-pricing-plan-summary:focus-visible {
+  outline: 3px solid rgba(15, 103, 71, 0.25);
+  outline-offset: -3px;
+}
+
+.admin-pricing-plan-summary-prices {
+  min-width: min(420px, 100%);
+  color: var(--admin-muted, #667067);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.admin-pricing-plan-expand {
+  margin-left: auto;
+  color: var(--admin-green, #0f6747);
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .admin-pricing-plan-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+  padding: 0 16px;
 }
 
 .admin-pricing-plan-title {
-  grid-column: 1 / -1;
   flex-wrap: wrap;
+  min-width: min(300px, 100%);
 }
 
-.admin-pricing-plan-title h3 {
+.admin-pricing-plan-title strong {
+  display: block;
   font-size: 1rem;
+}
+
+.admin-pricing-plan-title small {
+  display: block;
+  margin-top: 2px;
 }
 
 .admin-pricing-plan-form label,
@@ -417,6 +467,7 @@
 .admin-pricing-price-grid {
   display: grid;
   gap: 10px;
+  margin: 0 16px;
   padding-top: 14px;
   border-top: 1px solid var(--admin-border, #d9dfdc);
 }
@@ -444,6 +495,11 @@
 }
 
 @media (max-width: 1180px) {
+  .admin-pricing-plan-summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
   .admin-pricing-plan-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -464,9 +520,18 @@
 
 @media (max-width: 680px) {
   .admin-pricing-plans-header,
-  .admin-pricing-empty {
+  .admin-pricing-empty,
+  .admin-pricing-plan-summary {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .admin-pricing-header-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-pricing-plan-expand {
+    margin-left: 0;
   }
 
   .admin-pricing-plan-form,

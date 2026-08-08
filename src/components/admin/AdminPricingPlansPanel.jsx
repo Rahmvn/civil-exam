@@ -106,11 +106,15 @@ export function AdminPricingPlansPanel({
 }) {
   const [drafts, setDrafts] = useState(() => buildDrafts(plans));
   const [savingKey, setSavingKey] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [expandedPlanCode, setExpandedPlanCode] = useState(null);
 
   const sortedPlans = useMemo(
     () => [...plans].sort((left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0)),
     [plans],
   );
+
+  const enabledCount = sortedPlans.filter((plan) => plan.enabled).length;
 
   function updatePlan(planCode, field, value) {
     setDrafts((current) => ({
@@ -189,34 +193,71 @@ export function AdminPricingPlansPanel({
       <header className="admin-pricing-plans-header">
         <div>
           <h2 id="admin-pricing-plans-title">Pricing plans</h2>
-          <p>Manage the plan names, support copy, visibility, and 1, 3, 6 month prices used at checkout.</p>
+          <p>{enabledCount} enabled plans · 1, 3, 6 month checkout pricing.</p>
         </div>
-        <button className="ghost-button" disabled={busy || loading} type="button" onClick={onRefresh}>
-          {loading ? "Refreshing" : "Refresh"}
-        </button>
+        <div className="admin-pricing-header-actions">
+          {expanded && (
+            <button className="ghost-button" disabled={busy || loading} type="button" onClick={onRefresh}>
+              {loading ? "Refreshing" : "Refresh"}
+            </button>
+          )}
+          <button
+            className="ghost-button"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls="admin-pricing-plans-body"
+            onClick={() => {
+              setExpanded((current) => !current);
+              setExpandedPlanCode(null);
+            }}
+          >
+            {expanded ? "Close" : "Open"}
+          </button>
+        </div>
       </header>
 
-      {sortedPlans.length === 0 ? (
+      {!expanded ? null : sortedPlans.length === 0 ? (
         <div className="admin-pricing-empty">
           <strong>No pricing plans found.</strong>
           <button className="ghost-button" disabled={busy || loading} type="button" onClick={onRefresh}>Refresh</button>
         </div>
       ) : (
-        <div className="admin-pricing-plan-list">
+        <div className="admin-pricing-plan-list" id="admin-pricing-plans-body">
           {sortedPlans.map((plan) => {
             const planDraft = drafts[plan.plan_code]?.plan ?? initialPlanDraft(plan);
             const isGeneratedBundle = plan.plan_type === "complete_bundle";
+            const isPlanExpanded = expandedPlanCode === plan.plan_code;
+            const durations = DURATIONS.map((duration) => {
+              const price = plan.prices?.find((item) => Number(item.duration_months) === duration);
+              const generated = generatedBundlePrice(plan, duration);
+              const priceKobo = generated?.priceKobo ?? price?.price_kobo;
+              return priceKobo == null ? `${duration}m unavailable` : `${duration}m ${formatModuleMoney(priceKobo, price?.currency)}`;
+            });
 
             return (
-              <article className="admin-pricing-plan" key={plan.plan_code}>
-                <form className="admin-pricing-plan-form" onSubmit={(event) => savePlan(event, plan)}>
-                  <div className="admin-pricing-plan-title">
+              <article className={`admin-pricing-plan${isPlanExpanded ? " is-expanded" : ""}`} key={plan.plan_code}>
+                <button
+                  className="admin-pricing-plan-summary"
+                  type="button"
+                  aria-expanded={isPlanExpanded}
+                  onClick={() => setExpandedPlanCode((current) => (current === plan.plan_code ? null : plan.plan_code))}
+                >
+                  <span className="admin-pricing-plan-title">
                     <span className={`admin-status ${plan.enabled ? "admin-status-live" : "admin-status-paused"}`}>
                       {plan.enabled ? "Enabled" : "Hidden"}
                     </span>
-                    <h3>{plan.display_name || titleFromCode(plan.plan_code)}</h3>
-                    <small>{plan.plan_code}</small>
-                  </div>
+                    <span>
+                      <strong>{plan.display_name || titleFromCode(plan.plan_code)}</strong>
+                      <small>{plan.plan_code}</small>
+                    </span>
+                  </span>
+                  <span className="admin-pricing-plan-summary-prices">{durations.join(" · ")}</span>
+                  <span className="admin-pricing-plan-expand">{isPlanExpanded ? "Close" : "Edit"}</span>
+                </button>
+
+                {isPlanExpanded && (
+                  <>
+                    <form className="admin-pricing-plan-form" onSubmit={(event) => savePlan(event, plan)}>
 
                   <label>
                     Plan name
@@ -305,9 +346,9 @@ export function AdminPricingPlansPanel({
                       {savingKey === `${plan.plan_code}:plan` ? "Saving" : "Save plan"}
                     </button>
                   </div>
-                </form>
+                    </form>
 
-                <div className="admin-pricing-price-grid" aria-label={`${plan.display_name} prices`}>
+                    <div className="admin-pricing-price-grid" aria-label={`${plan.display_name} prices`}>
                   {DURATIONS.map((duration) => {
                     const price = plan.prices?.find((item) => Number(item.duration_months) === duration);
                     const generated = generatedBundlePrice(plan, duration);
@@ -382,7 +423,9 @@ export function AdminPricingPlansPanel({
                       </section>
                     );
                   })}
-                </div>
+                    </div>
+                  </>
+                )}
               </article>
             );
           })}
