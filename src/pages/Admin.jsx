@@ -5,7 +5,6 @@ import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminLaunchOfferPanel } from "../components/admin/AdminLaunchOfferPanel";
 import { AdminPricingPlansPanel } from "../components/admin/AdminPricingPlansPanel";
-import { AdminPurchaseOffersPanel } from "../components/admin/AdminPurchaseOffersPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
 import { BrandLogo } from "../components/BrandLogo";
@@ -23,7 +22,6 @@ import {
   deleteEmptyAdminModule,
   deleteEmptyAdminPracticeSet,
   endAdminLaunchOffer,
-  getAdminPurchaseOffers,
   getAdminAuditLogs,
   getAdminContentModules,
   getAdminLaunchOffer,
@@ -44,7 +42,6 @@ import {
   publishAdminQuestionRevision,
   reconcileAdminSupportPayment,
   cancelAdminEmailCampaign,
-  saveAdminPurchaseOffer,
   saveAdminPurchasePlan,
   saveAdminPurchasePlanPrice,
   saveAdminQuestion,
@@ -55,7 +52,6 @@ import {
   republishAdminPracticeSet,
   retireAdminPracticeSet,
   transitionAdminPracticeSet,
-  setAdminPurchaseOfferEnabled,
   updateAdminModule,
   updateAdminModuleAvailability,
   updateAdminModuleLifecycle,
@@ -264,7 +260,6 @@ function ModuleCatalogue({
   launchOffer,
   pricingPlans,
   pricingPlansLoading,
-  purchaseOffers,
   modules,
   onCreate,
   onEndLaunchOffer,
@@ -274,8 +269,6 @@ function ModuleCatalogue({
   onScheduleLaunchOffer,
   onSavePricingPlan,
   onSavePricingPlanPrice,
-  onSavePurchaseOffer,
-  onTogglePurchaseOffer,
   query,
   working,
 }) {
@@ -301,7 +294,6 @@ function ModuleCatalogue({
     retired: modules.filter((module) => module.lifecycle_status === "retired").length,
   };
   const enabledPlanCount = pricingPlans.filter((plan) => plan.enabled).length;
-  const enabledOfferCount = purchaseOffers.filter((offer) => offer.enabled).length;
   const launchOfferStatus = launchOffer?.status ? launchOffer.status.replace("_", " ") : "not configured";
 
   return (
@@ -318,7 +310,7 @@ function ModuleCatalogue({
         <summary>
           <span>
             <strong>Commerce</strong>
-            <small>{enabledPlanCount} plans enabled / {enabledOfferCount} bundles enabled / Launch offer {launchOfferStatus}</small>
+            <small>{enabledPlanCount} pricing plans enabled / Launch offer {launchOfferStatus}</small>
           </span>
           <span className="admin-commerce-drawer-action">Manage</span>
         </summary>
@@ -340,13 +332,6 @@ function ModuleCatalogue({
             offer={launchOffer}
             onEnd={onEndLaunchOffer}
             onSchedule={onScheduleLaunchOffer}
-          />
-
-          <AdminPurchaseOffersPanel
-            busy={working}
-            offers={purchaseOffers}
-            onSave={onSavePurchaseOffer}
-            onToggle={onTogglePurchaseOffer}
           />
         </div>
       </details>
@@ -2167,7 +2152,6 @@ export default function Admin() {
   const [launchOffer, setLaunchOffer] = useState(null);
   const [pricingPlans, setPricingPlans] = useState([]);
   const [pricingPlansLoading, setPricingPlansLoading] = useState(false);
-  const [purchaseOffers, setPurchaseOffers] = useState([]);
   const [practiceSets, setPracticeSets] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [validation, setValidation] = useState(null);
@@ -2221,12 +2205,11 @@ export default function Admin() {
 
     async function loadAdmin() {
       try {
-        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPricingPlans, nextPurchaseOffers] = await Promise.all([
+        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPricingPlans] = await Promise.all([
           getAdminContentModules(),
           getAdminAuditLogs(),
           getAdminLaunchOffer(),
           getAdminPurchasePlans(),
-          getAdminPurchaseOffers(),
         ]);
 
         if (!active) return;
@@ -2234,7 +2217,6 @@ export default function Admin() {
         setAuditLogs(nextAuditLogs);
         setLaunchOffer(nextLaunchOffer);
         setPricingPlans(nextPricingPlans);
-        setPurchaseOffers(nextPurchaseOffers);
       } catch (error) {
         if (!active) return;
         logAppError("Admin content load", error);
@@ -2772,12 +2754,6 @@ export default function Admin() {
     return nextOffer;
   }
 
-  async function refreshPurchaseOffers() {
-    const nextOffers = await getAdminPurchaseOffers();
-    setPurchaseOffers(nextOffers);
-    return nextOffers;
-  }
-
   async function refreshPricingPlans({ showFeedback = false } = {}) {
     setPricingPlansLoading(true);
     try {
@@ -2847,38 +2823,6 @@ export default function Admin() {
           }
         },
       });
-    });
-  }
-
-  function handleSavePurchaseOffer(offer, onSaved) {
-    requestConfirmation({
-      title: offer.enabled ? "Save and publish this bundle?" : "Save this bundle?",
-      body: offer.enabled
-        ? "Eligible candidates will see this bundle immediately or at its scheduled start. Checkout will enforce the price and module rules on the server."
-        : "The bundle will remain hidden until you enable it.",
-      label: offer.offerId ? "Save changes" : "Create bundle",
-      action: async () => {
-        await saveAdminPurchaseOffer(offer);
-        await Promise.all([refreshPurchaseOffers(), refreshAudit()]);
-        onSaved?.();
-        setFeedback({ tone: "success", message: offer.enabled ? "Bundle saved and enabled." : "Bundle saved." });
-      },
-    });
-  }
-
-  function handleTogglePurchaseOffer(offer, enabled) {
-    requestConfirmation({
-      title: enabled ? "Enable this bundle?" : "Disable this bundle?",
-      body: enabled
-        ? "Eligible candidates will be able to start new checkouts at this bundle price."
-        : "New bundle checkouts will stop. Existing Paystack checkout links retain their agreed order.",
-      label: enabled ? "Enable bundle" : "Disable bundle",
-      tone: enabled ? "default" : "danger",
-      action: async () => {
-        await setAdminPurchaseOfferEnabled(offer.offer_id, enabled);
-        await Promise.all([refreshPurchaseOffers(), refreshAudit()]);
-        setFeedback({ tone: "success", message: enabled ? "Bundle enabled." : "Bundle disabled." });
-      },
     });
   }
 
@@ -3432,7 +3376,6 @@ export default function Admin() {
                 launchOffer={launchOffer}
                 pricingPlans={pricingPlans}
                 pricingPlansLoading={pricingPlansLoading}
-                purchaseOffers={purchaseOffers}
                 modules={modules}
                 query={shellSearch}
                 onCreate={() => setModuleEditor({})}
@@ -3443,8 +3386,6 @@ export default function Admin() {
                 onScheduleLaunchOffer={handleScheduleLaunchOffer}
                 onSavePricingPlan={handleSavePricingPlan}
                 onSavePricingPlanPrice={handleSavePricingPlanPrice}
-                onSavePurchaseOffer={handleSavePurchaseOffer}
-                onTogglePurchaseOffer={handleTogglePurchaseOffer}
                 working={working}
               />
             )}
