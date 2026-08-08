@@ -2699,7 +2699,7 @@ pre,
 }
 
 .primary-action,
-button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.access-plan-close):not(.access-plan-handle):not(.access-type-option):not(.access-duration-option):not(.access-plan-module-option):not(.access-plan-pay):not(.access-scope-button):not(.access-purchase-module-row):not(.access-purchase-duration-row):not(.access-upgrade-option):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-module-option):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
+button:not(.ghost-button):not(.link-button):not(.question-dot):not(.option-card):not(.nav-chip):not(.dashboard-module-toggle):not(.practice-flag-button):not(.practice-map-close):not(.auth-mode-option):not(.auth-google-button):not(.auth-password-toggle):not(.auth-forgot-link):not(.auth-step-back):not(.auth-resend-button):not(.account-edit-cancel):not(.account-edit-open):not(.practice-hub-row-action):not(.practice-hub-card-secondary):not(.oral-rating-button):not(.access-payment-reference):not(.access-receipt-close):not(.access-receipt-copy):not(.access-unlock-close):not(.access-unlock-drag-handle):not(.access-unlock-bundle-link):not(.access-plan-close):not(.access-plan-handle):not(.access-type-option):not(.access-duration-option):not(.access-plan-module-option):not(.access-plan-pay):not(.access-scope-button):not(.access-purchase-module-row):not(.access-purchase-duration-row):not(.access-upgrade-option):not(.access-inline-duration):not(.access-inline-pay):not(.access-bundle-module):not(.access-bundle-row-action):not(.free-batch-confirmation-close):not(.module-unlock-action):not(.module-free-action):not(.bundle-offer-trigger):not(.bundle-offer-row-action):not(.bundle-checkout-close):not(.bundle-checkout-handle):not(.bundle-module-option):not(.bundle-checkout-pay):not(.answer-review-back):not(.answer-review-question-picker):not(.answer-review-navigator-close):not(.support-topic-button):not(.support-faq-toggle):not(.support-faq-more):not(.support-faq-request):not([class*="admin-"]) {
   color: var(--on-dark);
   background: var(--color-primary);
   box-shadow: var(--shadow-sm);
@@ -20930,6 +20930,7 @@ button.practice-hub-row-action:focus-visible {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+  scroll-margin-top: 96px;
 }
 
 .access-page-v2 .access-module-row + .access-module-row {
@@ -20938,6 +20939,11 @@ button.practice-hub-row-action:focus-visible {
 
 .access-page-v2 .access-module-row.is-unlocked {
   background: transparent;
+}
+
+.access-page-v2 .access-module-row.is-expanded,
+.access-bundle-offer.is-expanded {
+  background: color-mix(in srgb, var(--color-primary-soft) 34%, transparent);
 }
 
 .access-page-v2 .access-module-copy {
@@ -20985,6 +20991,11 @@ button.practice-hub-row-action:focus-visible {
   color: var(--color-text-muted);
 }
 
+.access-page-v2 .access-module-state.is-locked {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
 .access-page-v2 .access-module-action,
 .access-page-v2 .access-module-row.is-focused .access-module-action {
   min-width: 0;
@@ -21010,6 +21021,225 @@ button.practice-hub-row-action:focus-visible {
   margin: 0;
   font-size: 0.76rem;
   text-align: right;
+}
+
+.access-inline-purchase {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+  padding: 16px 0 4px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 80%, white);
+}
+
+.access-inline-duration-list,
+.access-bundle-module-list {
+  display: grid;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.access-inline-duration,
+.access-bundle-module {
+  min-height: 48px;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.access-inline-duration {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.access-bundle-module {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.access-inline-duration + .access-inline-duration,
+.access-bundle-module + .access-bundle-module {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 78%, white);
+}
+
+.access-inline-duration span,
+.access-bundle-module span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-inline-duration strong {
+  color: inherit;
+  font-size: 0.94rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.access-inline-duration small,
+.access-bundle-module small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.access-inline-duration.is-selected,
+.access-bundle-module.is-selected {
+  color: var(--color-primary-dark);
+}
+
+.access-bundle-check {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 62%, white);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.access-bundle-module.is-selected .access-bundle-check {
+  border-color: var(--color-primary);
+}
+
+.access-bundle-module.is-selected .access-bundle-check::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.access-bundle-module:disabled:not(.is-selected),
+.access-inline-duration:disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+}
+
+.access-bundle-selection-count,
+.access-bundle-included span,
+.access-inline-selection,
+.access-inline-hint,
+.access-inline-error {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.access-bundle-included {
+  display: grid;
+  gap: 4px;
+}
+
+.access-bundle-included p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.access-inline-error {
+  color: var(--color-danger, #b42318);
+}
+
+.access-inline-pay {
+  justify-self: start;
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: none;
+  font-size: 0.85rem;
+  font-weight: 850;
+}
+
+.access-inline-pay:disabled {
+  background: color-mix(in srgb, var(--color-text-muted) 22%, white);
+  color: color-mix(in srgb, var(--color-text-muted) 92%, white);
+  cursor: not-allowed;
+}
+
+.access-bundle-offers {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+}
+
+.access-bundle-offers h2,
+.access-bundle-offer h3,
+.access-bundle-offer p {
+  margin: 0;
+}
+
+.access-bundle-offers h2 {
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.access-bundle-offer-list {
+  display: grid;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.access-bundle-offer {
+  display: grid;
+  gap: 0;
+  padding: 0 4px;
+  scroll-margin-top: 96px;
+}
+
+.access-bundle-offer + .access-bundle-offer {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 78%, white);
+}
+
+.access-bundle-offer-main {
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.access-bundle-offer h3 {
+  color: var(--color-text);
+  font-size: 0.96rem;
+  line-height: 1.35;
+}
+
+.access-bundle-offer p {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.access-bundle-row-action {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border-brand);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-primary-soft) 70%, white);
+  color: var(--color-primary-dark);
+  box-shadow: none;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .access-page-v2 .access-payment-attention,
@@ -21185,6 +21415,7 @@ button.practice-hub-row-action:focus-visible {
 @media (max-width: 820px) {
   .access-page.access-page-v2 {
     gap: 24px;
+    padding-bottom: 96px;
   }
 
   .access-page-v2 .access-page-intro {
@@ -21271,6 +21502,19 @@ button.practice-hub-row-action:focus-visible {
     text-align: left;
   }
 
+  .access-inline-purchase {
+    padding-top: 12px;
+  }
+
+  .access-inline-pay {
+    width: 100%;
+  }
+
+  .access-bundle-offer-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
   .access-page-v2 .access-payment-row,
   .access-page-v2 .access-payment-row.is-verified,
   .access-page-v2 .access-payment-row.is-attention {
@@ -21345,6 +21589,37 @@ button.practice-hub-row-action:focus-visible {
 
   .access-purchase-duration-row {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .access-inline-duration {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .access-inline-duration small {
+    grid-column: 1 / -1;
+  }
+
+  .access-bundle-offer {
+    padding: 0;
+  }
+
+  .access-bundle-offer h3,
+  .access-bundle-module span,
+  .access-inline-duration span {
+    font-size: 0.84rem;
+  }
+
+  .access-bundle-row-action {
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--color-primary-dark);
+    font-size: 0.72rem;
+  }
+
+  .access-bundle-module {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .access-purchase-duration-row small {

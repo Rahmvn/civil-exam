@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AccessPurchasePanel } from "../components/access/AccessPurchasePanel";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
@@ -18,6 +17,24 @@ import {
   getModuleDisplayName,
 } from "../lib/moduleDisplay";
 import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
+import {
+  DEFAULT_DURATION_MONTHS,
+  PRICING_PLAN_CODES,
+  buildPlanCheckoutPayload,
+  chooseDefaultDuration,
+  findPlan,
+  getDurationLabel,
+  getDurationPrice,
+  getEligibleModules,
+  getIndividualPlanCodeForModule,
+  getModuleSlug,
+  getRequiredModuleCount,
+  getSavingsAmountKobo,
+  getSelectedModules,
+  normalizePricingCatalog,
+  validatePlanSelection,
+} from "../lib/pricingPlans";
+import { formatModuleMoney } from "../lib/pricing";
 import { useAuth } from "../lib/useAuth";
 
 function formatMoney(kobo, currency = "NGN") {
@@ -75,6 +92,30 @@ function compactReference(reference) {
 
 function getModulePracticeSetsRoute(subjectSlug) {
   return `/modules/${encodeURIComponent(subjectSlug)}`;
+}
+
+function getDurationBadge(duration) {
+  if (duration?.discount_label) return duration.discount_label;
+  const savings = getSavingsAmountKobo(duration);
+  if (savings > 0) return `Save ${formatModuleMoney(savings, duration.currency)}`;
+  return "";
+}
+
+function getPlanDisplayName(plan, fallback) {
+  return String(plan?.display_name || fallback).trim();
+}
+
+function getLowestDuration(plan) {
+  return (plan?.durations ?? []).reduce((lowest, duration) => (
+    !lowest || Number(duration.price_kobo) < Number(lowest.price_kobo) ? duration : lowest
+  ), null);
+}
+
+function normalizePurchasableModules(modules) {
+  return getEligibleModules(modules).map((module) => ({
+    ...module,
+    subject_slug: getModuleSlug(module),
+  }));
 }
 
 function getSafeReturnPath(value) {
@@ -399,6 +440,9 @@ export default function Access() {
   const [payingModule, setPayingModule] = useState("");
   const [loadError, setLoadError] = useState("");
   const [paymentError, setPaymentError] = useState(null);
+  const [expandedPurchase, setExpandedPurchase] = useState("");
+  const [durationMonths, setDurationMonths] = useState(DEFAULT_DURATION_MONTHS);
+  const [bundleSelectedSlugs, setBundleSelectedSlugs] = useState([]);
 
   useEffect(() => {
     async function loadAccess() {
@@ -426,6 +470,41 @@ export default function Access() {
 
     void loadAccess();
   }, []);
+
+  const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
+  const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
+  const normalizedPlans = useMemo(() => normalizePricingCatalog(pricingCatalog), [pricingCatalog]);
+  const purchasableModules = useMemo(() => normalizePurchasableModules(moduleAccess), [moduleAccess]);
+  const purchasableSlugSet = useMemo(() => new Set(purchasableModules.map((module) => module.subject_slug)), [purchasableModules]);
+  const pickThreePlan = findPlan(normalizedPlans, PRICING_PLAN_CODES.THREE_MODULE_BUNDLE);
+  const completePlan = findPlan(normalizedPlans, PRICING_PLAN_CODES.COMPLETE_BUNDLE);
+  const pickThreeCount = getRequiredModuleCount(pickThreePlan) || 3;
+  const pickThreeLowest = getLowestDuration(pickThreePlan);
+  const completeLowest = getLowestDuration(completePlan);
+  const canPickThree = Boolean(pickThreePlan?.is_available !== false && pickThreePlan?.durations?.length);
+  const canComplete = Boolean(completePlan?.is_available !== false && completePlan?.durations?.length);
+  const routeExpandedPurchase = requestedModule && purchasableSlugSet.has(requestedModule)
+    ? `module:${requestedModule}`
+    : requestedScope === "pick3" && canPickThree
+      ? "bundle:pick3"
+      : requestedScope === "complete" && canComplete
+        ? "bundle:complete"
+        : "";
+  const activePurchase = routeExpandedPurchase || expandedPurchase;
+  const unlockedCount = modulesToShow.filter((module) => {
+    const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
+    return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);
+  }).length;
+
+  useEffect(() => {
+    if (loading || !activePurchase) return;
+    const targetId = activePurchase.startsWith("module:")
+      ? `access-row-${activePurchase.replace("module:", "")}`
+      : activePurchase === "bundle:pick3" ? "access-bundle-pick3" : "access-bundle-complete";
+    window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [activePurchase, loading]);
 
   async function startPricingPlanPayment(paymentRequest) {
     const paymentKey = `pricing:${paymentRequest.planCode}:${paymentRequest.durationMonths}:${paymentRequest.subjectSlugs.join(",")}`;
@@ -483,23 +562,161 @@ export default function Access() {
     );
   }
 
-  const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
-  const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
-  const unlockedCount = modulesToShow.filter((module) => {
-    const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
-    return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);
-  }).length;
-
   function openUnlockModule(subjectSlug) {
     setPaymentError(null);
+    setExpandedPurchase(`module:${subjectSlug}`);
+    setBundleSelectedSlugs([]);
     const nextParams = {};
     if (subjectSlug) nextParams.module = subjectSlug;
     if (returnTo) nextParams.returnTo = returnTo;
     setSearchParams(nextParams);
-    document.getElementById("buy-access")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(`access-row-${subjectSlug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   const modalPaymentKeyPrefix = "pricing:";
+  const purchaseError = paymentError?.subjectSlug?.startsWith(modalPaymentKeyPrefix) ? paymentError.message : "";
+
+  function openBundle(scope) {
+    setPaymentError(null);
+    setExpandedPurchase(`bundle:${scope}`);
+    if (scope === "complete") setBundleSelectedSlugs([]);
+    const nextParams = { scope };
+    if (returnTo) nextParams.returnTo = returnTo;
+    setSearchParams(nextParams);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`access-bundle-${scope}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  function getModulePlan(module) {
+    return findPlan(normalizedPlans, getIndividualPlanCodeForModule(module));
+  }
+
+  function buildPaymentState({ plan, selectedSlugs }) {
+    const safeDuration = chooseDefaultDuration(plan, durationMonths);
+    const duration = getDurationPrice(plan, safeDuration);
+    const validation = validatePlanSelection({ plan, selectedSlugs });
+    const payload = buildPlanCheckoutPayload({ plan, durationMonths: safeDuration, selectedSlugs });
+    return { duration, payload, safeDuration, validation };
+  }
+
+  function toggleBundleModule(subjectSlug) {
+    if (payingModule) return;
+    setBundleSelectedSlugs((current) => {
+      const validCurrent = current.filter((slug) => purchasableSlugSet.has(slug));
+      if (validCurrent.includes(subjectSlug)) return validCurrent.filter((slug) => slug !== subjectSlug);
+      if (validCurrent.length >= pickThreeCount) return validCurrent;
+      return [...validCurrent, subjectSlug];
+    });
+  }
+
+  function renderDurationPicker({ duration, plan, safeDuration }) {
+    return (
+      <div className="access-inline-duration-list">
+        {plan.durations.map((option) => {
+          const selected = Number(option.duration_months) === Number(safeDuration);
+          const badge = getDurationBadge(option);
+          return (
+            <button
+              aria-pressed={selected}
+              className={`access-inline-duration${selected ? " is-selected" : ""}`}
+              disabled={Boolean(payingModule)}
+              key={option.duration_months}
+              onClick={() => setDurationMonths(Number(option.duration_months))}
+              type="button"
+            >
+              <span>{getDurationLabel(option.duration_months)}</span>
+              <strong>{formatModuleMoney(option.price_kobo, option.currency)}</strong>
+              {badge && <small>{badge}</small>}
+            </button>
+          );
+        })}
+        {duration ? null : <p className="access-inline-error">Choose access length</p>}
+      </div>
+    );
+  }
+
+  function renderPurchaseActions({ payload, validation }) {
+    return (
+      <>
+        {purchaseError && <p className="access-inline-error" role="alert">{purchaseError}</p>}
+        {!validation.ok && <p className="access-inline-hint">{validation.message}</p>}
+        <button
+          aria-busy={Boolean(payingModule)}
+          className="access-inline-pay"
+          disabled={Boolean(payingModule) || !payload}
+          onClick={() => void startPricingPlanPayment(payload)}
+          type="button"
+        >
+          {payingModule ? "Preparing payment..." : validation.ok ? "Continue to payment" : validation.message}
+        </button>
+      </>
+    );
+  }
+
+  function renderInlineModulePurchase(module) {
+    const plan = getModulePlan(module);
+    if (!plan) return <p className="access-inline-error">This module is not open for purchase yet.</p>;
+    const state = buildPaymentState({ plan, selectedSlugs: [module.subject_slug] });
+    return (
+      <div className="access-inline-purchase">
+        {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
+        {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
+      </div>
+    );
+  }
+
+  function renderInlineBundlePurchase({ plan, scope }) {
+    if (!plan) return null;
+    const isComplete = scope === "complete";
+    const selectedSlugs = isComplete ? [] : bundleSelectedSlugs.filter((slug) => purchasableSlugSet.has(slug));
+    const selectedModules = getSelectedModules(purchasableModules, selectedSlugs);
+    const state = buildPaymentState({ plan, selectedSlugs });
+    const selectionLabel = isComplete
+      ? `${purchasableModules.length} modules included`
+      : `${selectedSlugs.length} of ${pickThreeCount} selected`;
+
+    return (
+      <div className="access-inline-purchase">
+        {!isComplete && (
+          <section className="access-bundle-picker" aria-label="Choose bundle modules">
+            <div className="access-bundle-selection-count">{selectionLabel}</div>
+            <div className="access-bundle-module-list">
+              {purchasableModules.map((module) => {
+                const selected = selectedSlugs.includes(module.subject_slug);
+                const disabled = !selected && selectedSlugs.length >= pickThreeCount;
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={`access-bundle-module${selected ? " is-selected" : ""}`}
+                    disabled={Boolean(payingModule) || disabled}
+                    key={module.subject_id ?? module.subject_slug}
+                    onClick={() => toggleBundleModule(module.subject_slug)}
+                    type="button"
+                  >
+                    <span className="access-bundle-check" aria-hidden="true" />
+                    <span>{getModuleDisplayName(module.subject_name)}</span>
+                    {module.practice_type === "oral" && <small>Oral</small>}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+        {isComplete && (
+          <div className="access-bundle-included">
+            <span>{selectionLabel}</span>
+            <p>{purchasableModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
+          </div>
+        )}
+        {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
+        {!isComplete && selectedModules.length > 0 && (
+          <p className="access-inline-selection">{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
+        )}
+        {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
+      </div>
+    );
+  }
 
   return (
     <AppFrame>
@@ -513,16 +730,36 @@ export default function Access() {
           )}
         </header>
 
-        <AccessPurchasePanel
-          catalog={pricingCatalog}
-          error={paymentError?.subjectSlug?.startsWith(modalPaymentKeyPrefix) ? paymentError.message : ""}
-          initialScope={requestedScope}
-          initialSubjectSlug={requestedModule ?? ""}
-          key={`${requestedScope}:${requestedModule ?? ""}`}
-          modules={moduleAccess}
-          onPay={(paymentRequest) => void startPricingPlanPayment(paymentRequest)}
-          paying={Boolean(payingModule)}
-        />
+        {paymentAttention.length > 0 && (
+          <section className="access-payment-attention" aria-labelledby="payment-attention-title">
+            <header>
+              <h2 id="payment-attention-title">Payment needs attention</h2>
+            </header>
+            <div className="access-payment-list">
+              {paymentAttention.map((payment) => {
+                const statusMeta = getPaymentStatusMeta(payment);
+                return (
+                  <article className="access-payment-row is-attention" key={payment.id}>
+                    <div className="access-payment-main">
+                      <div className="access-payment-title-line">
+                        <strong>{getPaymentAccessName(payment)}</strong>
+                        <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                      </div>
+                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      <p>{statusMeta.description}</p>
+                    </div>
+                    <PaymentReference value={payment.paystack_reference} />
+                    {statusMeta.canCheck && (
+                      <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>
+                        {payment.provider_status === "success" ? "Check access" : "Check status"}
+                      </Link>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         <section className="access-module-catalog" aria-labelledby="access-modules-title">
           <h2 id="access-modules-title">Your access</h2>
@@ -554,13 +791,15 @@ export default function Access() {
 
               return (
                 <article
-                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""}`.trim()}
+                  className={`access-module-row ${hasUsableModuleAccess ? "is-unlocked" : ""} ${activePurchase === `module:${module.subject_slug}` ? "is-expanded" : ""}`.trim()}
+                  id={`access-row-${module.subject_slug}`}
                   key={module.subject_id}
                 >
                   <div className="access-module-copy">
                     <div className="access-module-title-line">
                       <h2>{displayName}</h2>
                       {hasUsableModuleAccess && <span className="access-module-state">Unlocked</span>}
+                      {!isComingSoon && !hasUsableModuleAccess && module.can_purchase && <span className="access-module-state is-locked">Locked</span>}
                     </div>
                     {isComingSoon ? (
                       <p>Practice is coming soon.</p>
@@ -585,6 +824,8 @@ export default function Access() {
                       <p className="access-module-error" role="alert">{paymentError.message}</p>
                     )}
                   </div>
+
+                  {activePurchase === `module:${module.subject_slug}` && module.can_purchase && !hasUsableModuleAccess && !isComingSoon && renderInlineModulePurchase(module)}
                 </article>
               );
               })}
@@ -592,33 +833,35 @@ export default function Access() {
           )}
         </section>
 
-        {paymentAttention.length > 0 && (
-          <section className="access-payment-attention" aria-labelledby="payment-attention-title">
-            <header>
-              <h2 id="payment-attention-title">Payment needs attention</h2>
-            </header>
-            <div className="access-payment-list">
-              {paymentAttention.map((payment) => {
-                const statusMeta = getPaymentStatusMeta(payment);
-                return (
-                  <article className="access-payment-row is-attention" key={payment.id}>
-                    <div className="access-payment-main">
-                      <div className="access-payment-title-line">
-                        <strong>{getPaymentAccessName(payment)}</strong>
-                        <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
-                      </div>
-                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
-                      <p>{statusMeta.description}</p>
+        {(canPickThree || canComplete) && (
+          <section className="access-bundle-offers" aria-labelledby="access-bundle-title">
+            <h2 id="access-bundle-title">Bundle offers</h2>
+            <div className="access-bundle-offer-list">
+              {canPickThree && (
+                <article className={`access-bundle-offer ${activePurchase === "bundle:pick3" ? "is-expanded" : ""}`} id="access-bundle-pick3">
+                  <div className="access-bundle-offer-main">
+                    <div>
+                      <h3>{getPlanDisplayName(pickThreePlan, "Pick 3")}</h3>
+                      {pickThreeLowest && <p>{`From ${formatModuleMoney(pickThreeLowest.price_kobo, pickThreeLowest.currency)}`}</p>}
                     </div>
-                    <PaymentReference value={payment.paystack_reference} />
-                    {statusMeta.canCheck && (
-                      <Link className="access-receipt-button" to={`/payment/verify?reference=${encodeURIComponent(payment.paystack_reference)}`}>
-                        {payment.provider_status === "success" ? "Check access" : "Check status"}
-                      </Link>
-                    )}
-                  </article>
-                );
-              })}
+                    <button className="access-bundle-row-action" onClick={() => openBundle("pick3")} type="button">Pick modules</button>
+                  </div>
+                  {activePurchase === "bundle:pick3" && renderInlineBundlePurchase({ plan: pickThreePlan, scope: "pick3" })}
+                </article>
+              )}
+
+              {canComplete && (
+                <article className={`access-bundle-offer ${activePurchase === "bundle:complete" ? "is-expanded" : ""}`} id="access-bundle-complete">
+                  <div className="access-bundle-offer-main">
+                    <div>
+                      <h3>{getPlanDisplayName(completePlan, "Complete")}</h3>
+                      {completeLowest && <p>{`From ${formatModuleMoney(completeLowest.price_kobo, completeLowest.currency)}`}</p>}
+                    </div>
+                    <button className="access-bundle-row-action" onClick={() => openBundle("complete")} type="button">Unlock all</button>
+                  </div>
+                  {activePurchase === "bundle:complete" && renderInlineBundlePurchase({ plan: completePlan, scope: "complete" })}
+                </article>
+              )}
             </div>
           </section>
         )}
