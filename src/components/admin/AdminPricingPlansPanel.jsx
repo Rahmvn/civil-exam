@@ -233,6 +233,7 @@ export function AdminPricingPlansPanel({
               const priceKobo = generated?.priceKobo ?? price?.price_kobo;
               return priceKobo == null ? `${duration}m unavailable` : `${duration}m ${formatModuleMoney(priceKobo, price?.currency)}`;
             });
+            const previewBullets = splitBullets(planDraft.includedBullets);
 
             return (
               <article className={`admin-pricing-plan${isPlanExpanded ? " is-expanded" : ""}`} key={plan.plan_code}>
@@ -258,9 +259,24 @@ export function AdminPricingPlansPanel({
                 {isPlanExpanded && (
                   <>
                     <form className="admin-pricing-plan-form" onSubmit={(event) => savePlan(event, plan)}>
+                  <aside className="admin-pricing-copy-preview" aria-label={`${plan.display_name} candidate preview`}>
+                    {planDraft.savingsLabel && <span>{planDraft.savingsLabel}</span>}
+                    <strong>{planDraft.displayName || "Plan card title"}</strong>
+                    {planDraft.shortDescription && <p>{planDraft.shortDescription}</p>}
+                    {planDraft.supportingText && <small>{planDraft.supportingText}</small>}
+                    {previewBullets.length > 0 && (
+                      <ul>
+                        {previewBullets.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    )}
+                    <button type="button" tabIndex="-1">{planDraft.ctaLabel || "Button text"}</button>
+                  </aside>
 
-                  <label>
-                    Plan name
+                  <label className="admin-pricing-field-wide">
+                    <span className="admin-pricing-field-heading">
+                      <strong>Plan card title</strong>
+                      <small>Main heading candidates see when choosing access.</small>
+                    </span>
                     <input
                       maxLength="80"
                       minLength="2"
@@ -269,33 +285,45 @@ export function AdminPricingPlansPanel({
                       onChange={(event) => updatePlan(plan.plan_code, "displayName", event.target.value)}
                     />
                   </label>
-                  <label>
-                    Short description
+                  <label className="admin-pricing-field-wide">
+                    <span className="admin-pricing-field-heading">
+                      <strong>Subtitle</strong>
+                      <small>One short sentence under the title.</small>
+                    </span>
                     <input
                       maxLength="240"
                       value={planDraft.shortDescription}
                       onChange={(event) => updatePlan(plan.plan_code, "shortDescription", event.target.value)}
                     />
                   </label>
-                  <label>
-                    Supporting text
+                  <label className="admin-pricing-field-wide">
+                    <span className="admin-pricing-field-heading">
+                      <strong>Helper line</strong>
+                      <small>Extra reassurance below the subtitle. Use it for value or fit.</small>
+                    </span>
                     <input
                       maxLength="320"
                       value={planDraft.supportingText}
                       onChange={(event) => updatePlan(plan.plan_code, "supportingText", event.target.value)}
                     />
                   </label>
-                  <label>
-                    Benefit bullets
+                  <label className="admin-pricing-field-wide">
+                    <span className="admin-pricing-field-heading">
+                      <strong>Included lines</strong>
+                      <small>One benefit per line. These appear as the plan checklist.</small>
+                    </span>
                     <textarea
                       maxLength="720"
-                      rows="4"
+                      rows="3"
                       value={planDraft.includedBullets}
                       onChange={(event) => updatePlan(plan.plan_code, "includedBullets", event.target.value)}
                     />
                   </label>
                   <label>
-                    Savings label
+                    <span className="admin-pricing-field-heading">
+                      <strong>Badge text</strong>
+                      <small>Optional small label, like “Best value”. Leave blank if not useful.</small>
+                    </span>
                     <input
                       maxLength="80"
                       value={planDraft.savingsLabel}
@@ -303,7 +331,10 @@ export function AdminPricingPlansPanel({
                     />
                   </label>
                   <label>
-                    Button label
+                    <span className="admin-pricing-field-heading">
+                      <strong>Button text</strong>
+                      <small>The action button shown on this plan.</small>
+                    </span>
                     <input
                       maxLength="40"
                       minLength="2"
@@ -312,8 +343,11 @@ export function AdminPricingPlansPanel({
                       onChange={(event) => updatePlan(plan.plan_code, "ctaLabel", event.target.value)}
                     />
                   </label>
-                  <label>
-                    Sort order
+                  <label className="admin-pricing-field-small">
+                    <span className="admin-pricing-field-heading">
+                      <strong>Display order</strong>
+                      <small>Lower numbers appear first.</small>
+                    </span>
                     <input
                       type="number"
                       step="1"
@@ -329,7 +363,7 @@ export function AdminPricingPlansPanel({
                         type="checkbox"
                         onChange={(event) => updatePlan(plan.plan_code, "enabled", event.target.checked)}
                       />
-                      Visible
+                      <span><strong>Visible</strong><small>Show this plan to candidates.</small></span>
                     </label>
                     <label>
                       <input
@@ -337,7 +371,7 @@ export function AdminPricingPlansPanel({
                         type="checkbox"
                         onChange={(event) => updatePlan(plan.plan_code, "featured", event.target.checked)}
                       />
-                      Featured
+                      <span><strong>Highlight</strong><small>Give this plan extra emphasis.</small></span>
                     </label>
                   </div>
 
