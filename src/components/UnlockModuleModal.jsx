@@ -71,7 +71,7 @@ export function UnlockModuleModal({
         <div className="access-unlock-includes" aria-label="What module access includes">
           <span>Module access includes</span>
           <ul>
-            <li>Access valid until 31 December 2026</li>
+            <li>Duration-based access after payment verification</li>
             <li>All published practice sets in this module</li>
             <li>Retries, answer review, and progress tracking</li>
           </ul>

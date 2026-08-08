@@ -442,6 +442,23 @@ export async function initializeBundlePayment({ offerId, subjectSlugs, expectedP
   }));
 }
 
+export async function initializePricingPlanPayment({
+  planCode,
+  durationMonths,
+  subjectSlugs,
+  expectedPriceKobo,
+}) {
+  return requireFunctionData(await supabase.functions.invoke("initialize-paystack-payment", {
+    body: {
+      purchase_type: "pricing_plan",
+      plan_code: planCode,
+      duration_months: Number(durationMonths),
+      subject_slugs: ensureArray(subjectSlugs),
+      expected_price_kobo: expectedPriceKobo,
+    },
+  }));
+}
+
 export async function getAdminLaunchOffer() {
   const rows = ensureArray(requireData(await supabase.rpc("get_admin_launch_offer")));
   return rows[0] ?? null;
@@ -464,6 +481,42 @@ export async function endAdminLaunchOffer() {
 
 export async function getAdminPurchaseOffers() {
   return ensureArray(requireData(await supabase.rpc("get_admin_purchase_offers")));
+}
+
+export async function getPurchasePricingCatalog() {
+  return readWithPolicy("purchase-pricing-catalog-v1", async () => ensureArray(requireData(
+    await supabase.rpc("get_purchase_pricing_catalog_v1"),
+  )));
+}
+
+export async function getAdminPurchasePlans() {
+  return ensureArray(requireData(await supabase.rpc("get_admin_purchase_plans")));
+}
+
+export async function saveAdminPurchasePlan(plan) {
+  return requireData(await supabase.rpc("admin_save_purchase_plan", {
+    requested_plan_code: plan.planCode,
+    requested_display_name: plan.displayName,
+    requested_short_description: plan.shortDescription ?? "",
+    requested_supporting_text: plan.supportingText ?? "",
+    requested_included_bullets: ensureArray(plan.includedBullets),
+    requested_savings_label: plan.savingsLabel ?? "",
+    requested_cta_label: plan.ctaLabel ?? "Continue",
+    requested_featured: Boolean(plan.featured),
+    requested_sort_order: Number(plan.sortOrder ?? 100),
+    requested_enabled: Boolean(plan.enabled),
+  }));
+}
+
+export async function saveAdminPurchasePlanPrice(price) {
+  return requireData(await supabase.rpc("admin_save_purchase_plan_price", {
+    requested_plan_code: price.planCode,
+    requested_duration_months: Number(price.durationMonths),
+    requested_price_kobo: Number(price.priceKobo),
+    requested_list_price_kobo: price.listPriceKobo == null ? null : Number(price.listPriceKobo),
+    requested_discount_label: price.discountLabel ?? "",
+    requested_enabled: Boolean(price.enabled),
+  }));
 }
 
 export async function saveAdminPurchaseOffer(offer) {

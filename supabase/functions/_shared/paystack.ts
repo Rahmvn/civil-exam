@@ -275,7 +275,7 @@ export async function getModulePaymentOrder(reference: string) {
   const adminClient = getAdminClient();
   const { data, error } = await adminClient
     .from("payment_orders")
-    .select("id, user_id, exam_pack_id, subject_id, purchase_type, purchase_offer_id, purchase_label, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status, review_status")
+    .select("id, user_id, exam_pack_id, subject_id, purchase_type, purchase_offer_id, purchase_plan_id, plan_code, duration_months, purchase_label, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status, review_status")
     .eq("provider_reference", reference)
     .maybeSingle();
 

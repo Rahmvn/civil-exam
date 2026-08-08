@@ -296,6 +296,190 @@
   }
 }
 
+.admin-pricing-plans {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 16px;
+  background: var(--admin-panel, #fff);
+}
+
+.admin-pricing-plans-header,
+.admin-pricing-empty,
+.admin-pricing-plan-title,
+.admin-pricing-plan-toggles,
+.admin-pricing-plan-actions,
+.admin-pricing-duration,
+.admin-pricing-generated {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-pricing-plans-header,
+.admin-pricing-empty,
+.admin-pricing-duration {
+  justify-content: space-between;
+}
+
+.admin-pricing-plans h2,
+.admin-pricing-plans h3,
+.admin-pricing-plans p {
+  margin: 0;
+}
+
+.admin-pricing-plans-header p,
+.admin-pricing-plan-title small,
+.admin-pricing-duration span,
+.admin-pricing-generated small {
+  color: var(--admin-muted, #667067);
+}
+
+.admin-pricing-plan-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-pricing-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 12px;
+  background: #fbfdfb;
+}
+
+.admin-pricing-plan-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-pricing-plan-title {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+
+.admin-pricing-plan-title h3 {
+  font-size: 1rem;
+}
+
+.admin-pricing-plan-form label,
+.admin-pricing-price-row label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--admin-muted, #667067);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-pricing-plan-form input,
+.admin-pricing-plan-form textarea,
+.admin-pricing-price-row input {
+  min-width: 0;
+}
+
+.admin-pricing-plan-form textarea {
+  resize: vertical;
+}
+
+.admin-pricing-plan-form label:nth-of-type(3),
+.admin-pricing-plan-form label:nth-of-type(4) {
+  grid-column: span 2;
+}
+
+.admin-pricing-plan-toggles {
+  align-self: end;
+  flex-wrap: wrap;
+  min-height: 42px;
+}
+
+.admin-pricing-plan-toggles label,
+.admin-pricing-price-enabled {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-pricing-plan-toggles input,
+.admin-pricing-price-enabled input {
+  width: auto;
+}
+
+.admin-pricing-plan-actions {
+  align-self: end;
+  justify-content: flex-start;
+}
+
+.admin-pricing-price-grid {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-pricing-price-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.75fr) repeat(3, minmax(120px, 1fr)) auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.admin-pricing-generated {
+  grid-column: 2 / -1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  min-height: 42px;
+}
+
+.admin-pricing-generated strong {
+  color: var(--admin-green, #0f6747);
+}
+
+@media (max-width: 1180px) {
+  .admin-pricing-plan-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-pricing-price-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-pricing-duration,
+  .admin-pricing-generated {
+    grid-column: 1 / -1;
+  }
+
+  .admin-pricing-generated {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-pricing-plans-header,
+  .admin-pricing-empty {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-pricing-plan-form,
+  .admin-pricing-price-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-pricing-plan-form label:nth-of-type(3),
+  .admin-pricing-plan-form label:nth-of-type(4) {
+    grid-column: auto;
+  }
+}
+
 .admin-content-manager {
   width: min(1420px, calc(100% - 24px));
   padding: 8px 0 28px;

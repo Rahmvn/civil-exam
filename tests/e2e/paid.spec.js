@@ -46,7 +46,7 @@ test("paid dashboard keeps modules, account, and access connected without floati
   await page.goto("/access?module=public-service-rules");
   const unlockDialog = page.getByRole("dialog", { name: "Public Service Rules" });
   await expect(unlockDialog).toBeVisible();
-  await expect(unlockDialog.getByRole("button", { name: "Continue to payment" })).toBeVisible();
+  await expect(unlockDialog.getByRole("button", { name: /Continue to payment/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 

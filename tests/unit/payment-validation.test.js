@@ -84,6 +84,43 @@ test("bundle payment validation binds the verified transaction to its saved offe
   }), /does not match/);
 });
 
+test("pricing plan payment validation binds the verified transaction to plan and duration", () => {
+  const planOrder = {
+    ...order,
+    subject_id: null,
+    purchase_type: "pricing_plan",
+    purchase_plan_id: "plan-1",
+    plan_code: "three_module_bundle",
+    duration_months: 3,
+  };
+  const planPayment = {
+    ...payment,
+    metadata: {
+      payment_order_id: "order-1",
+      user_id: "user-1",
+      purchase_type: "pricing_plan",
+      purchase_plan_id: "plan-1",
+      plan_code: "three_module_bundle",
+      duration_months: 3,
+      subject_id: null,
+    },
+  };
+
+  assert.doesNotThrow(() => validateModulePaymentData(planOrder, planPayment));
+  assert.throws(() => validateModulePaymentData(planOrder, {
+    ...planPayment,
+    metadata: { ...planPayment.metadata, purchase_plan_id: "plan-2" },
+  }), /does not match/);
+  assert.throws(() => validateModulePaymentData(planOrder, {
+    ...planPayment,
+    metadata: { ...planPayment.metadata, plan_code: "complete_bundle" },
+  }), /does not match/);
+  assert.throws(() => validateModulePaymentData(planOrder, {
+    ...planPayment,
+    metadata: { ...planPayment.metadata, duration_months: 6 },
+  }), /does not match/);
+});
+
 test("legacy payment validation binds the active pack, price, and currency", () => {
   const pack = { id: "pack-1", price_kobo: 500000, currency: "NGN" };
   const legacyPayment = { ...payment, amount: 500000 };

@@ -205,7 +205,7 @@ export function BundleCheckoutModal({ error, offer, onClose, onPay, paying }) {
 )}
 
 <p className="bundle-checkout-meta">
-  Access until 31 December 2026
+  Access starts after payment is verified
   {isFullBundle && " · Price may increase as new modules are added"}
 </p>
           </section>

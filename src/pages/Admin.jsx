@@ -4,6 +4,7 @@ import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
 import { AdminGuideView } from "../components/admin/AdminGuideView";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminLaunchOfferPanel } from "../components/admin/AdminLaunchOfferPanel";
+import { AdminPricingPlansPanel } from "../components/admin/AdminPricingPlansPanel";
 import { AdminPurchaseOffersPanel } from "../components/admin/AdminPurchaseOffersPanel";
 import { AdminModuleForm } from "../components/admin/AdminModuleForm";
 import { AdminQuestionForm } from "../components/admin/AdminQuestionForm";
@@ -30,6 +31,7 @@ import {
   getAdminPracticeSetValidation,
   getAdminQuestions,
   getAdminPaymentAttention,
+  getAdminPurchasePlans,
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
   getAdminEmailCampaign,
@@ -43,6 +45,8 @@ import {
   reconcileAdminSupportPayment,
   cancelAdminEmailCampaign,
   saveAdminPurchaseOffer,
+  saveAdminPurchasePlan,
+  saveAdminPurchasePlanPrice,
   saveAdminQuestion,
   sendAdminEmailCampaign,
   sendAdminEmailCampaignTest,
@@ -258,13 +262,18 @@ function AdminFeedback({ feedback, onDismiss }) {
 
 function ModuleCatalogue({
   launchOffer,
+  pricingPlans,
+  pricingPlansLoading,
   purchaseOffers,
   modules,
   onCreate,
   onEndLaunchOffer,
   onManage,
   onQueryChange,
+  onRefreshPricingPlans,
   onScheduleLaunchOffer,
+  onSavePricingPlan,
+  onSavePricingPlanPrice,
   onSavePurchaseOffer,
   onTogglePurchaseOffer,
   query,
@@ -309,6 +318,16 @@ function ModuleCatalogue({
         offer={launchOffer}
         onEnd={onEndLaunchOffer}
         onSchedule={onScheduleLaunchOffer}
+      />
+
+      <AdminPricingPlansPanel
+        key={pricingPlans.map((plan) => `${plan.plan_code}:${plan.updated_at}`).join("|") || "pricing-plans-empty"}
+        busy={working}
+        loading={pricingPlansLoading}
+        plans={pricingPlans}
+        onRefresh={onRefreshPricingPlans}
+        onSavePlan={onSavePricingPlan}
+        onSavePrice={onSavePricingPlanPrice}
       />
 
       <AdminPurchaseOffersPanel
@@ -2131,6 +2150,8 @@ export default function Admin() {
 
   const [modules, setModules] = useState([]);
   const [launchOffer, setLaunchOffer] = useState(null);
+  const [pricingPlans, setPricingPlans] = useState([]);
+  const [pricingPlansLoading, setPricingPlansLoading] = useState(false);
   const [purchaseOffers, setPurchaseOffers] = useState([]);
   const [practiceSets, setPracticeSets] = useState([]);
   const [questions, setQuestions] = useState([]);
@@ -2185,10 +2206,11 @@ export default function Admin() {
 
     async function loadAdmin() {
       try {
-        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPurchaseOffers] = await Promise.all([
+        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPricingPlans, nextPurchaseOffers] = await Promise.all([
           getAdminContentModules(),
           getAdminAuditLogs(),
           getAdminLaunchOffer(),
+          getAdminPurchasePlans(),
           getAdminPurchaseOffers(),
         ]);
 
@@ -2196,6 +2218,7 @@ export default function Admin() {
         setModules(nextModules);
         setAuditLogs(nextAuditLogs);
         setLaunchOffer(nextLaunchOffer);
+        setPricingPlans(nextPricingPlans);
         setPurchaseOffers(nextPurchaseOffers);
       } catch (error) {
         if (!active) return;
@@ -2740,6 +2763,78 @@ export default function Admin() {
     return nextOffers;
   }
 
+  async function refreshPricingPlans({ showFeedback = false } = {}) {
+    setPricingPlansLoading(true);
+    try {
+      const nextPlans = await getAdminPurchasePlans();
+      setPricingPlans(nextPlans);
+      if (showFeedback) setFeedback({ tone: "success", message: "Pricing plans refreshed." });
+      return nextPlans;
+    } catch (error) {
+      logAppError("Admin pricing plans refresh", error);
+      setFeedback({ tone: "error", message: adminErrorMessage(error, "Pricing plans could not be refreshed.") });
+      throw error;
+    } finally {
+      setPricingPlansLoading(false);
+    }
+  }
+
+  async function savePricingPlan(plan) {
+    await saveAdminPurchasePlan(plan);
+    await Promise.all([refreshPricingPlans(), refreshAudit()]);
+    setFeedback({ tone: "success", message: "Pricing plan saved." });
+  }
+
+  async function savePricingPlanPrice(price) {
+    await saveAdminPurchasePlanPrice(price);
+    await Promise.all([refreshPricingPlans(), refreshAudit()]);
+    setFeedback({ tone: "success", message: "Pricing plan price saved." });
+  }
+
+  function handleSavePricingPlan(plan) {
+    return new Promise((resolve, reject) => {
+      requestConfirmation({
+        title: plan.enabled ? "Save and show this pricing plan?" : "Save this pricing plan?",
+        body: plan.enabled
+          ? "Candidates will see the updated name, supporting copy, and visibility at the next catalog load."
+          : "The plan copy will be saved, but candidates will not see this plan while it is hidden.",
+        label: "Save plan",
+        onCancel: resolve,
+        action: async () => {
+          try {
+            await savePricingPlan(plan);
+            resolve();
+          } catch (error) {
+            reject(error);
+            throw error;
+          }
+        },
+      });
+    });
+  }
+
+  function handleSavePricingPlanPrice(price) {
+    return new Promise((resolve, reject) => {
+      requestConfirmation({
+        title: price.enabled ? "Save and enable this duration price?" : "Save this duration price?",
+        body: price.enabled
+          ? "New checkouts for this plan duration will use this price. Existing checkout orders keep their agreed amount."
+          : "The price will be stored, but candidates cannot choose this duration while it is disabled.",
+        label: "Save price",
+        onCancel: resolve,
+        action: async () => {
+          try {
+            await savePricingPlanPrice(price);
+            resolve();
+          } catch (error) {
+            reject(error);
+            throw error;
+          }
+        },
+      });
+    });
+  }
+
   function handleSavePurchaseOffer(offer, onSaved) {
     requestConfirmation({
       title: offer.enabled ? "Save and publish this bundle?" : "Save this bundle?",
@@ -2920,6 +3015,11 @@ export default function Admin() {
 
   function requestConfirmation(config) {
     setConfirmDialog(config);
+  }
+
+  function cancelConfirmation() {
+    confirmDialog?.onCancel?.();
+    setConfirmDialog(null);
   }
 
   async function runConfirmedAction(values) {
@@ -3315,6 +3415,8 @@ export default function Admin() {
             ) : (
               <ModuleCatalogue
                 launchOffer={launchOffer}
+                pricingPlans={pricingPlans}
+                pricingPlansLoading={pricingPlansLoading}
                 purchaseOffers={purchaseOffers}
                 modules={modules}
                 query={shellSearch}
@@ -3322,7 +3424,10 @@ export default function Admin() {
                 onManage={(id) => navigateWithinAdmin(`/admin/modules/${id}`)}
                 onEndLaunchOffer={handleEndLaunchOffer}
                 onQueryChange={setShellSearch}
+                onRefreshPricingPlans={() => void refreshPricingPlans({ showFeedback: true })}
                 onScheduleLaunchOffer={handleScheduleLaunchOffer}
+                onSavePricingPlan={handleSavePricingPlan}
+                onSavePricingPlanPrice={handleSavePricingPlanPrice}
                 onSavePurchaseOffer={handleSavePurchaseOffer}
                 onTogglePurchaseOffer={handleTogglePurchaseOffer}
                 working={working}
@@ -3357,7 +3462,7 @@ export default function Admin() {
         reasonRequired={confirmDialog?.reasonRequired}
         tone={confirmDialog?.tone}
         busy={working}
-        onCancel={() => setConfirmDialog(null)}
+        onCancel={cancelConfirmation}
         onConfirm={runConfirmedAction}
       >
         <p>{confirmDialog?.body}</p>

@@ -70,15 +70,24 @@ export function validateModulePaymentData(order, paymentData) {
       order.purchase_type === "bundle_offer"
       && metadata.purchase_type !== "bundle_offer"
     )
+    || (
+      order.purchase_type === "pricing_plan"
+      && (
+        metadata.purchase_type !== "pricing_plan"
+        || metadata.purchase_plan_id !== order.purchase_plan_id
+        || metadata.plan_code !== order.plan_code
+        || Number(metadata.duration_months) !== Number(order.duration_months)
+      )
+    )
   ) {
     throw new Error("The verified payment does not match this module order");
   }
 
-  if (
-    order.purchase_type === "bundle_offer"
-      ? metadata.purchase_offer_id !== order.purchase_offer_id
-      : metadata.subject_id !== order.subject_id
-  ) {
+  if (order.purchase_type === "bundle_offer" && metadata.purchase_offer_id !== order.purchase_offer_id) {
+    throw new Error("The verified payment does not match this module order");
+  }
+
+  if (order.purchase_type !== "bundle_offer" && order.purchase_type !== "pricing_plan" && metadata.subject_id !== order.subject_id) {
     throw new Error("The verified payment does not match this module order");
   }
 }
