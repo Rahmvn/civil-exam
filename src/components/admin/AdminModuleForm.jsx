@@ -60,12 +60,16 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
 
   function handleSubmit(event) {
     event.preventDefault();
+    const legacyPriceKobo = isEditing
+      ? Number(module?.price_kobo ?? DEFAULT_MODULE.price_kobo)
+      : Math.round(Number(form.price_naira) * 100);
+
     onSubmit({
       ...form,
       name: form.subject_name,
       slug: form.subject_slug,
       sort_order: Number(form.sort_order),
-      price_kobo: Math.round(Number(form.price_naira) * 100),
+      price_kobo: legacyPriceKobo,
       batch_size: Number(form.batch_size),
       pass_mark_percent: Number(form.pass_mark_percent),
       objective_time_limit_minutes: Number(form.objective_time_limit_minutes),
@@ -260,21 +264,29 @@ export function AdminModuleForm({ module = null, saving, onCancel, onSubmit }) {
 
       <div className="admin-form-section">
         <div>
-          <h3>Pricing and availability</h3>
-          <p>Price changes apply to future purchases only.</p>
+          <h3>Sales availability</h3>
+          <p>Candidate prices are managed in Pricing plans.</p>
         </div>
 
-        <label>
-          Module price (NGN)
-          <input
-            min="1"
-            required
-            step="1"
-            type="number"
-            value={form.price_naira}
-            onChange={(event) => updateField("price_naira", event.target.value)}
-          />
-        </label>
+        {isEditing ? (
+          <div className="admin-legacy-price-note">
+            <strong>Legacy base price: NGN {form.price_naira}</strong>
+            <small>Kept for old orders and launch-offer history. New single-module checkout prices come from Pricing plans.</small>
+          </div>
+        ) : (
+          <label>
+            Legacy base price (NGN)
+            <input
+              min="1"
+              required
+              step="1"
+              type="number"
+              value={form.price_naira}
+              onChange={(event) => updateField("price_naira", event.target.value)}
+            />
+            <small>Used as the initial legacy offering value. Live checkout pricing is managed in Pricing plans.</small>
+          </label>
+        )}
 
         {isEditing && (
           <label className={`admin-check-row${form.lifecycle_status !== "active" ? " is-disabled" : ""}`}>

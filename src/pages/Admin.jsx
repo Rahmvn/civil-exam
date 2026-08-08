@@ -407,6 +407,7 @@ function ModuleCatalogue({
               </span>
               <span className="admin-module-metric admin-module-metric-price">
                 {module.price_kobo ? formatAdminCurrency(module.price_kobo, module.currency) : "Not set"}
+                <small>Legacy base</small>
               </span>
               <button className="admin-row-more" type="button" onClick={() => onManage(module.subject_id)} aria-label={`Open ${module.subject_name}`}>
                 <span aria-hidden="true">...</span>
@@ -478,7 +479,7 @@ function ModuleWorkspace({
             <span>{module.available_for_purchase ? "On sale" : "Not on sale"}</span>
           </div>
           <h1>{module.subject_name}</h1>
-          <p>{formatAdminCurrency(module.price_kobo, module.currency)} per module</p>
+          <p>{formatAdminCurrency(module.price_kobo, module.currency)} legacy base price. Candidate prices come from Pricing plans.</p>
         </div>
         <div className="admin-overview-actions">
           <button type="button" onClick={openSetCreator}>Add practice set</button>

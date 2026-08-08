@@ -1915,6 +1915,25 @@
   font-weight: 500;
 }
 
+.admin-legacy-price-note {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-bg));
+}
+
+.admin-legacy-price-note strong {
+  color: var(--color-text);
+}
+
+.admin-legacy-price-note small {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .admin-sticky-actions {
   position: sticky;
   bottom: 0;
