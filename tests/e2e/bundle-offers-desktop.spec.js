@@ -1,30 +1,20 @@
 import { expect, test } from "@playwright/test";
 import { expectNoHorizontalOverflow } from "./helpers.js";
 
-test("choose-three checkout stays compact and centred on desktop", async ({ page }) => {
-  await page.goto("/access#bundles");
+test("choose-three checkout stays inline on desktop", async ({ page }) => {
+  await page.goto("/access?scope=pick3");
 
-  const offer = page.locator("article").filter({ hasText: "3-Module Bundle" }).first();
-  await expect(offer).toBeVisible();
-  await offer.getByRole("button", { name: "Choose" }).click();
+  await expect(page.getByRole("heading", { name: "Buy access" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pick 3" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".access-order-summary")).toBeVisible();
 
-  const dialog = page.getByRole("dialog", { name: "3-Module Bundle" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator(".access-plan-handle")).toBeHidden();
-  await expect(dialog.locator(".access-plan-close")).toBeVisible();
-  await expect(dialog.locator(".access-plan-footer")).toBeVisible();
-
-  const viewport = page.viewportSize();
-  const modal = await dialog.boundingBox();
-  expect(modal.width).toBeLessThanOrEqual(562);
-  expect(Math.abs((modal.x + modal.width / 2) - viewport.width / 2)).toBeLessThanOrEqual(2);
-
-  const moduleChoices = dialog.locator(".access-plan-module-list > button");
+  const moduleChoices = page.locator(".access-purchase-module-list > button");
   await expect(moduleChoices).toHaveCount(3);
-  await expect(dialog.getByRole("button", { name: "Select 3 modules" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Select 3 modules" })).toBeDisabled();
   for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
 
-  await expect(dialog.getByText("Ready for payment")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: /Continue/ })).toBeEnabled();
+  await expect(page.getByText("3 of 3 selected")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue/ })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });

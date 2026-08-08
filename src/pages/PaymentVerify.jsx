@@ -4,12 +4,21 @@ import { verifyPayment } from "../lib/appApi";
 import { logAppError, PROBLEM_CODES, resolveAppProblem } from "../lib/errors";
 import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 
+function getSafeReturnPath(value) {
+  const candidate = String(value ?? "").trim();
+  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) return "";
+  if (/[\r\n]/.test(candidate)) return "";
+  return candidate;
+}
+
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
   const reference = searchParams.get("reference") ?? searchParams.get("trxref");
+  const requestedReturnTo = getSafeReturnPath(searchParams.get("returnTo"));
   const [verificationRun, setVerificationRun] = useState(0);
   const [state, setState] = useState(reference ? "checking" : "missing");
   const [moduleSlug, setModuleSlug] = useState("");
+  const [returnTo, setReturnTo] = useState(requestedReturnTo);
   const [message, setMessage] = useState(
     reference ? "We are confirming your payment with Paystack." : "No payment reference was found in this return link.",
   );
@@ -25,8 +34,11 @@ export default function PaymentVerify() {
       try {
         const result = await verifyPayment(reference);
         if (!active) return;
+        const storedReturnTo = getSafeReturnPath(window.sessionStorage?.getItem("promotionsure:payment:returnTo"));
         setState("success");
         setModuleSlug(result?.subject_slug ?? "");
+        setReturnTo(requestedReturnTo || storedReturnTo);
+        window.sessionStorage?.removeItem("promotionsure:payment:returnTo");
         setMessage(result?.purchase_type === "bundle_offer"
           ? `${result.purchase_label || `${result.unlocked_count} modules`} is now unlocked.`
           : result?.subject_name
@@ -47,7 +59,7 @@ export default function PaymentVerify() {
     return () => {
       active = false;
     };
-  }, [reference, verificationRun]);
+  }, [reference, requestedReturnTo, verificationRun]);
 
   const heading = state === "success"
     ? "Access unlocked"
@@ -59,8 +71,8 @@ export default function PaymentVerify() {
         ? "Payment not confirmed yet"
         : "Checking your payment";
   const continuePath = moduleSlug
-    ? `/modules/${encodeURIComponent(moduleSlug)}`
-    : "/dashboard#modules";
+    ? returnTo || `/modules/${encodeURIComponent(moduleSlug)}`
+    : returnTo || "/dashboard#modules";
 
   return (
     <main className="state-shell payment-verification-page">

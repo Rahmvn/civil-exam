@@ -8,7 +8,6 @@ import {
   FreeBatchConfirmationModal,
   ScoreRing,
 } from "../components/DashboardUi";
-import { AccessPlanModal } from "../components/AccessPlanModal";
 import {
   getCandidateSummary,
   getModuleAccessCatalog,
@@ -17,7 +16,6 @@ import {
   getRecentAttempts,
   getReviewQueue,
   getSubjects,
-  initializePricingPlanPayment,
   startPracticeBatch,
 } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
@@ -114,10 +112,7 @@ export default function Dashboard() {
   const [moduleDataError, setModuleDataError] = useState("");
   const [startConfirmSubject, setStartConfirmSubject] = useState(null);
   const [startingBatch, setStartingBatch] = useState(false);
-  const [unlockModule, setUnlockModule] = useState(null);
-  const [payingModule, setPayingModule] = useState("");
   const [ctaError, setCtaError] = useState("");
-  const [paymentError, setPaymentError] = useState(null);
   const [infoModule, setInfoModule] = useState(null);
 
   const loadDashboardData = useCallback(async ({ showLoading = true } = {}) => {
@@ -252,53 +247,13 @@ export default function Dashboard() {
   function openUnlockModule(subject) {
     const catalogEntry = catalogBySubject.get(subject.slug);
     setCtaError("");
-    setPaymentError(null);
 
-    if (!catalogEntry?.can_purchase || !Number.isFinite(Number(catalogEntry.price_kobo))) {
+    if (!catalogEntry?.can_purchase) {
       setCtaError("This module is not open for purchase yet. Please check back when sales are available.");
       return;
     }
 
-    setUnlockModule({
-      ...subject,
-      subject_slug: subject.slug,
-      subject_name: subject.name,
-      price_kobo: catalogEntry?.price_kobo,
-      regular_price_kobo: catalogEntry?.regular_price_kobo,
-      launch_offer_active: catalogEntry?.launch_offer_active,
-      launch_offer_ends_at: catalogEntry?.launch_offer_ends_at,
-      currency: catalogEntry?.currency,
-    });
-  }
-
-  function closeUnlockModule() {
-    setPaymentError(null);
-    setUnlockModule(null);
-  }
-
-  async function startPricingPlanPayment(paymentRequest) {
-    const paymentKey = `pricing:${paymentRequest.planCode}:${paymentRequest.durationMonths}:${paymentRequest.subjectSlugs.join(",")}`;
-    if (payingModule) return;
-    setPayingModule(paymentKey);
-    setPaymentError(null);
-
-    try {
-      const payment = await initializePricingPlanPayment(paymentRequest);
-      if (payment.already_paid) {
-        await loadDashboardData({ showLoading: false });
-        closeUnlockModule();
-        return;
-      }
-      window.location.assign(payment.authorization_url);
-    } catch (paymentRequestError) {
-      logAppError("Dashboard pricing plan payment start", paymentRequestError);
-      setPaymentError({
-        subjectSlug: paymentKey,
-        message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
-      });
-    } finally {
-      setPayingModule("");
-    }
+    navigate(`/access?module=${encodeURIComponent(subject.slug)}&returnTo=${encodeURIComponent(`/modules/${subject.slug}`)}`);
   }
 
   function buildModuleAction(subject, rows, progression, completedCount, publishedCount, hasModuleAccess, canPurchase) {
@@ -518,12 +473,11 @@ export default function Dashboard() {
               <button
                 className="bundle-offer-trigger is-dashboard"
                 onClick={() => {
-                  setPaymentError(null);
-                  navigate("/access#bundles");
+                  navigate("/access");
                 }}
                 type="button"
               >
-                <span>Access plans</span>
+                <span>Buy access</span>
               </button>
             )}
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}
@@ -633,17 +587,6 @@ export default function Dashboard() {
         onConfirm={() => void confirmStartFreeBatch()}
         subject={startConfirmSubject}
       />
-      {unlockModule && (
-        <AccessPlanModal
-          catalog={pricingCatalog}
-          error={paymentError?.subjectSlug?.startsWith("pricing:") ? paymentError.message : ""}
-          initialSubjectSlug={unlockModule.subject_slug}
-          modules={moduleAccessCatalog}
-          onClose={closeUnlockModule}
-          onPay={(paymentRequest) => void startPricingPlanPayment(paymentRequest)}
-          paying={Boolean(payingModule)}
-        />
-      )}
       <ModuleInfoDialog module={infoModule} onClose={() => setInfoModule(null)} />
     </AppFrame>
   );

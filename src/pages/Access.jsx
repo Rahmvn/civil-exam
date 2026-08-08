@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { AccessPlanModal } from "../components/AccessPlanModal";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AccessPurchasePanel } from "../components/access/AccessPurchasePanel";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
@@ -18,7 +18,6 @@ import {
   getModuleDisplayName,
 } from "../lib/moduleDisplay";
 import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
-import { getDurationLabel, normalizePricingCatalog } from "../lib/pricingPlans";
 import { useAuth } from "../lib/useAuth";
 
 function formatMoney(kobo, currency = "NGN") {
@@ -78,8 +77,11 @@ function getModulePracticeSetsRoute(subjectSlug) {
   return `/modules/${encodeURIComponent(subjectSlug)}`;
 }
 
-function getPlanStartingDuration(plan) {
-  return Array.isArray(plan?.durations) ? plan.durations[0] ?? null : null;
+function getSafeReturnPath(value) {
+  const candidate = String(value ?? "").trim();
+  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) return "";
+  if (/[\r\n]/.test(candidate)) return "";
+  return candidate;
 }
 
 function PaymentReference({ value }) {
@@ -383,13 +385,15 @@ function ReceiptModal({ payment, profile, onClose }) {
 
 export default function Access() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedModule = searchParams.get("module");
+  const requestedScope = searchParams.get("scope") ?? "";
+  const returnTo = getSafeReturnPath(searchParams.get("returnTo"));
   const [moduleAccess, setModuleAccess] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [payments, setPayments] = useState([]);
   const [pricingCatalog, setPricingCatalog] = useState([]);
-  const [selectedAccessPlan, setSelectedAccessPlan] = useState(null);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [payingModule, setPayingModule] = useState("");
@@ -430,8 +434,15 @@ export default function Access() {
     setPaymentError(null);
 
     try {
+      if (returnTo) {
+        window.sessionStorage?.setItem("promotionsure:payment:returnTo", returnTo);
+      }
       const payment = await initializePricingPlanPayment(paymentRequest);
       if (payment.already_paid) {
+        if (returnTo) {
+          navigate(returnTo);
+          return;
+        }
         window.location.reload();
         return;
       }
@@ -472,26 +483,8 @@ export default function Access() {
     );
   }
 
-  const selectedModule = requestedModule
-    ? moduleAccess.find((module) => module.subject_slug === requestedModule) ?? null
-    : null;
-  const selectedModuleSubject = selectedModule
-    ? subjects.find((subject) => subject.slug === selectedModule.subject_slug) ?? selectedModule
-    : null;
-  const selectedModuleHasUsableAccess = selectedModule
-    ? hasUsableCandidateModuleAccess(
-        selectedModuleSubject,
-        selectedModule.published_batch_count,
-        selectedModule.has_module_access,
-      )
-    : false;
-  const unlockModalModule = selectedModule?.can_purchase && !selectedModuleHasUsableAccess
-    ? selectedModule
-    : null;
   const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
   const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
-  const normalizedPricingCatalog = normalizePricingCatalog(pricingCatalog)
-    .filter((plan) => plan.is_available !== false && plan.durations.length > 0);
   const unlockedCount = modulesToShow.filter((module) => {
     const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
     return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);
@@ -499,22 +492,13 @@ export default function Access() {
 
   function openUnlockModule(subjectSlug) {
     setPaymentError(null);
-    setSearchParams({ module: subjectSlug });
+    const nextParams = {};
+    if (subjectSlug) nextParams.module = subjectSlug;
+    if (returnTo) nextParams.returnTo = returnTo;
+    setSearchParams(nextParams);
+    document.getElementById("buy-access")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function openAccessPlan({ planCode = "", subjectSlug = "" } = {}) {
-    setPaymentError(null);
-    setSelectedAccessPlan({ planCode, subjectSlug });
-  }
-
-  function closeUnlockModule() {
-    setPaymentError(null);
-    setSelectedAccessPlan(null);
-    setSearchParams({});
-  }
-
-  const modalSubjectSlug = selectedAccessPlan?.subjectSlug || unlockModalModule?.subject_slug || "";
-  const modalPlanCode = selectedAccessPlan?.planCode || "";
   const modalPaymentKeyPrefix = "pricing:";
 
   return (
@@ -529,41 +513,16 @@ export default function Access() {
           )}
         </header>
 
-        {normalizedPricingCatalog.length > 0 && (
-          <section className="bundle-offers access-pricing-plans" id="bundles" aria-labelledby="access-pricing-title">
-            <header className="bundle-offers-heading">
-              <div>
-                <h2 id="access-pricing-title">Access plans</h2>
-                <p>Choose a module, bundle, and access length before payment.</p>
-              </div>
-            </header>
-
-            <div className="bundle-offer-list">
-              {normalizedPricingCatalog.map((plan) => {
-                const startingDuration = getPlanStartingDuration(plan);
-                return (
-                  <article className="bundle-offer-row" key={plan.plan_code}>
-                    <div className="bundle-offer-row-copy">
-                      <h3>{plan.display_name}</h3>
-                      <p>{plan.short_description || plan.supporting_text || "Duration-based module access."}</p>
-                    </div>
-                    <div className="bundle-offer-row-price">
-                      {startingDuration && <strong>{formatMoney(startingDuration.price_kobo, startingDuration.currency)}</strong>}
-                      {startingDuration && <small>{getDurationLabel(startingDuration.duration_months)}</small>}
-                    </div>
-                    <button
-                      className="bundle-offer-row-action"
-                      onClick={() => openAccessPlan({ planCode: plan.plan_code })}
-                      type="button"
-                    >
-                      Choose
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        <AccessPurchasePanel
+          catalog={pricingCatalog}
+          error={paymentError?.subjectSlug?.startsWith(modalPaymentKeyPrefix) ? paymentError.message : ""}
+          initialScope={requestedScope}
+          initialSubjectSlug={requestedModule ?? ""}
+          key={`${requestedScope}:${requestedModule ?? ""}`}
+          modules={moduleAccess}
+          onPay={(paymentRequest) => void startPricingPlanPayment(paymentRequest)}
+          paying={Boolean(payingModule)}
+        />
 
         <section className="access-module-catalog" aria-label="Available modules">
           {modulesToShow.length === 0 ? (
@@ -621,7 +580,7 @@ export default function Access() {
                         Unlock module
                       </button>
                     ) : null}
-                    {paymentError?.subjectSlug === module.subject_slug && !selectedModule && (
+                    {paymentError?.subjectSlug === module.subject_slug && (
                       <p className="access-module-error" role="alert">{paymentError.message}</p>
                     )}
                   </div>
@@ -697,18 +656,6 @@ export default function Access() {
 
       {selectedReceipt && (
         <ReceiptModal payment={selectedReceipt} profile={profile} onClose={() => setSelectedReceipt(null)} />
-      )}
-      {(unlockModalModule || selectedAccessPlan) && (
-        <AccessPlanModal
-          catalog={pricingCatalog}
-          error={paymentError?.subjectSlug?.startsWith(modalPaymentKeyPrefix) ? paymentError.message : ""}
-          initialPlanCode={modalPlanCode}
-          initialSubjectSlug={modalSubjectSlug}
-          modules={moduleAccess}
-          onClose={closeUnlockModule}
-          onPay={(paymentRequest) => void startPricingPlanPayment(paymentRequest)}
-          paying={Boolean(payingModule)}
-        />
       )}
     </AppFrame>
   );

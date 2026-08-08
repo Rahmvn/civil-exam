@@ -17,9 +17,11 @@ test("free candidate is guided into one module without exposing paid access", as
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
-  const unlockDialog = page.getByRole("dialog", { name: "Public Service Rules" });
-  await expect(unlockDialog).toBeVisible();
-  await expect(unlockDialog.getByRole("button", { name: /Continue to payment/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Buy access" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "One module" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Public Service Rules" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -34,31 +36,18 @@ test("practice hub lets a new candidate choose free practice or payment directly
   await expectNoHorizontalOverflow(page);
 });
 
-test("choose-three checkout uses a full-width mobile sheet with an exact selection", async ({ page }) => {
-  await page.goto("/access#bundles");
+test("choose-three checkout uses the access page with an exact selection", async ({ page }) => {
+  await page.goto("/access?scope=pick3");
 
-  await expect(page.getByRole("heading", { name: "Access plans" })).toBeVisible();
-  const offer = page.locator("article").filter({ hasText: "3-Module Bundle" }).first();
-  await expect(offer.getByText(/6,000/)).toBeVisible();
-  await offer.getByRole("button", { name: "Choose" }).click();
-
-  const dialog = page.getByRole("dialog", { name: "3-Module Bundle" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.locator(".access-plan-handle")).toBeVisible();
-  await expect(dialog.locator(".access-plan-close")).toBeHidden();
-  await expect(dialog.locator(".access-plan-footer")).toBeVisible();
-
-  const viewport = page.viewportSize();
-  const sheet = await dialog.boundingBox();
-  expect(sheet.x).toBeLessThanOrEqual(1);
-  expect(sheet.width).toBeGreaterThanOrEqual(viewport.width - 1);
-
-  const moduleChoices = dialog.locator(".access-plan-module-list > button");
+  await expect(page.getByRole("heading", { name: "Buy access" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pick 3" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const moduleChoices = page.locator(".access-purchase-module-list > button");
   await expect(moduleChoices).toHaveCount(3);
-  await expect(dialog.getByRole("button", { name: "Select 3 modules" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Select 3 modules" })).toBeDisabled();
   for (let index = 0; index < 3; index += 1) await moduleChoices.nth(index).click();
 
-  await expect(dialog.getByText("Ready for payment")).toBeVisible();
-  await expect(dialog.getByRole("button", { name: /Continue to payment.*6,000/ })).toBeEnabled();
+  await expect(page.getByText("3 of 3 selected")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Continue to payment.*6,000/ })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
 });
