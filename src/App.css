@@ -17112,6 +17112,21 @@ button.account-edit-open {
   gap: 14px;
 }
 
+.account-email-preference label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: #10233d;
+  font-weight: 700;
+}
+
+.account-email-preference input {
+  width: 18px;
+  height: 18px;
+  accent-color: #0d6546;
+}
+
 .account-action-card,
 .account-support-card {
   display: grid;

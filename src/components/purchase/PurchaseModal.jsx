@@ -269,9 +269,14 @@ export function PurchaseModal({
     }, 190);
   }
 
-  function handleGrabberPointerDown(event) {
+  function handleSheetPointerDown(event) {
     if (paymentAttempt || !isMobilePurchaseSheet() || !event.isPrimary) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const nestedInteractive = event.target?.closest?.(
+      'button, a, input, select, textarea, [role="button"], [contenteditable="true"]',
+    );
+    if (nestedInteractive && nestedInteractive !== event.currentTarget) return;
 
     const now = performance.now();
     dragRef.current = {
@@ -290,7 +295,7 @@ export function PurchaseModal({
     event.preventDefault();
   }
 
-  function handleGrabberPointerMove(event) {
+  function handleSheetPointerMove(event) {
     const drag = dragRef.current;
     if (drag.pointerId !== event.pointerId) return;
 
@@ -307,7 +312,7 @@ export function PurchaseModal({
     event.preventDefault();
   }
 
-  function handleGrabberPointerEnd(event) {
+  function handleSheetPointerEnd(event) {
     const drag = dragRef.current;
     if (drag.pointerId !== event.pointerId) return;
 
@@ -321,7 +326,7 @@ export function PurchaseModal({
     else snapPurchaseSheetBack();
   }
 
-  function handleGrabberPointerCancel(event) {
+  function handleSheetPointerCancel(event) {
     if (dragRef.current.pointerId !== event.pointerId) return;
     event.currentTarget.releasePointerCapture?.(event.pointerId);
     snapPurchaseSheetBack();
@@ -375,15 +380,21 @@ export function PurchaseModal({
           className="purchase-modal__handle"
           disabled={Boolean(paymentAttempt)}
           onClick={handleGrabberClick}
-          onPointerCancel={handleGrabberPointerCancel}
-          onPointerDown={handleGrabberPointerDown}
-          onPointerMove={handleGrabberPointerMove}
-          onPointerUp={handleGrabberPointerEnd}
+          onPointerCancel={handleSheetPointerCancel}
+          onPointerDown={handleSheetPointerDown}
+          onPointerMove={handleSheetPointerMove}
+          onPointerUp={handleSheetPointerEnd}
           type="button"
         />
-        <header className="purchase-modal__header">
+        <header
+          className="purchase-modal__header"
+          onPointerCancel={handleSheetPointerCancel}
+          onPointerDown={handleSheetPointerDown}
+          onPointerMove={handleSheetPointerMove}
+          onPointerUp={handleSheetPointerEnd}
+        >
           <h2 id="purchase-modal-title" ref={headingRef} tabIndex="-1">{title}</h2>
-          <button aria-label="Close purchase" className="purchase-modal__close bundle-checkout-close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>
+          <button aria-label="Close purchase" className="purchase-modal__close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>
         </header>
 
         <div className="purchase-modal__body">
