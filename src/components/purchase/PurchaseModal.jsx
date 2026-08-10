@@ -332,12 +332,6 @@ export function PurchaseModal({
     snapPurchaseSheetBack();
   }
 
-  function handleGrabberClick(event) {
-    // Pointer taps are intentionally inert. Keyboard/assistive activation still
-    // provides a reliable close action for users who cannot perform a drag.
-    if (event.detail === 0 && !paymentAttempt) onClose();
-  }
-
   if (!activePurchase) return null;
 
   const isPick3 = activePurchase.mode === "pick3";
@@ -375,27 +369,19 @@ export function PurchaseModal({
         ref={dialogRef}
         role="dialog"
       >
-        <button
-          aria-label="Drag down to close purchase"
-          className="purchase-modal__handle"
-          disabled={Boolean(paymentAttempt)}
-          onClick={handleGrabberClick}
-          onPointerCancel={handleSheetPointerCancel}
-          onPointerDown={handleSheetPointerDown}
-          onPointerMove={handleSheetPointerMove}
-          onPointerUp={handleSheetPointerEnd}
-          type="button"
-        />
-        <header
-          className="purchase-modal__header"
+        <div
+          className="purchase-modal__drag-region"
           onPointerCancel={handleSheetPointerCancel}
           onPointerDown={handleSheetPointerDown}
           onPointerMove={handleSheetPointerMove}
           onPointerUp={handleSheetPointerEnd}
         >
-          <h2 id="purchase-modal-title" ref={headingRef} tabIndex="-1">{title}</h2>
-          <button aria-label="Close purchase" className="purchase-modal__close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>
-        </header>
+          <span aria-hidden="true" className="purchase-modal__handle" />
+          <header className="purchase-modal__header">
+            <h2 id="purchase-modal-title" ref={headingRef} tabIndex="-1">{title}</h2>
+            <button aria-label="Close purchase" className="purchase-modal__close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>
+          </header>
+        </div>
 
         <div className="purchase-modal__body">
           <div className="purchase-modal__stage" key={step}>
