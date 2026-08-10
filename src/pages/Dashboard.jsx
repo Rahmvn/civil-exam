@@ -315,6 +315,16 @@ export default function Dashboard() {
     };
   }
 
+  function getModuleSortGroup(card) {
+    // Keep actionable modules first, while preserving the platform's existing
+    // module order within each group so cards do not jump around unexpectedly.
+    if (card.isPaused) return 3;
+    if (card.isComingSoon) return 4;
+    if (card.hasUsableModuleAccess) return 0;
+    if (card.subject.slug === freeModuleSlug) return 1;
+    return 2;
+  }
+
   const moduleCards = subjectsForDisplay.map((subject) => {
     const rows = batchAccessBySubject[subject.slug] ?? [];
     const catalogEntry = catalogBySubject.get(subject.slug) ?? null;
@@ -391,7 +401,8 @@ export default function Dashboard() {
         ? "primary-action"
         : hasUsableModuleAccess ? "module-chooser-link" : "secondary-action module-unlock-action",
     };
-  }).filter((card) => card.isVisibleToCandidate);
+  }).filter((card) => card.isVisibleToCandidate)
+    .sort((left, right) => getModuleSortGroup(left) - getModuleSortGroup(right));
   const unlockedModuleCount = moduleCards.filter((card) => card.hasUsableModuleAccess).length;
   const lockedPurchasableCount = moduleCards.filter((card) => !card.hasUsableModuleAccess && card.canPurchase && !card.isComingSoon && !card.isPaused).length;
   const pricingPlansAvailable = pricingCatalog.some((plan) => plan?.is_available !== false);
