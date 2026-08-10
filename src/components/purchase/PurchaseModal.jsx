@@ -21,7 +21,7 @@ function getModalTitle(purchase, step) {
   if (purchase.mode === "module") {
     return purchase.intent === "extension"
       ? `Extend ${getModuleName(purchase.module)} access`
-      : `Unlock ${getModuleName(purchase.module)}`;
+      : getModuleName(purchase.module);
   }
   return getPlanName(purchase.plan, purchase.mode === "pick3" ? "Pick 3" : "Complete");
 }
@@ -219,9 +219,7 @@ export function PurchaseModal({
   const durationLegend = activePurchase.intent === "extension"
     ? "Choose how long you want to extend access"
     : "Choose how long you want access";
-  const durationStatus = duration
-    ? `${getDurationLabel(durationMonths)} ${activePurchase.intent === "extension" ? "extension" : "access"}`
-    : "";
+
   const title = getModalTitle(activePurchase, step);
   const currentAccessEnds = activePurchase.intent === "extension"
     ? formatAccessDate(activePurchase.module?.access_expires_at, "long")
@@ -326,17 +324,15 @@ export function PurchaseModal({
               </dl>
             )}
             {paymentError && <p className="action-error" role="alert">{paymentError}</p>}
-            {(step === "configure" || (isPick3 && !duration)) && (
-              <p className="purchase-modal__status" aria-live="polite">
-                {isPick3 && step === "configure"
-                  ? pick3SelectionStatus
-                  : duration
-                    ? isPick3
-                      ? ""
-                      : <>{durationStatus} <span aria-hidden="true">&middot;</span> {formatModuleMoney(duration.price_kobo, duration.currency)}</>
-                    : "Choose a duration to continue."}
-              </p>
-            )}
+           {isPick3 && step === "configure" ? (
+  <p className="purchase-modal__status" aria-live="polite">
+    {pick3SelectionStatus}
+  </p>
+) : !duration && (step === "configure" || isPick3) ? (
+  <p className="purchase-modal__status" aria-live="polite">
+    Choose a duration to continue.
+  </p>
+) : null}
             <button
               aria-busy={Boolean(paymentAttempt)}
               className="purchase-modal__primary bundle-checkout-pay"
