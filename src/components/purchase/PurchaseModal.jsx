@@ -166,6 +166,15 @@ export function PurchaseModal({
   const dialogRef = useRef(null);
   const headingRef = useRef(null);
   const paymentAttemptRef = useRef(paymentAttempt);
+  const dragRef = useRef({
+    pointerId: null,
+    startY: 0,
+    lastY: 0,
+    lastTime: 0,
+    offsetY: 0,
+    velocityY: 0,
+  });
+  const dismissTimerRef = useRef(null);
 
   useEffect(() => {
     paymentAttemptRef.current = paymentAttempt;
@@ -210,6 +219,120 @@ export function PurchaseModal({
     return () => window.cancelAnimationFrame(frameId);
   }, [activePurchase, step]);
 
+  useEffect(() => () => {
+    if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
+  }, []);
+
+  function isMobilePurchaseSheet() {
+    return window.matchMedia("(max-width: 680px)").matches;
+  }
+
+  function setDragOffset(offsetY) {
+    dialogRef.current?.style.setProperty("--purchase-modal-drag-y", `${Math.max(0, offsetY)}px`);
+  }
+
+  function resetDragState() {
+    dragRef.current = {
+      pointerId: null,
+      startY: 0,
+      lastY: 0,
+      lastTime: 0,
+      offsetY: 0,
+      velocityY: 0,
+    };
+  }
+
+  function snapPurchaseSheetBack() {
+    dialogRef.current?.classList.remove("is-dragging", "is-dismissing");
+    setDragOffset(0);
+    resetDragState();
+  }
+
+  function dismissPurchaseSheet() {
+    const sheet = dialogRef.current;
+    resetDragState();
+
+    if (!sheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onClose();
+      return;
+    }
+
+    sheet.classList.remove("is-dragging");
+    sheet.classList.add("is-dismissing");
+    const dismissDistance = Math.max(window.innerHeight, sheet.getBoundingClientRect().height + 48);
+    setDragOffset(dismissDistance);
+
+    if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = window.setTimeout(() => {
+      dismissTimerRef.current = null;
+      onClose();
+    }, 190);
+  }
+
+  function handleGrabberPointerDown(event) {
+    if (paymentAttempt || !isMobilePurchaseSheet() || !event.isPrimary) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    const now = performance.now();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      lastY: event.clientY,
+      lastTime: now,
+      offsetY: 0,
+      velocityY: 0,
+    };
+
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dialogRef.current?.classList.remove("is-dismissing");
+    dialogRef.current?.classList.add("is-dragging");
+    setDragOffset(0);
+    event.preventDefault();
+  }
+
+  function handleGrabberPointerMove(event) {
+    const drag = dragRef.current;
+    if (drag.pointerId !== event.pointerId) return;
+
+    const now = performance.now();
+    const elapsed = Math.max(now - drag.lastTime, 1);
+    const delta = event.clientY - drag.lastY;
+    const nextOffset = Math.max(0, event.clientY - drag.startY);
+
+    drag.velocityY = delta / elapsed;
+    drag.lastY = event.clientY;
+    drag.lastTime = now;
+    drag.offsetY = nextOffset;
+    setDragOffset(nextOffset);
+    event.preventDefault();
+  }
+
+  function handleGrabberPointerEnd(event) {
+    const drag = dragRef.current;
+    if (drag.pointerId !== event.pointerId) return;
+
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    const sheetHeight = dialogRef.current?.getBoundingClientRect().height ?? 0;
+    const distanceThreshold = Math.min(180, Math.max(96, sheetHeight * 0.22));
+    const isFastDownwardFlick = drag.offsetY >= 36 && drag.velocityY >= 0.7;
+    const shouldDismiss = drag.offsetY >= distanceThreshold || isFastDownwardFlick;
+
+    if (shouldDismiss) dismissPurchaseSheet();
+    else snapPurchaseSheetBack();
+  }
+
+  function handleGrabberPointerCancel(event) {
+    if (dragRef.current.pointerId !== event.pointerId) return;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    snapPurchaseSheetBack();
+  }
+
+  function handleGrabberClick(event) {
+    // Pointer taps are intentionally inert. Keyboard/assistive activation still
+    // provides a reliable close action for users who cannot perform a drag.
+    if (event.detail === 0 && !paymentAttempt) onClose();
+  }
+
   if (!activePurchase) return null;
 
   const isPick3 = activePurchase.mode === "pick3";
@@ -219,7 +342,9 @@ export function PurchaseModal({
   const durationLegend = activePurchase.intent === "extension"
     ? "Choose how long you want to extend access"
     : "Choose how long you want access";
-
+  const durationStatus = duration
+    ? `${getDurationLabel(durationMonths)} ${activePurchase.intent === "extension" ? "extension" : "access"}`
+    : "";
   const title = getModalTitle(activePurchase, step);
   const currentAccessEnds = activePurchase.intent === "extension"
     ? formatAccessDate(activePurchase.module?.access_expires_at, "long")
@@ -245,7 +370,17 @@ export function PurchaseModal({
         ref={dialogRef}
         role="dialog"
       >
-        <button aria-label="Close purchase" className="purchase-modal__handle bundle-checkout-handle" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button" />
+        <button
+          aria-label="Drag down to close purchase"
+          className="purchase-modal__handle"
+          disabled={Boolean(paymentAttempt)}
+          onClick={handleGrabberClick}
+          onPointerCancel={handleGrabberPointerCancel}
+          onPointerDown={handleGrabberPointerDown}
+          onPointerMove={handleGrabberPointerMove}
+          onPointerUp={handleGrabberPointerEnd}
+          type="button"
+        />
         <header className="purchase-modal__header">
           <h2 id="purchase-modal-title" ref={headingRef} tabIndex="-1">{title}</h2>
           <button aria-label="Close purchase" className="purchase-modal__close bundle-checkout-close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>
@@ -324,15 +459,17 @@ export function PurchaseModal({
               </dl>
             )}
             {paymentError && <p className="action-error" role="alert">{paymentError}</p>}
-           {isPick3 && step === "configure" ? (
-  <p className="purchase-modal__status" aria-live="polite">
-    {pick3SelectionStatus}
-  </p>
-) : !duration && (step === "configure" || isPick3) ? (
-  <p className="purchase-modal__status" aria-live="polite">
-    Choose a duration to continue.
-  </p>
-) : null}
+            {(step === "configure" || (isPick3 && !duration)) && (
+              <p className="purchase-modal__status" aria-live="polite">
+                {isPick3 && step === "configure"
+                  ? pick3SelectionStatus
+                  : duration
+                    ? isPick3
+                      ? ""
+                      : <>{durationStatus} <span aria-hidden="true">&middot;</span> {formatModuleMoney(duration.price_kobo, duration.currency)}</>
+                    : "Choose a duration to continue."}
+              </p>
+            )}
             <button
               aria-busy={Boolean(paymentAttempt)}
               className="purchase-modal__primary bundle-checkout-pay"
