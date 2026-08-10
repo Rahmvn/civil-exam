@@ -1,66 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { usePurchaseModal } from "../components/purchase/usePurchaseModal";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import {
-  getModuleAccessCatalog,
   getPaymentRecords,
-  getPurchasePricingCatalog,
   getSubjects,
-  initializePricingPlanPayment,
 } from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import {
   hasUsableCandidateModuleAccess,
   isCandidateModuleComingSoon,
   getModuleDisplayName,
+  shouldShowCandidateModule,
 } from "../lib/moduleDisplay";
-import { getPaymentStatusMeta, partitionPaymentRecords } from "../lib/paymentDisplay";
+import {
+  formatPaymentDuration,
+  getPaymentAccessResult,
+  getPaymentItems,
+  getPaymentProductLabel,
+  getPaymentStatusMeta,
+  partitionPaymentRecords,
+} from "../lib/paymentDisplay";
 import {
   PRICING_PLAN_CODES,
-  buildPlanCheckoutPayload,
-  chooseDefaultDuration,
   findPlan,
-  getDurationLabel,
-  getDurationPrice,
-  getEligibleModules,
-  getIndividualPlanCodeForModule,
-  getModuleSlug,
   getRequiredModuleCount,
-  getSavingsAmountKobo,
-  getSelectedModules,
-  normalizePricingCatalog,
-  validatePlanSelection,
 } from "../lib/pricingPlans";
-import { formatModuleMoney } from "../lib/pricing";
+import { formatModuleMoney, formatProductDate } from "../lib/pricing";
 import { useAuth } from "../lib/useAuth";
-
-function formatMoney(kobo, currency = "NGN") {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: currency || "NGN",
-    maximumFractionDigits: 0,
-  }).format((kobo ?? 0) / 100);
-}
-
-function formatPdfMoney(kobo, currency = "NGN") {
-  const amount = new Intl.NumberFormat("en-NG", {
-    maximumFractionDigits: 0,
-  }).format((kobo ?? 0) / 100);
-  return `${currency || "NGN"} ${amount}`;
-}
-
-function formatDate(value) {
-  if (!value) return "Not available";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
+import "./Access.css";
 
 async function loadReceiptLogoDataUrl() {
   const response = await fetch("/logo/promotionsure-lockup.png", { cache: "force-cache" });
@@ -76,10 +46,7 @@ async function loadReceiptLogoDataUrl() {
 }
 
 function getPaymentAccessName(payment) {
-  if (payment.subject_name) return getModuleDisplayName(payment.subject_name);
-  if (payment.purchase_label) return payment.purchase_label;
-  if (payment.is_legacy_full_access) return "Legacy full access";
-  return "Module access";
+  return getPaymentProductLabel(payment);
 }
 
 function compactReference(reference) {
@@ -93,13 +60,6 @@ function getModulePracticeSetsRoute(subjectSlug) {
   return `/modules/${encodeURIComponent(subjectSlug)}`;
 }
 
-function getDurationBadge(duration) {
-  if (duration?.discount_label) return duration.discount_label;
-  const savings = getSavingsAmountKobo(duration);
-  if (savings > 0) return `Save ${formatModuleMoney(savings, duration.currency)}`;
-  return "";
-}
-
 function getPlanDisplayName(plan, fallback) {
   return String(plan?.display_name || fallback).trim();
 }
@@ -110,18 +70,15 @@ function getLowestDuration(plan) {
   ), null);
 }
 
-function normalizePurchasableModules(modules) {
-  return getEligibleModules(modules).map((module) => ({
-    ...module,
-    subject_slug: getModuleSlug(module),
-  }));
-}
-
-function getSafeReturnPath(value) {
-  const candidate = String(value ?? "").trim();
-  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) return "";
-  if (/[\r\n]/.test(candidate)) return "";
-  return candidate;
+function formatAccessDate(value) {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 function PaymentReference({ value }) {
@@ -168,7 +125,11 @@ function ReceiptModal({ payment, profile, onClose }) {
   const [downloadError, setDownloadError] = useState("");
   const reference = payment.paystack_reference || "Not available";
   const accessName = getPaymentAccessName(payment);
-  const paymentDate = formatDate(payment.paid_at || payment.created_at);
+  const paymentDate = formatProductDate(payment.paid_at || payment.created_at);
+  const duration = formatPaymentDuration(payment.duration_months);
+  const items = getPaymentItems(payment);
+  const accessResult = getPaymentAccessResult(payment);
+  const itemNames = items.map((item) => item.subject_name).filter(Boolean);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -199,8 +160,8 @@ function ReceiptModal({ payment, profile, onClose }) {
       const logoDataUrl = await loadReceiptLogoDataUrl().catch(() => null);
       const paidBy = profile?.full_name || "Account holder";
       const email = profile?.email || "Not available";
-      const accessUntil = formatDate(payment.expires_at);
-      const totalPaid = formatPdfMoney(payment.amount_kobo, payment.currency);
+      const accessUntil = accessResult ? formatProductDate(accessResult.value) : "Not recorded";
+      const totalPaid = formatModuleMoney(payment.amount_kobo, payment.currency);
       const receiptNumber = compactReference(reference);
       const rightColumnX = pageWidth - margin - 76;
       const rightValueX = pageWidth - margin;
@@ -310,19 +271,19 @@ function ReceiptModal({ payment, profile, onClose }) {
       document.setFontSize(8.4);
       setMuted();
       document.text("Item", margin, 92);
-      document.text("Access valid until", pageWidth - margin - 72, 92);
+      document.text(accessResult?.label || "Access result", pageWidth - margin - 72, 92);
       document.text("Amount", rightValueX, 92, { align: "right" });
       drawRule(98);
 
       document.setFont("helvetica", "bold");
       document.setFontSize(9.2);
       setText();
-      document.text(`${accessName} module access`, margin, 110);
+      document.text(document.splitTextToSize(accessName, 76), margin, 110);
       document.text(totalPaid, rightValueX, 110, { align: "right" });
       document.setFont("helvetica", "normal");
       document.setFontSize(8.2);
       setMuted();
-      document.text("Module access", margin, 118);
+      document.text(duration ? `${duration} access` : "Access purchase", margin, 122);
       document.text(accessUntil, pageWidth - margin - 72, 110);
 
       drawRule(130);
@@ -339,15 +300,22 @@ function ReceiptModal({ payment, profile, onClose }) {
       document.text("Verification details", margin, 164);
       let detailsY = 176;
       detailsY = drawMetaPair("Reference", reference, margin, detailsY, { valueX: margin + 38 });
-      detailsY = drawMetaPair("Module", accessName, margin, detailsY, { valueX: margin + 38 });
-      drawMetaPair("Access until", accessUntil, margin, detailsY, { valueX: margin + 38 });
+      detailsY = drawMetaPair("Product", accessName, margin, detailsY, { valueX: margin + 38 });
+      if (duration) detailsY = drawMetaPair("Duration", duration, margin, detailsY, { valueX: margin + 38 });
+      if (itemNames.length > 1) {
+        detailsY = drawMetaPair("Modules", itemNames.join(", "), margin, detailsY, { valueX: margin + 38 });
+      }
+      if (accessResult) {
+        detailsY = drawMetaPair(accessResult.label, accessUntil, margin, detailsY, { valueX: margin + 38 });
+      }
 
-      drawRule(206);
+      const noteRuleY = Math.min(260, Math.max(206, detailsY + 8));
+      drawRule(noteRuleY);
       document.setFont("helvetica", "normal");
       document.setFontSize(8);
       setMuted();
       const note = "This receipt confirms that PromotionSure received and verified this payment. Keep the payment reference for support.";
-      document.text(document.splitTextToSize(note, contentWidth), margin, 217);
+      document.text(document.splitTextToSize(note, contentWidth), margin, noteRuleY + 11);
 
       const safeReference = reference.replace(/[^a-zA-Z0-9_-]/g, "-");
       document.save(`promotionsure-receipt-${safeReference}.pdf`);
@@ -372,7 +340,9 @@ function ReceiptModal({ payment, profile, onClose }) {
           <div>
             <h2 id="payment-receipt-title">Payment receipt</h2>
             <p>{accessName} <span aria-hidden="true">&middot;</span> {paymentDate}</p>
-            <span className="access-receipt-status">Payment verified</span>
+            <span className="access-receipt-status">
+              {payment.purchase_intent === "extension" ? "Extension confirmed" : "Payment verified"}
+            </span>
           </div>
           <button className="access-receipt-close" aria-label="Close receipt" onClick={onClose} type="button">&times;</button>
         </header>
@@ -380,8 +350,21 @@ function ReceiptModal({ payment, profile, onClose }) {
         <dl className="access-receipt-details">
           <div><dt>Paid by</dt><dd>{profile?.full_name || "Account holder"}</dd></div>
           <div><dt>Email</dt><dd>{profile?.email || "Not available"}</dd></div>
-          <div><dt>Access</dt><dd>{accessName}</dd></div>
-          <div><dt>Access until</dt><dd>{formatDate(payment.expires_at)}</dd></div>
+          <div><dt>Product</dt><dd>{accessName}</dd></div>
+          {duration && <div><dt>Duration</dt><dd>{duration}</dd></div>}
+          {itemNames.length > 1 && (
+            <div>
+              <dt>Modules</dt>
+              <dd>
+                <ul className="access-receipt-module-list">
+                  {itemNames.map((name) => <li key={name}>{name}</li>)}
+                </ul>
+              </dd>
+            </div>
+          )}
+          {accessResult && (
+            <div><dt>{accessResult.label}</dt><dd>{formatProductDate(accessResult.value)}</dd></div>
+          )}
           <div>
             <dt>Reference</dt>
             <dd className="access-receipt-reference">
@@ -408,7 +391,7 @@ function ReceiptModal({ payment, profile, onClose }) {
               </button>
             </dd>
           </div>
-          <div className="access-receipt-total-row"><dt>Total paid</dt><dd>{formatMoney(payment.amount_kobo, payment.currency)}</dd></div>
+          <div className="access-receipt-total-row"><dt>Total paid</dt><dd>{formatModuleMoney(payment.amount_kobo, payment.currency)}</dd></div>
         </dl>
 
         <div className="access-receipt-actions">
@@ -423,120 +406,172 @@ function ReceiptModal({ payment, profile, onClose }) {
   );
 }
 
+function AccessModuleRow({ entry, onOpenPurchase }) {
+  const { displayName, group, module } = entry;
+  const isUnlocked = group === "unlocked";
+  const isAvailable = group === "available";
+
+  return (
+    <article
+      className={`access-module-ledger-row access-ledger-row is-${group}`}
+      data-floating-support-avoid="true"
+      id={`access-row-${module.subject_slug}`}
+    >
+      <div className="access-module-ledger-copy">
+        <div className="access-module-title-line">
+          <h4>{displayName}</h4>
+          {isUnlocked && (
+            <Link className="access-page-action access-row-link" to={getModulePracticeSetsRoute(module.subject_slug)}>
+              View <span aria-hidden="true">&rarr;</span>
+            </Link>
+          )}
+        </div>
+
+        {isUnlocked ? (
+          <div className="access-module-entitlement-line">
+            <p>{`Access until ${formatAccessDate(module.access_expires_at)}`}</p>
+            {module.can_purchase && (
+              <>
+                <span aria-hidden="true">&middot;</span>
+                <button
+                  className="access-page-action access-row-link access-extend-action"
+                  onClick={(event) => onOpenPurchase({
+                    intent: "extension",
+                    mode: "module",
+                    moduleSlug: module.subject_slug,
+                  }, event.currentTarget)}
+                  type="button"
+                >
+                  Extend access <span aria-hidden="true">&rarr;</span>
+                </button>
+              </>
+            )}
+          </div>
+        ) : isAvailable ? null : (
+          <p>Practice coming soon</p>
+        )}
+      </div>
+
+      {isAvailable && (
+        <div className="access-module-ledger-actions">
+          <button
+            className="access-page-action access-row-link"
+            onClick={(event) => onOpenPurchase({
+              intent: "unlock",
+              mode: "module",
+              moduleSlug: module.subject_slug,
+            }, event.currentTarget)}
+            type="button"
+          >
+            Unlock <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function AccessModuleGroup({ entries, label, onOpenPurchase }) {
+  if (entries.length === 0) return null;
+
+  return (
+    <section className="access-module-group" aria-labelledby={`access-group-${entries[0].group}`}>
+      <header className="access-module-group-header">
+        <h3 id={`access-group-${entries[0].group}`}>{label}</h3>
+      </header>
+      <div className="access-module-group-list">
+        {entries.map((entry) => (
+          <AccessModuleRow entry={entry} key={entry.module.subject_id} onOpenPurchase={onOpenPurchase} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function Access() {
   const { profile } = useAuth();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedModule = searchParams.get("module");
-  const requestedScope = searchParams.get("scope") ?? "";
-  const returnTo = getSafeReturnPath(searchParams.get("returnTo"));
-  const [moduleAccess, setModuleAccess] = useState([]);
+  const {
+    catalogError,
+    catalogLoading,
+    ensurePurchaseCatalog,
+    moduleAccess,
+    normalizedPlans,
+    openPurchase,
+  } = usePurchaseModal();
   const [subjects, setSubjects] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [pricingCatalog, setPricingCatalog] = useState([]);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [payingModule, setPayingModule] = useState("");
+  const [paymentHistoryOpen, setPaymentHistoryOpen] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [paymentError, setPaymentError] = useState(null);
-  const [expandedPurchase, setExpandedPurchase] = useState("");
-  const [durationMonths, setDurationMonths] = useState(null);
-  const [bundleSelectedSlugs, setBundleSelectedSlugs] = useState([]);
 
   useEffect(() => {
     async function loadAccess() {
       try {
-        const [accessRows, paymentRows, subjectRows, pricingRows] = await Promise.all([
-          getModuleAccessCatalog(),
+        const [paymentRows, subjectRows] = await Promise.all([
           getPaymentRecords(),
           getSubjects(),
-          getPurchasePricingCatalog().catch((error) => {
-            logAppError("Pricing catalog load", error);
-            return [];
-          }),
         ]);
-        setModuleAccess(accessRows);
         setPayments(paymentRows);
         setSubjects(subjectRows);
-        setPricingCatalog(pricingRows);
       } catch (loadError) {
         logAppError("Access load", loadError);
         setLoadError(friendlyErrorMessage(loadError, "We could not load your access details. Please try again."));
       } finally {
-        setLoading(false);
+        setPageLoading(false);
       }
     }
 
+    void ensurePurchaseCatalog();
     void loadAccess();
-  }, []);
+  }, [ensurePurchaseCatalog]);
 
-  const modulesToShow = moduleAccess.filter((module) => module.can_purchase || module.has_module_access);
+  const visibleModules = moduleAccess
+    .map((module) => {
+      const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
+      if (!shouldShowCandidateModule({
+        canPurchase: module.can_purchase,
+        hasModuleAccess: module.has_module_access,
+        publishedCount: module.published_batch_count,
+        subject,
+      })) return null;
+
+      const isComingSoon = isCandidateModuleComingSoon(subject, module.published_batch_count);
+      const hasUsableModuleAccess = hasUsableCandidateModuleAccess(
+        subject,
+        module.published_batch_count,
+        module.has_module_access,
+      );
+      const group = isComingSoon || (!hasUsableModuleAccess && !module.can_purchase)
+        ? "coming-soon"
+        : hasUsableModuleAccess ? "unlocked" : "available";
+
+      return {
+        displayName: getModuleDisplayName(module.subject_name),
+        group,
+        module,
+      };
+    })
+    .filter(Boolean);
+  const unlockedModules = visibleModules.filter((entry) => entry.group === "unlocked");
+  const availableModules = visibleModules.filter((entry) => entry.group === "available");
+  const comingSoonModules = visibleModules.filter((entry) => entry.group === "coming-soon");
   const { attention: paymentAttention, history: paymentHistory } = partitionPaymentRecords(payments);
-  const normalizedPlans = useMemo(() => normalizePricingCatalog(pricingCatalog), [pricingCatalog]);
-  const purchasableModules = useMemo(() => normalizePurchasableModules(moduleAccess), [moduleAccess]);
-  const purchasableSlugSet = useMemo(() => new Set(purchasableModules.map((module) => module.subject_slug)), [purchasableModules]);
   const pickThreePlan = findPlan(normalizedPlans, PRICING_PLAN_CODES.THREE_MODULE_BUNDLE);
   const completePlan = findPlan(normalizedPlans, PRICING_PLAN_CODES.COMPLETE_BUNDLE);
-  const pickThreeCount = getRequiredModuleCount(pickThreePlan) || 3;
+  const pickThreeCount = getRequiredModuleCount(pickThreePlan);
   const pickThreeLowest = getLowestDuration(pickThreePlan);
   const completeLowest = getLowestDuration(completePlan);
   const canPickThree = Boolean(pickThreePlan?.is_available !== false && pickThreePlan?.durations?.length);
   const canComplete = Boolean(completePlan?.is_available !== false && completePlan?.durations?.length);
-  const routeExpandedPurchase = requestedModule && purchasableSlugSet.has(requestedModule)
-    ? `module:${requestedModule}`
-    : requestedScope === "pick3" && canPickThree
-      ? "bundle:pick3"
-      : requestedScope === "complete" && canComplete
-        ? "bundle:complete"
-        : "";
-  const activePurchase = routeExpandedPurchase || expandedPurchase;
-  const unlockedCount = modulesToShow.filter((module) => {
-    const subject = subjects.find((item) => item.slug === module.subject_slug) ?? module;
-    return hasUsableCandidateModuleAccess(subject, module.published_batch_count, module.has_module_access);
-  }).length;
+  const unlockedCount = unlockedModules.length;
+  const moduleStateSummary = [
+    unlockedModules.length > 0 ? `${unlockedModules.length} active` : "",
+    availableModules.length > 0 ? `${availableModules.length} available` : "",
+    comingSoonModules.length > 0 ? `${comingSoonModules.length} coming soon` : "",
+  ].filter(Boolean).join(" · ");
 
-  useEffect(() => {
-    if (loading || !activePurchase) return;
-    const targetId = activePurchase.startsWith("module:")
-      ? `access-row-${activePurchase.replace("module:", "")}`
-      : activePurchase === "bundle:pick3" ? "access-bundle-pick3" : "access-bundle-complete";
-    window.requestAnimationFrame(() => {
-      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }, [activePurchase, loading]);
-
-  async function startPricingPlanPayment(paymentRequest) {
-    const paymentKey = `pricing:${paymentRequest.planCode}:${paymentRequest.durationMonths}:${paymentRequest.subjectSlugs.join(",")}`;
-    if (payingModule) return;
-    setPayingModule(paymentKey);
-    setPaymentError(null);
-
-    try {
-      if (returnTo) {
-        window.sessionStorage?.setItem("promotionsure:payment:returnTo", returnTo);
-      }
-      const payment = await initializePricingPlanPayment(paymentRequest);
-      if (payment.already_paid) {
-        if (returnTo) {
-          navigate(returnTo);
-          return;
-        }
-        window.location.reload();
-        return;
-      }
-      window.location.assign(payment.authorization_url);
-    } catch (paymentRequestError) {
-      logAppError("Access pricing plan payment start", paymentRequestError);
-      setPaymentError({
-        subjectSlug: paymentKey,
-        message: friendlyErrorMessage(paymentRequestError, "We could not start payment right now. Please try again."),
-      });
-    } finally {
-      setPayingModule("");
-    }
-  }
-
-  if (loading) {
+  if (pageLoading || catalogLoading) {
     return (
       <AppFrame showBottomNav={false}>
         <LoadingState />
@@ -544,13 +579,13 @@ export default function Access() {
     );
   }
 
-  if (loadError) {
+  if (loadError || catalogError) {
     return (
       <AppFrame showBottomNav={false}>
-        <section className="access-page access-page-v3">
+        <section className="access-page access-page-v4">
           <article className="state-card">
             <h1>Access details unavailable</h1>
-            <p role="alert">{loadError}</p>
+            <p role="alert">{loadError || catalogError}</p>
             <div className="hero-actions">
               <button onClick={() => window.location.reload()} type="button">Try again</button>
               <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
@@ -561,186 +596,12 @@ export default function Access() {
     );
   }
 
-  function openUnlockModule(subjectSlug) {
-    setPaymentError(null);
-    setDurationMonths(null);
-    setExpandedPurchase(`module:${subjectSlug}`);
-    setBundleSelectedSlugs([]);
-    const nextParams = {};
-    if (subjectSlug) nextParams.module = subjectSlug;
-    if (returnTo) nextParams.returnTo = returnTo;
-    setSearchParams(nextParams);
-    document.getElementById(`access-row-${subjectSlug}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  const modalPaymentKeyPrefix = "pricing:";
-  const purchaseError = paymentError?.subjectSlug?.startsWith(modalPaymentKeyPrefix) ? paymentError.message : "";
-
-  function openBundle(scope) {
-    setPaymentError(null);
-    setDurationMonths(null);
-    setExpandedPurchase(`bundle:${scope}`);
-    if (scope === "complete") setBundleSelectedSlugs([]);
-    const nextParams = { scope };
-    if (returnTo) nextParams.returnTo = returnTo;
-    setSearchParams(nextParams);
-    window.requestAnimationFrame(() => {
-      document.getElementById(`access-bundle-${scope}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-  }
-
-  function getModulePlan(module) {
-    return findPlan(normalizedPlans, getIndividualPlanCodeForModule(module));
-  }
-
-  function buildPaymentState({ plan, selectedSlugs }) {
-    const safeDuration = durationMonths ? chooseDefaultDuration(plan, durationMonths) : null;
-    const duration = safeDuration ? getDurationPrice(plan, safeDuration) : null;
-    const validation = validatePlanSelection({ plan, selectedSlugs });
-    const payload = duration && validation.ok
-      ? buildPlanCheckoutPayload({ plan, durationMonths: safeDuration, selectedSlugs })
-      : null;
-    return { duration, payload, safeDuration, validation };
-  }
-
-  function toggleBundleModule(subjectSlug) {
-    if (payingModule) return;
-    setBundleSelectedSlugs((current) => {
-      const validCurrent = current.filter((slug) => purchasableSlugSet.has(slug));
-      if (validCurrent.includes(subjectSlug)) return validCurrent.filter((slug) => slug !== subjectSlug);
-      if (validCurrent.length >= pickThreeCount) return validCurrent;
-      return [...validCurrent, subjectSlug];
-    });
-  }
-
-  function renderDurationPicker({ duration, plan, safeDuration }) {
-    return (
-      <section className="access-choice-group" aria-labelledby="access-duration-title">
-        <h3 id="access-duration-title">Choose access duration</h3>
-        <div className="access-duration-choices" role="radiogroup" aria-label="Access duration">
-          {plan.durations.map((option) => {
-            const selected = Number(option.duration_months) === Number(safeDuration);
-            const badge = getDurationBadge(option);
-            return (
-              <button
-                aria-checked={selected}
-                className={`access-duration-choice${selected ? " is-selected" : ""}`}
-                disabled={Boolean(payingModule)}
-                key={option.duration_months}
-                onClick={() => setDurationMonths(Number(option.duration_months))}
-                role="radio"
-                type="button"
-              >
-                <span className="access-choice-radio" aria-hidden="true" />
-                <span className="access-choice-label">
-                  <strong>{getDurationLabel(option.duration_months)}</strong>
-                  {badge && <small>{badge}</small>}
-                </span>
-                <span className="access-choice-price">{formatModuleMoney(option.price_kobo, option.currency)}</span>
-              </button>
-            );
-          })}
-        </div>
-        {duration ? null : <p className="access-purchase-prompt">Select a duration to continue.</p>}
-      </section>
-    );
-  }
-
-  function renderPurchaseActions({ payload, validation }) {
-    return (
-      <>
-        {purchaseError && <p className="access-inline-error" role="alert">{purchaseError}</p>}
-        <div className="access-purchase-footer">
-          {!validation.ok && <p className="access-selection-hint">{validation.message}</p>}
-          <button
-            aria-busy={Boolean(payingModule)}
-            className="access-payment-action"
-            disabled={Boolean(payingModule) || !payload}
-            onClick={() => void startPricingPlanPayment(payload)}
-            type="button"
-          >
-            {payingModule ? "Preparing payment..." : "Continue to payment"}
-          </button>
-        </div>
-      </>
-    );
-  }
-
-  function renderInlineModulePurchase(module) {
-    const plan = getModulePlan(module);
-    if (!plan) return <p className="access-inline-error">This module is not open for purchase yet.</p>;
-    const state = buildPaymentState({ plan, selectedSlugs: [module.subject_slug] });
-    return (
-      <div className="access-row-purchase">
-        {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
-        {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
-      </div>
-    );
-  }
-
-  function renderInlineBundlePurchase({ plan, scope }) {
-    if (!plan) return null;
-    const isComplete = scope === "complete";
-    const selectedSlugs = isComplete ? [] : bundleSelectedSlugs.filter((slug) => purchasableSlugSet.has(slug));
-    const selectedModules = getSelectedModules(purchasableModules, selectedSlugs);
-    const state = buildPaymentState({ plan, selectedSlugs });
-    const selectionLabel = isComplete
-      ? `${purchasableModules.length} modules included`
-      : `${selectedSlugs.length} of ${pickThreeCount} selected`;
-
-    return (
-      <div className="access-row-purchase">
-        {!isComplete && (
-          <section className="access-bundle-picker" aria-label="Choose bundle modules">
-            <div className="access-bundle-picker-heading">
-              <h3>Choose modules</h3>
-              <span>{selectionLabel}</span>
-            </div>
-            <div className="access-bundle-choices">
-              {purchasableModules.map((module) => {
-                const selected = selectedSlugs.includes(module.subject_slug);
-                const disabled = !selected && selectedSlugs.length >= pickThreeCount;
-                return (
-                  <button
-                    aria-pressed={selected}
-                    className={`access-bundle-choice${selected ? " is-selected" : ""}`}
-                    disabled={Boolean(payingModule) || disabled}
-                    key={module.subject_id ?? module.subject_slug}
-                    onClick={() => toggleBundleModule(module.subject_slug)}
-                    type="button"
-                  >
-                    <span className="access-choice-check" aria-hidden="true" />
-                    <span>{getModuleDisplayName(module.subject_name)}</span>
-                    {module.practice_type === "oral" && <small>Oral</small>}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-        {isComplete && (
-          <div className="access-bundle-included">
-            <span>{selectionLabel}</span>
-            <p>{purchasableModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
-          </div>
-        )}
-        {renderDurationPicker({ duration: state.duration, plan, safeDuration: state.safeDuration })}
-        {!isComplete && selectedModules.length > 0 && (
-          <p className="access-selection-summary">{selectedModules.map((module) => getModuleDisplayName(module.subject_name)).join(", ")}</p>
-        )}
-        {renderPurchaseActions({ payload: state.payload, validation: state.validation })}
-      </div>
-    );
-  }
-
   return (
     <AppFrame>
-      <section className="access-page access-page-v3">
-        <header className="access-ledger-header">
+      <section className="access-page access-page-v4">
+        <header className="access-page-header">
           <h1>Access and payment</h1>
-          {unlockedCount < modulesToShow.length && (
-            <p>{`${unlockedCount} of ${modulesToShow.length} modules unlocked.`}</p>
-          )}
+          <p>{`${unlockedCount} active of ${visibleModules.length}`}</p>
         </header>
 
         {paymentAttention.length > 0 && (
@@ -752,13 +613,17 @@ export default function Access() {
               {paymentAttention.map((payment) => {
                 const statusMeta = getPaymentStatusMeta(payment);
                 return (
-                  <article className="access-payment-row is-attention" key={payment.id}>
+                  <article
+                    className="access-payment-row is-attention"
+                    data-floating-support-avoid="true"
+                    key={payment.id}
+                  >
                     <div className="access-payment-main">
                       <div className="access-payment-title-line">
                         <strong>{getPaymentAccessName(payment)}</strong>
                         <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
                       </div>
-                      <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
+                      <span>{`${formatModuleMoney(payment.amount_kobo, payment.currency)} - ${formatProductDate(payment.paid_at || payment.created_at)}`}</span>
                       <p>{statusMeta.description}</p>
                     </div>
                     <PaymentReference value={payment.paystack_reference} />
@@ -774,147 +639,123 @@ export default function Access() {
           </section>
         )}
 
-        <section className="access-ledger-section" aria-labelledby="access-modules-title">
-          <h2 id="access-modules-title">Your access</h2>
-          {modulesToShow.length === 0 ? (
-            <article className="access-empty-state">
-              <span className="access-empty-kicker">Access status</span>
-              <h2>No module is open for purchase yet</h2>
-              <p>
-                Your account is ready. Available modules will appear here once they are open for sale or assigned to your account.
-              </p>
-              <Link className="secondary-action" to="/dashboard">Back to dashboard</Link>
-            </article>
-          ) : (
-            <div className="access-ledger-list">
-              {modulesToShow.map((module) => {
-              const displayName = getModuleDisplayName(module.subject_name);
-              const isPaying = payingModule === module.subject_slug;
-              const subject = subjects.find((item) => item.slug === module.subject_slug) ?? {
-                ...module,
-                slug: module.subject_slug,
-                practice_type: "objective",
-              };
-              const isComingSoon = isCandidateModuleComingSoon(subject, module.published_batch_count);
-              const hasUsableModuleAccess = hasUsableCandidateModuleAccess(
-                subject,
-                module.published_batch_count,
-                module.has_module_access,
-              );
-
-              return (
-                <article
-                  className={`access-ledger-row ${hasUsableModuleAccess ? "is-unlocked" : "is-locked"} ${activePurchase === `module:${module.subject_slug}` ? "is-expanded is-targeted" : ""}`.trim()}
-                  id={`access-row-${module.subject_slug}`}
-                  key={module.subject_id}
-                >
-                  <div className="access-ledger-row-main">
-                    <div className="access-ledger-title-line">
-                      <h2>{displayName}</h2>
-                    </div>
-                    {isComingSoon ? (
-                      <p>Practice is coming soon.</p>
-                    ) : hasUsableModuleAccess ? (
-                      <p>{`Active through ${formatDate(module.access_expires_at)}`}</p>
-                    ) : module.can_purchase ? (
-                      <p>Not currently unlocked</p>
-                    ) : (
-                      <p>Practice is coming soon.</p>
-                    )}
-                  </div>
-
-                  <div className="access-ledger-row-action">
-                    {isComingSoon ? (
-                      <span className="access-module-coming-soon">Not available yet</span>
-                    ) : hasUsableModuleAccess ? (
-                      <Link className="access-row-link" to={getModulePracticeSetsRoute(module.subject_slug)}>View</Link>
-                    ) : module.can_purchase ? (
-                      <button className="access-row-link" aria-busy={isPaying} disabled={isPaying} onClick={() => openUnlockModule(module.subject_slug)} type="button">
-                        Unlock <span aria-hidden="true">&rarr;</span>
-                      </button>
-                    ) : null}
-                    {paymentError?.subjectSlug === module.subject_slug && (
-                      <p className="access-module-error" role="alert">{paymentError.message}</p>
-                    )}
-                  </div>
-
-                  {activePurchase === `module:${module.subject_slug}` && module.can_purchase && !hasUsableModuleAccess && !isComingSoon && renderInlineModulePurchase(module)}
-                </article>
-              );
-              })}
-            </div>
-          )}
-        </section>
-
         {(canPickThree || canComplete) && (
-          <section className="access-offers" aria-labelledby="access-bundle-title">
-            <h2 id="access-bundle-title">Bundle offers</h2>
+          <section className="access-page-section access-offers" aria-labelledby="access-bundle-title">
+            <h2 id="access-bundle-title">Bundle options</h2>
             <div className="access-offer-list">
               {canPickThree && (
-                <article className={`access-offer ${activePurchase === "bundle:pick3" ? "is-expanded is-targeted" : ""}`} id="access-bundle-pick3">
+                <article
+                  className="access-offer"
+                  data-floating-support-avoid="true"
+                  id="access-bundle-pick3"
+                >
                   <div className="access-offer-main">
                     <div className="access-offer-copy">
-                      <h3>{getPlanDisplayName(pickThreePlan, "Pick 3")}</h3>
-                      <p>Choose any {pickThreeCount} available modules</p>
+                      <h3>{getPlanDisplayName(pickThreePlan, `Pick any ${pickThreeCount} modules`)}</h3>
+                      <p>{`Choose any ${pickThreeCount} currently available modules`}</p>
                     </div>
                     <div className="access-offer-action">
                       {pickThreeLowest && <span>{`From ${formatModuleMoney(pickThreeLowest.price_kobo, pickThreeLowest.currency)}`}</span>}
-                      <button className="access-row-link" onClick={() => openBundle("pick3")} type="button">Pick modules <span aria-hidden="true">&rarr;</span></button>
+                      <button
+                        className="access-row-link"
+                        onClick={(event) => openPurchase({ mode: "pick3" }, event.currentTarget)}
+                        type="button"
+                      >
+                        Choose modules <span aria-hidden="true">&rarr;</span>
+                      </button>
                     </div>
                   </div>
-                  {activePurchase === "bundle:pick3" && renderInlineBundlePurchase({ plan: pickThreePlan, scope: "pick3" })}
                 </article>
               )}
 
               {canComplete && (
-                <article className={`access-offer ${activePurchase === "bundle:complete" ? "is-expanded is-targeted" : ""}`} id="access-bundle-complete">
+                <article
+                  className="access-offer"
+                  data-floating-support-avoid="true"
+                  id="access-bundle-complete"
+                >
                   <div className="access-offer-main">
                     <div className="access-offer-copy">
-                      <h3>{getPlanDisplayName(completePlan, "Complete")}</h3>
-                      <p>Unlock all currently available modules</p>
+                      <h3>{getPlanDisplayName(completePlan, "Complete bundle")}</h3>
+                      <p>{`Access all ${completePlan.current_available_module_count} currently available modules`}</p>
                     </div>
                     <div className="access-offer-action">
                       {completeLowest && <span>{`From ${formatModuleMoney(completeLowest.price_kobo, completeLowest.currency)}`}</span>}
-                      <button className="access-row-link" onClick={() => openBundle("complete")} type="button">Unlock all <span aria-hidden="true">&rarr;</span></button>
+                      <button
+                        className="access-row-link"
+                        onClick={(event) => openPurchase({ mode: "complete" }, event.currentTarget)}
+                        type="button"
+                      >
+                        View access options <span aria-hidden="true">&rarr;</span>
+                      </button>
                     </div>
                   </div>
-                  {activePurchase === "bundle:complete" && renderInlineBundlePurchase({ plan: completePlan, scope: "complete" })}
                 </article>
               )}
             </div>
           </section>
         )}
 
-        {paymentHistory.length > 0 && (
-          <details className="access-payment-section">
-            <summary>
-              <span>Payment history</span>
-              <small>{paymentHistory.length}</small>
-            </summary>
-            <div className="access-payment-list">
-              {paymentHistory.map((payment) => (
-                (() => {
-                  const statusMeta = getPaymentStatusMeta(payment);
-                  return (
-                    <article className={`access-payment-row ${statusMeta.canViewReceipt ? "is-verified" : ""}`} key={payment.id}>
-                      <div className="access-payment-main">
-                        <div className="access-payment-title-line">
-                          <strong>{getPaymentAccessName(payment)}</strong>
-                          <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
-                        </div>
-                        <span>{`${formatMoney(payment.amount_kobo, payment.currency)} - ${formatDate(payment.paid_at || payment.created_at)}`}</span>
-                      </div>
-                      <PaymentReference value={payment.paystack_reference} />
-                      {statusMeta.canViewReceipt ? (
-                        <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
-                      ) : null}
-                    </article>
-                  );
-                })()
-              ))}
+        <section className="access-page-section access-modules-section" aria-labelledby="access-modules-title">
+          <header className="access-modules-heading">
+            <h2 id="access-modules-title">Your modules</h2>
+            {moduleStateSummary && <p>{moduleStateSummary}</p>}
+          </header>
+          {visibleModules.length === 0 ? (
+            <p className="access-page-empty">No modules are available yet.</p>
+          ) : (
+            <div className="access-module-groups">
+              <AccessModuleGroup entries={unlockedModules} label="Active" onOpenPurchase={openPurchase} />
+              <AccessModuleGroup entries={availableModules} label="Available" onOpenPurchase={openPurchase} />
+              <AccessModuleGroup entries={comingSoonModules} label="Coming soon" onOpenPurchase={openPurchase} />
             </div>
+          )}
+        </section>
+
+        <section className="access-page-section access-history-section" aria-labelledby="access-history-title">
+          <details
+            className="access-payment-section"
+            onToggle={(event) => setPaymentHistoryOpen(event.currentTarget.open)}
+          >
+            <summary data-floating-support-avoid="true">
+              <h2 id="access-history-title">Payment history</h2>
+              {paymentHistory.length > 0 && <small>{paymentHistory.length}</small>}
+              <span className="access-history-disclosure" aria-hidden="true">
+                {paymentHistoryOpen ? "Hide" : "Show"} <span>&rarr;</span>
+              </span>
+            </summary>
+            {paymentHistory.length === 0 ? (
+              <p className="access-payment-empty">No payments yet.</p>
+            ) : (
+              <div className="access-payment-list">
+                {paymentHistory.map((payment) => (
+                  (() => {
+                    const statusMeta = getPaymentStatusMeta(payment);
+                    return (
+                      <article
+                        className={`access-payment-row ${statusMeta.canViewReceipt ? "is-verified" : ""}`}
+                        data-floating-support-avoid="true"
+                        key={payment.id}
+                      >
+                        <div className="access-payment-main">
+                          <div className="access-payment-title-line">
+                            <strong>{getPaymentAccessName(payment)}</strong>
+                            <span className={`access-payment-status is-${statusMeta.tone}`}>{statusMeta.label}</span>
+                          </div>
+                          <span>{`${formatModuleMoney(payment.amount_kobo, payment.currency)} - ${formatProductDate(payment.paid_at || payment.created_at)}`}</span>
+                        </div>
+                        <PaymentReference value={payment.paystack_reference} />
+                        {statusMeta.canViewReceipt ? (
+                          <button className="access-receipt-button" onClick={() => setSelectedReceipt(payment)} type="button">View receipt</button>
+                        ) : null}
+                      </article>
+                    );
+                  })()
+                ))}
+              </div>
+            )}
           </details>
-        )}
+        </section>
       </section>
 
       {selectedReceipt && (

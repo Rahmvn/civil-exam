@@ -50,6 +50,7 @@ import {
   setAdminEmailCampaignRecipientIncluded,
   updateAdminEmailCampaignCopy,
   republishAdminPracticeSet,
+  retryAdminTransactionalEmailEvent,
   retireAdminPracticeSet,
   transitionAdminPracticeSet,
   updateAdminModule,
@@ -1396,6 +1397,7 @@ const PAYMENT_ATTENTION_LABELS = {
   access_issue: "Access issue",
   dispute: "Under dispute",
   refund_pending: "Refund pending",
+  access_review: "Access review",
   processing_delayed: "Processing delayed",
 };
 
@@ -1474,7 +1476,11 @@ const EMPTY_SUPPORT_QUEUE = {
 const EMPTY_EMAIL_EVENTS = {
   items: [],
   total: 0,
-  counts: { all: 0, pending: 0, sent: 0, failed: 0, skipped: 0 },
+  counts: {
+    all: 0, pending: 0, processing: 0, retrying: 0, accepted: 0, sent: 0,
+    delivered: 0, delayed: 0, failed: 0, bounced: 0,
+    complained: 0, suppressed: 0, dead: 0, cancelled: 0,
+  },
   limit: 50,
   offset: 0,
   hasMore: false,
@@ -1483,9 +1489,18 @@ const EMPTY_EMAIL_EVENTS = {
 const EMAIL_STATUS_LABELS = {
   all: "All",
   pending: "Pending",
+  processing: "Processing",
+  retrying: "Retrying",
+  accepted: "Accepted",
   sent: "Sent",
+  delivered: "Delivered",
+  delayed: "Delayed",
   failed: "Failed",
-  skipped: "Skipped",
+  bounced: "Bounced",
+  complained: "Complained",
+  suppressed: "Suppressed",
+  dead: "Dead",
+  cancelled: "Cancelled",
 };
 
 const EMPTY_USER_DIRECTORY = {
@@ -1547,9 +1562,7 @@ function ensureAdminArray(value) {
 
 function emailEventTitle(event) {
   const label = activityLabel(event.event_type);
-  const subject = event.purchase_type === "bundle_offer"
-    ? event.purchase_label
-    : event.subject_name;
+  const subject = event.product_label || event.purchase_label || event.subject_name;
   return subject ? `${label} - ${subject}` : label;
 }
 
@@ -1562,6 +1575,7 @@ function AdminEmailDiagnosticsPanel({
   onEmailQueryChange,
   onEmailStatusChange,
   onRefresh,
+  onRetry,
 }) {
   const firstResult = emailEvents.total === 0 ? 0 : emailEvents.offset + 1;
   const lastResult = Math.min(emailEvents.offset + emailEvents.items.length, emailEvents.total);
@@ -1578,9 +1592,9 @@ function AdminEmailDiagnosticsPanel({
         </button>
       </header>
       <AdminSummaryStrip items={[
-        { label: "Failed", value: emailEvents.counts.failed, tone: emailEvents.counts.failed > 0 ? "attention" : "success" },
-        { label: "Skipped", value: emailEvents.counts.skipped },
-        { label: "Sent", value: emailEvents.counts.sent },
+        { label: "Needs attention", value: emailEvents.counts.dead + emailEvents.counts.bounced + emailEvents.counts.complained, tone: emailEvents.counts.dead + emailEvents.counts.bounced + emailEvents.counts.complained > 0 ? "attention" : "success" },
+        { label: "Retrying", value: emailEvents.counts.retrying },
+        { label: "Delivered", value: emailEvents.counts.delivered },
       ]} />
       <div className="admin-list-toolbar">
         <label className="admin-inline-search">
@@ -1617,9 +1631,16 @@ function AdminEmailDiagnosticsPanel({
                 <div><dt>Reference</dt><dd className="is-technical">{event.provider_reference || "Not linked"}</dd></div>
                 <div><dt>Provider</dt><dd>{event.provider || "Unknown"}</dd></div>
                 <div><dt>Message ID</dt><dd className="is-technical">{event.provider_message_id || "Not recorded"}</dd></div>
-                <div><dt>Sent</dt><dd>{event.sent_at ? new Date(event.sent_at).toLocaleString("en-NG") : "Not sent"}</dd></div>
+                <div><dt>Attempts</dt><dd>{event.attempt_count} of {event.max_attempts}</dd></div>
+                <div><dt>Last attempt</dt><dd>{formatAdminDateTime(event.attempted_at)}</dd></div>
+                <div><dt>Next retry</dt><dd>{formatAdminDateTime(event.next_attempt_at)}</dd></div>
+                <div><dt>Accepted</dt><dd>{formatAdminDateTime(event.accepted_at || event.sent_at)}</dd></div>
+                <div><dt>Delivered</dt><dd>{formatAdminDateTime(event.delivered_at)}</dd></div>
               </dl>
               {event.error_message && <p className="admin-email-error">{event.error_message}</p>}
+              {event.dispatch_status === "dead" && (
+                <button disabled={emailLoading} onClick={() => onRetry(event.id)} type="button">Retry</button>
+              )}
             </article>
           ))}
         </div>
@@ -1937,6 +1958,7 @@ function AdminPaymentAttentionView({
   onQueryChange,
   onRefresh,
   onRefreshEmails,
+  onRetryEmail,
   query,
   refreshing,
 }) {
@@ -1964,7 +1986,7 @@ function AdminPaymentAttentionView({
       <AdminSummaryStrip items={[
         { label: "Needs attention", value: items.length, tone: items.length > 0 ? "attention" : "success" },
         { label: "Access issues", value: items.filter((item) => item.attention_type === "access_issue").length },
-        { label: "Provider reviews", value: items.filter((item) => ["dispute", "refund_pending"].includes(item.attention_type)).length },
+        { label: "Provider reviews", value: items.filter((item) => ["dispute", "refund_pending", "access_review"].includes(item.attention_type)).length },
       ]} />
       <section className="admin-payment-note" aria-labelledby="payment-issues-note-title">
         <h2 id="payment-issues-note-title">How this queue works</h2>
@@ -2033,6 +2055,7 @@ function AdminPaymentAttentionView({
         onEmailQueryChange={onEmailQueryChange}
         onEmailStatusChange={onEmailStatusChange}
         onRefresh={onRefreshEmails}
+        onRetry={onRetryEmail}
       />
     </>
   );
@@ -2522,6 +2545,24 @@ export default function Admin() {
       setFeedback({ tone: "success", message: "Email diagnostics refreshed." });
     } catch (error) {
       reportError("Admin email diagnostics refresh", error, "Email diagnostics could not be refreshed.");
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
+  async function handleRetryEmail(eventId) {
+    setEmailLoading(true);
+    try {
+      await retryAdminTransactionalEmailEvent(eventId);
+      setFeedback({ tone: "success", message: "Email queued for retry." });
+      setEmailEvents(await getAdminTransactionalEmailEvents({
+        status: emailStatus,
+        query: emailQuery.trim(),
+        limit: 50,
+        offset: emailPage * 50,
+      }));
+    } catch (error) {
+      reportError("Admin email retry", error, "The email could not be retried.");
     } finally {
       setEmailLoading(false);
     }
@@ -3303,6 +3344,7 @@ export default function Admin() {
                 onQueryChange={setShellSearch}
                 onRefresh={() => void refreshPaymentAttention()}
                 onRefreshEmails={() => void refreshEmailEvents()}
+                onRetryEmail={(eventId) => void handleRetryEmail(eventId)}
                 query={shellSearch}
                 refreshing={paymentAttentionLoading}
               />

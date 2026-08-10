@@ -1,0 +1,639 @@
+.access-page.access-page-v4 {
+  width: min(1040px, calc(100% - 40px));
+  display: block;
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 56px) 0 64px;
+}
+
+.access-page-v4 .access-page-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.access-page-v4 .access-page-header h1,
+.access-page-v4 .access-page-header p,
+.access-page-v4 .access-page-section > h2,
+.access-page-v4 .access-modules-heading h2,
+.access-page-v4 .access-modules-heading p,
+.access-page-v4 .access-offer h3,
+.access-page-v4 .access-offer p,
+.access-page-v4 .access-module-group-header h3,
+.access-page-v4 .access-module-ledger-copy h4,
+.access-page-v4 .access-module-ledger-copy p,
+.access-page-v4 .access-page-empty,
+.access-page-v4 .access-payment-empty,
+.access-page-v4 .access-payment-section summary h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.access-page-v4 .access-page-header h1 {
+  color: var(--color-text);
+  font-size: clamp(1.9rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.access-page-v4 .access-page-header p {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.access-page-v4 .access-payment-attention {
+  margin-top: 26px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-warning-dark, #7a5510) 20%, var(--color-border));
+  border-left: 3px solid var(--color-warning-dark, #7a5510);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--color-surface) 95%, #fff9e8);
+  box-shadow: none;
+}
+
+.access-page-v4 .access-payment-attention > header {
+  padding: 15px 18px 0;
+  border: 0;
+}
+
+.access-page-v4 .access-payment-attention h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.94rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.access-page-v4 .access-payment-attention .access-payment-list {
+  border-top: 0;
+}
+
+.access-page-v4 .access-page-section {
+  display: grid;
+  gap: 16px;
+}
+
+.access-page-v4 .access-offers {
+  margin-top: 48px;
+}
+
+.access-page-v4 .access-modules-section {
+  margin-top: 54px;
+}
+
+.access-page-v4 .access-history-section {
+  margin-top: 58px;
+}
+
+.access-page-v4 .access-page-section > h2,
+.access-page-v4 .access-modules-heading h2 {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.access-page-v4 .access-offer-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.access-page-v4 .access-offer {
+  min-width: 0;
+  display: block;
+  padding: 0 !important;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.access-page-v4 .access-offer-main {
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  padding: 18px 20px 15px;
+}
+
+.access-page-v4 .access-offer-copy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.access-page-v4 .access-offer-copy h3 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.access-page-v4 .access-offer-copy p {
+  max-width: 34ch;
+  color: var(--color-text-muted);
+  font-size: 0.87rem;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.access-page-v4 .access-offer-action {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 1px;
+  margin-top: auto;
+}
+
+.access-page-v4 .access-offer-action > span {
+  color: var(--color-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.access-page-v4 .access-page-action,
+.access-page-v4 .access-offer-action .access-row-link {
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 3px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-primary-dark);
+  box-shadow: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.access-page-v4 .access-page-action:hover,
+.access-page-v4 .access-offer-action .access-row-link:hover {
+  transform: none;
+  background: transparent;
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+.access-page-v4 .access-page-action:focus-visible,
+.access-page-v4 .access-offer-action .access-row-link:focus-visible,
+.access-page-v4 .access-payment-section summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.access-page-v4 .access-modules-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.access-page-v4 .access-modules-heading p {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.access-page-v4 .access-module-groups {
+  display: grid;
+  gap: 36px;
+  margin-top: 10px;
+}
+
+.access-page-v4 .access-module-group {
+  display: grid;
+  gap: 7px;
+}
+
+.access-page-v4 .access-module-group-header {
+  display: block;
+  padding: 0;
+}
+
+.access-page-v4 .access-module-group-header h3 {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.access-page-v4 .access-module-group-list {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.access-page-v4 .access-module-ledger-row {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  scroll-margin-top: 112px;
+}
+
+.access-page-v4 .access-module-ledger-row + .access-module-ledger-row {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+.access-page-v4 .access-module-ledger-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.access-page-v4 .access-module-title-line {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+}
+
+.access-page-v4 .access-module-ledger-copy h4 {
+  max-width: 62ch;
+  color: var(--color-text);
+  font-size: 0.97rem;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.access-page-v4 .access-module-ledger-copy p {
+  color: var(--color-text-muted);
+  font-size: 0.83rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.access-page-v4 .access-module-entitlement-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+}
+
+.access-page-v4 .access-module-entitlement-line > span {
+  display: none;
+  font-size: 0.76rem;
+}
+
+.access-page-v4 .access-module-entitlement-line .access-extend-action {
+  min-height: 44px;
+  margin-top: -6px;
+  margin-bottom: -6px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.access-page-v4 .access-module-ledger-row.is-coming-soon {
+  min-height: 64px;
+}
+
+.access-page-v4 .access-module-ledger-row.is-coming-soon .access-module-ledger-copy h4 {
+  color: color-mix(in srgb, var(--color-text) 80%, var(--color-text-muted));
+  font-weight: 600;
+}
+
+.access-page-v4 .access-module-ledger-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.access-page-v4 .access-page-empty,
+.access-page-v4 .access-payment-empty {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.access-page-v4 .access-page-empty {
+  padding: 12px 0;
+}
+
+.access-page-v4 .access-payment-section {
+  overflow: visible;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.access-page-v4 .access-payment-section > summary {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.access-page-v4 .access-payment-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.access-page-v4 .access-payment-section > summary::after {
+  content: none;
+}
+
+.access-page-v4 .access-payment-section summary h2 {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.access-page-v4 .access-payment-section > summary small {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.access-page-v4 .access-history-disclosure {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.access-page-v4 .access-payment-section[open] > summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.access-page-v4 .access-payment-empty {
+  padding: 16px 0;
+}
+
+.access-page-v4 .access-payment-section .access-payment-list {
+  border-top: 0;
+  padding: 0;
+}
+
+.access-page-v4 .access-payment-section .access-receipt-button {
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 3px;
+  border: 0 !important;
+  border-radius: 3px;
+  background: transparent !important;
+  color: var(--color-primary-dark) !important;
+  box-shadow: none !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.access-page-v4 .access-payment-section .access-receipt-button:hover {
+  transform: none !important;
+  background: transparent !important;
+  color: var(--color-primary) !important;
+  box-shadow: none !important;
+}
+
+.access-page-v4 .access-payment-section .access-receipt-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.access-page-v4 .access-payment-row {
+  grid-template-columns: minmax(220px, 1fr) auto minmax(132px, auto);
+  gap: 14px;
+  padding: 14px 0;
+}
+
+.access-page-v4 .access-payment-attention .access-payment-row.is-attention {
+  padding: 12px 18px 16px;
+}
+
+.access-page-v4 .access-payment-attention .access-payment-reference {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 760px) {
+  .access-page.access-page-v4 {
+    width: min(100% - 32px, 1040px);
+    padding: 24px 0 calc(144px + env(safe-area-inset-bottom));
+  }
+
+  .access-page-v4 .access-page-header {
+    display: grid;
+    gap: 5px;
+  }
+
+  .access-page-v4 .access-page-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .access-page-v4 .access-offers {
+    margin-top: 42px;
+  }
+
+  .access-page-v4 .access-modules-section {
+    margin-top: 48px;
+  }
+
+  .access-page-v4 .access-history-section {
+    margin-top: 50px;
+  }
+
+  .access-page-v4 .access-page-section {
+    gap: 13px;
+  }
+
+  .access-page-v4 .access-offer-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .access-page-v4 .access-offer-main {
+    min-height: 0;
+    gap: 11px;
+    padding: 15px 16px 11px;
+  }
+
+  .access-page-v4 .access-offer-action {
+    width: 100%;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .access-page-v4 .access-offer-action .access-row-link {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .access-page-v4 .access-module-groups {
+    gap: 34px;
+    margin-top: 12px;
+  }
+
+  .access-page-v4 .access-module-ledger-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding: 14px 0 10px;
+  }
+
+  .access-page-v4 .access-module-ledger-copy {
+    gap: 4px;
+  }
+
+  .access-page-v4 .access-module-title-line {
+    gap: 14px;
+  }
+
+  .access-page-v4 .access-module-ledger-copy h4 {
+    max-width: none;
+    line-height: 1.48;
+  }
+
+  .access-page-v4 .access-module-entitlement-line {
+    display: grid;
+    justify-items: start;
+    gap: 0;
+  }
+
+  .access-page-v4 .access-module-entitlement-line > span {
+    display: none;
+  }
+
+  .access-page-v4 .access-module-entitlement-line .access-extend-action {
+    min-height: 44px;
+    margin-top: -2px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .access-page-v4 .access-module-ledger-actions {
+    justify-content: flex-start;
+  }
+
+  .access-page-v4 .access-payment-attention {
+    margin-top: 22px;
+  }
+
+  .access-page-v4 .access-payment-row,
+  .access-page-v4 .access-payment-row.is-verified {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+  }
+
+  .access-page-v4 .access-payment-row .access-payment-main {
+    grid-column: 1 / -1;
+  }
+
+  .access-page-v4 [data-floating-support-clearance="left"].access-module-ledger-row {
+    padding-left: 60px;
+  }
+
+  .access-page-v4 [data-floating-support-clearance="right"].access-module-ledger-row {
+    padding-right: 60px;
+  }
+
+  .access-page-v4 .access-offer[data-floating-support-clearance="left"] .access-offer-main,
+  .access-page-v4 .access-payment-row[data-floating-support-clearance="left"],
+  .access-page-v4 .access-payment-section > summary[data-floating-support-clearance="left"] {
+    padding-left: 60px;
+  }
+
+  .access-page-v4 .access-offer[data-floating-support-clearance="right"] .access-offer-main,
+  .access-page-v4 .access-payment-row[data-floating-support-clearance="right"],
+  .access-page-v4 .access-payment-section > summary[data-floating-support-clearance="right"] {
+    padding-right: 60px;
+  }
+}
+
+@media (max-width: 460px) {
+  .access-page.access-page-v4 {
+    width: min(100% - 28px, 1040px);
+  }
+
+  .access-page-v4 .access-payment-attention .access-payment-row,
+  .access-page-v4 .access-payment-row,
+  .access-page-v4 .access-payment-row.is-verified {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .access-page-v4 .access-payment-row .access-payment-main,
+  .access-page-v4 .access-payment-row > * {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .access-page-v4 .access-payment-reference,
+  .access-page-v4 .access-receipt-button {
+    justify-self: start;
+  }
+
+  .access-page-v4 .access-payment-section > summary {
+    gap: 10px;
+  }
+}
+
+@media (max-width: 340px) {
+  .access-receipt-actions {
+    position: static;
+  }
+
+  .access-page-v4 .access-offer-action {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: 0;
+  }
+
+  .access-page-v4 .access-offer-action .access-row-link {
+    justify-self: start;
+    text-align: left;
+  }
+
+  .access-page-v4 .access-module-title-line {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .access-page-v4 .access-module-title-line .access-page-action {
+    justify-self: start;
+  }
+}
+.access-receipt-module-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.access-receipt-module-list li + li {
+  margin-top: 0.25rem;
+}

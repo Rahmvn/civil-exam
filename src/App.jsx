@@ -3,6 +3,7 @@ import "./App.css";
 import { AuthProvider } from "./lib/AuthContext";
 import { NetworkStatus } from "./components/NetworkStatus";
 import { DocumentMetadata } from "./components/DocumentMetadata";
+import { PurchaseModalProvider } from "./components/purchase/PurchaseModalProvider";
 import { RequireAdmin, RequireCandidate } from "./lib/AuthGuards";
 import Access from "./pages/Access";
 import Admin from "./pages/Admin";
@@ -37,6 +38,16 @@ function AppProviders() {
   );
 }
 
+function CandidateRoutes() {
+  return (
+    <RequireCandidate>
+      <PurchaseModalProvider>
+        <Outlet />
+      </PurchaseModalProvider>
+    </RequireCandidate>
+  );
+}
+
 const router = createBrowserRouter([
   {
     element: <AppProviders />,
@@ -52,53 +63,22 @@ const router = createBrowserRouter([
       { path: "/auth/callback", element: <AuthCallback /> },
       { path: "/reset-password", element: <ResetPassword /> },
       {
-        path: "/dashboard",
-        element: <RequireCandidate><Dashboard /></RequireCandidate>,
-      },
-      { path: "/modules", element: <RequireCandidate><Navigate to="/dashboard#modules" replace /></RequireCandidate> },
-      {
-        path: "/modules/:subjectSlug",
-        element: <RequireCandidate><ModuleDetail /></RequireCandidate>,
-      },
-      {
-        path: "/practice",
-        element: <RequireCandidate><PracticeStart /></RequireCandidate>,
-      },
-      {
-        path: "/practice/:subjectSlug",
-        element: <RequireCandidate><Practice /></RequireCandidate>,
-      },
-      {
-        path: "/oral-practice/:subjectSlug",
-        element: <RequireCandidate><OralPractice /></RequireCandidate>,
-      },
-      {
-        path: "/oral-review",
-        element: <RequireCandidate><OralReview /></RequireCandidate>,
-      },
-      {
-        path: "/result",
-        element: <RequireCandidate><Result /></RequireCandidate>,
-      },
-      {
-        path: "/review",
-        element: <RequireCandidate><Review /></RequireCandidate>,
-      },
-      {
-        path: "/profile",
-        element: <RequireCandidate><Profile /></RequireCandidate>,
-      },
-      {
-        path: "/access",
-        element: <RequireCandidate><Access /></RequireCandidate>,
-      },
-      {
-        path: "/help",
-        element: <RequireCandidate><Support /></RequireCandidate>,
-      },
-      {
-        path: "/payment/verify",
-        element: <RequireCandidate><PaymentVerify /></RequireCandidate>,
+        element: <CandidateRoutes />,
+        children: [
+          { path: "/dashboard", element: <Dashboard /> },
+          { path: "/modules", element: <Navigate to="/dashboard#modules" replace /> },
+          { path: "/modules/:subjectSlug", element: <ModuleDetail /> },
+          { path: "/practice", element: <PracticeStart /> },
+          { path: "/practice/:subjectSlug", element: <Practice /> },
+          { path: "/oral-practice/:subjectSlug", element: <OralPractice /> },
+          { path: "/oral-review", element: <OralReview /> },
+          { path: "/result", element: <Result /> },
+          { path: "/review", element: <Review /> },
+          { path: "/profile", element: <Profile /> },
+          { path: "/access", element: <Access /> },
+          { path: "/help", element: <Support /> },
+          { path: "/payment/verify", element: <PaymentVerify /> },
+        ],
       },
       {
         path: "/admin",

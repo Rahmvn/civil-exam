@@ -84,7 +84,8 @@ insert into public.payment_orders (
 
 insert into public.transactional_email_events (
   event_key, event_type, recipient_email, user_id, payment_order_id,
-  provider_message_id, status, error_message, attempted_at, sent_at
+  provider_message_id, status, dispatch_status, delivery_status,
+  error_message, attempted_at, sent_at
 ) values
   (
     'payment_success:PS-email-diagnostics-test',
@@ -94,6 +95,8 @@ insert into public.transactional_email_events (
     'e3400000-0000-4000-8000-000000000001',
     'eml_sent_test',
     'sent',
+    'accepted',
+    'delivered',
     null,
     now() - interval '5 minutes',
     now() - interval '5 minutes'
@@ -106,6 +109,8 @@ insert into public.transactional_email_events (
     'e3400000-0000-4000-8000-000000000001',
     null,
     'failed',
+    'dead',
+    'unknown',
     'Provider timeout',
     now() - interval '2 minutes',
     null
@@ -118,6 +123,8 @@ insert into public.transactional_email_events (
     'e3400000-0000-4000-8000-000000000001',
     null,
     'skipped',
+    'cancelled',
+    'unknown',
     'RESEND_API_KEY is not configured',
     now() - interval '1 minute',
     null
@@ -144,7 +151,7 @@ select cmp_ok(
 );
 
 select is(
-  (public.get_admin_transactional_email_events('failed', null, 50, 0) ->> 'total')::integer,
+  (public.get_admin_transactional_email_events('dead', null, 50, 0) ->> 'total')::integer,
   1,
   'status filtering returns only matching email events'
 );
@@ -156,19 +163,19 @@ select is(
 );
 
 select is(
-  public.get_admin_transactional_email_events('failed', null, 50, 0) #>> '{items,0,provider_reference}',
+  public.get_admin_transactional_email_events('dead', null, 50, 0) #>> '{items,0,provider_reference}',
   'PS-email-diagnostics-test',
   'email diagnostics include the linked payment reference'
 );
 
 select is(
-  public.get_admin_transactional_email_events('failed', null, 50, 0) #>> '{items,0,subject_name}',
+  public.get_admin_transactional_email_events('dead', null, 50, 0) #>> '{items,0,subject_name}',
   'Email Diagnostics Module',
   'email diagnostics include the linked module'
 );
 
 select is(
-  public.get_admin_transactional_email_events('failed', null, 50, 0) #>> '{items,0,error_message}',
+  public.get_admin_transactional_email_events('dead', null, 50, 0) #>> '{items,0,error_message}',
   'Provider timeout',
   'email diagnostics expose the send failure reason'
 );

@@ -35,25 +35,44 @@ test("paid dashboard keeps modules, account, and access connected without floati
   await expect(page.getByRole("heading", { name: "Paid Candidate" })).toBeVisible();
 
   await page.goto("/access");
-  await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
+  await expect(page.locator("h1", { hasText: "Access and payment" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toBeVisible();
   const unlockedModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
-  await expect(unlockedModule.getByText(/Active through/)).toBeVisible();
+  await expect(unlockedModule.getByText(/Access until/)).toBeVisible();
   const lockedModule = page.locator("article").filter({ hasText: "Public Service Rules" }).first();
   await expect(lockedModule.getByRole("button", { name: /^Unlock/ })).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
   await page.goto("/access?module=public-service-rules");
-  await expect(page.getByRole("heading", { name: "Access and payment" })).toBeVisible();
-  const accessRow = page.locator(".access-ledger-row").filter({ hasText: "Public Service Rules" }).first();
-  await expect(accessRow).toHaveClass(/is-expanded/);
-  const oneMonth = accessRow.getByRole("radio", { name: /1 month/ });
-  await expect(oneMonth).toHaveAttribute("aria-checked", "false");
-  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeDisabled();
+  await expect(page.locator("h1", { hasText: "Access and payment" })).toBeVisible();
+  const purchaseDialog = page.getByRole("dialog", { name: "Unlock Public Service Rules" });
+  const oneMonth = purchaseDialog.getByRole("radio", { name: /1 month/ });
+  await expect(oneMonth).not.toBeChecked();
+  await expect(purchaseDialog.getByRole("button", { name: "Review purchase" })).toBeDisabled();
   await oneMonth.click();
-  await expect(page.getByRole("button", { name: /Continue to payment/ })).toBeEnabled();
+  await expect(oneMonth).toBeChecked();
+  await expect(purchaseDialog.getByRole("button", { name: "Review purchase" })).toBeEnabled();
   await expectNoHorizontalOverflow(page);
+});
+
+test("active module access can be extended through the shared purchase modal", async ({ page }) => {
+  await page.goto("/access");
+  const activeRow = page.locator(".access-ledger-row").filter({ hasText: "Public Financial Management" }).first();
+  await expect(activeRow.getByRole("link", { name: "View" })).toBeVisible();
+  await activeRow.getByRole("button", { name: /^Extend/ }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Extend Public Financial Management access" });
+  await expect(dialog.getByText("Choose how long you want to extend access")).toBeVisible();
+  await expect(dialog.getByText(/Current access ends/)).toBeVisible();
+  await dialog.getByRole("radio", { name: /1 month/ }).check();
+  await expect(dialog.getByText("1 month extension · ₦2,500")).toBeVisible();
+  await dialog.getByRole("button", { name: "Review extension" }).click();
+  await expect(page.getByRole("heading", { name: "Review extension" })).toBeVisible();
+  const reviewDialog = page.getByRole("dialog", { name: "Review extension" });
+  await expect(reviewDialog.getByText("Current access", { exact: true })).toBeVisible();
+  await expect(reviewDialog.getByText(/^Until /)).toBeVisible();
+  await expect(reviewDialog.getByText("Extension", { exact: true })).toBeVisible();
+  await expect(reviewDialog.getByText("1 month", { exact: true })).toBeVisible();
 });
 
 test("WhatsApp support stays out of active practice", async ({ page }) => {
@@ -85,7 +104,7 @@ test("payment return stays on the receipt until the candidate opens the purchase
   await expect(page).toHaveURL(new RegExp(`/payment/verify\\?trxref=${reference}&reference=${reference}$`));
   await expect(page.getByRole("heading", { name: "Access unlocked" })).toBeVisible();
   await expect(page.getByText("Public Financial Management is now unlocked.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Continue practice" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Return to module" })).toHaveAttribute(
     "href",
     "/modules/public-financial-management",
   );
@@ -95,7 +114,7 @@ test("payment return stays on the receipt until the candidate opens the purchase
   await expect(page.getByRole("heading", { name: "Access unlocked" })).toBeVisible();
   expect(verificationCount).toBeGreaterThan(verificationCountBeforeReload);
 
-  await page.getByRole("link", { name: "Continue practice" }).click();
+  await page.getByRole("link", { name: "Return to module" }).click();
   await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
   await expect(page.getByText("Public Financial Management", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toHaveCount(0);
@@ -179,8 +198,8 @@ test("coming-soon lifecycle is never presented as unlocked", async ({ page }) =>
   const accessModule = page.locator("article").filter({ hasText: "Coming Soon Regression" }).first();
   await expect(accessModule).toBeVisible();
   await expect(accessModule.getByText("Unlocked", { exact: true })).toHaveCount(0);
-  await expect(accessModule.getByText("Practice is coming soon.")).toBeVisible();
-  await expect(accessModule.getByText("Not available yet")).toBeVisible();
+  await expect(accessModule.getByText("Practice coming soon", { exact: true })).toBeVisible();
+  await expect(accessModule.getByRole("button", { name: /^Unlock/ })).toHaveCount(0);
   await expect(accessModule.getByRole("link", { name: "View" })).toHaveCount(0);
   await expect(accessModule).not.toHaveClass(/is-unlocked/);
 

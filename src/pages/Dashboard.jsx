@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { usePurchaseModal } from "../components/purchase/usePurchaseModal";
 import {
   AnimatedProgressBar,
   DashboardActionButton,
@@ -35,6 +36,7 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { buildLocationPath } from "../lib/navigation";
 import { useAuth } from "../lib/useAuth";
 
 function formatPracticeSetCount(count) {
@@ -97,6 +99,7 @@ export default function Dashboard() {
   const { profile, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { openPurchase } = usePurchaseModal();
   const mountedRef = useRef(true);
   const [summary, setSummary] = useState(null);
   const [subjects, setSubjects] = useState([]);
@@ -244,7 +247,7 @@ export default function Dashboard() {
     return () => window.cancelAnimationFrame(frameId);
   }, [loading, location.hash]);
 
-  function openUnlockModule(subject) {
+  function openUnlockModule(subject, trigger) {
     const catalogEntry = catalogBySubject.get(subject.slug);
     setCtaError("");
 
@@ -253,7 +256,12 @@ export default function Dashboard() {
       return;
     }
 
-    navigate(`/access?module=${encodeURIComponent(subject.slug)}&returnTo=${encodeURIComponent(`/modules/${subject.slug}`)}`);
+    openPurchase({
+      intent: "unlock",
+      mode: "module",
+      moduleSlug: subject.slug,
+      returnTo: buildLocationPath(location),
+    }, trigger);
   }
 
   function buildModuleAction(subject, rows, progression, completedCount, publishedCount, hasModuleAccess, canPurchase) {
@@ -286,7 +294,7 @@ export default function Dashboard() {
     }
 
     if (targetRow.state === "locked_requires_payment" || !targetRow.can_start) {
-      return { label: "Unlock module", action: () => openUnlockModule(subject) };
+      return { label: "Unlock module", action: (event) => openUnlockModule(subject, event.currentTarget) };
     }
 
     if (targetRow.state === "completed_failed") {
@@ -294,7 +302,7 @@ export default function Dashboard() {
     }
 
     if (!hasModuleAccess && targetRow.state === "completed_passed") {
-      return { label: "Unlock module", action: () => openUnlockModule(subject) };
+      return { label: "Unlock module", action: (event) => openUnlockModule(subject, event.currentTarget) };
     }
 
     if (Number(targetRow.attempt_count ?? 0) > 0) {
@@ -345,7 +353,7 @@ export default function Dashboard() {
     const secondaryAction = hasUsableModuleAccess && completedCount < publishedRows.length
       ? { label: "Choose another practice set", to: `/modules/${subject.slug}` }
       : !purchaseUnavailable && !hasModuleAccess && primaryAction.label !== "Unlock module" && !isComingSoon
-        ? { label: "Unlock module", action: () => openUnlockModule(subject) }
+        ? { label: "Unlock module", action: (event) => openUnlockModule(subject, event.currentTarget) }
         : null;
 
     return {

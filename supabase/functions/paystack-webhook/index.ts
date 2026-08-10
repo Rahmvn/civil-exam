@@ -22,9 +22,9 @@ import {
   validatePaystackEnvironment,
 } from "../_shared/payment-validation.js";
 import {
+  enqueuePaymentReviewEmail,
+  enqueuePaymentSuccessEmail,
   getPaymentEmailDetails,
-  sendPaymentReviewEmail,
-  sendPaymentSuccessEmail,
 } from "../_shared/transactional-email.ts";
 
 function getPaymentReviewEmailType(eventType: string, resolution = "") {
@@ -65,7 +65,8 @@ Deno.serve(async (request) => {
     if (reference) validatePaystackEnvironment(event, paystackSecret);
 
     if (isPaystackPostPaymentEvent(event.event)) {
-      const result = await applyPaystackPostPaymentEvent(await createPaystackEventKey(body), event);
+      const providerEventKey = await createPaystackEventKey(body);
+      const result = await applyPaystackPostPaymentEvent(providerEventKey, event);
       if (result?.event_applied && reference) {
         const reviewEmailType = getPaymentReviewEmailType(
           event.event,
@@ -74,8 +75,8 @@ Deno.serve(async (request) => {
         if (reviewEmailType) {
           const emailDetails = await getPaymentEmailDetails(reference);
           if (emailDetails) {
-            await sendPaymentReviewEmail(emailDetails, reviewEmailType).catch((emailError) => {
-              console.warn("Payment review email could not be sent", {
+            await enqueuePaymentReviewEmail(emailDetails, reviewEmailType, providerEventKey).catch((emailError) => {
+              console.warn("Payment review email could not be queued", {
                 event: event.event,
                 reference,
                 message: emailError instanceof Error ? emailError.message : "Unknown email error",
@@ -102,8 +103,8 @@ Deno.serve(async (request) => {
           await activateModulePurchase(event.data.reference, event.data);
           const emailDetails = await getPaymentEmailDetails(event.data.reference);
           if (emailDetails) {
-            await sendPaymentSuccessEmail(emailDetails).catch((emailError) => {
-              console.warn("Payment success email could not be sent", {
+            await enqueuePaymentSuccessEmail(emailDetails).catch((emailError) => {
+              console.warn("Payment success email could not be queued", {
                 reference: event.data.reference,
                 message: emailError instanceof Error ? emailError.message : "Unknown email error",
               });

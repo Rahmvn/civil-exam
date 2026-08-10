@@ -8,6 +8,7 @@ import {
 import { getPaymentCallbackUrl } from "../_shared/payment-callback.js";
 import { getPaystackEnvironment } from "../_shared/payment-validation.js";
 import {
+  assertModulesNotUnderPaymentReview,
   enforceEdgeRateLimit,
   getActiveModuleAccess,
   getActivePack,
@@ -16,6 +17,7 @@ import {
   getModuleOffering,
   getPaystackTransactionStatus,
   isFinalUnsuccessfulPaystackPayment,
+  PaymentAccessReviewError,
   recordModulePaymentStatus,
 } from "../_shared/paystack.ts";
 import { sanitizePaymentPayload } from "../_shared/payment-sanitization.js";
@@ -414,6 +416,13 @@ Deno.serve(async (request) => {
       checkoutKey = `single:${moduleCheckout.subject.id}`;
     }
 
+    await assertModulesNotUnderPaymentReview(
+      adminClient,
+      user.id,
+      String(pack.id),
+      items.map((item) => String(item.subject.id)),
+    );
+
     if (expectedPriceKobo === undefined && (purchaseType === "pricing_plan" || purchaseType === "bundle_offer" || pricingType === "launch_offer")) {
       return jsonResponse({
         error: "Review and confirm the current price before continuing.",
@@ -639,6 +648,11 @@ Deno.serve(async (request) => {
     const status = message.startsWith("Payment callback configuration error:")
       ? 500
       : getRequestErrorStatus(error);
-    return jsonResponse({ error: message }, status);
+    return jsonResponse(
+      error instanceof PaymentAccessReviewError
+        ? { error: message, code: error.code }
+        : { error: message },
+      status,
+    );
   }
 });

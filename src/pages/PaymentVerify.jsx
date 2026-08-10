@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyPayment } from "../lib/appApi";
 import { logAppError, PROBLEM_CODES, resolveAppProblem } from "../lib/errors";
+import { getPaymentVerificationCopy } from "../lib/paymentDisplay";
 import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 
 function getSafeReturnPath(value) {
@@ -11,6 +12,17 @@ function getSafeReturnPath(value) {
   return candidate;
 }
 
+function getReturnActionLabel(path) {
+  const pathname = String(path ?? "").split(/[?#]/, 1)[0];
+  if (pathname === "/access") return "Return to access";
+  if (pathname === "/dashboard") return "Return to dashboard";
+  if (pathname === "/practice" || pathname.startsWith("/practice/") || pathname.startsWith("/oral-practice/")) {
+    return "Continue practice";
+  }
+  if (pathname.startsWith("/modules/")) return "Return to module";
+  return "Continue";
+}
+
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
   const reference = searchParams.get("reference") ?? searchParams.get("trxref");
@@ -18,6 +30,7 @@ export default function PaymentVerify() {
   const [verificationRun, setVerificationRun] = useState(0);
   const [state, setState] = useState(reference ? "checking" : "missing");
   const [moduleSlug, setModuleSlug] = useState("");
+  const [successHeading, setSuccessHeading] = useState("Access unlocked");
   const [returnTo, setReturnTo] = useState(requestedReturnTo);
   const [message, setMessage] = useState(
     reference ? "We are confirming your payment with Paystack." : "No payment reference was found in this return link.",
@@ -35,15 +48,21 @@ export default function PaymentVerify() {
         const result = await verifyPayment(reference);
         if (!active) return;
         const storedReturnTo = getSafeReturnPath(window.sessionStorage?.getItem("promotionsure:payment:returnTo"));
+        const payment = result?.payment;
+        const copy = getPaymentVerificationCopy(payment, result);
+        const firstItem = Array.isArray(payment?.items) ? payment.items[0] : null;
         setState("success");
-        setModuleSlug(result?.subject_slug ?? "");
+        setSuccessHeading(copy.heading);
+        setModuleSlug(
+          Number(payment?.item_count) === 1
+            ? payment?.items?.[0]?.subject_slug ?? result?.subject_slug ?? ""
+            : payment
+              ? ""
+              : result?.subject_slug ?? firstItem?.subject_slug ?? "",
+        );
         setReturnTo(requestedReturnTo || storedReturnTo);
         window.sessionStorage?.removeItem("promotionsure:payment:returnTo");
-        setMessage(result?.purchase_type === "bundle_offer"
-          ? `${result.purchase_label || `${result.unlocked_count} modules`} is now unlocked.`
-          : result?.subject_name
-            ? `${result.subject_name} is now unlocked.`
-            : "Your access is now active.");
+        setMessage(copy.message);
       } catch (error) {
         if (!active) return;
         logAppError("Payment verification", error);
@@ -62,7 +81,7 @@ export default function PaymentVerify() {
   }, [reference, requestedReturnTo, verificationRun]);
 
   const heading = state === "success"
-    ? "Access unlocked"
+    ? successHeading
     : state === "missing"
       ? "Payment reference missing"
       : state === "access-issue"
@@ -73,6 +92,7 @@ export default function PaymentVerify() {
   const continuePath = moduleSlug
     ? returnTo || `/modules/${encodeURIComponent(moduleSlug)}`
     : returnTo || "/dashboard#modules";
+  const continueLabel = getReturnActionLabel(continuePath);
 
   return (
     <main className="state-shell payment-verification-page">
@@ -90,7 +110,7 @@ export default function PaymentVerify() {
         <div className="payment-verification-actions">
           {state === "success" ? (
             <>
-              <Link className="primary-action" to={continuePath}>Continue practice</Link>
+              <Link className="primary-action" to={continuePath}>{continueLabel}</Link>
               <Link className="secondary-action" to="/access">View access</Link>
             </>
           ) : state === "unconfirmed" || state === "access-issue" ? (

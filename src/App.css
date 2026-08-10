@@ -900,8 +900,8 @@
 
 .access-row-link:focus-visible,
 .access-offer-action button:focus-visible,
-.access-duration-choice:focus-visible,
-.access-bundle-choice:focus-visible,
+.access-duration-choice:has(input:focus-visible),
+.access-bundle-choice:has(input:focus-visible),
 .access-payment-action:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
   outline-offset: 2px;
@@ -919,9 +919,13 @@
 .access-choice-group {
   display: grid;
   gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-.access-choice-group h3,
+.access-choice-legend,
 .access-bundle-picker-heading h3 {
   color: var(--color-text);
   font-size: 0.94rem;
@@ -966,23 +970,7 @@
   grid-row: 1 / span 2;
   width: 20px;
   height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 68%, white);
-  border-radius: 50%;
-  background: var(--color-surface);
-}
-
-.access-duration-choice.is-selected .access-choice-radio {
-  border-color: var(--color-primary);
-}
-
-.access-duration-choice.is-selected .access-choice-radio::after {
-  content: "";
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--color-primary);
+  accent-color: var(--color-primary);
 }
 
 .access-choice-label {
@@ -1164,7 +1152,7 @@
   background: color-mix(in srgb, var(--color-primary-soft) 48%, white);
 }
 
-.access-bundle-choice:disabled:not(.is-selected) {
+.access-bundle-choice.is-disabled:not(.is-selected) {
   opacity: 0.48;
   cursor: not-allowed;
 }
@@ -1172,35 +1160,16 @@
 .access-choice-check {
   width: 19px;
   height: 19px;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 65%, white);
-  border-radius: 6px;
-  background: var(--color-surface);
-}
-
-.access-bundle-choice.is-selected .access-choice-check {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-}
-
-.access-bundle-choice.is-selected .access-choice-check::after {
-  content: "";
-  width: 8px;
-  height: 4px;
-  border-bottom: 2px solid #fff;
-  border-left: 2px solid #fff;
-  transform: translateY(-1px) rotate(-45deg);
+  accent-color: var(--color-primary);
 }
 
 .access-bundle-choice > span:nth-child(2) {
   min-width: 0;
-  overflow: hidden;
   font-size: 0.87rem;
   font-weight: 750;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .access-bundle-choice small {
@@ -8848,8 +8817,10 @@ button.auth-forgot-link {
 }
 
 .whatsapp-support-button {
+  --whatsapp-edge-left: max(20px, env(safe-area-inset-left, 0px));
+  --whatsapp-edge-right: max(20px, env(safe-area-inset-right, 0px));
   position: fixed;
-  right: max(20px, env(safe-area-inset-right, 0px));
+  right: var(--whatsapp-edge-right);
   left: auto;
   bottom: max(20px, env(safe-area-inset-bottom, 0px));
   z-index: 45;
@@ -8879,12 +8850,16 @@ button.auth-forgot-link {
 
 .whatsapp-support-button[data-dock-side="left"] {
   right: auto;
-  left: max(20px, env(safe-area-inset-left, 0px));
+  left: var(--whatsapp-edge-left);
 }
 
 .whatsapp-support-button[data-dragging="true"] {
   right: auto;
-  left: var(--whatsapp-drag-left);
+  left: clamp(
+    var(--whatsapp-edge-left),
+    var(--whatsapp-drag-left),
+    calc(100vw - var(--whatsapp-drag-width) - var(--whatsapp-edge-right))
+  );
   cursor: grabbing;
   transition: none;
 }
@@ -8912,7 +8887,9 @@ button.auth-forgot-link {
 
 @media (max-width: 720px) {
   .whatsapp-support-button {
-    right: max(14px, env(safe-area-inset-right, 0px));
+    --whatsapp-edge-left: max(14px, env(safe-area-inset-left, 0px));
+    --whatsapp-edge-right: max(14px, env(safe-area-inset-right, 0px));
+    right: var(--whatsapp-edge-right);
     left: auto;
     bottom: max(16px, env(safe-area-inset-bottom, 0px));
     width: 46px;
@@ -8924,18 +8901,22 @@ button.auth-forgot-link {
 
   .whatsapp-support-button[data-dock-side="left"] {
     right: auto;
-    left: max(14px, env(safe-area-inset-left, 0px));
+    left: var(--whatsapp-edge-left);
   }
 
   .whatsapp-support-button[data-dragging="true"] {
     right: auto;
-    left: var(--whatsapp-drag-left);
+    left: clamp(
+      var(--whatsapp-edge-left),
+      var(--whatsapp-drag-left),
+      calc(100vw - var(--whatsapp-drag-width) - var(--whatsapp-edge-right))
+    );
     cursor: grabbing;
     transition: none;
   }
 
   .whatsapp-support-button.avoid-bottom-nav {
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
   }
 
   .whatsapp-support-button span {

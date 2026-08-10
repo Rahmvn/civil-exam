@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(11);
+select plan(30);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -13,6 +13,11 @@ insert into auth.users (
   '00000000-0000-0000-0000-000000000000',
   'fa110000-0000-4000-8000-000000000001', 'authenticated', 'authenticated',
   'duration-activation-candidate@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now(),
+  '', '', '', '', '{"provider":"email","providers":["email"]}', '{}', now(), now()
+), (
+  '00000000-0000-0000-0000-000000000000',
+  'fa110000-0000-4000-8000-000000000002', 'authenticated', 'authenticated',
+  'legacy-single-module-candidate@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now(),
   '', '', '', '', '{"provider":"email","providers":["email"]}', '{}', now(), now()
 );
 
@@ -117,6 +122,24 @@ select is(
   (select fulfillment_status from public.payment_orders where id = 'fd110000-0000-4000-8000-000000000001'),
   'fulfilled',
   'duration pricing order is fulfilled after activation'
+);
+
+select is(
+  public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000001') ->> 'product_label',
+  'Duration Pricing Objective',
+  'single-module presentation uses the purchased module identity'
+);
+
+select is(
+  (public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000001') ->> 'duration_months')::integer,
+  1,
+  'single-module presentation exposes the purchased duration'
+);
+
+select is(
+  public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000001') ->> 'access_result_kind',
+  'exact',
+  'single-module presentation labels its persisted expiry as exact'
 );
 
 create temp table first_duration_expiry as
@@ -231,10 +254,83 @@ select is(
   'renewal order stores the resulting access expiry on the order snapshot'
 );
 
+select is(
+  public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000002') ->> 'purchase_intent',
+  'extension',
+  'renewal presentation is identified as an extension even though entitlement ownership remains on the original order'
+);
+
+select is(
+  (public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000002') ->> 'duration_months')::integer,
+  3,
+  'renewal presentation exposes its purchased duration'
+);
+
+select is(
+  (public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000002') ->> 'access_expires_at')::timestamptz,
+  (select access_expires_at from public.payment_orders where id = 'fd110000-0000-4000-8000-000000000002'),
+  'renewal presentation uses the order-persisted resulting expiry'
+);
+
 create temp table renewal_order_expiry as
 select access_expires_at
 from public.payment_orders
 where id = 'fd110000-0000-4000-8000-000000000002';
+
+select is(
+  (select count(*)::integer from public.payment_order_item_access_outcomes
+   where payment_order_id in ('fd110000-0000-4000-8000-000000000001', 'fd110000-0000-4000-8000-000000000002')),
+  2,
+  'each duration order item has one durable access outcome'
+);
+
+select is(
+  (select activation_kind from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000001'),
+  'new',
+  'first duration purchase records new activation'
+);
+
+select is(
+  (select activation_kind from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000002'),
+  'extension',
+  'renewal records extension activation'
+);
+
+select is(
+  (select before_expires_at from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000002'),
+  (select expires_at from first_duration_expiry),
+  'extension outcome preserves the access expiry immediately before activation'
+);
+
+select is(
+  (select after_expires_at from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000002'),
+  (select access_expires_at from renewal_order_expiry),
+  'extension outcome preserves its original resulting expiry'
+);
+
+select is(
+  (select effect_state from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000002'),
+  'effective',
+  'new outcomes start effective'
+);
+
+select is(
+  (select expires_at from public.activate_module_purchase('PS-DURATION-FIRST', '{}'::jsonb)),
+  (select access_expires_at from public.payment_orders where id = 'fd110000-0000-4000-8000-000000000001'),
+  'old-order replay returns the immutable original result after a later extension'
+);
+
+select is(
+  (select count(*)::integer from public.payment_order_item_access_outcomes
+   where payment_order_id = 'fd110000-0000-4000-8000-000000000001'),
+  1,
+  'old-order replay does not duplicate its contribution'
+);
 
 grant select on renewal_order_expiry to authenticated;
 
@@ -246,6 +342,86 @@ select is(
   (select access_expires_at from public.get_payment_history(20) where id = 'fd110000-0000-4000-8000-000000000002'),
   (select access_expires_at from renewal_order_expiry),
   'payment history shows the expiry for renewal orders even when entitlement ownership was extended in place'
+);
+
+reset role;
+
+insert into public.payment_orders (
+  id, user_id, exam_pack_id, subject_id, module_offering_id,
+  purchase_type, purchase_label, checkout_key, provider_reference,
+  amount_kobo, list_price_kobo, pricing_type, currency, status,
+  provider_status, fulfillment_status, purchase_snapshot
+)
+select
+  'fd110000-0000-4000-8000-000000000003',
+  'fa110000-0000-4000-8000-000000000002',
+  mo.exam_pack_id,
+  'fb110000-0000-4000-8000-000000000001',
+  'fc110000-0000-4000-8000-000000000001',
+  'single_module',
+  'Duration Pricing Objective',
+  'legacy:duration-pricing-objective',
+  'PS-LEGACY-SINGLE',
+  250000,
+  250000,
+  'regular',
+  'NGN',
+  'pending',
+  'success',
+  'pending',
+  jsonb_build_object('purchase_type', 'single_module')
+from public.module_offerings mo
+where mo.id = 'fc110000-0000-4000-8000-000000000001';
+
+select is(
+  (select count(*)::integer from public.activate_module_purchase('PS-LEGACY-SINGLE', '{}'::jsonb)),
+  1,
+  'legacy single-module activation still fulfils after duration pricing rollout'
+);
+
+select is(
+  (
+    select me.expires_at
+    from public.module_entitlements me
+    where me.payment_order_id = 'fd110000-0000-4000-8000-000000000003'
+  ),
+  (
+    select (ep.active_until::text || ' 23:59:59.999+00')::timestamptz
+    from public.exam_packs ep
+    where ep.is_active = true
+    order by ep.active_from desc, ep.created_at desc
+    limit 1
+  ),
+  'legacy single-module entitlement keeps the old active-pack expiry model'
+);
+
+select is(
+  (
+    select po.access_expires_at
+    from public.payment_orders po
+    where po.id = 'fd110000-0000-4000-8000-000000000003'
+  ),
+  null,
+  'legacy single-module orders are not rewritten with duration access snapshots'
+);
+
+select is(
+  public.build_payment_order_presentation('fd110000-0000-4000-8000-000000000003') ->> 'product_label',
+  'Duration Pricing Objective',
+  'legacy single-module presentation falls back to the linked historical module identity'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config('request.jwt.claim.sub', 'fa110000-0000-4000-8000-000000000002', true);
+
+select ok(
+  (
+    select has_module_access
+    from public.get_module_access_catalog_v2()
+    where subject_id = 'fb110000-0000-4000-8000-000000000001'
+  ),
+  'legacy paid users still see module access through the candidate catalog'
 );
 
 select * from finish();

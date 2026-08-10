@@ -57,6 +57,38 @@ export async function enforceEdgeRateLimit(
   }
 }
 
+export class PaymentAccessReviewError extends RequestBodyError {
+  code = "MODULE_ACCESS_UNDER_REVIEW";
+
+  constructor() {
+    super(
+      "Access for this module is currently under payment review. Wait until the review is resolved before purchasing more access.",
+      409,
+    );
+    this.name = "PaymentAccessReviewError";
+  }
+}
+
+export async function assertModulesNotUnderPaymentReview(
+  adminClient: ReturnType<typeof getAdminClient>,
+  userId: string,
+  packId: string,
+  subjectIds: string[],
+) {
+  const { error } = await adminClient.rpc("assert_modules_not_under_payment_review", {
+    requested_user_id: userId,
+    requested_exam_pack_id: packId,
+    requested_subject_ids: subjectIds,
+  });
+
+  if (!error) return;
+  if (error.details === "MODULE_ACCESS_UNDER_REVIEW"
+    || error.message === "Access for this module is currently under payment review.") {
+    throw new PaymentAccessReviewError();
+  }
+  throw error;
+}
+
 export async function getAuthedUser(request: Request) {
   const authHeader = request.headers.get("Authorization");
 
@@ -278,6 +310,17 @@ export async function getModulePaymentOrder(reference: string) {
     .select("id, user_id, exam_pack_id, subject_id, purchase_type, purchase_offer_id, purchase_plan_id, plan_code, duration_months, purchase_label, provider_reference, status, amount_kobo, currency, provider_status, fulfillment_status, review_status")
     .eq("provider_reference", reference)
     .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
+export async function getPaymentOrderPresentation(reference: string) {
+  const adminClient = getAdminClient();
+  const { data, error } = await adminClient.rpc(
+    "get_payment_order_presentation_for_service",
+    { requested_reference: reference },
+  );
 
   if (error) throw error;
   return data ?? null;

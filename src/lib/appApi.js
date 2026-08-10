@@ -869,14 +869,29 @@ export async function getAdminTransactionalEmailEvents({ status = "all", query =
     counts: {
       all: Number(data?.counts?.all) || 0,
       pending: Number(data?.counts?.pending) || 0,
+      processing: Number(data?.counts?.processing) || 0,
+      retrying: Number(data?.counts?.retrying) || 0,
+      accepted: Number(data?.counts?.accepted) || 0,
       sent: Number(data?.counts?.sent) || 0,
+      delivered: Number(data?.counts?.delivered) || 0,
+      delayed: Number(data?.counts?.delayed) || 0,
       failed: Number(data?.counts?.failed) || 0,
-      skipped: Number(data?.counts?.skipped) || 0,
+      bounced: Number(data?.counts?.bounced) || 0,
+      complained: Number(data?.counts?.complained) || 0,
+      suppressed: Number(data?.counts?.suppressed) || 0,
+      dead: Number(data?.counts?.dead) || 0,
+      cancelled: Number(data?.counts?.cancelled) || 0,
     },
     limit: Number(data?.limit) || limit,
     offset: Number(data?.offset) || 0,
     hasMore: Boolean(data?.has_more),
   };
+}
+
+export async function retryAdminTransactionalEmailEvent(eventId) {
+  return requireData(await supabase.rpc("admin_retry_transactional_email_event", {
+    requested_event_id: eventId,
+  }));
 }
 
 export async function getAdminUserDirectory({ segment = "all", query = "", limit = 50, offset = 0 } = {}) {

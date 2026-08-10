@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(18);
+select plan(22);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -190,6 +190,29 @@ select is(
   (select count(*)::integer from public.module_entitlements where payment_order_id = 'fd000000-0000-4000-8000-000000000001'),
   3,
   'one successful bundle payment creates three module entitlements'
+);
+
+select is(
+  public.build_payment_order_presentation('fd000000-0000-4000-8000-000000000001') ->> 'product_label',
+  'Bundle Test Any 3',
+  'bundle presentation preserves the administrator-configured purchase name'
+);
+
+select is(
+  (public.build_payment_order_presentation('fd000000-0000-4000-8000-000000000001') ->> 'item_count')::integer,
+  3,
+  'bundle presentation includes every purchased module'
+);
+
+select is(
+  jsonb_array_length(public.build_payment_order_presentation('fd000000-0000-4000-8000-000000000001') -> 'items'),
+  3,
+  'bundle receipt items are not summarized from an arbitrary entitlement'
+);
+
+select ok(
+  (public.build_payment_order_presentation('fd000000-0000-4000-8000-000000000001') ->> 'receipt_eligible')::boolean,
+  'fulfilled bundle is eligible for a receipt'
 );
 
 select is(

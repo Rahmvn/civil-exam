@@ -13,6 +13,7 @@ import {
   getAuthedUser,
   getAdminClient,
   getModulePaymentOrder,
+  getPaymentOrderPresentation,
   markModulePaymentFulfillmentFailed,
   recordModulePaymentStatus,
   validateModulePayment,
@@ -20,9 +21,9 @@ import {
 import { validatePaystackEnvironment } from "../_shared/payment-validation.js";
 import { getPaymentUserId } from "../_shared/payment-validation.js";
 import {
+  enqueuePaymentAccessIssueEmail,
+  enqueuePaymentSuccessEmail,
   getPaymentEmailDetails,
-  sendPaymentAccessIssueEmail,
-  sendPaymentSuccessEmail,
 } from "../_shared/transactional-email.ts";
 
 Deno.serve(async (request) => {
@@ -110,10 +111,11 @@ Deno.serve(async (request) => {
       validateModulePayment(order, payload.data);
       const entitlements = await activateModulePurchase(reference, payload.data);
       const primaryEntitlement = entitlements[0];
+      const payment = await getPaymentOrderPresentation(reference);
       const emailDetails = await getPaymentEmailDetails(reference);
       if (emailDetails) {
-        await sendPaymentSuccessEmail(emailDetails).catch((emailError) => {
-          console.warn("Payment success email could not be sent", {
+        await enqueuePaymentSuccessEmail(emailDetails).catch((emailError) => {
+          console.warn("Payment success email could not be queued", {
             reference,
             message: emailError instanceof Error ? emailError.message : "Unknown email error",
           });
@@ -128,13 +130,14 @@ Deno.serve(async (request) => {
         unlocked_count: entitlements.length,
         subject_name: order.purchase_type === "single_module" ? primaryEntitlement.subject_name : null,
         subject_slug: order.purchase_type === "single_module" ? primaryEntitlement.subject_slug : null,
+        payment,
       });
     } catch (fulfillmentError) {
       await markModulePaymentFulfillmentFailed(reference, fulfillmentError);
       const emailDetails = await getPaymentEmailDetails(reference);
       if (emailDetails) {
-        await sendPaymentAccessIssueEmail(emailDetails).catch((emailError) => {
-          console.warn("Payment access issue email could not be sent", {
+        await enqueuePaymentAccessIssueEmail(emailDetails).catch((emailError) => {
+          console.warn("Payment access issue email could not be queued", {
             reference,
             message: emailError instanceof Error ? emailError.message : "Unknown email error",
           });

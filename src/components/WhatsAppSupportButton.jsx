@@ -23,7 +23,10 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
   const location = useLocation();
   const [dockSide, setDockSide] = useState(getSavedDockSide);
   const [dragLeft, setDragLeft] = useState(null);
+  const [dragWidth, setDragWidth] = useState(46);
   const [isDragging, setIsDragging] = useState(false);
+  const buttonRef = useRef(null);
+  const avoidedElementRef = useRef(null);
   const dragStateRef = useRef(null);
   const suppressClickRef = useRef(false);
 
@@ -37,8 +40,66 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
     };
 
     window.addEventListener("resize", handleViewportChange);
-    return () => window.removeEventListener("resize", handleViewportChange);
+    window.addEventListener("orientationchange", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("orientationchange", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let animationFrame = 0;
+    const clearAvoidedElement = () => {
+      avoidedElementRef.current?.removeAttribute("data-floating-support-clearance");
+      avoidedElementRef.current = null;
+    };
+    const updateAvoidedElement = () => {
+      animationFrame = 0;
+      const button = buttonRef.current;
+      if (!button || !window.matchMedia("(max-width: 720px)").matches) {
+        clearAvoidedElement();
+        return;
+      }
+
+      const buttonRect = button.getBoundingClientRect();
+      const candidates = [...document.querySelectorAll('[data-floating-support-avoid="true"]')];
+      const nextElement = candidates.find((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.bottom > buttonRect.top + 4 && rect.top < buttonRect.bottom - 4;
+      }) ?? null;
+
+      if (avoidedElementRef.current !== nextElement) clearAvoidedElement();
+      if (nextElement) {
+        if (nextElement.getAttribute("data-floating-support-clearance") !== dockSide) {
+          nextElement.setAttribute("data-floating-support-clearance", dockSide);
+        }
+        avoidedElementRef.current = nextElement;
+      }
+    };
+    const scheduleUpdate = () => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(updateAvoidedElement);
+    };
+
+    scheduleUpdate();
+    const observer = new MutationObserver(scheduleUpdate);
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("scroll", scheduleUpdate, { passive: true, capture: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.visualViewport?.addEventListener("resize", scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      observer.disconnect();
+      window.removeEventListener("scroll", scheduleUpdate, { capture: true });
+      window.removeEventListener("resize", scheduleUpdate);
+      window.visualViewport?.removeEventListener("resize", scheduleUpdate);
+      clearAvoidedElement();
+    };
+  }, [dockSide, location.pathname]);
 
   function handlePointerDown(event) {
     if (!event.isPrimary) return;
@@ -53,6 +114,7 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
       width: rect.width,
       moved: false,
     };
+    setDragWidth(rect.width);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   }
 
@@ -116,6 +178,7 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
 
   return (
     <a
+      ref={buttonRef}
       aria-label="Chat on WhatsApp with PromotionSure support (opens in a new tab)"
       className={`whatsapp-support-button${avoidBottomNav ? " avoid-bottom-nav" : ""}`}
       data-dock-side={dockSide}
@@ -128,7 +191,10 @@ export function WhatsAppSupportButton({ avoidBottomNav = false }) {
       onPointerMove={handlePointerMove}
       onPointerUp={finishPointerInteraction}
       rel="noopener noreferrer"
-      style={dragLeft === null ? undefined : { "--whatsapp-drag-left": `${dragLeft}px` }}
+      style={dragLeft === null ? undefined : {
+        "--whatsapp-drag-left": `${dragLeft}px`,
+        "--whatsapp-drag-width": `${dragWidth}px`,
+      }}
       target="_blank"
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">

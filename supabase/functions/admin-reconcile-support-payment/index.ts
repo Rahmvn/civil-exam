@@ -11,12 +11,17 @@ import {
   getAdminClient,
   getAuthedUser,
   getModulePaymentOrder,
+  getPaymentOrderPresentation,
   getPaystackTransactionStatus,
   markModulePaymentFulfillmentFailed,
   recordModulePaymentStatus,
   validateModulePayment,
 } from "../_shared/paystack.ts";
 import { getPaymentUserId, validatePaystackEnvironment } from "../_shared/payment-validation.js";
+import {
+  enqueuePaymentSuccessEmail,
+  getPaymentEmailDetails,
+} from "../_shared/transactional-email.ts";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -105,6 +110,13 @@ Deno.serve(async (request) => {
       validateModulePayment(order, payload.data);
       const entitlements = await activateModulePurchase(order.provider_reference, payload.data);
       const primaryEntitlement = entitlements[0];
+      const payment = await getPaymentOrderPresentation(order.provider_reference);
+      const emailDetails = await getPaymentEmailDetails(order.provider_reference);
+      if (emailDetails) {
+        await enqueuePaymentSuccessEmail(emailDetails).catch((emailError) => {
+          console.error("Admin-reconciled payment email could not be queued", emailError);
+        });
+      }
 
       return jsonResponse({
         status: "active",
@@ -114,6 +126,7 @@ Deno.serve(async (request) => {
           ? primaryEntitlement.subject_name
           : order.purchase_label,
         unlocked_count: entitlements.length,
+        payment,
       });
     } catch (fulfillmentError) {
       if (order.fulfillment_status !== "fulfilled") {

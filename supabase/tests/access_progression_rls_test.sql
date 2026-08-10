@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(39);
+select plan(40);
 
 update public.exam_packs set is_active = false;
 
@@ -387,9 +387,14 @@ select is(
   'payment history identifies the module that was purchased'
 );
 select is(
-  (select count(*)::integer from public.get_payment_history(10) where provider_reference in ('e2e-initialized-only', 'e2e-declined')),
+  (select count(*)::integer from public.get_payment_history(10) where provider_reference = 'e2e-initialized-only'),
   0,
-  'initialized and declined checkout attempts are excluded from payment history'
+  'checkout attempts that never reached a provider outcome are excluded from payment history'
+);
+select is(
+  (select provider_status from public.get_payment_history(10) where provider_reference = 'e2e-declined'),
+  'failed',
+  'failed checkout attempts remain visible as a truthful provider outcome'
 );
 select is(
   (select record_type from public.get_payment_history(10) where provider_reference = 'e2e-processing'),
@@ -403,8 +408,8 @@ select is(
 );
 select is(
   (select count(*)::integer from public.get_payment_history(10) where record_type = 'history'),
-  1,
-  'only the fulfilled payment is included in completed payment history'
+  2,
+  'fulfilled and declined outcomes are included in payment history'
 );
 select ok(
   not has_table_privilege('authenticated', 'public.payment_orders', 'SELECT'),

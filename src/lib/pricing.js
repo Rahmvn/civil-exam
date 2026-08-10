@@ -12,6 +12,18 @@ export function formatModuleMoney(kobo, currency = "NGN") {
   return MONEY_FORMATTERS.get(code).format(Number(kobo ?? 0) / 100);
 }
 
+export function formatProductDate(value, fallback = "Not available") {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Africa/Lagos",
+  }).format(date);
+}
+
 export function formatLaunchOfferEnd(value) {
   if (!value) return "";
   return new Intl.DateTimeFormat("en-NG", {

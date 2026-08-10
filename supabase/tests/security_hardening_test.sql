@@ -47,8 +47,8 @@ select is(
       and p.prokind = 'f'
       and has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
-  2,
-  'only the public catalogue and active launch offer are anonymous public-schema functions'
+  3,
+  'only the public catalogues and active launch offer are anonymous public-schema functions'
 );
 
 select ok(has_table_privilege('authenticated', 'public.profiles', 'SELECT'),

@@ -1,0 +1,2236 @@
+PROMOTIONSURE
+ACCESS PAGE + SHARED PURCHASE MODAL
+MASTER UI/UX PLAN AND CODEX IMPLEMENTATION CONTRACT
+====================================================
+
+Status: New source of truth
+Date: 9 August 2026
+Product: PromotionSure
+Primary screen: /access
+Shared purchase experience: any authenticated page with an Unlock action
+
+IMPORTANT
+---------
+This document supersedes the earlier visual direction in which purchases expanded inline inside /access rows.
+
+The completed Phase 2 and Phase 3 engineering work should be preserved where applicable:
+- backend-driven pricing and plan lookup
+- validated purchase targets
+- required bundle-module counts
+- native radio semantics
+- native checkbox semantics
+- Pick 3 progressive-disclosure logic
+- duration-reset logic
+- payment-attempt scoping
+- duplicate Paystack-start protection
+- safe returnTo handling
+- friendly payment errors
+- server-side verification
+- payment history and receipt logic
+
+The major change is PRESENTATION and INFORMATION ARCHITECTURE.
+
+OLD DIRECTION
+-------------
+/access row -> expands inline -> duration/configuration -> payment CTA
+
+NEW DIRECTION
+-------------
+/access stays stable -> user chooses Unlock/bundle -> shared Purchase Modal -> Configure -> Review -> Paystack
+
+The Access page is not a checkout surface anymore.
+
+The Access page shows:
+1. current access status
+2. bundle opportunities
+3. module ownership and availability
+4. payment history
+
+The Purchase Modal handles:
+1. purchase configuration
+2. duration selection
+3. review
+4. Paystack handoff
+
+
+======================================================================
+1. PRODUCT-LEVEL RULE: ONE PURCHASE SYSTEM
+======================================================================
+
+Every genuine Unlock module action in PromotionSure opens the SAME shared single-module Purchase Modal for the exact module the user selected.
+
+Dashboard:
+Pension
+[ Unlock module ]
+        |
+        v
+Shared Purchase Modal
+mode = module
+module = Pension
+
+/access:
+Pension                                      Unlock ->
+        |
+        v
+Shared Purchase Modal
+mode = module
+module = Pension
+
+Locked practice context:
+Pension is locked
+[ Unlock module ]
+        |
+        v
+Same shared Purchase Modal
+
+Do NOT create DashboardPurchaseModal, AccessPurchaseModal, PracticePurchaseModal, etc.
+
+Conceptually:
+
+                         UNLOCK MODULE
+                               |
+             +-----------------+-----------------+
+             |                 |                 |
+         Dashboard          /access          Practice
+             |                 |                 |
+             +-----------------+-----------------+
+                               |
+                               v
+                    SHARED PURCHASE MODAL
+                               |
+                    Configure -> Review
+                               |
+                               v
+                            Paystack
+
+Bundle actions use the same modal shell with different configuration modes:
+- mode="module"
+- mode="pick3"
+- mode="complete"
+
+All modes share:
+- desktop dialog shell
+- mobile sheet shell
+- focus management
+- review layout
+- loading/error treatment
+- DurationSelector
+- payment initialization
+- duplicate-start protection
+
+
+======================================================================
+2. PRIMARY EXPERIENCE ARCHITECTURE
+======================================================================
+
+LAYER 1: existing authenticated PromotionSure shell
+- existing header
+- desktop navigation
+- mobile bottom navigation
+- current page background
+- current typography/tokens
+
+LAYER 2: /access management page
+- page header / unlocked count
+- payment attention only if real
+- Bundle offers
+- Modules
+  - Unlocked
+  - Available to unlock
+  - Coming soon
+- Payment history
+
+LAYER 3: Shared Purchase Modal
+- Configure
+- Review
+- loading/error state
+- Paystack handoff
+
+Mental model:
+
+/access: "What access do I have and what options exist?"
+Purchase Modal: "What exactly do I want to buy?"
+Review: "Is this correct?"
+Paystack: "Pay."
+
+
+======================================================================
+3. DESIGN PRINCIPLES
+======================================================================
+
+The visual system must remain PromotionSure-native. Research validates interaction principles; it does not import Apple, Material, Stripe, Linear, or another brand.
+
+A. PURPOSE
+Each surface has one job. /access manages access. The modal configures a purchase. Review confirms it.
+
+B. HIERARCHY
+Use typography, order, spacing, grouping, weight, alignment, and restrained color before adding decoration.
+
+C. PROGRESSIVE DISCLOSURE
+Do not show a decision before the user can meaningfully make it. Pick 3 is modules -> duration -> Review.
+
+D. PREDICTABILITY
+Selecting a radio selects the radio. It must not unexpectedly auto-advance. The user explicitly presses Review purchase.
+
+E. VISUAL STABILITY
+Opening a purchase must not cause /access to grow hundreds of pixels or move all content below it.
+
+F. RESTRAINT
+Green is an accent/action color, not structural scaffolding.
+
+G. DIRECTNESS
+The user should immediately understand what is owned, purchasable, coming soon, included, and charged.
+
+H. RESPONSIVENESS
+Mobile is composed deliberately; desktop is not merely shrunk.
+
+I. ACCESSIBILITY
+Prefer native controls, visible focus, comfortable targets, reflow, and state cues beyond color.
+
+J. FINANCIAL CONFIRMATION
+Use Review before Paystack so the user can confirm product, duration, selected modules where relevant, and total.
+
+
+======================================================================
+4. FINAL /ACCESS HIERARCHY
+======================================================================
+
+Normal order:
+1. Page header
+2. Payment needs attention, only when a genuine unresolved payment requires action
+3. Bundle offers
+4. Modules
+   A. Unlocked
+   B. Available to unlock
+   C. Coming soon
+5. Payment history
+
+Why bundles come first:
+- broad purchase choices should be visible before granular individual unlocking
+- the page header already acknowledges current ownership first
+- inside Modules, ownership is still shown before available-to-unlock rows
+
+So the page does NOT begin with a sales card. It begins with status, then broader options, then module management.
+
+
+======================================================================
+5. DESKTOP /ACCESS MASTER SKETCH
+======================================================================
+
++------------------------------------------------------------------------+
+|                   EXISTING PROMOTIONSURE HEADER                       |
++------------------------------------------------------------------------+
+
+      Access and payment                        3 of 9 modules unlocked
+      ----------------------------------------------------------------
+
+      Bundle offers
+
+      +--------------------------------------------------------------+
+      |                                                              |
+      |  3-Module Bundle               | Complete Module Bundle      |
+      |                                |                             |
+      |  Choose any 3 available        | Access all currently       |
+      |  modules.                      | available modules.          |
+      |                                |                             |
+      |  From NGN 6,000                | From NGN 13,500             |
+      |                                |                             |
+      |  Choose 3 modules ->           | Unlock all modules ->       |
+      |                                                              |
+      +--------------------------------------------------------------+
+
+      Modules
+
+      Unlocked                                                  3
+
+      +--------------------------------------------------------------+
+      | Public Financial Management, PFM                   View ->  |
+      | Active through 1 January 2027                                |
+      +--------------------------------------------------------------+
+      | Public Service Rules, PSR                          View ->  |
+      | Active through 1 January 2027                                |
+      +--------------------------------------------------------------+
+      | Pension                                            View ->  |
+      | Active through 1 January 2027                                |
+      +--------------------------------------------------------------+
+
+      Available to unlock                                     4
+
+      +--------------------------------------------------------------+
+      | Current Affairs                                 Unlock ->   |
+      +--------------------------------------------------------------+
+      | Oral: PSR, PFM & Pension                        Unlock ->   |
+      +--------------------------------------------------------------+
+      | Foreign Affairs                                 Unlock ->   |
+      +--------------------------------------------------------------+
+      | Legal                                           Unlock ->   |
+      +--------------------------------------------------------------+
+
+      Coming soon                                             2
+
+      +--------------------------------------------------------------+
+      | Health                                     Coming soon       |
+      +--------------------------------------------------------------+
+      | Oral: Health                               Coming soon       |
+      +--------------------------------------------------------------+
+
+      +--------------------------------------------------------------+
+      | Payment history                             3             +  |
+      +--------------------------------------------------------------+
+
+All names, counts, prices, and dates in this sketch are illustrative. Never hard-code them.
+
+
+======================================================================
+6. PAGE GEOMETRY
+======================================================================
+
+Keep /access inside the existing account-management width family.
+
+Target desktop container:
+width: min(1040px, calc(100% - 40px));
+margin-inline: auto;
+
+Do not stretch to the full authenticated shell. Do not shrink into a checkout column.
+
+Suggested rhythm, to be calibrated against actual PromotionSure screenshots:
+- header to first section: ~28-34px
+- major section gaps: ~30-36px
+- Modules group gaps: ~20-26px
+- section heading to surface: ~10-14px
+
+Use existing spacing tokens/conventions where possible. Screenshot quality is more important than blindly matching a number.
+
+
+======================================================================
+7. PAGE HEADER
+======================================================================
+
+Desktop:
+Access and payment                         3 of 9 modules unlocked
+-----------------------------------------------------------------
+
+Mobile:
+Access and payment
+3 of 9 modules unlocked
+----------------------------
+
+Hierarchy:
+1. page title
+2. unlocked count
+
+Optional descriptive copy such as "Manage your access and previous payments." should only be added if screenshot review shows the title/count need context. Do not add filler by default.
+
+Title:
+- current PromotionSure heading/display family
+- roughly 1.75rem-2rem desktop
+- strong but not oversized
+
+Count:
+- roughly 0.88rem-0.95rem
+- secondary
+- not a badge or pill
+
+Always render valid runtime count, including N of N when all current modules are unlocked.
+
+
+======================================================================
+8. PAYMENT NEEDS ATTENTION
+======================================================================
+
+Ordinary payment history belongs last. An unresolved payment requiring action is an interruption and appears after the page header, before Bundle offers.
+
+Example:
+
++--------------------------------------------------------------+
+| Payment needs attention                                     |
+| We have not confirmed access for your recent payment.       |
+|                                             Check status -> |
++--------------------------------------------------------------+
+
+Treatment:
+- restrained semantic warning surface
+- concise title and explanation
+- one clear action
+- existing warning tokens
+- no giant warning icon
+- no huge red block
+
+Rule:
+Payment needs attention = interruption
+Payment history = reference
+
+
+======================================================================
+9. BUNDLE OFFERS: PURPOSE AND VALUE
+======================================================================
+
+Bundle offers are the first normal content section.
+
+They communicate two broader-access options:
+- 3-Module Bundle: choose the required number of available modules
+- Complete Module Bundle: access all currently available modules covered by the current plan
+
+Create value through clarity, not sales decoration.
+
+The user should instantly understand the difference between:
+"I want a few modules"
+and
+"I want everything currently available."
+
+
+======================================================================
+10. BUNDLE OFFERS: DESKTOP DESIGN
+======================================================================
+
+Use ONE shared outer surface with two related options and one internal divider.
+
++----------------------------------------------------------------+
+|                                                                |
+|  3-Module Bundle                 | Complete Module Bundle       |
+|                                  |                              |
+|  Choose any 3 available modules. | Access all currently        |
+|                                  | available modules.           |
+|                                  |                              |
+|  From NGN 6,000                  | From NGN 13,500              |
+|                                  |                              |
+|  Choose 3 modules ->             | Unlock all modules ->        |
+|                                                                |
++----------------------------------------------------------------+
+
+Outer surface:
+- 1px neutral border
+- current PromotionSure surface
+- ~14-16px radius
+- restrained or zero shadow
+- no green outer border
+
+Desktop:
+- two equal or near-equal columns
+- 1px neutral internal divider
+- ~20-24px internal padding per option
+
+Inside each bundle, hierarchy is:
+1. bundle name
+2. what the user gets
+3. starting price
+4. action
+
+Approximate targets:
+- title: ~1.05rem-1.15rem, strong
+- description: ~0.85rem-0.92rem, muted
+- price: visible but not giant ecommerce typography
+- action: quiet green/primary-dark text with a generous hit target
+
+Do NOT add by default:
+- Best value
+- Most popular
+- flame/star icons
+- sale stickers
+- fake crossed-out prices
+- giant savings percentages
+- gradients
+- giant filled green buttons
+
+If real backend-calculated savings are later exposed and product decides to show them, display them as restrained secondary information. Never invent savings.
+
+
+======================================================================
+11. BUNDLE OFFERS: MOBILE
+======================================================================
+
+Stack both options INSIDE the same shared surface.
+
+Bundle offers
+
++----------------------------------------+
+| 3-Module Bundle                        |
+| Choose any 3 available modules.        |
+|                                        |
+| From NGN 6,000                         |
+| Choose 3 modules ->                    |
++----------------------------------------+
+| Complete Module Bundle                 |
+| Access all currently available         |
+| modules.                               |
+|                                        |
+| From NGN 13,500                        |
+| Unlock all modules ->                  |
++----------------------------------------+
+
+Do not squeeze two columns on mobile and do not split these into unrelated floating cards.
+
+Actions:
+- Choose 3 modules -> opens PurchaseModal mode=pick3
+- Unlock all modules -> opens PurchaseModal mode=complete
+
+Nothing expands inside /access.
+
+
+======================================================================
+12. MODULES SECTION
+======================================================================
+
+Name the section:
+Modules
+
+Do not call the entire section "Your access" because it also contains things the user does not have.
+
+Group by state:
+1. Unlocked
+2. Available to unlock
+3. Coming soon
+
+This removes the need for repeated Locked/Unlocked badges on every row.
+
+Render groups dynamically. Do not show empty bordered boxes:
+- Unlocked only if count > 0
+- Available to unlock only if count > 0
+- Coming soon only if count > 0
+
+If all current modules are unlocked, Available to unlock naturally disappears.
+
+Preserve backend/admin display order within groups unless the product already has an explicit sorting rule.
+
+
+======================================================================
+13. UNLOCKED GROUP
+======================================================================
+
+Unlocked                                                   3
+
++---------------------------------------------------------------+
+| Public Financial Management, PFM                    View ->   |
+| Active through 1 January 2027                                  |
++---------------------------------------------------------------+
+| Public Service Rules, PSR                           View ->   |
+| Active through 1 January 2027                                  |
++---------------------------------------------------------------+
+| Pension                                             View ->   |
+| Active through 1 January 2027                                  |
++---------------------------------------------------------------+
+
+Why secondary copy remains:
+"Active through ..." is useful ownership information. It communicates current value and expiry.
+
+Do not replace this with an Unlocked badge.
+
+Group header count is secondary, not a loud badge.
+
+Ledger:
+- one outer border
+- row dividers
+- ~12-14px radius
+- no separate module cards
+- no heavy shadow
+
+Unlocked row target:
+- desktop min-height ~72-82px
+- horizontal padding ~18-20px
+- vertical padding ~13-15px
+- title ~1rem-1.05rem
+- expiry ~0.84rem-0.9rem muted
+- View action has ~44px+ usable target
+
+Extension/renewal:
+If current backend/business logic allows extending active access before expiry, do not accidentally remove that capability. Verify the existing flow before deciding its UI. If supported, extension should use the same purchase system where appropriate; do not invent or remove business behavior during visual work.
+
+
+======================================================================
+14. AVAILABLE TO UNLOCK GROUP
+======================================================================
+
+Available to unlock                                      4
+
++---------------------------------------------------------------+
+| Current Affairs                                  Unlock ->    |
++---------------------------------------------------------------+
+| Oral: PSR, PFM & Pension                         Unlock ->    |
++---------------------------------------------------------------+
+| Foreign Affairs                                  Unlock ->    |
++---------------------------------------------------------------+
+| Legal                                            Unlock ->    |
++---------------------------------------------------------------+
+
+Do NOT repeat "Not currently unlocked" beneath every row unless screenshot/usability review proves it adds value. The group heading already states the condition.
+
+Available rows can be more compact than unlocked rows because they do not need fake metadata. Target ~58-68px desktop min-height, with comfortable padding.
+
+Unlock -> opens the shared module Purchase Modal for that exact module.
+
+Do not ask the user to select the module again.
+Do not navigate to a separate pricing page.
+Do not expand the row.
+
+
+======================================================================
+15. COMING SOON GROUP
+======================================================================
+
+Coming soon                                              2
+
++---------------------------------------------------------------+
+| Health                                      Coming soon       |
++---------------------------------------------------------------+
+| Oral: Health                                Coming soon       |
++---------------------------------------------------------------+
+
+Treatment:
+- tertiary/muted
+- no green Unlock action
+- no disabled fake purchase button
+- no purchase modal
+
+Unavailable content should not compete with current purchase options.
+
+
+======================================================================
+16. MODULES: MOBILE
+======================================================================
+
+Modules
+
+Unlocked                                      2
+
++----------------------------------------+
+| Public Financial Management, PFM       |
+| Active through 1 Jan 2027              |
+|                                View -> |
++----------------------------------------+
+| Public Service Rules, PSR              |
+| Active through 1 Jan 2027              |
+|                                View -> |
++----------------------------------------+
+
+Available to unlock                           3
+
++----------------------------------------+
+| Current Affairs              Unlock -> |
++----------------------------------------+
+| Oral: PSR, PFM & Pension                |
+|                              Unlock ->  |
++----------------------------------------+
+| Foreign Affairs             Unlock ->  |
++----------------------------------------+
+
+On narrow widths the module name wins. Long names wrap. It is acceptable for the action to move below; it is not acceptable to truncate essential module names merely to preserve alignment.
+
+No horizontal scrolling.
+
+
+======================================================================
+17. PAYMENT HISTORY
+======================================================================
+
+Payment history is last and collapsed by default.
+
+Option A:
++---------------------------------------------------------------+
+| Payment history                              3             +  |
++---------------------------------------------------------------+
+
+Option B, if screenshots show better hierarchy:
+Payment history
++---------------------------------------------------------------+
+| Previous payments                             3            +  |
++---------------------------------------------------------------+
+
+Do not duplicate the label unnecessarily. Choose the cleaner result after visual review.
+
+Target collapsed height ~54-60px.
+- neutral border
+- subtle radius
+- no heavy shadow
+- count visible
+- whole summary comfortably clickable
+
+Expanded history preserves existing:
+- date
+- amount
+- status
+- reference
+- receipt
+- verification/status actions
+
+Do not rewrite trusted receipt/payment internals as part of the new visual composition unless a regression requires it.
+
+
+======================================================================
+18. SHARED PURCHASE MODAL: ROLE
+======================================================================
+
+This is a Purchase Modal, not the card-payment gateway itself.
+
+Its job:
+CONFIGURE -> REVIEW -> HANDOFF TO PAYSTACK
+
+It should be a focused task surface, not a mini pricing website.
+
+Modes:
+- module
+- pick3
+- complete
+
+All modes share the same shell, focus system, DurationSelector, Review component, CTA states, errors, and payment handoff.
+
+
+======================================================================
+19. TWO-STEP PURCHASE MODEL
+======================================================================
+
+Only two logical steps:
+1. Configure
+2. Review
+
+Do NOT build:
+Step 1 modules -> Step 2 duration -> Step 3 review
+
+For Pick 3, module selection and duration are both part of Configure, using progressive disclosure.
+
+Do not use a large visual wizard stepper. If orientation is useful, a quiet "1 of 2" / "2 of 2" near the heading is enough. It may be omitted if the transition is self-explanatory.
+
+
+======================================================================
+20. DURATION SELECTOR: CORE VISUAL DECISION
+======================================================================
+
+DO NOT use three pricing cards.
+DO NOT use a dropdown.
+DO NOT use a segmented control that hides prices.
+
+Duration is one question with mutually exclusive answers, so use one CONNECTED RADIO LIST.
+
+Choose how long you want access
+
++----------------------------------------------+
+| O   1 month                         NGN 3,500 |
++----------------------------------------------+
+| O   3 months                        NGN 9,000 |
+|     Save about 14%                            |
++----------------------------------------------+
+| O   6 months                       NGN 15,500 |
+|     Save about 26%                            |
++----------------------------------------------+
+
+Selected:
+
++----------------------------------------------+
+| O   1 month                         NGN 3,500 |
++----------------------------------------------+
+| *   3 months                        NGN 9,000 |
+|     Save about 14%                            |
++----------------------------------------------+
+| O   6 months                       NGN 15,500 |
+|     Save about 26%                            |
++----------------------------------------------+
+
+The selected row gets a very subtle PromotionSure primary-soft tint. The control should read as one decision, not three products.
+
+Preferred prompt:
+"Choose how long you want access"
+
+Use consistently across module, Pick 3, and Complete.
+
+
+======================================================================
+21. DURATION INFORMATION HIERARCHY
+======================================================================
+
+Each row hierarchy:
+1. duration
+2. price
+3. savings if real
+
+Example:
+O   3 months                               NGN 9,000
+    Save 14%
+
+Do not add by default:
+- monthly equivalent
+- BEST VALUE
+- POPULAR
+- giant percentage
+- crossed-out price
+- extra paragraph
+
+The user needs to answer: How long? How much? Savings only helps compare.
+
+Never invent savings. Use only validated pricing logic.
+
+
+======================================================================
+22. DURATION GEOMETRY AND STATES
+======================================================================
+
+Suggested targets, calibrated to existing PromotionSure UI:
+
+Outer container:
+- 1px neutral border
+- radius ~12-14px
+- overflow hidden
+- surface background
+- no shadow
+
+Row:
+- min-height ~66-72px
+- horizontal padding ~14-16px
+- vertical padding ~11-13px
+- entire row is clickable label
+
+Radio:
+- native input
+- integrated styling
+- rendered visual ~18-20px
+- surrounding row creates the large pointer target
+
+Radio-to-label gap: ~11-13px
+Duration: ~0.92rem-1rem, semibold/strong
+Price: ~0.94rem-1.02rem, strong
+Savings: ~0.76rem-0.82rem, muted
+
+States:
+DEFAULT: neutral
+HOVER: restrained state response, no scaling
+FOCUS: clear focus-visible ring, distinct from selection
+SELECTED: checked radio + subtle primary-soft surface, no thick green box
+DISABLED: readable but clearly unavailable
+PAYMENT STARTING: controls protected from duplicate initiation
+ERROR: selection remains intact
+
+Do NOT:
+- fill selected row dark green
+- add glow
+- add heavy shadow
+- use a thick green border around the selected row
+
+
+======================================================================
+23. NO DURATION PRESELECTION
+======================================================================
+
+Initial:
+O 1 month
+O 3 months
+O 6 months
+
+Do not preselect cheapest, longest, or "best".
+
+Selecting a duration MUST NOT auto-advance.
+
+Selection:
+O 1 month
+* 3 months
+O 6 months
+
+Then user explicitly presses:
+[ Review purchase -> ]
+
+
+======================================================================
+24. SINGLE MODULE MODAL: DESKTOP CONFIGURE
+======================================================================
+
+Target width: approximately 500-560px.
+
+                 +-------------------------------------------+
+                 | Unlock Pension                          X |
+                 |                                           |
+                 | Choose how long you want access           |
+                 |                                           |
+                 | +---------------------------------------+ |
+                 | | O  1 month                  NGN 3,500 | |
+                 | +---------------------------------------+ |
+                 | | *  3 months                  NGN 9,000 | |
+                 | |    Save about 14%                     | |
+                 | +---------------------------------------+ |
+                 | | O  6 months                 NGN 15,500 | |
+                 | |    Save about 26%                     | |
+                 | +---------------------------------------+ |
+                 |                                           |
+                 |             [ Review purchase -> ]        |
+                 +-------------------------------------------+
+
+Known context is respected:
+- title = Unlock {Module Display Name}
+- do not ask user to pick the module again
+- no scope selector
+- no bundle selector
+- no payment history
+- no account summary
+
+The CTA is disabled until duration is selected.
+
+
+======================================================================
+25. SINGLE MODULE MODAL: REVIEW
+======================================================================
+
+                 +-------------------------------------------+
+                 | Review purchase                         X |
+                 |                                           |
+                 | Pension                                   |
+                 |                                           |
+                 | ----------------------------------------- |
+                 | Access duration                  3 months |
+                 | ----------------------------------------- |
+                 | Total                           NGN 9,000 |
+                 | ----------------------------------------- |
+                 |                                           |
+                 | Change                                    |
+                 |                                           |
+                 | [       Continue to payment       ]       |
+                 |                                           |
+                 | Secure payment via Paystack                |
+                 +-------------------------------------------+
+
+Review should feel like a compact receipt, not a pile of cards.
+
+Do not wrap Duration and Total in separate cards. Use labels, values, dividers, and whitespace.
+
+"Change" returns to Configure and preserves the selected duration.
+
+"Secure payment via Paystack" is optional reassurance only if it fits current product copy cleanly.
+
+
+======================================================================
+26. PICK 3 MODAL: INITIAL CONFIGURE
+======================================================================
+
+              +----------------------------------------------+
+              | 3-Module Bundle                           X |
+              |                                              |
+              | Choose 3 modules                             |
+              | 0 of 3 selected                              |
+              |                                              |
+              | +------------------------------------------+ |
+              | | [ ] Pension                              | |
+              | +------------------------------------------+ |
+              | | [ ] Oral: PSR, PFM & Pension            | |
+              | +------------------------------------------+ |
+              | | [ ] Foreign Affairs                      | |
+              | +------------------------------------------+ |
+              | | [ ] Legal                                | |
+              | +------------------------------------------+ |
+              | | [ ] Health                               | |
+              | +------------------------------------------+ |
+              |                                              |
+              | Select 3 modules to continue.                |
+              +----------------------------------------------+
+
+At 0, 1, or required-1 selections, DO NOT show:
+- duration
+- duration placeholder
+- price-choice rows
+- Review purchase CTA
+- disabled Review purchase CTA
+
+The user is not ready for that decision.
+
+
+======================================================================
+27. PICK 3 MODULE SELECTOR
+======================================================================
+
+Use native checkboxes inside full-row labels.
+
+Preferred visual family: connected list.
+
++------------------------------------------+
+| [ ] Pension                              |
++------------------------------------------+
+| [x] Foreign Affairs                      |
++------------------------------------------+
+| [ ] Oral: PSR, PFM & Pension             |
++------------------------------------------+
+
+Selected:
+- checked box
+- subtle primary-soft background
+- optional stronger text
+
+Do not:
+- create green chips
+- use custom aria-pressed buttons where native checkbox works
+- truncate long names
+- add redundant Oral badges
+
+Use plan-required count, not a hard-coded behavioral 3.
+
+Dynamic guidance for required=3:
+0 of 3 selected / Select 3 modules to continue.
+1 of 3 selected / Select 2 more modules.
+2 of 3 selected / Select 1 more module.
+3 of 3 selected / reveal duration.
+
+
+======================================================================
+28. PICK 3: EXACT COUNT
+======================================================================
+
+At the exact required count:
+- selected options stay enabled and deselectable
+- unselected options remain visible but become disabled
+- DurationSelector appears below the module selector
+- Review purchase appears disabled until a duration is selected
+
+              +----------------------------------------------+
+              | 3-Module Bundle                           X |
+              |                                              |
+              | Choose 3 modules                             |
+              | 3 of 3 selected                              |
+              |                                              |
+              | [x] Pension                                  |
+              | [x] Health                                   |
+              | [x] Foreign Affairs                          |
+              | [ ] Legal                         disabled   |
+              | [ ] Oral: PSR, PFM & Pension      disabled   |
+              |                                              |
+              | Choose how long you want access              |
+              |                                              |
+              | +------------------------------------------+ |
+              | | O 1 month                   NGN 6,000    | |
+              | +------------------------------------------+ |
+              | | O 3 months                 NGN 15,500    | |
+              | |   Save ...                              | |
+              | +------------------------------------------+ |
+              | | O 6 months                 NGN 26,500    | |
+              | |   Save ...                              | |
+              | +------------------------------------------+ |
+              |                                              |
+              | [ Review purchase -> ]                        |
+              +----------------------------------------------+
+
+If user deselects after choosing duration:
+- selection drops below required count
+- duration UI disappears
+- selected duration clears immediately
+- Review purchase disappears
+- helper returns
+
+Never keep hidden stale duration state.
+
+
+======================================================================
+29. PICK 3 REVIEW
+======================================================================
+
+This is where the selected module names are useful.
+
+              +----------------------------------------------+
+              | Review purchase                           X |
+              |                                              |
+              | 3-Module Bundle                              |
+              |                                              |
+              | Modules                                      |
+              | Pension                                      |
+              | Health                                       |
+              | Foreign Affairs                              |
+              |                                              |
+              | -------------------------------------------- |
+              | Access duration                    3 months  |
+              | -------------------------------------------- |
+              | Total                          NGN 15,500    |
+              | -------------------------------------------- |
+              |                                              |
+              | Change                                       |
+              |                                              |
+              | [       Continue to payment        ]         |
+              +----------------------------------------------+
+
+Do not show checkbox controls in Review. Review confirms; Change edits.
+
+Change returns to Configure with modules and duration preserved.
+
+
+======================================================================
+30. COMPLETE BUNDLE CONFIGURE AND REVIEW
+======================================================================
+
+Configure:
+
+             +-----------------------------------------------+
+             | Complete Module Bundle                      X |
+             |                                               |
+             | All N currently available modules are         |
+             | included.                                     |
+             |                                               |
+             | Choose how long you want access               |
+             |                                               |
+             | +-------------------------------------------+ |
+             | | O 1 month                    NGN ...       | |
+             | +-------------------------------------------+ |
+             | | O 3 months                   NGN ...       | |
+             | |   Save ...                               | |
+             | +-------------------------------------------+ |
+             | | O 6 months                   NGN ...       | |
+             | |   Save ...                               | |
+             | +-------------------------------------------+ |
+             |                                               |
+             | [ Review purchase -> ]                         |
+             +-----------------------------------------------+
+
+No module picker. No comma-separated list of every module. N is dynamic.
+
+Review:
+
+             +-----------------------------------------------+
+             | Review purchase                            X |
+             |                                               |
+             | Complete Module Bundle                        |
+             |                                               |
+             | Includes                         N modules    |
+             | --------------------------------------------- |
+             | Access duration                    6 months   |
+             | --------------------------------------------- |
+             | Total                              NGN ...    |
+             | --------------------------------------------- |
+             |                                               |
+             | Change                                        |
+             |                                               |
+             | [       Continue to payment         ]         |
+             +-----------------------------------------------+
+
+Do not hard-code "all 9 modules". Use runtime N and "currently available modules" language.
+
+
+======================================================================
+31. DESKTOP MODAL SHELL
+======================================================================
+
+Use current PromotionSure genuine-modal conventions.
+
+Backdrop:
+- enough dimming to establish focus
+- reuse existing modal overlay language
+- parent must not remain interactable
+
+Dialog:
+- width ~500-560px
+- max-width calc(100vw - 32px)
+- max-height ~84-88vh
+- current surface
+- subtle border if existing modal family uses one
+- current modal shadow
+- current radius family
+- overflow hidden
+- no gradient
+- no green structural border
+
+Header:
+- title left
+- close X right
+- optional tiny step label
+- comfortable close target
+
+Body:
+- scrollable only when necessary
+- horizontal padding ~20-24px
+- vertical rhythm ~18-24px
+
+Footer:
+- one dominant primary CTA
+- stable dimensions
+- may remain visible while long Pick 3 content scrolls if needed
+
+
+======================================================================
+32. PICK 3 MODAL HEIGHT / SCROLL
+======================================================================
+
+Pick 3 is most likely to exceed viewport height.
+
+Do not let the dialog run beyond the viewport.
+
+Recommended shell:
+
++----------------------------------------------+
+| HEADER                                    X |  stable
++----------------------------------------------+
+|                                              |
+| SCROLLABLE BODY                              |
+| module selector                              |
+| duration when relevant                       |
+|                                              |
++----------------------------------------------+
+| FOOTER / REVIEW CTA WHEN RELEVANT            |  stable
++----------------------------------------------+
+
+Rules:
+- body scrolls vertically
+- no nested horizontal scroll
+- sticky footer must not cover focused controls
+- body gets adequate bottom padding if footer is sticky
+- do not reserve a giant empty footer before a CTA exists
+
+
+======================================================================
+33. MOBILE MODAL PRESENTATION
+======================================================================
+
+Because this is now a genuine modal, PromotionSure's established mobile bottom-sheet language applies.
+
+Backdrop
+
++----------------------------------------+
+|                -----                   |  grabber
+|                                        |
+| Unlock Pension                         |
+|                                        |
+| Choose how long you want access        |
+|                                        |
+| +------------------------------------+ |
+| | O 1 month               NGN 3,500 | |
+| +------------------------------------+ |
+| | * 3 months              NGN 9,000 | |
+| |   Save ...                       | |
+| +------------------------------------+ |
+| | O 6 months             NGN 15,500 | |
+| |   Save ...                       | |
+| +------------------------------------+ |
+|                                        |
+| [       Review purchase ->          ] |
+|                                        |
++----------------------------------------+
+bottom / safe area
+
+Presentation:
+- bottom anchored
+- full available width
+- top corners rounded using current modal language
+- safe-area padding
+- max-height ~90-92dvh
+- internal vertical scrolling as necessary
+
+The grabber belongs here because this is a real modal. Never use it on normal /access page surfaces.
+
+
+======================================================================
+34. MOBILE DISMISSAL
+======================================================================
+
+Do not rely on drag alone.
+
+Provide a non-drag dismissal path using the current product convention, e.g.:
+- backdrop tap where safe
+- Escape for keyboard users
+- accessible tappable handle/grabber behavior if used
+- browser Back when modal is represented in navigation state
+
+Do not promise swipe-to-dismiss unless actually implemented correctly.
+
+If the current PromotionSure mobile sheet pattern intentionally omits a visible X, keep that visual convention only if the modal still has an accessible dismissal mechanism.
+
+
+======================================================================
+35. MOBILE REVIEW
+======================================================================
+
++----------------------------------------+
+|                -----                   |
+|                                        |
+| Review purchase                        |
+|                                        |
+| Pension                                |
+|                                        |
+| -------------------------------------- |
+| Access duration              3 months  |
+| -------------------------------------- |
+| Total                       NGN 9,000  |
+| -------------------------------------- |
+|                                        |
+| Change                                 |
+|                                        |
+| [      Continue to payment           ] |
+|                                        |
++----------------------------------------+
+
+At extremely narrow widths, labels/values may stack rather than truncate.
+
+Primary CTA:
+- full width mobile
+- ~46-50px min-height
+- current PromotionSure primary styling
+- no excessive pill/shadow
+
+
+======================================================================
+36. MOBILE PICK 3
+======================================================================
+
+Initial:
+
++----------------------------------------+
+|                -----                   |
+| 3-Module Bundle                        |
+|                                        |
+| Choose 3 modules                       |
+| 0 of 3 selected                        |
+|                                        |
+| [ ] Pension                            |
+| [ ] Oral: PSR, PFM & Pension          |
+| [ ] Foreign Affairs                    |
+| [ ] Legal                              |
+| [ ] Health                             |
+|                                        |
+| Select 3 modules to continue.          |
++----------------------------------------+
+
+Exact count:
+
++----------------------------------------+
+|                -----                   |
+| 3-Module Bundle                        |
+|                                        |
+| Choose 3 modules                       |
+| 3 of 3 selected                        |
+|                                        |
+| [x] Pension                            |
+| [x] Health                             |
+| [x] Foreign Affairs                    |
+| [ ] Legal                   disabled   |
+|                                        |
+| Choose how long you want access        |
+|                                        |
+| O 1 month                  NGN ...      |
+| O 3 months                 NGN ...      |
+| O 6 months                 NGN ...      |
+|                                        |
+| [       Review purchase ->          ] |
++----------------------------------------+
+
+The body may scroll vertically. Never require horizontal scrolling.
+
+
+======================================================================
+37. URL / MODAL STATE ON /ACCESS
+======================================================================
+
+Preserve the Phase 2 validated query contract, but change what it controls.
+
+/access
+= no purchase modal
+
+/access?module=<valid-purchasable-slug>
+= module Purchase Modal open
+
+/access?scope=pick3
+= Pick 3 Purchase Modal open
+
+/access?scope=complete
+= Complete Purchase Modal open
+
+Invalid module or scope
+= no modal
+
+The query controls modal visibility rather than inline row expansion.
+
+Browser behavior:
+/access -> Unlock Pension -> /access?module=pension -> modal opens
+Back -> /access -> modal closes
+Forward -> /access?module=pension -> modal reopens
+
+Switching module -> Pick 3 -> Complete updates URL accordingly. Back/Forward restores the correct modal mode.
+
+Do not reintroduce stale duplicate local expansion state.
+
+
+======================================================================
+38. PURCHASE ENTRY FROM OTHER PAGES
+======================================================================
+
+The user should not navigate through /access merely to unlock a module.
+
+Dashboard stays Dashboard underneath the modal.
+Practice stays Practice underneath the modal.
+
+Recommended conceptual architecture:
+
+openPurchase({
+  mode: "module",
+  moduleSlug,
+  returnTo
+})
+
+openPurchase({ mode: "pick3", returnTo })
+openPurchase({ mode: "complete", returnTo })
+
+Use one PurchaseModalHost/Controller at an appropriate authenticated-app level.
+
+For /access, hydrate it from the existing validated query contract.
+For other pages, use the router/history/modal state that best fits the current app without forcing navigation to /access.
+
+If global deep-linkable modals are desired later, design one consistent global URL contract instead of improvising a different query syntax on every page.
+
+
+======================================================================
+39. RETURNTO
+======================================================================
+
+Keep current safe returnTo validation.
+
+Examples:
+- Dashboard unlock -> pay -> return to safe Dashboard context
+- /access unlock -> pay -> return to /access
+- locked practice -> pay -> return to the relevant safe context when valid
+
+Never permit arbitrary external return URLs.
+
+
+======================================================================
+40. MODAL FOCUS AND CLOSE
+======================================================================
+
+On open:
+- remember trigger when possible
+- focus modal heading or first meaningful control
+- trap focus inside
+- background content becomes non-interactive
+
+On close:
+- restore focus to exact triggering Unlock/bundle action when possible
+- parent scroll position remains stable
+
+Escape closes when safe.
+Backdrop dismissal follows current product modal behavior.
+
+No focus should be hidden behind sticky footer or viewport edge.
+
+
+======================================================================
+41. STEP TRANSITION AND MOTION
+======================================================================
+
+Configure -> Review should be direct.
+
+Allowed:
+- subtle body fade/slide
+- restrained height adjustment
+- heading update
+
+Avoid:
+- giant wizard animation
+- card scaling
+- bouncing CTA
+- animated prices
+- dramatic morphs
+
+Respect prefers-reduced-motion.
+
+
+======================================================================
+42. REVIEW CHANGE BEHAVIOR
+======================================================================
+
+"Change" returns to Configure and preserves:
+- module mode: duration
+- Pick 3: selected modules + duration
+- Complete: duration
+
+Do not reset a valid purchase just because the user wants to inspect/edit it.
+
+
+======================================================================
+43. PAYMENT CTA, LOADING, ERROR
+======================================================================
+
+Use explicit copy:
+Review purchase ->
+Continue to payment
+Preparing payment...
+
+Do not use vague Proceed/Next/Continue for Paystack handoff.
+
+On Continue to payment:
+- synchronous duplicate-start guard activates
+- one Paystack initialization only
+- CTA becomes Preparing payment...
+- relevant controls are protected from duplicate submission
+
+On initiation error:
+- keep modal open
+- keep selected duration/modules
+- show inline friendly error near payment footer
+- role="alert" where appropriate
+- no toast-only failure for the core transaction action
+
+Example:
+We could not start payment right now. Please try again.
+
+Do not create a giant error card.
+
+
+======================================================================
+44. STALE / ALREADY-PAID STATE
+======================================================================
+
+A stale UI may still show Unlock after access has changed.
+
+Current trusted backend logic remains authoritative.
+
+If backend indicates access is already active:
+- do not initialize another unnecessary payment
+- refresh access state
+- communicate/update modal appropriately
+
+Do not trust only frontend display state for purchase eligibility.
+
+
+======================================================================
+45. PRICING RULES
+======================================================================
+
+Never hard-code:
+- price
+- currency
+- duration
+- savings
+- bundle required count
+- complete module count
+
+Sample numbers in sketches are illustrative only.
+
+Bundle page "From NGN X" must use the lowest valid currently available price for that bundle. Do not assume 1 month always exists or is always cheapest.
+
+If plan data is unavailable:
+- no fake price
+- no broken enabled purchase action
+
+Savings are secondary and only shown when actual pricing logic provides a meaningful value.
+
+Never hard-code "all 9 modules". Use runtime counts and "currently available modules" language.
+
+
+======================================================================
+46. PERCEIVED VALUE
+======================================================================
+
+The page should feel more valuable because:
+1. purchased access looks owned and managed
+2. bundle differences are obvious
+3. individual purchase exists without dominating the page
+4. purchase configuration no longer deforms the page
+5. prices appear in the right context
+6. Configure -> Review -> Paystack feels deliberate
+7. decorative noise is reduced
+
+Premium does not mean more gradients, more cards, more shadows, or giant prices.
+Premium means control, hierarchy, clarity, consistency, and confidence.
+
+
+======================================================================
+47. COLOR, BORDER, RADIUS, SHADOW
+======================================================================
+
+Use existing PromotionSure tokens.
+
+Green primarily for:
+- View/Unlock interaction accents
+- selected radio/checkbox
+- focus
+- primary CTA
+
+Neutral for:
+- page structure
+- borders
+- ledgers
+- bundle surface
+- DurationSelector dividers
+
+Muted for:
+- descriptions
+- expiry
+- counts
+- savings
+
+Do not create new greens or gradients to appear modern.
+
+Structural surfaces generally use ~12-16px radius consistent with current authenticated UI. Connected lists use ~12-14px radius with internal dividers.
+
+Normal ledgers should have zero or very subtle shadow. The modal gets genuine elevation because it is layered.
+
+Do not give every row a shadow.
+
+
+======================================================================
+48. TYPOGRAPHY
+======================================================================
+
+Use current PromotionSure fonts/tokens.
+
+Suggested hierarchy:
+- page title: 1.75rem-2rem desktop
+- major section title: ~1.1rem-1.25rem
+- bundle title: ~1.05rem-1.15rem
+- module group heading: ~0.9rem-1rem strong
+- module name: ~0.96rem-1.05rem
+- metadata: ~0.82rem-0.9rem
+- modal title: ~1.15rem-1.35rem
+- duration/price: ~0.92rem-1.02rem
+- helper/savings: ~0.76rem-0.84rem
+
+Do not miniaturize the page into an admin table.
+
+
+======================================================================
+49. ACTION HIERARCHY
+======================================================================
+
+On /access, actions are quiet:
+View ->
+Unlock ->
+Choose 3 modules ->
+Unlock all modules ->
+
+They should not become repeated filled green buttons, but their actual hit targets remain generous.
+
+In Configure:
+primary = Review purchase ->
+
+In Review:
+primary = Continue to payment
+quiet = Change
+
+Only one visually dominant filled CTA should normally exist in the modal at a time.
+
+
+======================================================================
+50. ACCESSIBILITY / MODERN STANDARD REQUIREMENTS
+======================================================================
+
+Pointer targets:
+- aim around 44px+ for important controls where practical
+- whole duration row is clickable
+- whole Pick 3 option row is clickable
+- close target is comfortable
+- Payment history summary is comfortably clickable
+
+Keyboard:
+- native radios
+- native checkboxes
+- visible focus
+- modal focus trap
+- Escape dismissal when safe
+
+Reflow:
+Test effective 320 CSS px.
+No horizontal page scroll, clipped prices, clipped names, off-screen CTA, or two-dimensional scrolling for normal content.
+
+Dragging:
+Mobile sheet cannot require a drag gesture as the only way to dismiss.
+
+Focus:
+Focused controls cannot be hidden by sticky footer or authored overlays.
+
+Financial flow:
+Review gives the user a chance to verify and correct purchase information before payment handoff.
+
+Motion:
+Respect prefers-reduced-motion.
+
+
+======================================================================
+51. PAGE SCROLL / MODAL SCROLL
+======================================================================
+
+When modal opens:
+- lock background page scroll
+- preserve current parent scroll position
+- do not jump /access to top
+
+When modal closes:
+- restore the same parent position
+
+On mobile:
+- parent bottom nav must not be interactable through backdrop
+- sheet safe-area uses device inset, not arbitrary duplicate bottom-nav padding
+
+
+======================================================================
+52. COMPONENT ARCHITECTURE RECOMMENDATION
+======================================================================
+
+AuthenticatedShell
+|
++-- PurchaseModalHost / PurchaseModalProvider
+|   |
+|   +-- PurchaseModal
+|       +-- PurchaseModalHeader
+|       +-- ConfigurePurchase
+|       |   +-- ModulePurchaseConfig
+|       |   +-- PickThreePurchaseConfig
+|       |   +-- CompletePurchaseConfig
+|       |   +-- DurationSelector
+|       +-- PurchaseReview
+|       +-- PurchaseModalFooter
+|
++-- Routes
+    +-- Access
+        +-- AccessHeader
+        +-- PaymentAttention
+        +-- BundleOffers
+        +-- ModulesSection
+        |   +-- ModuleGroup
+        |       +-- ModuleRow
+        +-- PaymentHistory
+
+Do not over-fragment into dozens of tiny files. The non-negotiable architecture is ONE shared purchase behavior and ONE shared modal shell.
+
+The existing Phase 3 DurationSelector should be preserved conceptually and styled/refactored into the connected radio-list design. Do not duplicate duration selectors by plan type.
+
+
+======================================================================
+53. PICK 3 DRAFT STATE
+======================================================================
+
+Within an active purchase:
+- Configure -> Review -> Change preserves modules and duration
+- payment errors preserve config
+
+Do not persist unfinished Pick 3 configuration to localStorage.
+
+When the modal is intentionally closed completely, the safest default is to discard the unfinished temporary purchase draft unless current product behavior explicitly requires retention.
+
+
+======================================================================
+54. EMPTY / UNAVAILABLE STATES
+======================================================================
+
+Do not render misleading placeholders.
+
+- no unlocked modules -> omit empty Unlocked ledger
+- no available modules -> omit Available group
+- no coming soon -> omit Coming soon group
+- unavailable bundle -> do not show From NGN 0
+- no valid plan duration -> do not enable Review
+- data failure -> use current error handling rather than fake rows/prices
+
+
+======================================================================
+55. WHAT NOT TO BUILD
+======================================================================
+
+Reject the implementation if it becomes:
+- a pricing page
+- an admin table
+- a dashboard card grid
+- inline checkout inside /access
+- three duration pricing cards
+- a duration dropdown
+- a segmented duration control that hides prices
+- a three-step wizard
+- a giant stepper
+- a modal full of nested cards
+- page-wide green outlines
+- "Most popular" bundle marketing without a real product reason
+- separate purchase modals for each page
+- duplicate payment engines
+- desktop bottom sheet
+- mobile tiny centered dialog
+- mobile sheet with drag-only dismissal
+- truncated long module names
+- hard-coded current module count
+- hard-coded sample prices
+
+
+======================================================================
+56. CURRENT RESEARCH BASIS, AUGUST 2026
+======================================================================
+
+This plan was checked against current official guidance. These sources define interaction/accessibility principles; PromotionSure's current authenticated UI remains the visual source of truth.
+
+Apple Human Interface Guidelines
+--------------------------------
+Design principles: clear hierarchy, purpose, consistency.
+Modality: useful when it helps someone perform a distinct, narrowly scoped task without losing their prior context.
+Sheets: suited to scoped tasks closely related to current context.
+Disclosure controls: hide detail until it becomes relevant.
+
+Official references:
+https://developer.apple.com/design/human-interface-guidelines/design-principles
+https://developer.apple.com/design/human-interface-guidelines/modality
+https://developer.apple.com/design/human-interface-guidelines/sheets
+https://developer.apple.com/design/human-interface-guidelines/disclosure-controls
+
+Material Design 3
+-----------------
+State guidance: interactive states should be consistent and use multiple visual indicators where appropriate.
+Adaptive layout guidance: layouts adapt to available space rather than simply scale one composition.
+
+Official references:
+https://m3.material.io/foundations/interaction/states/overview
+https://m3.material.io/foundations/layout/canonical-examples/overview
+
+WCAG 2.2
+--------
+Relevant guidance/requirements include reflow, visible and unobscured focus, target-size minimums, non-drag alternatives, predictable input, and review/correction in financial transactions.
+
+Official references:
+https://www.w3.org/TR/WCAG22/
+https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum
+https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum
+
+
+======================================================================
+57. REVISED PHASE 4: PRE-CODE AUDIT
+======================================================================
+
+Do NOT execute the old inline-purchase Phase 4 plan.
+
+Before coding, inspect the current Phase 2/3 state and report:
+1. current Access.jsx query state
+2. current DurationSelector
+3. current Pick 3 selection state
+4. current Complete purchase state
+5. current paymentAttempt ref/state
+6. current paymentError structure
+7. current returnTo behavior
+8. tests that assume inline expansion
+9. existing genuine desktop/mobile modal infrastructure that can be reused
+10. best shared PurchaseModalHost location in authenticated app tree
+11. Dashboard Unlock triggers to migrate
+12. other current Unlock triggers that should use the same modal
+13. inline-specific state/markup that becomes unnecessary
+14. any business behavior that would be lost by removing inline purchase presentation
+
+No code changes until this revised audit is understood and approved.
+
+
+======================================================================
+58. REVISED IMPLEMENTATION ORDER
+======================================================================
+
+PHASE 4A - Architecture bridge
+- audit Phase 2/3 state
+- introduce shared PurchaseModal shell/host
+- make /access queries open modal instead of inline content
+- preserve payment/business logic
+- migrate one module Unlock end-to-end first
+
+PHASE 4B - DurationSelector visual system
+- connected list
+- native radio
+- states
+- no preselection
+- responsive behavior
+
+PHASE 4C - Module modal
+- Configure
+- Review
+- loading/error
+- desktop/mobile shell
+
+PHASE 4D - Pick 3 modal
+- connected checkbox selector
+- progressive disclosure
+- duration
+- review
+- height/scroll behavior
+
+PHASE 4E - Complete modal
+- included count
+- duration
+- review
+
+PHASE 4F - /access redesign
+- page header
+- Bundle offers first
+- grouped Modules second
+- Payment history last
+- responsive composition
+
+PHASE 4G - Other Unlock entry points
+- Dashboard
+- other current authenticated Unlock triggers
+- same module modal
+
+PHASE 4H - Visual QA
+- capture required screenshot matrix
+- self-review and fix obvious mismatches
+- do not push yet
+
+PHASE 5 - Cleanup after visual approval
+- grep and delete dead inline CSS
+- delete obsolete unreferenced component only after final reference check
+- remove superseded tests/selectors
+- consolidate final styles
+
+
+======================================================================
+59. REQUIRED /ACCESS VISUAL QA
+======================================================================
+
+1440px:
+1. default /access with mixed access states
+2. payment-attention state
+3. all-current-modules-unlocked state if fixture supports it
+4. Payment History expanded
+
+1024px:
+5. default /access
+
+390px:
+6. default /access
+7. long module names
+8. Payment History expanded
+
+360px:
+9. default /access with long Oral module name
+
+320 effective CSS px:
+10. reflow check if tooling permits
+
+Review:
+- Bundle offers first but not loud
+- ownership readable
+- individual unlock scannable
+- coming soon tertiary
+- history quiet
+- no pricing-page/admin-table feeling
+- no truncated names
+
+
+======================================================================
+60. REQUIRED MODULE MODAL VISUAL QA
+======================================================================
+
+Desktop:
+1. Configure, no duration
+2. Configure, selected duration
+3. Review
+4. payment error
+5. Preparing payment
+
+390 mobile:
+6. Configure, no duration
+7. selected duration
+8. Review
+
+360 mobile:
+9. selected duration with longest realistic price/savings copy
+
+Check:
+- modal width feels intentional
+- DurationSelector reads as one decision
+- selected state unmistakable but restrained
+- one dominant CTA
+- no pricing-card appearance
+- review feels trustworthy
+
+
+======================================================================
+61. REQUIRED PICK 3 VISUAL QA
+======================================================================
+
+Desktop:
+1. 0 of required
+2. 1 of required
+3. required-1
+4. exact required, no duration
+5. exact required, selected duration
+6. Review
+7. viewport-height case requiring internal scroll
+
+Mobile:
+8. 0 selected
+9. exact required
+10. exact required + duration
+11. Review
+12. long module names
+13. internal scroll / footer behavior
+
+Check:
+- duration truly absent before exact count
+- no empty placeholder
+- selected modules obvious
+- disabled options readable
+- long names wrap
+- footer does not obscure controls
+
+
+======================================================================
+62. REQUIRED COMPLETE VISUAL QA
+======================================================================
+
+Desktop:
+1. Configure
+2. Review
+
+Mobile:
+3. Configure
+4. Review
+
+Check:
+- no giant module list
+- dynamic included count clear
+- same DurationSelector language
+
+
+======================================================================
+63. REQUIRED INTERACTION TESTS
+======================================================================
+
+GLOBAL MODULE UNLOCK
+- Dashboard Unlock opens shared modal for correct module
+- /access Unlock opens same modal
+- every supported Unlock trigger passes correct module
+- user never reselects known module
+
+/access URL
+- /access no modal
+- valid ?module opens correct module modal
+- invalid module no modal
+- ?scope=pick3 opens Pick 3
+- ?scope=complete opens Complete
+- invalid scope no modal
+- Back/Forward restores modal state
+
+MODAL
+- focus trap
+- Escape dismissal when safe
+- close restores trigger focus
+- background not interactive
+- parent scroll position preserved
+
+DURATION
+- no initial selection
+- native radio behavior
+- selection does not auto-advance
+- Review disabled until valid
+- correct backend price
+
+PICK 3
+- 0, 1, required-1: no duration and no Review CTA
+- exact count: duration appears
+- unselected extras disabled
+- selected remain deselectable
+- deselect below required clears duration
+- review lists exact selected modules
+
+REVIEW
+- Change preserves config
+- total matches current plan
+- Continue to payment uses existing valid checkout payload
+
+PAYMENT
+- rapid double click initializes once
+- Preparing payment scoped correctly
+- error keeps modal open and preserves config
+- already-paid handling preserved
+
+ACCESSIBILITY
+- keyboard radios/checkboxes
+- visible focus
+- focus not obscured
+- 320px reflow
+- reduced motion
+- mobile dismissal without required drag
+
+
+======================================================================
+64. CSS ARCHITECTURE
+======================================================================
+
+Recommended:
+Access.jsx
+Access.css
+
+PurchaseModal.jsx
+PurchaseModal.css
+
+DurationSelector.jsx
+DurationSelector.css
+(or purchase-scoped styling if that produces a cleaner cascade)
+
+Scope strongly under page/modal roots.
+
+Do not solve this with a longer global button:not(...) exclusion list.
+Reuse existing PromotionSure variables/tokens.
+
+Legacy cleanup waits until visual approval and repository-wide grep.
+Preserve shared receipt, payment-attention, verification, and genuine modal styles.
+
+AccessPurchasePanel.jsx was previously confirmed unreferenced. Delete it only in cleanup after a final repository-wide reference check. Do not resurrect it merely because it exists.
+
+
+======================================================================
+65. FINAL ACCEPTANCE CHECKLIST
+======================================================================
+
+ACCESS PAGE
+[ ] header shows current unlocked count
+[ ] payment attention only when real
+[ ] Bundle offers first normal section
+[ ] bundles share one coherent outer surface
+[ ] desktop bundles = two related columns
+[ ] mobile bundles = stacked within same surface
+[ ] Modules second
+[ ] Unlocked first inside Modules
+[ ] Available to unlock second
+[ ] Coming soon tertiary
+[ ] no repeated Locked/Unlocked badges required
+[ ] long module names wrap
+[ ] Payment history last and quiet
+[ ] no inline purchase UI remains
+
+GLOBAL PURCHASE
+[ ] every module Unlock opens same shared module modal
+[ ] exact module already known
+[ ] no module reselection
+[ ] bundles use same shell with bundle modes
+[ ] no duplicate payment implementation
+
+DURATION
+[ ] connected radio list
+[ ] no 3 pricing cards
+[ ] no dropdown
+[ ] no segmented control hiding prices
+[ ] no preselection
+[ ] whole row clickable
+[ ] duration + price primary
+[ ] savings secondary
+[ ] radio + subtle tint selection
+[ ] focus distinct
+[ ] no auto-advance
+
+TWO-STEP FLOW
+[ ] Configure
+[ ] Review
+[ ] no unnecessary third step
+[ ] no giant stepper
+[ ] Change preserves selection
+[ ] Review shows correct total
+[ ] Continue to payment explicit
+
+PICK 3
+[ ] native checkboxes
+[ ] required count plan-driven
+[ ] dynamic helper
+[ ] no duration before exact count
+[ ] no CTA before exact count
+[ ] exact count reveals duration
+[ ] unselected extras visible/disabled
+[ ] selected remain deselectable
+[ ] deselect clears duration
+[ ] review lists selected modules
+
+COMPLETE
+[ ] no picker
+[ ] dynamic current-module count
+[ ] no hard-coded all 9
+[ ] same DurationSelector
+[ ] clean review
+
+DESKTOP MODAL
+[ ] centered genuine modal
+[ ] appropriate width
+[ ] close X
+[ ] focus trap
+[ ] max-height controlled
+[ ] Pick 3 internal scroll works
+
+MOBILE MODAL
+[ ] genuine bottom sheet
+[ ] grabber
+[ ] no redundant desktop-style X if established product pattern omits it
+[ ] accessible non-drag dismissal
+[ ] safe area
+[ ] internal scroll
+[ ] full-width CTA
+[ ] parent bottom nav blocked by backdrop
+
+PAYMENT
+[ ] backend prices authoritative
+[ ] returnTo preserved
+[ ] duplicate-start guard preserved
+[ ] server verification preserved
+[ ] errors preserve config
+[ ] history/receipt behavior preserved
+
+ACCESSIBILITY
+[ ] native controls
+[ ] visible focus
+[ ] focus not obscured
+[ ] comfortable targets
+[ ] 320px reflow
+[ ] reduced motion
+[ ] no required dragging
+[ ] review/correction opportunity before payment
+
+VISUAL
+[ ] PromotionSure-native
+[ ] no admin-table feel
+[ ] no pricing-page feel
+[ ] no card explosion
+[ ] green restrained
+[ ] readable typography
+[ ] bundle value obvious
+[ ] ownership feels first-class
+[ ] purchase feels focused
+[ ] review feels trustworthy
+
+
+======================================================================
+66. FINAL PRODUCT DESCRIPTION
+======================================================================
+
+The target experience is a CALM ACCESS-MANAGEMENT PAGE with:
+- current ownership
+- clear bundle opportunities
+- understandable individual unlock options
+- quiet transaction history
+
+combined with a FOCUSED SHARED PURCHASE MODAL that:
+- opens from any Unlock action
+- already knows the user's chosen module/scope
+- asks only for necessary configuration
+- uses a compact connected duration list
+- reveals complexity progressively
+- offers a review/correction point
+- hands off to Paystack safely
+
+The product feels modern because it is:
+- clear
+- stable
+- adaptive
+- restrained
+- accessible
+- predictable
+- context-aware
+
+not because it uses fashionable decoration.
+
+
+======================================================================
+67. FINAL INSTRUCTION TO CODEX
+======================================================================
+
+Treat this document as the NEW source of truth for PromotionSure Access and Purchase UX.
+
+It supersedes the earlier visual requirement that purchases expand inline on /access.
+
+Preserve the completed Phase 2 and Phase 3 state/payment improvements wherever they remain applicable.
+
+Before revised Phase 4 implementation:
+1. audit how Phase 2/3 state moves into the shared modal architecture
+2. identify all current Unlock entry points
+3. identify existing desktop/mobile genuine modal infrastructure
+4. identify tests that assume inline expansion
+5. report the exact migration plan
+6. do not modify code until that revised audit is approved
+
+When implementation begins:
+- keep /access stable
+- put Bundle offers first
+- group Modules by access state
+- keep Payment history last
+- make every module Unlock use the shared module Purchase Modal
+- make duration a connected radio list
+- use Configure -> Review
+- use PromotionSure's established desktop genuine-modal language
+- use PromotionSure's established mobile bottom-sheet language
+- preserve backend pricing and payment safety
+- capture and inspect the required screenshots before cleanup or push
+
+Do not improvise a different information architecture after coding starts.
+
+END OF MASTER PLAN

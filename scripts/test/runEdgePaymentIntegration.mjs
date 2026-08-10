@@ -406,11 +406,14 @@ async function main() {
       fail("Sensitive provider payment fields were persisted.");
     }
     const declinedHistory = await candidate.rpc("get_payment_history", { requested_limit: 20 });
+    const declinedRecord = declinedHistory.data?.find((payment) => payment.provider_reference === oralBody.reference);
     if (
       declinedHistory.error ||
-      declinedHistory.data.some((payment) => payment.provider_reference === oralBody.reference)
+      declinedRecord?.provider_status !== "failed" ||
+      declinedRecord?.record_type !== "history" ||
+      declinedRecord?.receipt_eligible !== false
     ) {
-      fail("Declined checkout attempt leaked into customer payment history.");
+      fail("Declined checkout outcome was not represented truthfully in customer payment history.");
     }
 
     const invalidFulfillment = await invoke(apiUrl, "initialize-paystack-payment", token, { subject_slug: "e2e-oral-questions" });
@@ -435,6 +438,13 @@ async function main() {
     const attentionRecord = attentionHistory.data?.find((payment) => payment.provider_reference === invalidFulfillmentBody.reference);
     if (attentionHistory.error || attentionRecord?.record_type !== "attention") {
       fail("Paid transaction with an access issue was not surfaced for customer attention.");
+    }
+    const queuedAttentionEmail = await service.from("transactional_email_events")
+      .select("dispatch_status, attempt_count")
+      .eq("event_key", `payment_access_issue:${invalidFulfillmentBody.reference}`)
+      .single();
+    if (queuedAttentionEmail.error || queuedAttentionEmail.data.dispatch_status !== "pending" || queuedAttentionEmail.data.attempt_count !== 0) {
+      fail("Paid-but-access-review email was not durably queued without provider dispatch.");
     }
 
     const initialized = await invoke(
@@ -487,6 +497,13 @@ async function main() {
     ) {
       fail("Successful payment truth and access fulfillment were not persisted together.");
     }
+    const queuedConfirmation = await service.from("transactional_email_events")
+      .select("id, dispatch_status, attempt_count")
+      .eq("event_key", `payment_success:${initializedBody.reference}`)
+      .single();
+    if (queuedConfirmation.error || queuedConfirmation.data.dispatch_status !== "pending" || queuedConfirmation.data.attempt_count !== 0) {
+      fail("Payment confirmation was not queued after fulfillment.");
+    }
 
     const replay = await invoke(apiUrl, "verify-paystack-payment", token, { reference: initializedBody.reference });
     if (!replay.ok) fail(`Verification replay was not idempotent: ${await replay.text()}`);
@@ -495,6 +512,12 @@ async function main() {
       .eq("user_id", userId)
       .eq("status", "active");
     if (entitlements.error || entitlements.count !== 1) fail("Verification replay created an invalid entitlement count.");
+    const confirmationReplay = await service.from("transactional_email_events")
+      .select("id", { count: "exact" })
+      .eq("event_key", `payment_success:${initializedBody.reference}`);
+    if (confirmationReplay.error || confirmationReplay.count !== 1 || confirmationReplay.data[0]?.id !== queuedConfirmation.data.id) {
+      fail("Verification replay cloned the payment confirmation email event.");
+    }
 
     const bundleEmail = `bundle-edge-${crypto.randomUUID()}@example.test`;
     const bundleUser = await service.auth.admin.createUser({
@@ -572,6 +595,98 @@ async function main() {
     ) {
       fail("Bundle payment did not persist one order with three fulfilled items.");
     }
+
+    const durationPrice = await service.from("purchase_plan_prices")
+      .select("price_kobo, purchase_plans!inner(code)")
+      .eq("purchase_plans.code", "individual_objective")
+      .eq("duration_months", 1)
+      .eq("enabled", true)
+      .single();
+    if (durationPrice.error || !durationPrice.data) {
+      fail(`Duration pricing fixture is missing: ${durationPrice.error?.message ?? "unknown error"}`);
+    }
+    const heldSubjectSlug = bundleModules.find((module) => module.practice_type !== "oral")?.subject_slug;
+    if (!heldSubjectSlug) fail("The held-module checkout test requires an objective module.");
+
+    const initializedExtension = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
+      purchase_type: "pricing_plan",
+      plan_code: "individual_objective",
+      duration_months: 1,
+      subject_slugs: [heldSubjectSlug],
+      expected_price_kobo: Number(durationPrice.data.price_kobo),
+    });
+    if (!initializedExtension.ok) {
+      fail(`Duration extension initialization failed: ${await initializedExtension.text()}`);
+    }
+    const initializedExtensionBody = await initializedExtension.json();
+    const verifiedExtension = await invoke(apiUrl, "verify-paystack-payment", bundleToken, {
+      reference: initializedExtensionBody.reference,
+    });
+    if (!verifiedExtension.ok) {
+      fail(`Duration extension verification failed: ${await verifiedExtension.text()}`);
+    }
+    const extensionOrder = await service.from("payment_orders")
+      .select("id, amount_kobo, currency")
+      .eq("provider_reference", initializedExtensionBody.reference)
+      .single();
+    if (extensionOrder.error || !extensionOrder.data) fail("Verified extension order was not persisted.");
+    const extensionOutcomes = await service.from("payment_order_item_access_outcomes")
+      .select("id, effect_state")
+      .eq("payment_order_id", extensionOrder.data.id);
+    if (extensionOutcomes.error || extensionOutcomes.data.length !== 1 || extensionOutcomes.data[0].effect_state !== "effective") {
+      fail("Verified duration extension did not create one effective access outcome.");
+    }
+
+    const openedDispute = await sendPaystackEvent({
+      event: "charge.dispute.create",
+      data: {
+        id: `DSP-${crypto.randomUUID()}`,
+        status: "pending",
+        domain: "test",
+        transaction: {
+          domain: "test",
+          status: "success",
+          reference: initializedExtensionBody.reference,
+          amount: extensionOrder.data.amount_kobo,
+          currency: extensionOrder.data.currency,
+        },
+      },
+    });
+    if (!openedDispute.ok) fail(`Signed extension dispute was rejected: ${await openedDispute.text()}`);
+
+    const blockedCheckout = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
+      purchase_type: "pricing_plan",
+      plan_code: "individual_objective",
+      duration_months: 1,
+      subject_slugs: [heldSubjectSlug],
+      expected_price_kobo: Number(durationPrice.data.price_kobo),
+    });
+    const blockedCheckoutBody = await blockedCheckout.json();
+    if (
+      blockedCheckout.status !== 409
+      || blockedCheckoutBody.code !== "MODULE_ACCESS_UNDER_REVIEW"
+    ) {
+      fail(`Held module checkout did not return the stable restriction: ${JSON.stringify(blockedCheckoutBody)}`);
+    }
+
+    const resolvedDispute = await sendPaystackEvent({
+      event: "charge.dispute.resolve",
+      data: {
+        id: `DSP-${crypto.randomUUID()}`,
+        status: "resolved",
+        resolution: "declined",
+        domain: "test",
+        transaction: {
+          domain: "test",
+          status: "success",
+          reference: initializedExtensionBody.reference,
+          amount: extensionOrder.data.amount_kobo,
+          currency: extensionOrder.data.currency,
+        },
+      },
+    });
+    if (!resolvedDispute.ok) fail(`Signed extension dispute resolution was rejected: ${await resolvedDispute.text()}`);
+
     await service.from("purchase_offers").update({ enabled: false }).eq("id", createdOffer.data.id);
     await service.auth.admin.deleteUser(bundleUserId);
 
@@ -626,6 +741,12 @@ async function main() {
     const signature = await createPaystackSignature(event, "sk_test_local-edge-payment-secret");
     const webhook = await invoke(apiUrl, "paystack-webhook", null, event, { "x-paystack-signature": signature });
     if (!webhook.ok) fail(`Valid webhook replay failed: ${await webhook.text()}`);
+    const webhookConfirmationReplay = await service.from("transactional_email_events")
+      .select("id", { count: "exact" })
+      .eq("event_key", `payment_success:${initializedBody.reference}`);
+    if (webhookConfirmationReplay.error || webhookConfirmationReplay.count !== 1) {
+      fail("Verification and payment-webhook race cloned the confirmation email event.");
+    }
 
     const invalidRefundWebhook = await sendPaystackEvent({
       event: "refund.processed",
@@ -759,6 +880,14 @@ async function main() {
       paid_at: new Date().toISOString(),
     }).select("id").single();
     if (disputeOrder.error) fail(`Dispute fixture order failed: ${disputeOrder.error.message}`);
+    const disputeItem = await service.from("payment_order_items").insert({
+      payment_order_id: disputeOrder.data.id,
+      subject_id: partialOrder.data.subject_id,
+      module_offering_id: partialOrder.data.module_offering_id,
+      list_price_kobo: 250000,
+      allocated_amount_kobo: 250000,
+    });
+    if (disputeItem.error) fail(`Dispute fixture item failed: ${disputeItem.error.message}`);
     const disputeEntitlement = await service.from("module_entitlements").insert({
       user_id: partialOrder.data.user_id,
       exam_pack_id: partialOrder.data.exam_pack_id,
