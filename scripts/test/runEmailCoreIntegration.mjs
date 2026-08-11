@@ -102,11 +102,18 @@ function svixHeaders(secret, id, body, timestamp = Math.floor(Date.now() / 1000)
   return { "svix-id": id, "svix-timestamp": String(timestamp), "svix-signature": `v1,${signature}` };
 }
 
+function engagementUnsubscribeToken(secret, userId) {
+  const payload = Buffer.from(JSON.stringify({ v: 1, sub: userId, scope: "engagement" })).toString("base64url");
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
 async function main() {
   const { apiUrl, publicKey, secretKey } = readLocalSupabaseEnvironment();
   const service = createClient(apiUrl, secretKey, { auth: { persistSession: false } });
   const mock = await startMockResend();
   const dispatchSecret = "local-email-dispatch-secret-2026";
+  const unsubscribeSecret = "local-email-unsubscribe-secret-2026";
   const webhookSecret = `whsec_${Buffer.from("local-resend-webhook-secret-2026").toString("base64")}`;
   const envPath = "test-results/email-core.env";
   await mkdir("test-results", { recursive: true });
@@ -116,6 +123,7 @@ async function main() {
     "RESEND_API_KEY=your-resend-test-value",
     `RESEND_API_URL=http://host.docker.internal:${mock.port}`,
     `EMAIL_DISPATCH_SECRET=${dispatchSecret}`,
+    `EMAIL_UNSUBSCRIBE_SECRET=${unsubscribeSecret}`,
     `RESEND_WEBHOOK_SECRET=${webhookSecret}`,
     "EMAIL_PROVIDER_TIMEOUT_MS=1000",
     "EMAIL_DISPATCH_BATCH_SIZE=1",
@@ -138,6 +146,39 @@ async function main() {
     });
     if (created.error) fail(created.error.message);
     userId = created.data.user.id;
+    const candidate = createClient(apiUrl, publicKey, { auth: { persistSession: false } });
+    const candidateLogin = await candidate.auth.signInWithPassword({
+      email: created.data.user.email,
+      password: "LocalTestOnly!2026",
+    });
+    if (candidateLogin.error) fail(candidateLogin.error.message);
+
+    const unsubscribeEndpoint = `${apiUrl}/functions/v1/email-unsubscribe`;
+    const unsubscribeToken = engagementUnsubscribeToken(unsubscribeSecret, userId);
+    const unsignedUnsubscribe = await fetch(unsubscribeEndpoint);
+    if (unsignedUnsubscribe.status !== 400) fail("Unsigned unsubscribe request was accepted.");
+    const tamperedUnsubscribe = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(`${unsubscribeToken}x`)}`);
+    if (tamperedUnsubscribe.status !== 400) fail("Tampered unsubscribe token was accepted.");
+    const preferenceBeforeGet = await service.from("email_preferences").select("user_id").eq("user_id", userId).maybeSingle();
+    const unsubscribeConfirmation = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`);
+    const preferenceAfterGet = await service.from("email_preferences").select("user_id").eq("user_id", userId).maybeSingle();
+    if (!unsubscribeConfirmation.ok || preferenceBeforeGet.data || preferenceAfterGet.data) {
+      fail("Unsubscribe GET confirmation mutated preference state.");
+    }
+    const unsubscribePost = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`, { method: "POST" });
+    if (!unsubscribePost.ok) fail(`Valid unsubscribe POST failed: ${await unsubscribePost.text()}`);
+    const firstPreference = await service.from("email_preferences").select("marketing_opted_out, opted_out_at, opt_out_source").eq("user_id", userId).single();
+    if (!firstPreference.data?.marketing_opted_out || firstPreference.data.opt_out_source !== "email_unsubscribe") {
+      fail("Valid unsubscribe POST did not set only the engagement preference.");
+    }
+    const unsubscribeReplay = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`, { method: "POST" });
+    const replayedPreference = await service.from("email_preferences").select("marketing_opted_out, opted_out_at").eq("user_id", userId).single();
+    if (!unsubscribeReplay.ok || replayedPreference.data?.opted_out_at !== firstPreference.data.opted_out_at) {
+      fail("Unsubscribe replay was not idempotent.");
+    }
+    const unknownToken = engagementUnsubscribeToken(unsubscribeSecret, randomUUID());
+    const unknownUnsubscribe = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unknownToken)}`, { method: "POST" });
+    if (!unknownUnsubscribe.ok) fail("A valid unknown-user unsubscribe token did not fail closed without enumeration.");
 
     const enqueue = async (key, label = key) => {
       const result = await service.rpc("enqueue_transactional_email_event", {
@@ -246,6 +287,11 @@ async function main() {
       || suppressedEvent.recipient_email_used !== "hard_bounce@example.test"
       || mock.calls.length !== providerCallsBeforeSuppression
     ) fail("The current Auth recipient suppression did not prevent provider dispatch.");
+    const resubscribe = await candidate.rpc("set_my_engagement_email_enabled", { requested_enabled: true });
+    const suppressionAfterResubscribe = await service.from("email_suppressions").select("reason").eq("email", "hard_bounce@example.test").single();
+    if (resubscribe.error || resubscribe.data?.engagement_enabled !== true || suppressionAfterResubscribe.data?.reason !== "hard_bounce") {
+      fail("Candidate re-subscribe did not remain separate from technical suppression.");
+    }
 
     const malformedBody = "not-json";
     const malformed = await fetch(`${apiUrl}/functions/v1/resend-webhook`, {
@@ -266,7 +312,7 @@ async function main() {
     });
     if (staleReplay.status !== 401) fail("A stale signed webhook replay was accepted.");
 
-    console.log("Email core integration passed: provider classification, retry idempotency, webhook security, delivery ordering, and suppression.");
+    console.log("Email core integration passed: provider classification, retry idempotency, webhook security, delivery ordering, suppression, and signed unsubscribe.");
   } finally {
     cleanupLocalEmailCoreFixtures();
     if (userId) await service.auth.admin.deleteUser(userId).catch(() => null);

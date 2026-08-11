@@ -31,6 +31,12 @@ test("paid dashboard keeps modules, account, and access connected without floati
   await expect(page.getByText("Federal Ministry of Works", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit details" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Add (optional|missing) details/ })).toHaveCount(0);
+  const engagementPreference = page.getByRole("checkbox", { name: "Engagement emails" });
+  await expect(engagementPreference).toBeChecked();
+  await engagementPreference.uncheck();
+  await expect(engagementPreference).not.toBeChecked();
+  await engagementPreference.check();
+  await expect(engagementPreference).toBeChecked();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Paid Candidate" })).toBeVisible();
 

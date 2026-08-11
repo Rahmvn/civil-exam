@@ -39,6 +39,7 @@ export async function sendEmail({
   replyTo,
   idempotencyKey,
   tags = [],
+  listUnsubscribeUrl,
 }: {
   to: string;
   subject: string;
@@ -47,6 +48,7 @@ export async function sendEmail({
   replyTo?: string;
   idempotencyKey: string;
   tags?: Array<{ name: string; value: string }>;
+  listUnsubscribeUrl?: string;
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
@@ -73,6 +75,14 @@ export async function sendEmail({
         text,
         html,
         tags,
+        ...(listUnsubscribeUrl
+          ? {
+            headers: {
+              "List-Unsubscribe": `<${listUnsubscribeUrl}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          }
+          : {}),
       }),
     });
   } catch (error) {

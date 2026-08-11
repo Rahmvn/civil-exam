@@ -12,9 +12,11 @@ export function escapeHtml(value: unknown) {
 export function renderEmailLayout({
   preheader,
   bodyHtml,
+  footerHtml,
 }: {
   preheader: string;
   bodyHtml: string;
+  footerHtml?: string;
 }) {
   return `<!doctype html>
 <html lang="en">
@@ -28,6 +30,7 @@ export function renderEmailLayout({
           <tr><td style="padding:8px 28px 24px;font-size:15px;line-height:1.6;">${bodyHtml}</td></tr>
           <tr><td style="border-top:1px solid #e6ebe8;padding:18px 28px;font-size:12px;line-height:1.5;color:#63716d;">
             Need help? Email <a href="mailto:${SUPPORT_EMAIL}" style="color:#0d6546;">${SUPPORT_EMAIL}</a>.
+            ${footerHtml ? `<div style="margin-top:10px;">${footerHtml}</div>` : ""}
           </td></tr>
         </table>
       </td></tr>

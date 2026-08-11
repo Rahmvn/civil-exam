@@ -1,7 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
 import { strToU8, zipSync } from "fflate";
 import { expectNoHorizontalOverflow } from "./helpers.js";
+
+async function captureEmailCenter(page, testInfo, name) {
+  if (process.env.E2_EMAIL_CAPTURE !== "true") return;
+  const directory = "artifacts/email-system-e2/screenshots";
+  mkdirSync(directory, { recursive: true });
+  await page.screenshot({ path: `${directory}/${testInfo.project.name}-${name}.png`, fullPage: true });
+}
 
 function createXlsxBuffer(rows) {
   const escapeXml = (value) => String(value)
@@ -590,4 +598,100 @@ test("admin sessions stay outside the candidate experience", async ({ page }) =>
 
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.getByText("Exit admin", { exact: true })).toHaveCount(0);
+});
+
+test("admin Email Center composes and queues one support email through Email Core", async ({ page }, testInfo) => {
+  await page.goto("/admin/users");
+  const userRow = page.locator(".admin-users-table tbody tr").filter({ hasText: "Free Candidate" });
+  await expect(userRow).toBeVisible();
+  await userRow.getByRole("button", { name: "Email user" }).click();
+
+  await expect(page).toHaveURL(/\/admin\/email$/);
+  await expect(page.getByRole("heading", { name: "Compose email" })).toBeVisible();
+  await expect(page.getByLabel("Individual user")).toBeChecked();
+  await expect(page.getByText("Support is for individual service or account communication, not promotional messaging.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Application email history" })).toBeVisible();
+  await expect(page.getByText("PromotionSure application email only.")).toBeVisible();
+  await expect(page.getByText("Subscribed", { exact: true })).toBeVisible();
+  await captureEmailCenter(page, testInfo, "individual-compose");
+  await page.getByRole("button", { name: "Preview audience" }).click();
+  await expect(page.getByRole("heading", { name: "Audience preview" })).toBeVisible();
+  await expect(page.locator(".admin-email-preview dt").filter({ hasText: "Eligible" })).toBeVisible();
+
+  await page.getByLabel("Campaign name").fill("E2E candidate support");
+  await page.getByLabel("Subject").fill("Your PromotionSure support update");
+  await page.getByLabel("Body").fill("Hello {{first_name}},\n\nThis is a local Email Center test.");
+  await page.getByRole("button", { name: "Review final audience" }).click();
+  await expect(page.getByRole("heading", { name: "Queue this email?" })).toBeVisible();
+  await page.getByRole("button", { name: "Queue 1 email" }).click();
+
+  await expect(page).toHaveURL(/\/admin\/email\/campaigns\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: "E2E candidate support" })).toBeVisible();
+  await expect(page.getByLabel("Search campaign recipients")).toBeVisible();
+  await expect(page.getByText("Queued", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pause" })).toBeEnabled();
+  await page.getByRole("button", { name: "Pause" }).click();
+  await expect(page.getByText("Paused", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Resume" }).click();
+  await expect(page.getByText("Queued", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Cancel remaining" }).click();
+  await expect(page.getByText("Cancelled", { exact: true }).first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("admin Email Center previews server segments and keeps delivery and templates operational", async ({ page }, testInfo) => {
+  await page.goto("/admin/email");
+  await expect(page.getByRole("heading", { name: "Email", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Search campaigns")).toBeVisible();
+  await expect(page.getByLabel("Campaign status")).toBeVisible();
+  await captureEmailCenter(page, testInfo, "campaigns");
+  await page.getByRole("button", { name: "Compose email" }).click();
+  await expect(page.getByRole("radio", { name: "Segment" })).toBeChecked();
+  await page.getByLabel("Audience segment").selectOption("all_confirmed");
+  await page.getByRole("button", { name: "Preview audience" }).click();
+  await expect(page.getByRole("heading", { name: "Audience preview" })).toBeVisible();
+  await expect(page.getByText("Current server result")).toBeVisible();
+  await expect(page.getByText("Pending", { exact: true })).toBeVisible();
+  await captureEmailCenter(page, testInfo, "segment-preview");
+  await expectNoHorizontalOverflow(page);
+
+  await page.getByRole("button", { name: "Back to campaigns" }).click();
+  await page.getByRole("button", { name: "Delivery" }).click();
+  await expect(page.getByRole("heading", { name: "Delivery" })).toBeVisible();
+  await expect(page.getByLabel("Delivery status")).toBeVisible();
+  await page.getByRole("button", { name: "Templates" }).click();
+  await expect(page.getByRole("heading", { name: "Templates" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /General support/ })).toBeVisible();
+  await captureEmailCenter(page, testInfo, "templates");
+  await expectNoHorizontalOverflow(page);
+
+  if (testInfo.project.name.includes("mobile")) {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await expectNoHorizontalOverflow(page);
+  }
+});
+
+test("admin Email Center carries deliberate user selection and enforces the bulk test gate", async ({ page }) => {
+  await page.goto("/admin/users");
+  const candidateRows = page.locator(".admin-users-table tbody tr");
+  await expect.poll(() => candidateRows.count()).toBeGreaterThanOrEqual(2);
+  await candidateRows.nth(0).getByRole("checkbox").check();
+  await candidateRows.nth(1).getByRole("checkbox").check();
+  await expect(page.getByText("2 selected", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Email selected" }).click();
+
+  await expect(page).toHaveURL(/\/admin\/email$/);
+  await expect(page.getByLabel("Selected users")).toBeChecked();
+  await expect(page.locator(".admin-email-user-picker-summary")).toContainText("2 selected");
+  await page.getByRole("button", { name: "Preview audience" }).click();
+  await expect(page.getByRole("heading", { name: "Audience preview" })).toBeVisible();
+
+  await page.getByLabel("Campaign name").fill("E2E selected candidates");
+  await page.getByLabel("Subject").fill("A preparation update");
+  await page.getByLabel("Body").fill("Hello {{first_name}},\n\nHere is your preparation update.");
+  await page.getByRole("button", { name: "Review final audience" }).click();
+  const confirmation = page.getByRole("group", { name: "Final campaign confirmation" });
+  await expect(confirmation).toContainText("A successful test is required for this exact campaign.");
+  await expect(confirmation.getByRole("button", { name: /Queue \d+ emails/ })).toBeDisabled();
+  await expectNoHorizontalOverflow(page);
 });

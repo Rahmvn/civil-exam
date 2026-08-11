@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
-import { NIGERIA_STATES, updateProfile } from "../lib/appApi";
+import {
+  getMyEmailPreferences,
+  NIGERIA_STATES,
+  setMyEngagementEmailEnabled,
+  updateProfile,
+} from "../lib/appApi";
 import { friendlyErrorMessage, logAppError } from "../lib/errors";
 import { useAuth } from "../lib/useAuth";
 
@@ -30,6 +35,9 @@ export default function Profile() {
   const [message, setMessage] = useState("");
   const [showDetailsHelp, setShowDetailsHelp] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [emailPreference, setEmailPreference] = useState(null);
+  const [emailPreferenceBusy, setEmailPreferenceBusy] = useState(false);
+  const [emailPreferenceError, setEmailPreferenceError] = useState("");
   const fullName = profile?.full_name?.trim() || "Your account";
   const hasPhoneNumber = Boolean(profile?.phone_number?.trim());
   const hasStateCode = Boolean(profile?.state_code?.trim());
@@ -41,6 +49,34 @@ export default function Profile() {
     || (!hasStateCode && stateCode)
     || (!hasOrganizationName && organizationName.trim()),
   );
+
+  useEffect(() => {
+    let current = true;
+    getMyEmailPreferences().then((preference) => {
+      if (current) setEmailPreference(preference);
+    }).catch((error) => {
+      logAppError("Email preference load", error);
+      if (current) setEmailPreferenceError("Email preferences are temporarily unavailable.");
+    });
+    return () => { current = false; };
+  }, []);
+
+  async function handleEmailPreferenceChange(event) {
+    const enabled = event.target.checked;
+    const previousPreference = emailPreference;
+    setEmailPreference((current) => ({ ...current, engagement_enabled: enabled }));
+    setEmailPreferenceBusy(true);
+    setEmailPreferenceError("");
+    try {
+      setEmailPreference(await setMyEngagementEmailEnabled(enabled));
+    } catch (error) {
+      logAppError("Email preference update", error);
+      setEmailPreference(previousPreference);
+      setEmailPreferenceError(friendlyErrorMessage(error, "We could not update your email preference."));
+    } finally {
+      setEmailPreferenceBusy(false);
+    }
+  }
 
   function closeDetailsForm() {
     setAddingDetails(false);
@@ -188,6 +224,25 @@ export default function Profile() {
               <h2>Need help?</h2>
               <p>Send a support request and follow its resolution from your account.</p>
               <Link className="account-action-link" to="/help">Open support</Link>
+            </section>
+
+            <section className="account-support-card account-email-preference">
+              <div>
+                <h2>Email preferences</h2>
+                <p>Choose whether PromotionSure may send preparation tips and product updates.</p>
+              </div>
+              {emailPreference && (
+                <label>
+                  <input
+                    checked={Boolean(emailPreference.engagement_enabled)}
+                    disabled={emailPreferenceBusy}
+                    onChange={handleEmailPreferenceChange}
+                    type="checkbox"
+                  />
+                  Engagement emails
+                </label>
+              )}
+              {emailPreferenceError && <p className="action-error" role="alert">{emailPreferenceError}</p>}
             </section>
           </aside>
         </div>

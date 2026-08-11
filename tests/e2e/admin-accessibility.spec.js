@@ -5,6 +5,7 @@ const routes = [
   ["content catalogue", "/admin", "Content"],
   ["activity log", "/admin/activity", "Activity"],
   ["admin guide", "/admin/guide", "Admin guide"],
+  ["admin email center", "/admin/email", "Email"],
 ];
 
 for (const [name, route, heading] of routes) {

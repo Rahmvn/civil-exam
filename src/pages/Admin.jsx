@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AdminConfirmDialog } from "../components/admin/AdminConfirmDialog";
 import { AdminGuideView } from "../components/admin/AdminGuideView";
+import { AdminEmailCenter } from "../components/admin/AdminEmailCenter";
 import { AdminImportPanel } from "../components/admin/AdminImportPanel";
 import { AdminLaunchOfferPanel } from "../components/admin/AdminLaunchOfferPanel";
 import { AdminPricingPlansPanel } from "../components/admin/AdminPricingPlansPanel";
@@ -13,8 +14,8 @@ import "../styles/admin.css";
 import {
   archiveAdminQuestion,
   configureAdminLaunchOffer,
-  createAdminModule,
   createAdminEmailCampaign,
+  createAdminModule,
   createAdminPracticeSet,
   createAdminPracticeSetReplacement,
   createAdminQuestionRevision,
@@ -24,6 +25,9 @@ import {
   endAdminLaunchOffer,
   getAdminAuditLogs,
   getAdminContentModules,
+  getAdminEmailCampaign,
+  getAdminEmailCampaignCatalog,
+  getAdminEmailCampaigns,
   getAdminLaunchOffer,
   getAdminPracticeSets,
   getAdminPracticeSetValidation,
@@ -32,9 +36,6 @@ import {
   getAdminPurchasePlans,
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
-  getAdminEmailCampaign,
-  getAdminEmailCampaignCatalog,
-  getAdminEmailCampaigns,
   getAdminSupportQueue,
   getAdminSupportDiagnostics,
   importAdminQuestions,
@@ -161,6 +162,12 @@ function AdminChromeIcon({ name }) {
         <path d="M10 11h6" />
       </>
     ),
+    email: (
+      <>
+        <rect x="4" y="6" width="16" height="12" rx="2" />
+        <path d="m5 8 7 5 7-5" />
+      </>
+    ),
   };
 
   return (
@@ -224,6 +231,14 @@ function AdminRail({ currentView, navigate }) {
         >
           <AdminChromeIcon name="payments" />
           <strong>Payment issues</strong>
+        </button>
+        <button
+          className={`admin-rail-link${currentView === "email" ? " is-active" : ""}`}
+          type="button"
+          onClick={() => navigate("/admin/email")}
+        >
+          <AdminChromeIcon name="email" />
+          <strong>Email</strong>
         </button>
         <button
           className={`admin-rail-link${currentView === "guide" ? " is-active" : ""}`}
@@ -1665,6 +1680,7 @@ function AdminUsersView({
   directory,
   loading,
   onCancelCampaign,
+  onComposeEmail,
   onCreateCampaign,
   onDraftChange,
   onPageChange,
@@ -1681,12 +1697,14 @@ function AdminUsersView({
   segment,
 }) {
   const [testEmail, setTestEmail] = useState("promotionsureapp@gmail.com");
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const firstResult = directory.total === 0 ? 0 : directory.offset + 1;
   const lastResult = Math.min(directory.offset + directory.items.length, directory.total);
   const campaignRecipients = ensureAdminArray(activeCampaign?.recipients);
   const selectedRecipientCount = Number(activeCampaign?.counts?.selected ?? 0);
   const failedRecipientCount = Number(activeCampaign?.counts?.failed ?? 0);
   const sendableRecipientCount = Number(activeCampaign?.counts?.pending ?? 0) + failedRecipientCount;
+  const showLegacyCampaigns = false;
 
   return (
     <>
@@ -1705,7 +1723,7 @@ function AdminUsersView({
         { label: "Practised, unpaid", value: directory.counts.practiced_unpaid },
         { label: "Payment started", value: directory.counts.payment_started_unpaid },
       ]} />
-      <section className="admin-campaign-board">
+      {showLegacyCampaigns && <section className="admin-campaign-board">
         <header>
           <div>
             <h2>Email follow-up</h2>
@@ -1860,7 +1878,7 @@ function AdminUsersView({
             ))}
           </div>
         )}
-      </section>
+      </section>}
       <section className="admin-users-board">
         <div className="admin-list-toolbar">
           <label className="admin-inline-search">
@@ -1873,6 +1891,13 @@ function AdminUsersView({
             ))}
           </select>
           <span>{loading ? "Loading..." : `${directory.total} users`}</span>
+          {selectedUserIds.length > 0 && (
+            <div className="admin-user-email-selection">
+              <strong>{selectedUserIds.length} selected</strong>
+              <button type="button" onClick={() => setSelectedUserIds([])}>Clear</button>
+              <button type="button" onClick={() => onComposeEmail(selectedUserIds)}>Email selected</button>
+            </div>
+          )}
         </div>
         {loading && directory.items.length === 0 ? <LoadingState /> : directory.items.length === 0 ? (
           <div className="admin-empty-state">
@@ -1884,6 +1909,7 @@ function AdminUsersView({
             <table className="admin-users-table">
               <thead>
                 <tr>
+                  <th><span className="sr-only">Select</span></th>
                   <th>Candidate</th>
                   <th>Practice</th>
                   <th>Access</th>
@@ -1903,9 +1929,18 @@ function AdminUsersView({
                   return (
                     <tr key={user.id}>
                       <td>
+                        <input
+                          aria-label={`Select ${user.full_name || user.email}`}
+                          checked={selectedUserIds.includes(user.id)}
+                          onChange={(event) => setSelectedUserIds((current) => event.target.checked ? [...new Set([...current, user.id])] : current.filter((id) => id !== user.id))}
+                          type="checkbox"
+                        />
+                      </td>
+                      <td>
                         <strong>{user.full_name || "Candidate"}</strong>
                         <span>{user.email}</span>
                         {user.service_level && <small>{user.service_level}</small>}
+                        <button className="admin-user-email-action" type="button" onClick={() => onComposeEmail([user.id])}>Email user</button>
                       </td>
                       <td>
                         <strong>{formatCount(user.total_attempt_count)} attempt{Number(user.total_attempt_count) === 1 ? "" : "s"}</strong>
@@ -2165,6 +2200,8 @@ export default function Admin() {
       ? "users"
     : location.pathname === "/admin/payments" || searchParams.get("view") === "payments"
       ? "payments"
+    : location.pathname.startsWith("/admin/email") || searchParams.get("view") === "email"
+      ? "email"
     : location.pathname === "/admin/help" || searchParams.get("view") === "support"
       ? "support"
     : location.pathname === "/admin/guide" || searchParams.get("view") === "guide"
@@ -3305,6 +3342,8 @@ export default function Admin() {
           <div className="admin-page">
             {currentView === "activity" ? (
               <ActivityView auditLogs={auditLogs} query={shellSearch} onQueryChange={setShellSearch} />
+            ) : currentView === "email" ? (
+              <AdminEmailCenter />
             ) : currentView === "users" ? (
               <AdminUsersView
                 activeCampaign={activeEmailCampaign}
@@ -3315,6 +3354,7 @@ export default function Admin() {
                 directory={userDirectory}
                 loading={userLoading}
                 onCancelCampaign={handleCancelCampaign}
+                onComposeEmail={(emailUserIds) => navigate("/admin/email", { state: { emailUserIds } })}
                 onCreateCampaign={(scenario) => void handleCreateEmailCampaign(scenario)}
                 onDraftChange={handleCampaignDraftChange}
                 onPageChange={(direction) => setUserPage((current) => Math.max(0, current + direction))}

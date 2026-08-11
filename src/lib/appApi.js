@@ -996,6 +996,133 @@ export async function sendAdminEmailCampaign(campaignId) {
   }));
 }
 
+export async function getAdminEmailAudienceCatalog() {
+  return requireData(await supabase.rpc("get_admin_email_audience_catalog"));
+}
+
+export async function previewAdminEmailAudience({
+  audienceKind,
+  userIds = [],
+  segmentKey = null,
+  segmentParams = {},
+  category = "engagement",
+  query = "",
+  limit = 50,
+  offset = 0,
+}) {
+  return requireData(await supabase.rpc("admin_preview_email_audience", {
+    requested_audience_kind: audienceKind,
+    requested_user_ids: userIds,
+    requested_segment_key: segmentKey,
+    requested_segment_params: segmentParams,
+    requested_category: category,
+    requested_query: query || null,
+    requested_limit: limit,
+    requested_offset: offset,
+  }));
+}
+
+export async function getAdminEmailTemplates() {
+  const data = await requireData(await supabase.rpc("get_admin_email_templates"));
+  return ensureArray(data?.items);
+}
+
+export async function saveAdminEmailTemplate(template) {
+  return requireData(await supabase.rpc("admin_save_email_template", {
+    requested_template_id: template.id,
+    requested_name: template.name,
+    requested_category: template.category,
+    requested_subject: template.subject,
+    requested_preheader: template.preheader || null,
+    requested_body_text: template.bodyText,
+    requested_cta_label: template.ctaLabel || null,
+    requested_cta_url: template.ctaUrl || null,
+    requested_active: template.active !== false,
+  }));
+}
+
+function e2CampaignArguments(campaign) {
+  return {
+    requested_internal_name: campaign.internalName,
+    requested_audience_kind: campaign.audienceKind,
+    requested_user_ids: campaign.userIds || [],
+    requested_segment_key: campaign.segmentKey || null,
+    requested_segment_params: campaign.segmentParams || {},
+    requested_category: campaign.category,
+    requested_subject: campaign.subject,
+    requested_preheader: campaign.preheader || null,
+    requested_body_text: campaign.bodyText,
+    requested_cta_label: campaign.ctaLabel || null,
+    requested_cta_url: campaign.ctaUrl || null,
+    requested_template_id: campaign.templateId || null,
+  };
+}
+
+export async function createAdminE2EmailCampaign(campaign) {
+  return requireData(await supabase.rpc("admin_create_e2_email_campaign", e2CampaignArguments(campaign)));
+}
+
+export async function updateAdminE2EmailCampaign(campaignId, campaign) {
+  return requireData(await supabase.rpc("admin_update_e2_email_campaign", {
+    requested_campaign_id: campaignId,
+    ...e2CampaignArguments(campaign),
+  }));
+}
+
+export async function getAdminEmailCampaignFinalization(campaignId) {
+  return requireData(await supabase.rpc("admin_get_email_campaign_finalization", {
+    requested_campaign_id: campaignId,
+  }));
+}
+
+export async function finalizeAdminEmailCampaign(campaignId) {
+  return requireData(await supabase.rpc("admin_finalize_e2_email_campaign", {
+    requested_campaign_id: campaignId,
+  }));
+}
+
+export async function pauseAdminEmailCampaign(campaignId) {
+  return requireData(await supabase.rpc("admin_pause_email_campaign", { requested_campaign_id: campaignId }));
+}
+
+export async function resumeAdminEmailCampaign(campaignId) {
+  return requireData(await supabase.rpc("admin_resume_email_campaign", { requested_campaign_id: campaignId }));
+}
+
+export async function getAdminEmailCampaignRecipients({ campaignId, query = "", state = "all", limit = 50, offset = 0 }) {
+  return requireData(await supabase.rpc("get_admin_email_campaign_recipients", {
+    requested_campaign_id: campaignId,
+    requested_query: query || null,
+    requested_state: state,
+    requested_limit: limit,
+    requested_offset: offset,
+  }));
+}
+
+export async function getAdminUserApplicationEmailHistory(userId, limit = 50, offset = 0) {
+  return requireData(await supabase.rpc("get_admin_user_application_email_history", {
+    requested_user_id: userId,
+    requested_limit: limit,
+    requested_offset: offset,
+  }));
+}
+
+export async function sendAdminE2EmailCampaignTest(campaignId) {
+  return requireFunctionData(await supabase.functions.invoke("admin-email-campaign", {
+    body: { action: "send_test", campaign_id: campaignId },
+  }));
+}
+
+export async function getMyEmailPreferences() {
+  return requireData(await supabase.rpc("get_my_email_preferences"));
+}
+
+export async function setMyEngagementEmailEnabled(enabled) {
+  return requireData(await supabase.rpc("set_my_engagement_email_enabled", {
+    requested_enabled: Boolean(enabled),
+  }));
+}
+
 export async function updateSupportRequest(requestId, status, resolutionNote) {
   return requireData(await supabase.rpc("update_support_request", {
     requested_id: requestId,

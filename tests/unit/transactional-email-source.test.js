@@ -19,6 +19,33 @@ test("Resend uses the event identity for provider idempotency and has a timeout"
   assert.match(source, /AbortController/);
   assert.match(source, /EMAIL_PROVIDER_TIMEOUT_MS/);
   assert.match(source, /response\.status === 429 \|\| response\.status >= 500/);
+  assert.match(source, /"List-Unsubscribe": `<\$\{listUnsubscribeUrl\}>`/);
+  assert.match(source, /"List-Unsubscribe-Post": "List-Unsubscribe=One-Click"/);
+  assert.doesNotMatch(source, /customHeaders|requested_headers/);
+});
+
+test("structured admin messages escape content and allow only the first-name merge field", () => {
+  const message = renderApplicationEmail("admin_campaign", {
+    subject: "Hello {{first_name}}",
+    preheader: "A safe update",
+    body_text: "Hi {{first_name}},\n\n<script>alert('x')</script> & continue.",
+    cta_label: "Open PromotionSure",
+    cta_url: "https://promotionsure.com.ng/dashboard",
+    recipient_name: "Ada Candidate",
+  }, { unsubscribeUrl: "https://example.test/unsubscribe?token=signed" });
+  assert.equal(message.subject, "Hello Ada");
+  assert.match(message.html, /&lt;script&gt;alert\(&#39;x&#39;\)&lt;\/script&gt; &amp; continue/);
+  assert.match(message.text, /Unsubscribe from engagement emails/);
+  assert.throws(() => renderApplicationEmail("admin_campaign", {
+    subject: "Hello {{email}}",
+    body_text: "Body",
+  }), /Unsupported email merge field/);
+  assert.throws(() => renderApplicationEmail("admin_campaign", {
+    subject: "Hello",
+    body_text: "Body",
+    cta_label: "Unsafe",
+    cta_url: "javascript:alert(1)",
+  }), /must use HTTPS/);
 });
 
 test("campaign compatibility remains optional when Resend is not configured", async () => {

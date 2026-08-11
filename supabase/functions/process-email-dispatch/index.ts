@@ -2,6 +2,10 @@ import { jsonResponse } from "../_shared/http.ts";
 import { getAdminClient } from "../_shared/paystack.ts";
 import { EmailProviderError, sendEmail } from "../_shared/email/provider.ts";
 import { renderApplicationEmail } from "../_shared/email/render.ts";
+import {
+  createEngagementUnsubscribeToken,
+  getUnsubscribeUrl,
+} from "../_shared/email/unsubscribe-token.ts";
 
 const BACKOFF_SECONDS = [60, 300, 900, 3_600, 21_600];
 
@@ -63,7 +67,7 @@ Deno.serve(async (request) => {
   }
 
   console.log("Email dispatch batch claimed", { leaseToken, count: jobs?.length ?? 0 });
-  const summary = { claimed: jobs?.length ?? 0, accepted: 0, retrying: 0, dead: 0, suppressed: 0 };
+  const summary = { claimed: jobs?.length ?? 0, accepted: 0, retrying: 0, dead: 0, suppressed: 0, skipped: 0, deferred: 0 };
 
   for (const job of jobs ?? []) {
     const startedAt = new Date().toISOString();
@@ -115,14 +119,59 @@ Deno.serve(async (request) => {
         continue;
       }
 
-      const message = renderApplicationEmail(job.template_key, job.payload ?? {});
+      const unsubscribeUrl = job.category === "engagement"
+        ? getUnsubscribeUrl(await createEngagementUnsubscribeToken(job.user_id))
+        : undefined;
+      const message = renderApplicationEmail(job.template_key, job.payload ?? {}, { unsubscribeUrl });
+
+      if (job.campaign_id) {
+        const { data: validation, error: validationError } = await adminClient.rpc("system_validate_e2_campaign_event", {
+          requested_event_id: job.id,
+        });
+        if (validationError) throw validationError;
+        if (!validation?.allowed) {
+          const reason = String(validation?.reason || "no_longer_eligible");
+          if (validation?.disposition === "defer") {
+            const { data: release, error: releaseError } = await adminClient.rpc("system_defer_paused_e2_campaign_event", {
+              requested_event_id: job.id,
+              requested_lease_token: leaseToken,
+            });
+            if (releaseError) throw releaseError;
+            if (release?.disposition === "cancelled") summary.skipped += 1;
+            else summary.deferred += 1;
+            console.warn("Campaign dispatch deferred", { eventId: job.id, reason, disposition: release?.disposition });
+            continue;
+          }
+          await complete({
+            requested_outcome: "cancelled",
+            requested_error_code: reason,
+            requested_error_message: reason === "campaign_cancelled"
+              ? "Campaign cancelled before provider dispatch"
+              : "Recipient was no longer eligible at dispatch time",
+          });
+          const { error: skippedError } = await adminClient.rpc("system_mark_e2_campaign_recipient_skipped", {
+            requested_event_id: job.id,
+            requested_reason: reason,
+          });
+          if (skippedError) console.error("Campaign recipient skip annotation failed", { eventId: job.id, message: skippedError.message });
+          summary.skipped += 1;
+          console.warn("Campaign recipient skipped", { eventId: job.id, reason });
+          continue;
+        }
+      }
+
       const result = await sendEmail({
         to: recipient,
         subject: message.subject,
         html: message.html,
         text: message.text,
         idempotencyKey: job.event_key,
-        tags: [{ name: "category", value: job.category }, { name: "template", value: job.template_key }],
+        tags: [
+          { name: "category", value: job.category },
+          { name: "template", value: job.template_key },
+          ...(job.campaign_id ? [{ name: "source", value: "campaign" }] : []),
+        ],
+        listUnsubscribeUrl: unsubscribeUrl,
       });
       await complete({
         requested_outcome: "accepted",

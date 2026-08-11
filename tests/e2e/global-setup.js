@@ -81,6 +81,15 @@ async function resetCandidateData(client, user) {
     `Clear entitlements for ${user.email}`,
   );
   requireResult(
+    await client.from("email_preferences").upsert({
+      user_id: user.id,
+      marketing_opted_out: false,
+      opted_out_at: null,
+      opt_out_source: null,
+    }, { onConflict: "user_id" }),
+    `Reset email preference for ${user.email}`,
+  );
+  requireResult(
     await client.from("profiles").update({
       full_name: user.user_metadata.full_name,
       organization_name: testDetails?.organizationName ?? null,

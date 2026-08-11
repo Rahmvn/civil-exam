@@ -3888,11 +3888,12 @@ button.admin-danger-link {
   text-transform: uppercase;
 }
 
-.admin-users-table th:first-child { width: 24%; }
-.admin-users-table th:nth-child(2) { width: 18%; }
-.admin-users-table th:nth-child(3) { width: 17%; }
-.admin-users-table th:nth-child(4) { width: 13%; }
-.admin-users-table th:nth-child(5) { width: 17%; }
+.admin-users-table th:first-child { width: 44px; }
+.admin-users-table th:nth-child(2) { width: 24%; }
+.admin-users-table th:nth-child(3) { width: 18%; }
+.admin-users-table th:nth-child(4) { width: 17%; }
+.admin-users-table th:nth-child(5) { width: 13%; }
+.admin-users-table th:nth-child(6) { width: 17%; }
 .admin-users-table th:last-child { width: 11%; }
 
 .admin-users-table td {
@@ -3903,6 +3904,29 @@ button.admin-danger-link {
   font-size: 0.8rem;
   vertical-align: top;
   text-overflow: ellipsis;
+}
+
+.admin-users-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0d6546;
+}
+
+.admin-user-email-selection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.admin-user-email-action {
+  width: max-content;
+  margin-top: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0d6546;
+  font-size: 12px;
 }
 
 .admin-users-table tbody tr:last-child td {
@@ -4285,10 +4309,10 @@ button.admin-danger-link {
     display: none;
   }
 
-  .admin-users-table th:nth-child(2),
-  .admin-users-table td:nth-child(2),
-  .admin-users-table th:nth-child(5),
-  .admin-users-table td:nth-child(5),
+  .admin-users-table th:nth-child(3),
+  .admin-users-table td:nth-child(3),
+  .admin-users-table th:nth-child(6),
+  .admin-users-table td:nth-child(6),
   .admin-users-table th:last-child,
   .admin-users-table td:last-child {
     display: none;
@@ -4297,9 +4321,10 @@ button.admin-danger-link {
   .admin-support-table th:first-child { width: 68%; }
   .admin-support-table th:nth-child(4) { width: 32%; }
 
-  .admin-users-table th:first-child { width: 48%; }
-  .admin-users-table th:nth-child(3) { width: 27%; }
-  .admin-users-table th:nth-child(4) { width: 25%; }
+  .admin-users-table th:first-child { width: 44px; }
+  .admin-users-table th:nth-child(2) { width: 48%; }
+  .admin-users-table th:nth-child(4) { width: 27%; }
+  .admin-users-table th:nth-child(5) { width: 25%; }
 
   .admin-support-table th,
   .admin-support-table td,

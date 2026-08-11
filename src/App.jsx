@@ -105,6 +105,14 @@ const router = createBrowserRouter([
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
       {
+        path: "/admin/email",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
+        path: "/admin/email/campaigns/:campaignId",
+        element: <RequireAdmin><Admin /></RequireAdmin>,
+      },
+      {
         path: "/admin/modules/:moduleId",
         element: <RequireAdmin><Admin /></RequireAdmin>,
       },
