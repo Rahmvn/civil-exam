@@ -11,6 +11,20 @@ async function captureEmailCenter(page, testInfo, name) {
   await page.screenshot({ path: `${directory}/${testInfo.project.name}-${name}.png`, fullPage: true });
 }
 
+async function captureEmailAutomations(page, testInfo) {
+  if (process.env.E3_EMAIL_CAPTURE !== "true") return;
+  const directory = "artifacts/email-system-e3/screenshots";
+  mkdirSync(directory, { recursive: true });
+  await page.screenshot({ path: `${directory}/${testInfo.project.name}-automations.png`, fullPage: true });
+}
+
+async function captureE3SupportCompose(page, testInfo) {
+  if (process.env.E3_EMAIL_CAPTURE !== "true") return;
+  const directory = "artifacts/email-system-e3/screenshots";
+  mkdirSync(directory, { recursive: true });
+  await page.screenshot({ path: `${directory}/${testInfo.project.name}-individual-support-compose.png`, fullPage: true });
+}
+
 function createXlsxBuffer(rows) {
   const escapeXml = (value) => String(value)
     .replaceAll("&", "&amp;")
@@ -609,24 +623,24 @@ test("admin Email Center composes and queues one support email through Email Cor
   await expect(page).toHaveURL(/\/admin\/email$/);
   await expect(page.getByRole("heading", { name: "Compose email" })).toBeVisible();
   await expect(page.getByLabel("Individual user")).toBeChecked();
-  await expect(page.getByText("Support is for individual service or account communication, not promotional messaging.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Application email history" })).toBeVisible();
-  await expect(page.getByText("PromotionSure application email only.")).toBeVisible();
+  await expect(page.getByLabel("Message category")).toHaveValue("support");
+  await expect(page.getByText("For individual service or account communication, not promotional messaging.")).toBeVisible();
+  await expect(page.getByText("Application email history", { exact: true })).toBeVisible();
   await expect(page.getByText("Subscribed", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Campaign name")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Preview audience" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Send test to my email" })).toHaveCount(0);
   await captureEmailCenter(page, testInfo, "individual-compose");
-  await page.getByRole("button", { name: "Preview audience" }).click();
-  await expect(page.getByRole("heading", { name: "Audience preview" })).toBeVisible();
-  await expect(page.locator(".admin-email-preview dt").filter({ hasText: "Eligible" })).toBeVisible();
+  await captureE3SupportCompose(page, testInfo);
 
-  await page.getByLabel("Campaign name").fill("E2E candidate support");
   await page.getByLabel("Subject").fill("Your PromotionSure support update");
   await page.getByLabel("Body").fill("Hello {{first_name}},\n\nThis is a local Email Center test.");
-  await page.getByRole("button", { name: "Review final audience" }).click();
-  await expect(page.getByRole("heading", { name: "Queue this email?" })).toBeVisible();
-  await page.getByRole("button", { name: "Queue 1 email" }).click();
+  await page.getByRole("button", { name: "Review email" }).click();
+  await expect(page.getByRole("heading", { name: "Send this email?" })).toBeVisible();
+  await page.getByRole("button", { name: "Send email" }).click();
 
   await expect(page).toHaveURL(/\/admin\/email\/campaigns\/[0-9a-f-]+$/);
-  await expect(page.getByRole("heading", { name: "E2E candidate support" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Support: Your PromotionSure support update" })).toBeVisible();
   await expect(page.getByLabel("Search campaign recipients")).toBeVisible();
   await expect(page.getByText("Queued", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Pause" })).toBeEnabled();
@@ -636,6 +650,23 @@ test("admin Email Center composes and queues one support email through Email Cor
   await expect(page.getByText("Queued", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Cancel remaining" }).click();
   await expect(page.getByText("Cancelled", { exact: true }).first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
+test("individual compose defaults to Support while explicit Engagement retains the test gate", async ({ page }) => {
+  await page.goto("/admin/email");
+  await page.getByRole("button", { name: "Compose email" }).click();
+  await page.getByLabel("Individual user").check();
+
+  await expect(page.getByLabel("Message category")).toHaveValue("support");
+  await expect(page.getByLabel("Campaign name")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Send test to my email" })).toHaveCount(0);
+
+  await page.getByLabel("Message category").selectOption("engagement");
+  await expect(page.getByLabel("Campaign name")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Preview audience" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send test to my email" })).toBeVisible();
+  await expect(page.getByText("Engagement messages require a successful test and respect engagement preferences and frequency limits.")).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
 
@@ -667,6 +698,36 @@ test("admin Email Center previews server segments and keeps delivery and templat
 
   if (testInfo.project.name.includes("mobile")) {
     await page.setViewportSize({ width: 320, height: 800 });
+    await expectNoHorizontalOverflow(page);
+  }
+});
+
+test("admin Email Center exposes bounded lifecycle automation controls on desktop and mobile", async ({ page }, testInfo) => {
+  await page.goto("/admin/email");
+  await page.getByRole("button", { name: "Automations" }).click();
+
+  await expect(page.getByRole("heading", { name: "Automations", exact: true })).toBeVisible();
+  const automationList = page.getByLabel("Lifecycle automations");
+  await expect(automationList.getByRole("button")).toHaveCount(5);
+  await expect(automationList.getByRole("button", { name: /Getting started/ })).toContainText("Disabled");
+  await expect(automationList.getByRole("button", { name: /Access expiring/ })).toContainText("7 days before expiry");
+
+  await automationList.getByRole("button", { name: /Incomplete checkout/ }).click();
+  await expect(page.getByRole("heading", { name: "Incomplete checkout" })).toBeVisible();
+  await expect(page.getByLabel("Enabled")).not.toBeChecked();
+  const timing = page.getByLabel("Delay after trigger (minutes)");
+  await expect(timing).toHaveValue("120");
+  await expect(timing).toHaveAttribute("min", "60");
+  await expect(timing).toHaveAttribute("max", "43200");
+  await expect(page.getByLabel("Template")).not.toHaveValue("");
+  await expect(page.getByRole("heading", { name: "History" })).toBeVisible();
+  await expect(page.getByText("No matching automation history.")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await captureEmailAutomations(page, testInfo);
+
+  if (page.viewportSize()?.width <= 400) {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await expect(page.getByRole("heading", { name: "Incomplete checkout" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   }
 });
