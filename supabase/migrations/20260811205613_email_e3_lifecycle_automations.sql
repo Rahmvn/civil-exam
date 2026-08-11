@@ -2,6 +2,10 @@
 -- Every automation is disabled and unactivated on deployment. Enabling an
 -- automation establishes a fresh cutoff; historical triggers are not backfilled.
 
+alter table public.email_runtime_config
+  add column lifecycle_min_interval_hours integer not null default 24
+  check (lifecycle_min_interval_hours between 0 and 8760);
+
 insert into public.admin_email_templates (
   template_key, name, category, subject, preheader, body_text, cta_label, cta_url
 )
@@ -287,23 +291,38 @@ begin
     limit safe_limit;
   elsif requested_automation_key = 'access_expiring' then
     return query
-    select entitlement.user_id, 'module_entitlement'::text,
-      entitlement.id::text || ':' || extract(epoch from entitlement.expires_at)::bigint::text,
-      entitlement.id,
-      entitlement.expires_at - make_interval(mins => requested_delay_minutes),
-      entitlement.expires_at - make_interval(mins => requested_delay_minutes),
+    with expiry_scope as (
+      select entitlement.user_id, entitlement.exam_pack_id,
+        (entitlement.expires_at at time zone 'UTC')::date as expiry_date,
+        min(entitlement.expires_at) as expires_at,
+        (array_agg(entitlement.id order by subject.sort_order, entitlement.id))[1] as representative_id,
+        array_agg(entitlement.id order by subject.sort_order, entitlement.id) as entitlement_ids,
+        array_agg(entitlement.subject_id order by subject.sort_order, entitlement.id) as subject_ids,
+        array_agg(subject.name order by subject.sort_order, entitlement.id) as module_names,
+        count(*)::integer as module_count
+      from public.module_entitlements entitlement
+      join public.payment_orders payment on payment.id = entitlement.payment_order_id and payment.fulfillment_status = 'fulfilled'
+      join public.subjects subject on subject.id = entitlement.subject_id
+      join public.profiles profile on profile.id = entitlement.user_id and profile.role = 'candidate'
+      join auth.users auth_user on auth_user.id = entitlement.user_id and auth_user.email_confirmed_at is not null
+      where entitlement.status = 'active' and entitlement.expires_at > now()
+        and entitlement.expires_at - make_interval(mins => requested_delay_minutes) >= requested_activated_at
+      group by entitlement.user_id, entitlement.exam_pack_id,
+        (entitlement.expires_at at time zone 'UTC')::date
+    )
+    select scope.user_id, 'access_expiry_scope'::text,
+      scope.user_id::text || ':' || scope.exam_pack_id::text || ':' || scope.expiry_date::text,
+      scope.representative_id,
+      scope.expires_at - make_interval(mins => requested_delay_minutes),
+      scope.expires_at - make_interval(mins => requested_delay_minutes),
       jsonb_build_object(
-        'entitlement_id', entitlement.id, 'subject_id', entitlement.subject_id,
-        'expires_at', entitlement.expires_at, 'module_name', subject.name
+        'exam_pack_id', scope.exam_pack_id, 'expiry_date', scope.expiry_date,
+        'expires_at', scope.expires_at, 'entitlement_ids', to_jsonb(scope.entitlement_ids),
+        'subject_ids', to_jsonb(scope.subject_ids), 'module_count', scope.module_count,
+        'module_name', case when scope.module_count = 1 then scope.module_names[1] else scope.module_count::text || ' modules' end
       )
-    from public.module_entitlements entitlement
-    join public.payment_orders payment on payment.id = entitlement.payment_order_id and payment.fulfillment_status = 'fulfilled'
-    join public.subjects subject on subject.id = entitlement.subject_id
-    join public.profiles profile on profile.id = entitlement.user_id and profile.role = 'candidate'
-    join auth.users auth_user on auth_user.id = entitlement.user_id and auth_user.email_confirmed_at is not null
-    where entitlement.status = 'active' and entitlement.expires_at > now()
-      and entitlement.expires_at - make_interval(mins => requested_delay_minutes) >= requested_activated_at
-    order by entitlement.expires_at, entitlement.id
+    from expiry_scope scope
+    order by scope.expires_at, scope.user_id, scope.exam_pack_id
     limit safe_limit;
   else
     raise exception 'Unsupported lifecycle automation';
@@ -324,7 +343,8 @@ declare
   current_email text;
   interval_hours integer;
   last_engagement_at timestamptz;
-  target_expiry timestamptz;
+  target_expiry_date date;
+  target_exam_pack uuid;
   target_subject uuid;
 begin
   select * into instance from public.email_lifecycle_instances where id = requested_instance_id;
@@ -361,17 +381,13 @@ begin
   end if;
 
   if instance.automation_key = 'access_expiring' then
-    target_expiry := (instance.metadata->>'expires_at')::timestamptz;
-    target_subject := (instance.metadata->>'subject_id')::uuid;
+    target_expiry_date := (instance.metadata->>'expiry_date')::date;
+    target_exam_pack := (instance.metadata->>'exam_pack_id')::uuid;
     if not exists (
       select 1 from public.module_entitlements entitlement
-      where entitlement.id = instance.source_id and entitlement.user_id = instance.user_id
+      where entitlement.user_id = instance.user_id and entitlement.exam_pack_id = target_exam_pack
         and entitlement.status = 'active' and entitlement.expires_at > now()
-        and entitlement.expires_at = target_expiry
-    ) or exists (
-      select 1 from public.module_entitlements replacement
-      where replacement.user_id = instance.user_id and replacement.subject_id = target_subject
-        and replacement.status = 'active' and replacement.expires_at > target_expiry
+        and (entitlement.expires_at at time zone 'UTC')::date = target_expiry_date
     ) then return jsonb_build_object('allowed', false, 'reason', 'access_renewed_or_replaced', 'disposition', 'cancel'); end if;
   end if;
 
@@ -385,7 +401,7 @@ begin
     where suppression.email = current_email and suppression.active
   ) then return jsonb_build_object('allowed', false, 'reason', 'suppressed', 'disposition', 'skip'); end if;
 
-  select engagement_min_interval_hours into interval_hours from private.e2_email_config();
+  select lifecycle_min_interval_hours into interval_hours from private.e2_email_config();
   select max(event.accepted_at) into last_engagement_at
   from public.transactional_email_events event
   where event.user_id = instance.user_id and event.category = 'engagement'

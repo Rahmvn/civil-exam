@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(44);
+select plan(54);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -11,7 +11,7 @@ insert into auth.users (
 ) values
   ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'e3-admin@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now(), '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"E3 Admin"}', now() - interval '90 days', now()),
   ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated', 'historical@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '40 days', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Historical"}', now() - interval '40 days', now()),
-  ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'getting-started@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '11 minutes', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Getting Started"}', now() - interval '11 minutes', now()),
+  ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated', 'getting-started@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '3 hours', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Getting Started"}', now() - interval '3 hours', now()),
   ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated', 'never-practised@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '25 hours', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Never Practised"}', now() - interval '25 hours', now()),
   ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000005', 'authenticated', 'authenticated', 'practised-unpaid@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '5 days', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Practised Unpaid"}', now() - interval '5 days', now()),
   ('00000000-0000-0000-0000-000000000000', 'e3000000-0000-4000-8000-000000000006', 'authenticated', 'authenticated', 'checkout@example.test', crypt('LocalTestOnly!2026', gen_salt('bf')), now() - interval '10 days', '', '', '', '', '{"provider":"email","providers":["email"]}', '{"full_name":"Checkout"}', now() - interval '10 days', now()),
@@ -60,22 +60,30 @@ insert into public.payment_orders (
   ('e3500000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000006', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 'PS-e3-unrelated-paid', 'active', 250000, 250000, 'NGN', 'success', 'fulfilled', now() - interval '5 days', now() - interval '5 days'),
   ('e3500000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000006', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000002', 'e3300000-0000-4000-8000-000000000002', 'PS-e3-incomplete', 'pending', 250000, 250000, 'NGN', 'initialized', 'pending', null, now() - interval '3 hours'),
   ('e3500000-0000-4000-8000-000000000003', 'e3000000-0000-4000-8000-000000000007', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000003', 'e3300000-0000-4000-8000-000000000003', 'PS-e3-expiring', 'active', 250000, 250000, 'NGN', 'success', 'fulfilled', now() - interval '23 days', now() - interval '23 days'),
-  ('e3500000-0000-4000-8000-000000000004', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 'PS-e3-practised-paid', 'active', 250000, 250000, 'NGN', 'success', 'fulfilled', now() - interval '2 days', now() - interval '2 days');
+  ('e3500000-0000-4000-8000-000000000004', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 'PS-e3-practised-paid', 'active', 250000, 250000, 'NGN', 'success', 'fulfilled', now() - interval '2 days', now() - interval '2 days'),
+  ('e3500000-0000-4000-8000-000000000005', 'e3000000-0000-4000-8000-000000000003', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000002', 'e3300000-0000-4000-8000-000000000002', 'PS-e3-getting-checkout', 'pending', 250000, 250000, 'NGN', 'initialized', 'pending', null, now() - interval '3 hours'),
+  ('e3500000-0000-4000-8000-000000000006', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000003', 'e3300000-0000-4000-8000-000000000003', 'PS-e3-practice-checkout', 'pending', 250000, 250000, 'NGN', 'initialized', 'pending', null, now() - interval '3 hours');
 insert into public.payment_order_items (payment_order_id, subject_id, module_offering_id, list_price_kobo, allocated_amount_kobo)
 values
   ('e3500000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 250000, 250000),
   ('e3500000-0000-4000-8000-000000000002', 'e3200000-0000-4000-8000-000000000002', 'e3300000-0000-4000-8000-000000000002', 250000, 250000),
   ('e3500000-0000-4000-8000-000000000003', 'e3200000-0000-4000-8000-000000000003', 'e3300000-0000-4000-8000-000000000003', 250000, 250000),
-  ('e3500000-0000-4000-8000-000000000004', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 250000, 250000);
+  ('e3500000-0000-4000-8000-000000000004', 'e3200000-0000-4000-8000-000000000001', 'e3300000-0000-4000-8000-000000000001', 250000, 250000),
+  ('e3500000-0000-4000-8000-000000000005', 'e3200000-0000-4000-8000-000000000002', 'e3300000-0000-4000-8000-000000000002', 250000, 250000),
+  ('e3500000-0000-4000-8000-000000000006', 'e3200000-0000-4000-8000-000000000003', 'e3300000-0000-4000-8000-000000000003', 250000, 250000),
+  ('e3500000-0000-4000-8000-000000000003', 'e3200000-0000-4000-8000-000000000002', 'e3300000-0000-4000-8000-000000000002', 250000, 250000);
 insert into public.module_entitlements (
   id, user_id, exam_pack_id, subject_id, payment_order_id, status,
   starts_at, expires_at, created_at
 ) values
   ('e3600000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000006', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3500000-0000-4000-8000-000000000001', 'active', now() - interval '5 days', now() + interval '25 days', now() - interval '5 days'),
-  ('e3600000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000007', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000003', 'e3500000-0000-4000-8000-000000000003', 'active', now() - interval '23 days', now() + interval '6 days 23 hours', now() - interval '23 days'),
-  ('e3600000-0000-4000-8000-000000000006', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3500000-0000-4000-8000-000000000004', 'active', now() - interval '2 days', now() + interval '28 days', now() - interval '2 days');
+  ('e3600000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000007', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000003', 'e3500000-0000-4000-8000-000000000003', 'active', now() - interval '23 days', date_trunc('day', now()) + interval '6 days 12 hours', now() - interval '23 days'),
+  ('e3600000-0000-4000-8000-000000000006', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3500000-0000-4000-8000-000000000004', 'active', now() - interval '2 days', now() + interval '28 days', now() - interval '2 days'),
+  ('e3600000-0000-4000-8000-000000000007', 'e3000000-0000-4000-8000-000000000007', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000002', 'e3500000-0000-4000-8000-000000000003', 'active', now() - interval '23 days', date_trunc('day', now()) + interval '6 days 12 hours', now() - interval '23 days');
 
 select is((select count(*) from public.email_lifecycle_automations), 5::bigint, 'all five lifecycle automations are seeded');
+select is((select lifecycle_min_interval_hours from public.email_runtime_config where singleton), 24, 'lifecycle engagement interval defaults to 24 hours');
+select is((select engagement_min_interval_hours from public.email_runtime_config where singleton), 168, 'ordinary engagement interval remains 168 hours');
 select is((select count(*) from public.email_lifecycle_automations where not enabled and activated_at is null), 5::bigint, 'all automations are disabled and unactivated by default');
 select is(public.evaluate_email_lifecycle_automations(100)->>'queued', '0', 'disabled automations cannot queue historical work');
 select is((select count(*) from public.email_lifecycle_instances), 0::bigint, 'disabled evaluation creates no lifecycle instances');
@@ -137,20 +145,74 @@ select ok(exists (
 select is((select round(extract(epoch from (due_at - trigger_at)))::integer from public.email_lifecycle_instances where automation_key = 'incomplete_checkout' and source_id = 'e3500000-0000-4000-8000-000000000002'), 7200, 'incomplete checkout due time is exactly two hours after order creation');
 select ok(exists (
   select 1 from public.email_lifecycle_instances
-  where automation_key = 'access_expiring' and source_id = 'e3600000-0000-4000-8000-000000000002' and state = 'queued'
+  where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007' and state = 'queued'
 ), 'paid access queues seven days before its authoritative expiry');
 select is((
+  select count(*) from public.email_lifecycle_instances
+  where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007'
+), 1::bigint, 'same-day module expiries produce one user access-scope reminder');
+select is((
+  select (metadata->>'module_count')::integer from public.email_lifecycle_instances
+  where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007'
+), 2, 'the access-scope reminder records both expiring modules');
+select is((
   select round(extract(epoch from (trigger_at - due_at)))::integer
-  from public.email_lifecycle_instances where automation_key = 'access_expiring' and source_id = 'e3600000-0000-4000-8000-000000000002'
+  from public.email_lifecycle_instances where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007'
 ), 0, 'access-expiring trigger and due timestamps represent the configured pre-expiry instant');
 select is((
   select round(extract(epoch from ((metadata->>'expires_at')::timestamptz - due_at)))::integer
-  from public.email_lifecycle_instances where automation_key = 'access_expiring' and source_id = 'e3600000-0000-4000-8000-000000000002'
+  from public.email_lifecycle_instances where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007'
 ), 604800, 'access-expiring due time is exactly seven days before authoritative expiry');
 select ok(not exists (
   select 1 from public.email_lifecycle_instances instance
   where instance.user_id = 'e3000000-0000-4000-8000-000000000002'
 ), 'historical practice, checkout, entitlement, and account sources are not backfilled');
+
+update public.transactional_email_events event
+set status = 'sent', dispatch_status = 'accepted', delivery_status = 'sent', accepted_at = now() - interval '23 hours'
+from public.email_lifecycle_instances instance
+where event.lifecycle_instance_id = instance.id and instance.automation_key = 'getting_started'
+  and instance.user_id = 'e3000000-0000-4000-8000-000000000004';
+select is(public.system_validate_e3_lifecycle_event((
+  select transactional_email_event_id from public.email_lifecycle_instances
+  where automation_key = 'never_practised' and user_id = 'e3000000-0000-4000-8000-000000000004'
+))->>'reason', 'recently_contacted', 'getting started defers never-practised inside the 24-hour lifecycle interval');
+update public.transactional_email_events event
+set accepted_at = now() - interval '25 hours'
+from public.email_lifecycle_instances instance
+where event.lifecycle_instance_id = instance.id and instance.automation_key = 'getting_started'
+  and instance.user_id = 'e3000000-0000-4000-8000-000000000004';
+select is((public.system_validate_e3_lifecycle_event((
+  select transactional_email_event_id from public.email_lifecycle_instances
+  where automation_key = 'never_practised' and user_id = 'e3000000-0000-4000-8000-000000000004'
+))->>'allowed')::boolean, true, 'never-practised may send after the lifecycle interval has elapsed');
+reset role;
+select is((
+  select exclusion_reason from private.e2_audience_rows(
+    'individual', array['e3000000-0000-4000-8000-000000000004'::uuid], null, '{}'::jsonb, 'engagement'
+  )
+), 'recently_contacted', 'a prior lifecycle email still applies the 168-hour interval to a later manual engagement');
+set local role service_role;
+
+update public.transactional_email_events event
+set status = 'sent', dispatch_status = 'accepted', delivery_status = 'sent', accepted_at = now() - interval '23 hours'
+from public.email_lifecycle_instances instance
+where event.lifecycle_instance_id = instance.id and instance.automation_key = 'getting_started'
+  and instance.user_id = 'e3000000-0000-4000-8000-000000000003';
+select is(public.system_validate_e3_lifecycle_event((
+  select transactional_email_event_id from public.email_lifecycle_instances
+  where automation_key = 'incomplete_checkout' and source_id = 'e3500000-0000-4000-8000-000000000005'
+))->>'reason', 'recently_contacted', 'getting started defers incomplete checkout inside the lifecycle interval');
+
+update public.transactional_email_events event
+set status = 'sent', dispatch_status = 'accepted', delivery_status = 'sent', accepted_at = now() - interval '23 hours'
+from public.email_lifecycle_instances instance
+where event.lifecycle_instance_id = instance.id and instance.automation_key = 'practised_unpaid'
+  and instance.user_id = 'e3000000-0000-4000-8000-000000000005';
+select is(public.system_validate_e3_lifecycle_event((
+  select transactional_email_event_id from public.email_lifecycle_instances
+  where automation_key = 'incomplete_checkout' and source_id = 'e3500000-0000-4000-8000-000000000006'
+))->>'reason', 'recently_contacted', 'practised-unpaid defers incomplete checkout inside the lifecycle interval');
 
 insert into public.attempts (id, user_id, exam_pack_id, subject_id, mode, started_at, completed_at, score, total_questions, passed)
 values ('e3400000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000004', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'practice', now(), now(), 1, 10, false);
@@ -172,9 +234,9 @@ select is(public.system_validate_e3_lifecycle_event((
 
 update public.module_entitlements
 set expires_at = now() + interval '40 days'
-where id = 'e3600000-0000-4000-8000-000000000002';
+where user_id = 'e3000000-0000-4000-8000-000000000007';
 select is(public.system_validate_e3_lifecycle_event((
-  select transactional_email_event_id from public.email_lifecycle_instances where automation_key = 'access_expiring' and source_id = 'e3600000-0000-4000-8000-000000000002'
+  select transactional_email_event_id from public.email_lifecycle_instances where automation_key = 'access_expiring' and user_id = 'e3000000-0000-4000-8000-000000000007'
 ))->>'reason', 'access_renewed_or_replaced', 'send-time validation cancels an expiry reminder after renewal or replacement');
 
 insert into public.email_preferences (user_id, marketing_opted_out, opted_out_at, opt_out_source)
@@ -205,6 +267,13 @@ select is((
   select public.system_validate_e3_lifecycle_event(transactional_email_event_id)->>'disposition'
   from public.email_lifecycle_instances where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000010'
 ), 'defer', 'recent engagement produces a resumable defer disposition');
+update public.transactional_email_events
+set accepted_at = now() - interval '25 hours'
+where event_key = 'e3-recent-engagement';
+select is((
+  select (public.system_validate_e3_lifecycle_event(transactional_email_event_id)->>'allowed')::boolean
+  from public.email_lifecycle_instances where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000010'
+), true, 'a lifecycle email may send 24 hours after a prior manual engagement');
 
 select is((
   select category from public.transactional_email_events where lifecycle_instance_id is not null limit 1

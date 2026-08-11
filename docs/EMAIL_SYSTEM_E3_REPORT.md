@@ -55,7 +55,9 @@ After claim and immediately before provider dispatch, lifecycle events are valid
 - Incomplete checkout: pending/non-fulfilled order due after two hours when at least one intended order item remains unsatisfied. Unrelated fulfilled purchases and entitlements do not disqualify it; later matching or superset fulfillment does.
 - Access expiring: paid active module entitlement due seven days before its authoritative expiry. An extended expiry or equivalent replacement cancels the stale reminder.
 
-All lifecycle mail is category `engagement`. E2 opt-out, technical suppression, the 168-hour engagement interval, and the existing E1 daily engagement claim cap remain authoritative.
+All lifecycle mail remains category `engagement`. E2 opt-out, technical suppression, and the existing E1 daily engagement claim cap remain authoritative. Lifecycle delivery has a separate server-owned `lifecycle_min_interval_hours` runtime setting, defaulting to 24 hours. A lifecycle message waits until 24 hours after any previously accepted engagement message, whether manual or lifecycle. An ordinary/manual engagement message retains the E2 168-hour interval and therefore waits 168 hours after any previously accepted engagement message, including lifecycle mail. Both rules are rechecked immediately before provider dispatch.
+
+Access-expiry discovery groups active paid module entitlements by candidate, exam pack, and UTC expiry day. Modules provisioned by the same bundle/access period therefore produce one reminder scope rather than one near-identical email per module. A genuinely different expiry day remains a separate reminder, and send-time validation cancels a grouped reminder when no access in that scope still expires on that day.
 
 ## Admin Experience
 
@@ -76,10 +78,10 @@ Individual Support compose now opens as a service-reply workflow for the selecte
 ## Verification
 
 - Clean local migration replay through E3.
-- 44 focused E3 pgTAP assertions.
-- Full database suite: 644 assertions.
+- 54 focused E3 pgTAP assertions.
+- Full database suite: 654 assertions.
 - Dispatcher source-order and E1 integration unit coverage.
-- Full admin desktop/mobile E2E suite: 37 tests, including direct Support compose, explicit Engagement gating, and Automations coverage.
+- Final full admin desktop/mobile E2E suite: 37 tests, including direct Support compose, explicit Engagement gating, and Automations coverage. The earlier 35-test count predated the two final compose-flow cases and is superseded by this result.
 - Existing lint, unit, production build, Email Core integration, and payment Edge integration suites.
 
 ## Production Status
