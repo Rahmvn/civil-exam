@@ -32,6 +32,18 @@ test("campaign dispatch revalidates eligibility and uses approved unsubscribe he
   assert.ok(source.indexOf("system_validate_e2_campaign_event") < source.indexOf("const result = await sendEmail"));
 });
 
+test("lifecycle evaluation feeds E1 and revalidates claimed work before provider dispatch", async () => {
+  const source = await readFile(dispatcherPath, "utf8");
+  assert.match(source, /evaluate_email_lifecycle_automations/);
+  assert.match(source, /system_validate_e3_lifecycle_event/);
+  assert.match(source, /system_defer_e3_lifecycle_event/);
+  assert.match(source, /system_mark_e3_lifecycle_event_skipped/);
+  assert.match(source, /job\.lifecycle_instance_id/);
+  assert.match(source, /source", value: "lifecycle"/);
+  assert.ok(source.indexOf("evaluate_email_lifecycle_automations") < source.indexOf("claim_transactional_email_events"));
+  assert.ok(source.indexOf("system_validate_e3_lifecycle_event") < source.indexOf("const result = await sendEmail"));
+});
+
 test("unsubscribe endpoint verifies a dedicated HMAC token before the narrow preference RPC", async () => {
   const [endpoint, token] = await Promise.all([
     readFile(unsubscribePath, "utf8"),

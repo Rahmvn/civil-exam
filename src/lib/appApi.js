@@ -1027,6 +1027,38 @@ export async function getAdminEmailTemplates() {
   return ensureArray(data?.items);
 }
 
+export async function getAdminEmailAutomations() {
+  const data = await readWithPolicy("admin-email-automations", async () =>
+    requireData(await supabase.rpc("get_admin_email_automations")),
+  );
+  return ensureArray(data?.items);
+}
+
+export async function getAdminEmailAutomationHistory({
+  automationKey = null,
+  state = "all",
+  query = "",
+  limit = 50,
+  offset = 0,
+} = {}) {
+  return requireData(await supabase.rpc("get_admin_email_automation_history", {
+    requested_automation_key: automationKey,
+    requested_state: state,
+    requested_query: query || null,
+    requested_limit: limit,
+    requested_offset: offset,
+  }));
+}
+
+export async function updateAdminEmailAutomation({ automationKey, enabled, delayMinutes, templateId }) {
+  return requireData(await supabase.rpc("admin_update_email_automation", {
+    requested_automation_key: automationKey,
+    requested_enabled: Boolean(enabled),
+    requested_delay_minutes: Number(delayMinutes),
+    requested_template_id: templateId,
+  }));
+}
+
 export async function saveAdminEmailTemplate(template) {
   return requireData(await supabase.rpc("admin_save_email_template", {
     requested_template_id: template.id,

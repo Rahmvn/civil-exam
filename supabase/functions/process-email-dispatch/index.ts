@@ -55,6 +55,20 @@ Deno.serve(async (request) => {
   }
 
   const adminClient = getAdminClient();
+  let lifecycleEvaluation = null;
+  try {
+    const { data, error } = await adminClient.rpc("evaluate_email_lifecycle_automations", {
+      requested_batch_size: batchSize(),
+    });
+    if (error) throw error;
+    lifecycleEvaluation = data;
+    if (data?.error) {
+      console.error("Email lifecycle evaluation failed", { message: data.error });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Lifecycle evaluation failed";
+    console.error("Email lifecycle evaluation failed", { message });
+  }
   const leaseToken = crypto.randomUUID();
   const { data: jobs, error: claimError } = await adminClient.rpc("claim_transactional_email_events", {
     requested_lease_token: leaseToken,
@@ -67,7 +81,16 @@ Deno.serve(async (request) => {
   }
 
   console.log("Email dispatch batch claimed", { leaseToken, count: jobs?.length ?? 0 });
-  const summary = { claimed: jobs?.length ?? 0, accepted: 0, retrying: 0, dead: 0, suppressed: 0, skipped: 0, deferred: 0 };
+  const summary = {
+    lifecycle: lifecycleEvaluation,
+    claimed: jobs?.length ?? 0,
+    accepted: 0,
+    retrying: 0,
+    dead: 0,
+    suppressed: 0,
+    skipped: 0,
+    deferred: 0,
+  };
 
   for (const job of jobs ?? []) {
     const startedAt = new Date().toISOString();
@@ -160,6 +183,43 @@ Deno.serve(async (request) => {
         }
       }
 
+      if (job.lifecycle_instance_id) {
+        const { data: validation, error: validationError } = await adminClient.rpc("system_validate_e3_lifecycle_event", {
+          requested_event_id: job.id,
+        });
+        if (validationError) throw validationError;
+        if (!validation?.allowed) {
+          const reason = String(validation?.reason || "no_longer_eligible");
+          if (validation?.disposition === "defer") {
+            const { error: deferError } = await adminClient.rpc("system_defer_e3_lifecycle_event", {
+              requested_event_id: job.id,
+              requested_lease_token: leaseToken,
+              requested_next_attempt_at: validation?.next_eligible_at || null,
+              requested_reason: reason,
+            });
+            if (deferError) throw deferError;
+            summary.deferred += 1;
+            console.warn("Lifecycle dispatch deferred", { eventId: job.id, reason });
+            continue;
+          }
+          await complete({
+            requested_outcome: "cancelled",
+            requested_error_code: reason,
+            requested_error_message: "Lifecycle recipient was no longer eligible at dispatch time",
+          });
+          const { error: skippedError } = await adminClient.rpc("system_mark_e3_lifecycle_event_skipped", {
+            requested_event_id: job.id,
+            requested_reason: reason,
+          });
+          if (skippedError) {
+            console.error("Lifecycle skip annotation failed", { eventId: job.id, message: skippedError.message });
+          }
+          summary.skipped += 1;
+          console.warn("Lifecycle recipient skipped", { eventId: job.id, reason });
+          continue;
+        }
+      }
+
       const result = await sendEmail({
         to: recipient,
         subject: message.subject,
@@ -170,6 +230,7 @@ Deno.serve(async (request) => {
           { name: "category", value: job.category },
           { name: "template", value: job.template_key },
           ...(job.campaign_id ? [{ name: "source", value: "campaign" }] : []),
+          ...(job.lifecycle_instance_id ? [{ name: "source", value: "lifecycle" }] : []),
         ],
         listUnsubscribeUrl: unsubscribeUrl,
       });
