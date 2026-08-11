@@ -496,7 +496,7 @@ export default function Dashboard() {
                 }}
                 type="button"
               >
-                <span>Buy access</span>
+                <span>Access options</span>
               </button>
             )}
             {subjectsNotice && <p className="section-note">{subjectsNotice}</p>}

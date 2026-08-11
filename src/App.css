@@ -11874,10 +11874,10 @@ button.practice-flag-button {
   min-height: 40px;
   gap: 10px;
   padding: 0 12px;
-  border: 1px solid color-mix(in srgb, #c94747 28%, var(--color-border));
+  border: 1px solid color-mix(in srgb, #b87913 28%, var(--color-border));
   border-radius: 12px;
-  background: color-mix(in srgb, var(--color-surface) 90%, #fff4f4);
-  color: #b43f3f;
+  background: color-mix(in srgb, var(--color-surface) 90%, #fff6df);
+  color: #8a5a08;
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -11914,15 +11914,15 @@ button.practice-flag-button {
 
 .practice-flag-button:hover,
 .practice-flag-button:focus-visible {
-  border-color: color-mix(in srgb, #c94747 40%, var(--color-border));
-  background: color-mix(in srgb, var(--color-surface) 84%, #fff0f0);
-  color: #a83535;
+  border-color: color-mix(in srgb, #b87913 40%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface) 84%, #fff6df);
+  color: #7a5510;
 }
 
 .practice-flag-button.is-active {
-  border-color: color-mix(in srgb, #c94747 52%, var(--color-border));
-  background: color-mix(in srgb, #fff0f0 74%, var(--color-surface));
-  color: #9f2c2c;
+  border-color: color-mix(in srgb, #b87913 52%, var(--color-border));
+  background: color-mix(in srgb, #fff6df 74%, var(--color-surface));
+  color: #7a5510;
 }
 
 .practice-utility-row-single .practice-flag-button {
@@ -12366,7 +12366,7 @@ button.practice-flag-button {
     padding: 0 8px;
     border: 0;
     background: transparent;
-    color: #c94747;
+    color: #8a5a08;
     box-shadow: none;
   }
 
@@ -12375,7 +12375,7 @@ button.practice-flag-button {
   .practice-utility-row-single button.practice-flag-button.is-active {
     border: 0;
     background: transparent;
-    color: #c94747;
+    color: #8a5a08;
     box-shadow: none;
   }
 
@@ -15782,6 +15782,26 @@ button.module-card-info-button[aria-expanded="true"] {
   line-height: 1.5;
 }
 
+.dashboard-section-heading .bundle-offer-trigger.is-dashboard {
+  min-height: 36px;
+  padding: 7px 11px;
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-primary-dark);
+  font-size: 0.84rem;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.dashboard-section-heading .bundle-offer-trigger.is-dashboard:hover,
+.dashboard-section-heading .bundle-offer-trigger.is-dashboard:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-soft) 52%, white);
+  color: var(--color-primary-dark);
+  box-shadow: none;
+}
+
 .module-card-availability {
   margin: 0;
   color: var(--color-text-soft);
@@ -16277,8 +16297,8 @@ button.module-chooser-link {
   min-height: 28px;
   padding: 4px 9px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-danger-soft) 82%, var(--color-surface));
-  color: var(--color-danger);
+  background: color-mix(in srgb, #fff6df 82%, var(--color-surface));
+  color: #7a5510;
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -16364,17 +16384,17 @@ button.module-chooser-link {
 }
 
 .practice-map-grid .question-dot.flagged {
-  border-color: color-mix(in srgb, var(--color-danger) 64%, var(--color-border));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-danger-soft) 74%, transparent);
+  border-color: color-mix(in srgb, #b87913 64%, var(--color-border));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff6df 74%, transparent);
 }
 
 .practice-map-grid .question-dot.answered.flagged {
-  outline: 2px solid color-mix(in srgb, var(--color-danger) 68%, white);
+  outline: 2px solid color-mix(in srgb, #b87913 68%, white);
   outline-offset: 2px;
 }
 
 .practice-map-legend i.is-marked {
-  background: var(--color-danger);
+  background: #b87913;
 }
 
 .practice-flag-button-desktop {
@@ -16543,7 +16563,7 @@ button.module-chooser-link {
     padding: 0 8px;
     border: 0;
     background: transparent;
-    color: var(--color-danger);
+    color: #8a5a08;
     box-shadow: none;
   }
 
@@ -16551,8 +16571,8 @@ button.module-chooser-link {
     min-width: auto;
     padding: 0 10px;
     border: 0;
-    background: color-mix(in srgb, var(--color-danger-soft) 72%, transparent);
-    color: var(--color-danger);
+    background: color-mix(in srgb, #fff6df 72%, transparent);
+    color: #7a5510;
     box-shadow: none;
   }
 
@@ -16755,9 +16775,9 @@ button.module-chooser-link {
   .practice-utility-row-single button.practice-flag-button.is-active:focus-visible {
     min-width: 112px;
     padding: 0 15px;
-    border-color: var(--color-danger);
-    background: var(--color-danger);
-    color: white;
+    border-color: #b87913;
+    background: #fff6df;
+    color: #7a5510;
     box-shadow: none;
   }
 
@@ -24408,7 +24428,7 @@ button.practice-map-close:focus-visible {
 }
 
 .practice-map-legend i.is-marked {
-  background: #c94747;
+  background: #b87913;
 }
 
 .practice-map-grid {
@@ -24439,8 +24459,8 @@ button.practice-map-close:focus-visible {
 }
 
 .practice-map-grid .question-dot.flagged {
-  border-color: color-mix(in srgb, #c94747 58%, var(--color-border));
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, #c94747 16%, transparent);
+  border-color: color-mix(in srgb, #b87913 58%, var(--color-border));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, #fff6df 72%, transparent);
 }
 
 .practice-map-grid .question-dot.flagged::after {
@@ -24451,7 +24471,7 @@ button.practice-map-close:focus-visible {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #c94747;
+  background: #b87913;
 }
 
 .practice-map-grid .question-dot.active {
