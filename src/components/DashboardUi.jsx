@@ -165,6 +165,13 @@ export function FreeBatchConfirmationModal({ subject, loading, onCancel, onConfi
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
+        <button
+          aria-label="Close free practice confirmation"
+          className="mobile-modal-grabber free-batch-confirmation-grabber"
+          disabled={loading}
+          onClick={onCancel}
+          type="button"
+        />
         <header className="free-batch-confirmation-header">
           <div>
             <h2 id="free-batch-modal-title">{getModuleDisplayName(subject.name)}</h2>

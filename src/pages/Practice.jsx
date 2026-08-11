@@ -54,6 +54,7 @@ function PracticeQuestionMapModal({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
+        <button className="mobile-modal-grabber practice-map-grabber" aria-label="Close question map" onClick={onClose} type="button" />
         <div className="practice-map-modal-head">
           <div>
             <h2 id="practice-question-map-title">Questions</h2>

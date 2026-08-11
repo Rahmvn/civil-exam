@@ -336,6 +336,7 @@ function ReceiptModal({ payment, profile, onClose }) {
         onClick={(event) => event.stopPropagation()}
         role="dialog"
       >
+        <button className="mobile-modal-grabber access-receipt-grabber" aria-label="Close receipt" onClick={onClose} type="button" />
         <header className="access-receipt-header">
           <div>
             <h2 id="payment-receipt-title">Payment receipt</h2>

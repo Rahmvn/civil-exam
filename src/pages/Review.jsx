@@ -721,7 +721,9 @@ function ReviewDetailView({
     if (!questionNavigatorOpen) return undefined;
 
     const questionListButton = questionListButtonRef.current;
-    navigatorCloseRef.current?.focus();
+    const initialFocusTarget = [...(navigatorRef.current?.querySelectorAll("button:not([disabled])") ?? [])]
+      .find((element) => element.getClientRects().length > 0);
+    initialFocusTarget?.focus();
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
@@ -730,7 +732,8 @@ function ReviewDetailView({
       }
 
       if (event.key !== "Tab") return;
-      const focusable = [...(navigatorRef.current?.querySelectorAll("button:not([disabled])") ?? [])];
+      const focusable = [...(navigatorRef.current?.querySelectorAll("button:not([disabled])") ?? [])]
+        .filter((element) => element.getClientRects().length > 0);
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
@@ -932,6 +935,12 @@ function ReviewDetailView({
             ref={navigatorRef}
             role="dialog"
           >
+            <button
+              aria-label="Close question list"
+              className="mobile-modal-grabber answer-review-navigator-grabber"
+              onClick={() => setQuestionNavigatorOpen(false)}
+              type="button"
+            />
             <header>
               <div>
                 <h2 id="answer-review-navigator-title">Questions</h2>

@@ -8147,6 +8147,30 @@ button.access-unlock-close:focus-visible {
   box-shadow: none;
 }
 
+.mobile-modal-grabber,
+button.mobile-modal-grabber {
+  display: none;
+  justify-self: center;
+  width: 44px;
+  height: 5px;
+  min-width: 0;
+  min-height: 5px;
+  margin: 0 0 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-strong) 70%, white);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+button.mobile-modal-grabber:hover,
+button.mobile-modal-grabber:focus-visible {
+  background: color-mix(in srgb, var(--color-text-muted) 70%, white);
+  box-shadow: none;
+  transform: none;
+}
+
 .access-unlock-copy {
   margin: 0;
   color: var(--color-text-soft);
@@ -21197,6 +21221,14 @@ button.practice-hub-row-action:focus-visible {
     border-radius: 22px 22px 0 0;
   }
 
+  button.answer-review-navigator-grabber {
+    display: block;
+  }
+
+  .answer-review-navigator-close {
+    display: none;
+  }
+
   .answer-review-question-grid {
     grid-template-columns: repeat(5, minmax(44px, 1fr));
   }
@@ -23820,6 +23852,14 @@ button.access-receipt-copy:focus-visible {
     border-radius: 22px 22px 0 0;
   }
 
+  button.access-receipt-grabber {
+    display: block;
+  }
+
+  button.access-receipt-close {
+    display: none;
+  }
+
   .access-receipt-details > div {
     grid-template-columns: minmax(86px, 0.46fr) minmax(0, 1fr);
     gap: 10px;
@@ -24395,6 +24435,14 @@ button.practice-map-close:focus-visible {
     border-radius: 22px 22px 0 0;
   }
 
+  button.practice-map-grabber {
+    display: block;
+  }
+
+  button.practice-map-close {
+    display: none;
+  }
+
   .practice-map-grid {
     gap: 8px;
   }
@@ -24947,6 +24995,14 @@ button.practice-map-close:focus-visible {
     width: min(100% - 28px, 500px);
     gap: 16px;
     padding: 22px;
+  }
+
+  button.free-batch-confirmation-grabber {
+    display: block;
+  }
+
+  button.free-batch-confirmation-close {
+    display: none;
   }
 
   .free-batch-confirmation-actions {
