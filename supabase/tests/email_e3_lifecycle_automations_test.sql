@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(54);
+select plan(55);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -103,10 +103,14 @@ select throws_ok(format(
 
 select set_config('request.jwt.claim.sub', 'e3000000-0000-4000-8000-000000000001', true);
 select is(jsonb_array_length(public.get_admin_email_automations()->'items'), 5, 'admin sees five lifecycle configurations');
-select throws_ok(format(
-  'select public.admin_update_email_automation(%L, true, 1, %L::uuid)',
+select lives_ok(format(
+  'select public.admin_update_email_automation(%L, true, 0, %L::uuid)',
   'getting_started', current_setting('test.e3_getting_template')
-), 'P0001', 'Choose a timing within the allowed range', 'admin timing is bounded server-side');
+), 'getting started permits a zero-minute delay');
+select throws_ok(format(
+  'select public.admin_update_email_automation(%L, true, 0, %L::uuid)',
+  'never_practised', current_setting('test.e3_never_template')
+), 'P0001', 'Choose a timing within the allowed range', 'other lifecycle timing remains bounded above zero');
 
 reset role;
 set local role service_role;
@@ -118,8 +122,8 @@ select lives_ok($$ select public.evaluate_email_lifecycle_automations(100) $$, '
 select ok(exists (
   select 1 from public.email_lifecycle_instances
   where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000003' and state = 'queued'
-), 'getting started queues after the configured ten-minute delay');
-select is((select round(extract(epoch from (due_at - trigger_at)))::integer from public.email_lifecycle_instances where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000003'), 600, 'getting started due time is exactly ten minutes after its trigger');
+), 'getting started queues on the next evaluation cycle');
+select is((select round(extract(epoch from (due_at - trigger_at)))::integer from public.email_lifecycle_instances where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000003'), 0, 'getting started is due immediately after its trigger');
 select ok(not exists (
   select 1 from public.email_lifecycle_instances
   where automation_key = 'getting_started' and user_id = 'e3000000-0000-4000-8000-000000000002'
