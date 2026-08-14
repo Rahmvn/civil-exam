@@ -23,12 +23,13 @@ function normalizeDuration(duration) {
   const durationMonths = Number(duration?.duration_months);
   return {
     ...duration,
+    duration_id: duration?.duration_id ?? null,
     duration_months: durationMonths,
     price_kobo: Number(duration?.price_kobo),
     list_price_kobo: duration?.list_price_kobo == null ? null : Number(duration.list_price_kobo),
     currency: duration?.currency || "NGN",
     discount_label: duration?.discount_label || "",
-      enabled: duration?.enabled !== false,
+    enabled: duration?.enabled !== false,
   };
 }
 
@@ -46,7 +47,13 @@ export function normalizePricingCatalog(catalog) {
       is_available: plan.is_available !== false,
       durations: ensureArray(plan.durations)
         .map(normalizeDuration)
-        .filter((duration) => duration.enabled && [1, 3, 6].includes(duration.duration_months)),
+        .filter((duration) => (
+          duration.enabled
+          && Number.isSafeInteger(duration.duration_months)
+          && duration.duration_months > 0
+          && Number.isFinite(duration.price_kobo)
+          && duration.price_kobo > 0
+        )),
       modules: ensureArray(plan.modules ?? plan.eligible_modules),
     }));
 }

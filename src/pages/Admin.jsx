@@ -14,6 +14,7 @@ import "../styles/admin.css";
 import {
   archiveAdminQuestion,
   configureAdminLaunchOffer,
+  createAdminPurchaseDuration,
   createAdminEmailCampaign,
   createAdminModule,
   createAdminPracticeSet,
@@ -34,6 +35,8 @@ import {
   getAdminQuestions,
   getAdminPaymentAttention,
   getAdminPurchasePlans,
+  getAdminPurchaseDurations,
+  getAdminPurchasePricingGuidance,
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
   getAdminSupportQueue,
@@ -58,6 +61,7 @@ import {
   updateAdminModuleAvailability,
   updateAdminModuleLifecycle,
   updateAdminModuleSalesAvailability,
+  updateAdminPurchaseDuration,
   updateAdminPracticeSet,
   updateAdminQuestionRevision,
   updateSupportRequest,
@@ -274,10 +278,13 @@ function AdminFeedback({ feedback, onDismiss }) {
 
 function ModuleCatalogue({
   launchOffer,
+  pricingDurations,
+  pricingGuidance,
   pricingPlans,
   pricingPlansLoading,
   modules,
   onCreate,
+  onCreatePricingDuration,
   onEndLaunchOffer,
   onManage,
   onQueryChange,
@@ -285,6 +292,7 @@ function ModuleCatalogue({
   onScheduleLaunchOffer,
   onSavePricingPlan,
   onSavePricingPlanPrice,
+  onUpdatePricingDuration,
   query,
   working,
 }) {
@@ -332,13 +340,17 @@ function ModuleCatalogue({
         </summary>
         <div className="admin-commerce-drawer-body">
           <AdminPricingPlansPanel
-            key={pricingPlans.map((plan) => `${plan.plan_code}:${plan.updated_at}`).join("|") || "pricing-plans-empty"}
+            key={`${pricingDurations.map((duration) => `${duration.months}:${duration.updated_at}`).join("|")}:${pricingPlans.map((plan) => `${plan.plan_code}:${plan.updated_at}`).join("|")}`}
             busy={working}
+            durations={pricingDurations}
+            guidance={pricingGuidance}
             loading={pricingPlansLoading}
             plans={pricingPlans}
+            onCreateDuration={onCreatePricingDuration}
             onRefresh={onRefreshPricingPlans}
             onSavePlan={onSavePricingPlan}
             onSavePrice={onSavePricingPlanPrice}
+            onUpdateDuration={onUpdatePricingDuration}
           />
 
           <AdminLaunchOfferPanel
@@ -2210,6 +2222,8 @@ export default function Admin() {
 
   const [modules, setModules] = useState([]);
   const [launchOffer, setLaunchOffer] = useState(null);
+  const [pricingDurations, setPricingDurations] = useState([]);
+  const [pricingGuidance, setPricingGuidance] = useState([]);
   const [pricingPlans, setPricingPlans] = useState([]);
   const [pricingPlansLoading, setPricingPlansLoading] = useState(false);
   const [practiceSets, setPracticeSets] = useState([]);
@@ -2265,11 +2279,20 @@ export default function Admin() {
 
     async function loadAdmin() {
       try {
-        const [nextModules, nextAuditLogs, nextLaunchOffer, nextPricingPlans] = await Promise.all([
+        const [
+          nextModules,
+          nextAuditLogs,
+          nextLaunchOffer,
+          nextPricingPlans,
+          nextPricingDurations,
+          nextPricingGuidance,
+        ] = await Promise.all([
           getAdminContentModules(),
           getAdminAuditLogs(),
           getAdminLaunchOffer(),
           getAdminPurchasePlans(),
+          getAdminPurchaseDurations(),
+          getAdminPurchasePricingGuidance(),
         ]);
 
         if (!active) return;
@@ -2277,6 +2300,8 @@ export default function Admin() {
         setAuditLogs(nextAuditLogs);
         setLaunchOffer(nextLaunchOffer);
         setPricingPlans(nextPricingPlans);
+        setPricingDurations(nextPricingDurations);
+        setPricingGuidance(nextPricingGuidance);
       } catch (error) {
         if (!active) return;
         logAppError("Admin content load", error);
@@ -2835,8 +2860,14 @@ export default function Admin() {
   async function refreshPricingPlans({ showFeedback = false } = {}) {
     setPricingPlansLoading(true);
     try {
-      const nextPlans = await getAdminPurchasePlans();
+      const [nextPlans, nextDurations, nextGuidance] = await Promise.all([
+        getAdminPurchasePlans(),
+        getAdminPurchaseDurations(),
+        getAdminPurchasePricingGuidance(),
+      ]);
       setPricingPlans(nextPlans);
+      setPricingDurations(nextDurations);
+      setPricingGuidance(nextGuidance);
       if (showFeedback) setFeedback({ tone: "success", message: "Pricing plans refreshed." });
       return nextPlans;
     } catch (error) {
@@ -2858,6 +2889,21 @@ export default function Admin() {
     await saveAdminPurchasePlanPrice(price);
     await Promise.all([refreshPricingPlans(), refreshAudit()]);
     setFeedback({ tone: "success", message: "Pricing plan price saved." });
+  }
+
+  async function createPricingDuration(duration) {
+    await createAdminPurchaseDuration(duration);
+    await Promise.all([refreshPricingPlans(), refreshAudit()]);
+    setFeedback({ tone: "success", message: "Access duration added. Configure its prices before enabling it." });
+  }
+
+  async function updatePricingDuration(duration) {
+    await updateAdminPurchaseDuration(duration);
+    await Promise.all([refreshPricingPlans(), refreshAudit()]);
+    setFeedback({
+      tone: "success",
+      message: duration.enabled ? "Access duration enabled for future checkout." : "Access duration disabled for future checkout.",
+    });
   }
 
   function handleSavePricingPlan(plan) {
@@ -2894,6 +2940,48 @@ export default function Admin() {
         action: async () => {
           try {
             await savePricingPlanPrice(price);
+            resolve();
+          } catch (error) {
+            reject(error);
+            throw error;
+          }
+        },
+      });
+    });
+  }
+
+  function handleCreatePricingDuration(duration) {
+    return new Promise((resolve, reject) => {
+      requestConfirmation({
+        title: `Add ${duration.months}-month access duration?`,
+        body: "The duration will be created disabled. Configure each enabled plan price before making it customer-visible.",
+        label: "Add duration",
+        onCancel: resolve,
+        action: async () => {
+          try {
+            await createPricingDuration(duration);
+            resolve();
+          } catch (error) {
+            reject(error);
+            throw error;
+          }
+        },
+      });
+    });
+  }
+
+  function handleUpdatePricingDuration(duration) {
+    return new Promise((resolve, reject) => {
+      requestConfirmation({
+        title: duration.enabled ? `Enable ${duration.months}-month access?` : `Disable ${duration.months}-month access?`,
+        body: duration.enabled
+          ? "New checkout will show this duration only after every enabled plan has a valid enabled price."
+          : "New checkout will stop showing this duration. Existing orders and access remain unchanged.",
+        label: duration.enabled ? "Enable duration" : "Disable duration",
+        onCancel: resolve,
+        action: async () => {
+          try {
+            await updatePricingDuration(duration);
             resolve();
           } catch (error) {
             reject(error);
@@ -3456,11 +3544,14 @@ export default function Admin() {
             ) : (
               <ModuleCatalogue
                 launchOffer={launchOffer}
+                pricingDurations={pricingDurations}
+                pricingGuidance={pricingGuidance}
                 pricingPlans={pricingPlans}
                 pricingPlansLoading={pricingPlansLoading}
                 modules={modules}
                 query={shellSearch}
                 onCreate={() => setModuleEditor({})}
+                onCreatePricingDuration={handleCreatePricingDuration}
                 onManage={(id) => navigateWithinAdmin(`/admin/modules/${id}`)}
                 onEndLaunchOffer={handleEndLaunchOffer}
                 onQueryChange={setShellSearch}
@@ -3468,6 +3559,7 @@ export default function Admin() {
                 onScheduleLaunchOffer={handleScheduleLaunchOffer}
                 onSavePricingPlan={handleSavePricingPlan}
                 onSavePricingPlanPrice={handleSavePricingPlanPrice}
+                onUpdatePricingDuration={handleUpdatePricingDuration}
                 working={working}
               />
             )}

@@ -493,6 +493,29 @@ export async function getAdminPurchasePlans() {
   return ensureArray(requireData(await supabase.rpc("get_admin_purchase_plans")));
 }
 
+export async function getAdminPurchaseDurations() {
+  return ensureArray(requireData(await supabase.rpc("get_admin_purchase_durations")));
+}
+
+export async function getAdminPurchasePricingGuidance() {
+  return ensureArray(requireData(await supabase.rpc("get_admin_purchase_pricing_guidance")));
+}
+
+export async function createAdminPurchaseDuration({ months, sortOrder }) {
+  return requireData(await supabase.rpc("admin_create_purchase_duration", {
+    requested_months: Number(months),
+    requested_sort_order: Number(sortOrder ?? 100),
+  }));
+}
+
+export async function updateAdminPurchaseDuration({ months, enabled, sortOrder }) {
+  return requireData(await supabase.rpc("admin_update_purchase_duration", {
+    requested_months: Number(months),
+    requested_enabled: Boolean(enabled),
+    requested_sort_order: Number(sortOrder ?? 100),
+  }));
+}
+
 export async function saveAdminPurchasePlan(plan) {
   return requireData(await supabase.rpc("admin_save_purchase_plan", {
     requested_plan_code: plan.planCode,

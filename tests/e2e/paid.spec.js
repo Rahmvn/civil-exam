@@ -51,7 +51,7 @@ test("paid dashboard keeps modules, account, and access connected without floati
 
   await page.goto("/access?module=public-service-rules");
   await expect(page.locator("h1", { hasText: "Access and payment" })).toBeVisible();
-  const purchaseDialog = page.getByRole("dialog", { name: "Unlock Public Service Rules" });
+  const purchaseDialog = page.getByRole("dialog", { name: "Public Service Rules" });
   const oneMonth = purchaseDialog.getByRole("radio", { name: /1 month/ });
   await expect(oneMonth).not.toBeChecked();
   await expect(purchaseDialog.getByRole("button", { name: "Review purchase" })).toBeDisabled();

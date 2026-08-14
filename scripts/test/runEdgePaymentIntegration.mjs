@@ -599,7 +599,7 @@ async function main() {
     const durationPrice = await service.from("purchase_plan_prices")
       .select("price_kobo, purchase_plans!inner(code)")
       .eq("purchase_plans.code", "individual_objective")
-      .eq("duration_months", 1)
+      .eq("duration_months", 2)
       .eq("enabled", true)
       .single();
     if (durationPrice.error || !durationPrice.data) {
@@ -611,7 +611,7 @@ async function main() {
     const initializedExtension = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
       purchase_type: "pricing_plan",
       plan_code: "individual_objective",
-      duration_months: 1,
+      duration_months: 2,
       subject_slugs: [heldSubjectSlug],
       expected_price_kobo: Number(durationPrice.data.price_kobo),
     });
@@ -619,6 +619,17 @@ async function main() {
       fail(`Duration extension initialization failed: ${await initializedExtension.text()}`);
     }
     const initializedExtensionBody = await initializedExtension.json();
+
+    const disabledHistoricalDuration = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
+      purchase_type: "pricing_plan",
+      plan_code: "individual_objective",
+      duration_months: 6,
+      subject_slugs: [heldSubjectSlug],
+      expected_price_kobo: 1100000,
+    });
+    if (disabledHistoricalDuration.ok) {
+      fail("A disabled historical duration was accepted for new checkout.");
+    }
     const verifiedExtension = await invoke(apiUrl, "verify-paystack-payment", bundleToken, {
       reference: initializedExtensionBody.reference,
     });
@@ -657,7 +668,7 @@ async function main() {
     const blockedCheckout = await invoke(apiUrl, "initialize-paystack-payment", bundleToken, {
       purchase_type: "pricing_plan",
       plan_code: "individual_objective",
-      duration_months: 1,
+      duration_months: 2,
       subject_slugs: [heldSubjectSlug],
       expected_price_kobo: Number(durationPrice.data.price_kobo),
     });

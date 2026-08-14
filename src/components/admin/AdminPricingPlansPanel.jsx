@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { formatModuleMoney } from "../../lib/pricing";
-
-const DURATIONS = [1, 3, 6];
+import { calculatePricingGuidance } from "../../lib/pricingGuidance";
 
 function toNairaInput(kobo) {
   if (kobo == null || kobo === "") return "";
@@ -36,27 +35,10 @@ function titleFromCode(code) {
     .join(" ");
 }
 
-function roundUpKobo(amount, increment) {
-  const safeIncrement = Math.max(Number(increment ?? 50000), 1);
-  return Math.ceil(Math.max(Number(amount ?? 0), 0) / safeIncrement) * safeIncrement;
-}
-
-function generatedBundlePrice(plan, durationMonths) {
-  if (plan?.plan_type !== "complete_bundle") return null;
-  const moduleCount = Number(plan.current_available_module_count ?? 0);
-  const monthlyPerModule = Number(plan.complete_bundle_monthly_price_per_module_kobo ?? 0);
-  const listPriceKobo = moduleCount * monthlyPerModule * Number(durationMonths);
-  if (durationMonths === 1) return { priceKobo: listPriceKobo, listPriceKobo };
-  if (durationMonths === 3) {
-    return {
-      priceKobo: roundUpKobo(Math.floor(listPriceKobo * 0.86), plan.complete_bundle_rounding_increment_kobo),
-      listPriceKobo,
-    };
-  }
-  return {
-    priceKobo: roundUpKobo(Math.floor(listPriceKobo * 0.735), plan.complete_bundle_rounding_increment_kobo),
-    listPriceKobo,
-  };
+function formatPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  return `${number.toFixed(Math.abs(number) < 10 && number % 1 !== 0 ? 1 : 0)}%`;
 }
 
 function initialPlanDraft(plan) {
@@ -82,13 +64,14 @@ function initialPriceDraft(price) {
   };
 }
 
-function buildDrafts(plans) {
+function buildDrafts(plans, durations) {
   return plans.reduce((drafts, plan) => {
     drafts[plan.plan_code] = {
       plan: initialPlanDraft(plan),
-      prices: DURATIONS.reduce((priceDrafts, duration) => {
-        const price = plan.prices?.find((item) => Number(item.duration_months) === duration);
-        priceDrafts[duration] = initialPriceDraft(price);
+      prices: durations.reduce((priceDrafts, duration) => {
+        const months = Number(duration.months);
+        const price = plan.prices?.find((item) => Number(item.duration_months) === months);
+        priceDrafts[months] = initialPriceDraft(price);
         return priceDrafts;
       }, {}),
     };
@@ -98,13 +81,26 @@ function buildDrafts(plans) {
 
 export function AdminPricingPlansPanel({
   busy,
+  durations = [],
+  guidance = [],
   loading,
   plans = [],
+  onCreateDuration,
   onRefresh,
   onSavePlan,
   onSavePrice,
+  onUpdateDuration,
 }) {
-  const [drafts, setDrafts] = useState(() => buildDrafts(plans));
+  const [drafts, setDrafts] = useState(() => buildDrafts(plans, durations));
+  const [durationDrafts, setDurationDrafts] = useState(() => durations.reduce((result, duration) => ({
+    ...result,
+    [duration.months]: {
+      enabled: Boolean(duration.enabled),
+      sortOrder: String(duration.sort_order ?? 100),
+    },
+  }), {}));
+  const [newDurationMonths, setNewDurationMonths] = useState("");
+  const [customDiscounts, setCustomDiscounts] = useState({});
   const [savingKey, setSavingKey] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [expandedPlanCode, setExpandedPlanCode] = useState(null);
@@ -113,8 +109,16 @@ export function AdminPricingPlansPanel({
     () => [...plans].sort((left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0)),
     [plans],
   );
+  const sortedDurations = useMemo(
+    () => [...durations].sort((left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0)),
+    [durations],
+  );
 
   const enabledCount = sortedPlans.filter((plan) => plan.enabled).length;
+  const enabledDurationLabel = sortedDurations
+    .filter((duration) => duration.enabled)
+    .map((duration) => `${duration.months} month${Number(duration.months) === 1 ? "" : "s"}`)
+    .join(", ");
 
   function updatePlan(planCode, field, value) {
     setDrafts((current) => ({
@@ -137,6 +141,56 @@ export function AdminPricingPlansPanel({
         },
       },
     }));
+  }
+
+  function updateDuration(months, field, value) {
+    setDurationDrafts((current) => ({
+      ...current,
+      [months]: { ...current[months], [field]: value },
+    }));
+  }
+
+  function updateCustomDiscount(planCode, months, value) {
+    setCustomDiscounts((current) => ({
+      ...current,
+      [`${planCode}:${months}`]: value,
+    }));
+  }
+
+  function applyRecommendedPrice(planCode, months, priceKobo) {
+    if (!Number.isFinite(Number(priceKobo)) || Number(priceKobo) <= 0) return;
+    updatePrice(planCode, months, "price", toNairaInput(priceKobo));
+  }
+
+  async function createDuration(event) {
+    event.preventDefault();
+    const months = Number(newDurationMonths);
+    setSavingKey("duration:new");
+    try {
+      await onCreateDuration({ months, sortOrder: (sortedDurations.length + 1) * 10 });
+      setNewDurationMonths("");
+    } catch {
+      // The parent admin shell reports the actionable error in the shared feedback area.
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveDuration(duration) {
+    const draft = durationDrafts[duration.months];
+    if (!draft) return;
+    setSavingKey(`duration:${duration.months}`);
+    try {
+      await onUpdateDuration({
+        months: Number(duration.months),
+        enabled: draft.enabled,
+        sortOrder: Number(draft.sortOrder),
+      });
+    } catch {
+      // The parent admin shell reports the actionable error in the shared feedback area.
+    } finally {
+      setSavingKey(null);
+    }
   }
 
   async function savePlan(event, plan) {
@@ -193,7 +247,7 @@ export function AdminPricingPlansPanel({
       <header className="admin-pricing-plans-header">
         <div>
           <h2 id="admin-pricing-plans-title">Pricing plans</h2>
-          <p>{enabledCount} enabled plans · 1, 3, 6 month checkout pricing.</p>
+          <p>{enabledCount} enabled plans{enabledDurationLabel ? ` · ${enabledDurationLabel}` : ""}</p>
         </div>
         <div className="admin-pricing-header-actions">
           {expanded && (
@@ -216,22 +270,92 @@ export function AdminPricingPlansPanel({
         </div>
       </header>
 
-      {!expanded ? null : sortedPlans.length === 0 ? (
-        <div className="admin-pricing-empty">
-          <strong>No pricing plans found.</strong>
-          <button className="ghost-button" disabled={busy || loading} type="button" onClick={onRefresh}>Refresh</button>
-        </div>
-      ) : (
-        <div className="admin-pricing-plan-list" id="admin-pricing-plans-body">
+      {!expanded ? null : (
+        <div className="admin-pricing-plans-body" id="admin-pricing-plans-body">
+          <section className="admin-pricing-durations" aria-labelledby="admin-pricing-durations-title">
+            <div className="admin-pricing-durations-heading">
+              <div>
+                <h3 id="admin-pricing-durations-title">Access durations</h3>
+                <p>Enabled durations appear in new checkout. Historical purchases remain unchanged.</p>
+              </div>
+              <form className="admin-pricing-duration-add" onSubmit={createDuration}>
+                <label>
+                  <span>Calendar months</span>
+                  <input
+                    min="1"
+                    required
+                    step="1"
+                    type="number"
+                    value={newDurationMonths}
+                    onChange={(event) => setNewDurationMonths(event.target.value)}
+                  />
+                </label>
+                <button disabled={busy || savingKey === "duration:new"} type="submit">
+                  {savingKey === "duration:new" ? "Adding" : "Add duration"}
+                </button>
+              </form>
+            </div>
+
+            <div className="admin-pricing-duration-list">
+              {sortedDurations.map((duration) => {
+                const draft = durationDrafts[duration.months] ?? {
+                  enabled: Boolean(duration.enabled),
+                  sortOrder: String(duration.sort_order ?? 100),
+                };
+                const saving = savingKey === `duration:${duration.months}`;
+                return (
+                  <div className="admin-pricing-duration-config" key={duration.duration_id ?? duration.months}>
+                    <div>
+                      <strong>{duration.months} month{Number(duration.months) === 1 ? "" : "s"}</strong>
+                      <small>{duration.used_by_orders ? "Used by historical orders" : "Not yet used by an order"}</small>
+                    </div>
+                    <label>
+                      <span>Order</span>
+                      <input
+                        step="1"
+                        type="number"
+                        value={draft.sortOrder}
+                        onChange={(event) => updateDuration(duration.months, "sortOrder", event.target.value)}
+                      />
+                    </label>
+                    <label className="admin-pricing-price-enabled">
+                      <input
+                        checked={draft.enabled}
+                        type="checkbox"
+                        onChange={(event) => updateDuration(duration.months, "enabled", event.target.checked)}
+                      />
+                      Enabled
+                    </label>
+                    <button
+                      className="ghost-button"
+                      disabled={busy || saving}
+                      type="button"
+                      onClick={() => saveDuration(duration)}
+                    >
+                      {saving ? "Saving" : "Save"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {sortedPlans.length === 0 ? (
+            <div className="admin-pricing-empty">
+              <strong>No pricing plans found.</strong>
+              <button className="ghost-button" disabled={busy || loading} type="button" onClick={onRefresh}>Refresh</button>
+            </div>
+          ) : (
+        <div className="admin-pricing-plan-list">
           {sortedPlans.map((plan) => {
             const planDraft = drafts[plan.plan_code]?.plan ?? initialPlanDraft(plan);
-            const isGeneratedBundle = plan.plan_type === "complete_bundle";
             const isPlanExpanded = expandedPlanCode === plan.plan_code;
-            const durations = DURATIONS.map((duration) => {
-              const price = plan.prices?.find((item) => Number(item.duration_months) === duration);
-              const generated = generatedBundlePrice(plan, duration);
-              const priceKobo = generated?.priceKobo ?? price?.price_kobo;
-              return priceKobo == null ? `${duration}m unavailable` : `${duration}m ${formatModuleMoney(priceKobo, price?.currency)}`;
+            const priceSummary = sortedDurations.map((duration) => {
+              const months = Number(duration.months);
+              const price = plan.prices?.find((item) => Number(item.duration_months) === months);
+              return price?.price_kobo == null
+                ? `${months}m unavailable`
+                : `${months}m ${formatModuleMoney(price.price_kobo, price.currency)}`;
             });
             const previewBullets = splitBullets(planDraft.includedBullets);
 
@@ -252,7 +376,7 @@ export function AdminPricingPlansPanel({
                       <small>{plan.plan_code}</small>
                     </span>
                   </span>
-                  <span className="admin-pricing-plan-summary-prices">{durations.join(" · ")}</span>
+                  <span className="admin-pricing-plan-summary-prices">{priceSummary.join(" · ")}</span>
                   <span className="admin-pricing-plan-expand">{isPlanExpanded ? "Close" : "Edit"}</span>
                 </button>
 
@@ -383,77 +507,146 @@ export function AdminPricingPlansPanel({
                     </form>
 
                     <div className="admin-pricing-price-grid" aria-label={`${plan.display_name} prices`}>
-                  {DURATIONS.map((duration) => {
-                    const price = plan.prices?.find((item) => Number(item.duration_months) === duration);
-                    const generated = generatedBundlePrice(plan, duration);
-                    const priceDraft = drafts[plan.plan_code]?.prices?.[duration] ?? initialPriceDraft(price);
-                    const visiblePriceKobo = generated?.priceKobo ?? price?.price_kobo;
-                    const visibleListPriceKobo = generated?.listPriceKobo ?? price?.list_price_kobo;
-                    const isSavingPrice = savingKey === `${plan.plan_code}:${duration}`;
+                  {sortedDurations.map((duration) => {
+                    const months = Number(duration.months);
+                    const price = plan.prices?.find((item) => Number(item.duration_months) === months);
+                    const priceDraft = drafts[plan.plan_code]?.prices?.[months] ?? initialPriceDraft(price);
+                    const isSavingPrice = savingKey === `${plan.plan_code}:${months}`;
+                    const guidanceKey = `${plan.plan_code}:${months}`;
+                    const serverGuidance = guidance.find((item) => (
+                      item.plan_code === plan.plan_code
+                      && Number(item.duration_months) === months
+                    ));
+                    const hasConfiguredRecommendation = serverGuidance?.recommended_discount_bps != null;
+                    const customDiscount = customDiscounts[guidanceKey] ?? "";
+                    const recommendation = hasConfiguredRecommendation
+                      ? {
+                          discountPercent: Number(serverGuidance.recommended_discount_bps) / 100,
+                          priceKobo: Number(serverGuidance.recommended_price_kobo),
+                        }
+                      : {
+                          discountPercent: customDiscount === "" ? null : Number(customDiscount),
+                          priceKobo: calculatePricingGuidance({
+                            discountPercent: customDiscount === "" ? Number.NaN : Number(customDiscount),
+                            durationMonths: months,
+                            oneMonthPriceKobo: serverGuidance?.one_month_price_kobo,
+                          })?.recommendedPriceKobo ?? null,
+                        };
+                    const actualPriceKobo = toKobo(priceDraft.price);
+                    const actualGuidance = calculatePricingGuidance({
+                      actualPriceKobo,
+                      discountPercent: 0,
+                      durationMonths: months,
+                      oneMonthPriceKobo: serverGuidance?.one_month_price_kobo,
+                    });
+                    const actualMatchesRecommendation = actualPriceKobo != null
+                      && recommendation.priceKobo != null
+                      && actualPriceKobo === recommendation.priceKobo;
+                    const currency = serverGuidance?.currency || price?.currency || "NGN";
 
                     return (
-                      <section className="admin-pricing-price-row" key={duration}>
-                        <div className="admin-pricing-duration">
-                          <strong>{duration} month{duration > 1 ? "s" : ""}</strong>
-                          <span>{price?.generated_by_rule || isGeneratedBundle ? "Generated" : price?.enabled ? "Enabled" : "Hidden"}</span>
-                        </div>
-
-                        {isGeneratedBundle ? (
-                          <div className="admin-pricing-generated">
-                            <strong>{formatModuleMoney(visiblePriceKobo, price?.currency)}</strong>
-                            {Number(visibleListPriceKobo) > Number(visiblePriceKobo) && (
-                              <small>{formatModuleMoney(visibleListPriceKobo, price?.currency)} list</small>
-                            )}
-                            <small>{Number(plan.current_available_module_count ?? 0)} active modules</small>
+                      <section className="admin-pricing-price-row" key={duration.duration_id ?? months}>
+                        <div className="admin-pricing-price-heading">
+                          <div className="admin-pricing-duration">
+                            <strong>{months} month{months === 1 ? "" : "s"}</strong>
+                            <span>{duration.enabled ? (price?.enabled ? "Customer-visible" : "Price hidden") : "Duration disabled"}</span>
                           </div>
-                        ) : (
-                          <>
-                            <label>
-                              Price (NGN)
-                              <input
-                                min="1"
-                                step="500"
-                                type="number"
-                                value={priceDraft.price}
-                                onChange={(event) => updatePrice(plan.plan_code, duration, "price", event.target.value)}
-                              />
-                            </label>
-                            <label>
-                              List price
-                              <input
-                                min="1"
-                                step="500"
-                                type="number"
-                                value={priceDraft.listPrice}
-                                onChange={(event) => updatePrice(plan.plan_code, duration, "listPrice", event.target.value)}
-                              />
-                            </label>
-                            <label>
-                              Discount label
-                              <input
-                                maxLength="80"
-                                value={priceDraft.discountLabel}
-                                onChange={(event) => updatePrice(plan.plan_code, duration, "discountLabel", event.target.value)}
-                              />
-                            </label>
-                            <label className="admin-pricing-price-enabled">
-                              <input
-                                checked={priceDraft.enabled}
-                                type="checkbox"
-                                onChange={(event) => updatePrice(plan.plan_code, duration, "enabled", event.target.checked)}
-                              />
-                              Enabled
-                            </label>
-                            <button
-                              className="ghost-button"
-                              disabled={busy || isSavingPrice}
-                              type="button"
-                              onClick={() => savePrice(plan, duration)}
-                            >
-                              {isSavingPrice ? "Saving" : "Save price"}
-                            </button>
-                          </>
-                        )}
+                          {plan.plan_type === "complete_bundle" && (
+                            <small>{Number(serverGuidance?.current_available_module_count ?? 0)} currently purchasable modules</small>
+                          )}
+                        </div>
+                        <dl className="admin-pricing-guidance">
+                          <div>
+                            <dt>1-month price</dt>
+                            <dd>{formatModuleMoney(serverGuidance?.one_month_price_kobo, currency)}</dd>
+                          </div>
+                          <div>
+                            <dt>{months}-month full total</dt>
+                            <dd>{formatModuleMoney(serverGuidance?.full_monthly_total_kobo, currency)}</dd>
+                          </div>
+                          <div>
+                            <dt>Recommended saving</dt>
+                            <dd>
+                              {hasConfiguredRecommendation ? (
+                                `~${formatPercent(recommendation.discountPercent)}`
+                              ) : (
+                                <label className="admin-pricing-discount-input">
+                                  <span className="sr-only">Recommended saving for {plan.display_name}, {months} months</span>
+                                  <input
+                                    max="99"
+                                    min="0"
+                                    placeholder="Set %"
+                                    step="0.5"
+                                    type="number"
+                                    value={customDiscount}
+                                    onChange={(event) => updateCustomDiscount(plan.plan_code, months, event.target.value)}
+                                  />
+                                  <span>%</span>
+                                </label>
+                              )}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Recommended price</dt>
+                            <dd>{recommendation.priceKobo == null ? "Choose a saving" : formatModuleMoney(recommendation.priceKobo, currency)}</dd>
+                          </div>
+                        </dl>
+                        <label className="admin-pricing-selling-price">
+                          {plan.plan_type === "complete_bundle"
+                            ? `Selling price for ${Number(plan.current_available_module_count ?? 0)} available modules (NGN)`
+                            : "Selling price (NGN)"}
+                          <input
+                            min="1"
+                            step="500"
+                            type="number"
+                            value={priceDraft.price}
+                            onChange={(event) => updatePrice(plan.plan_code, months, "price", event.target.value)}
+                          />
+                          <small>
+                            {actualPriceKobo == null
+                              ? "Enter the price future checkout should use."
+                              : actualMatchesRecommendation
+                                ? "Matches recommendation"
+                                : recommendation.priceKobo != null
+                                  ? `Custom price · Recommended ${formatModuleMoney(recommendation.priceKobo, currency)}`
+                                  : "Custom price"}
+                          </small>
+                        </label>
+                        <div className="admin-pricing-actual-saving">
+                          <span>Actual saving</span>
+                          <strong>
+                            {actualGuidance?.actualSavingKobo == null
+                              ? "Not set"
+                              : `${formatModuleMoney(actualGuidance.actualSavingKobo, currency)} (${formatPercent(actualGuidance.actualSavingPercent)})`}
+                          </strong>
+                          {plan.plan_type === "complete_bundle" && <small>Guidance updates when available modules change. Your saved price remains separate.</small>}
+                        </div>
+                        <label className="admin-pricing-price-enabled">
+                          <input
+                            checked={priceDraft.enabled}
+                            type="checkbox"
+                            onChange={(event) => updatePrice(plan.plan_code, months, "enabled", event.target.checked)}
+                          />
+                          Price enabled
+                        </label>
+                        <div className="admin-pricing-price-actions">
+                          <button
+                            className="ghost-button"
+                            disabled={busy || recommendation.priceKobo == null}
+                            type="button"
+                            onClick={() => applyRecommendedPrice(plan.plan_code, months, recommendation.priceKobo)}
+                          >
+                            Use recommended
+                          </button>
+                          <button
+                            className="ghost-button"
+                            disabled={busy || isSavingPrice}
+                            type="button"
+                            onClick={() => savePrice(plan, months)}
+                          >
+                            {isSavingPrice ? "Saving" : "Save price"}
+                          </button>
+                        </div>
                       </section>
                     );
                   })}
@@ -463,6 +656,8 @@ export function AdminPricingPlansPanel({
               </article>
             );
           })}
+        </div>
+          )}
         </div>
       )}
     </section>
