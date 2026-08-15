@@ -94,39 +94,60 @@ test("admin pricing uses the server duration catalog and preserves historical du
   const pricingPanel = page.locator(".admin-pricing-plans");
   await pricingPanel.getByRole("button", { name: "Open", exact: true }).click();
 
-  const durations = page.locator(".admin-pricing-duration-config");
+  const activeDurations = pricingPanel.locator(".admin-pricing-active-durations");
+  await expect(activeDurations).toContainText("1month");
+  await expect(activeDurations).toContainText("2months");
+  await expect(activeDurations).toContainText("3months");
+  await expect(activeDurations).not.toContainText("6months");
+
+  await pricingPanel.getByText("Manage durations", { exact: true }).click();
+  const durations = pricingPanel.locator(".admin-pricing-duration-config");
   await expect(durations).toHaveCount(4);
   await expect(durations.nth(0)).toContainText("1 month");
   await expect(durations.nth(1)).toContainText("2 months");
   await expect(durations.nth(2)).toContainText("3 months");
   await expect(durations.nth(3)).toContainText("6 months");
-  await expect(durations.nth(0).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
-  await expect(durations.nth(1).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
-  await expect(durations.nth(2).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
-  await expect(durations.nth(3).getByRole("checkbox", { name: "Enabled" })).not.toBeChecked();
+  await expect(durations.nth(0).getByRole("checkbox", { name: "Available in new checkout" })).toBeChecked();
+  await expect(durations.nth(1).getByRole("checkbox", { name: "Available in new checkout" })).toBeChecked();
+  await expect(durations.nth(2).getByRole("checkbox", { name: "Available in new checkout" })).toBeChecked();
+  await expect(durations.nth(3).getByRole("checkbox", { name: "Available in new checkout" })).not.toBeChecked();
+  await expect(durations.nth(3)).toContainText("Inactive");
 
-  await expect(page.getByLabel("Calendar months")).toBeVisible();
+  await expect(page.getByLabel("New duration in calendar months")).toBeVisible();
 
-  const objectivePlan = pricingPanel.locator(".admin-pricing-plan").filter({ hasText: "individual_objective" });
+  const objectivePlan = pricingPanel.locator('[data-plan-code="individual_objective"]');
   await objectivePlan.locator(".admin-pricing-plan-summary").click();
+  const sellingPricesTab = objectivePlan.getByRole("tab", { name: "Selling prices" });
+  const planDetailsTab = objectivePlan.getByRole("tab", { name: "Plan details" });
+  await expect(sellingPricesTab).toHaveAttribute("aria-selected", "true");
+  await sellingPricesTab.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(planDetailsTab).toBeFocused();
+  await expect(planDetailsTab).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(sellingPricesTab).toBeFocused();
+  await expect(objectivePlan.locator(".admin-pricing-price-row")).toHaveCount(3);
+  await expect(objectivePlan.locator(".admin-pricing-price-row").filter({ hasText: "6 months" })).toHaveCount(0);
   const twoMonthPrice = objectivePlan.locator(".admin-pricing-price-row").filter({ hasText: "2 months" });
-  await expect(twoMonthPrice).toContainText("1-month price");
+  await expect(twoMonthPrice).toContainText("Monthly baseline");
   await expect(twoMonthPrice).toContainText("₦2,500");
-  await expect(twoMonthPrice).toContainText("2-month full total");
+  await expect(twoMonthPrice).toContainText("Full price");
   await expect(twoMonthPrice).toContainText("₦5,000");
-  await expect(twoMonthPrice).toContainText("Recommended price");
+  await expect(twoMonthPrice).toContainText("Suggested price");
   await expect(twoMonthPrice).toContainText("₦4,500");
-  await twoMonthPrice.getByRole("button", { name: "Use recommended" }).click();
+  await twoMonthPrice.getByRole("button", { name: "Use suggested price" }).click();
   await expect(twoMonthPrice.getByLabel("Selling price (NGN)")).toHaveValue("4500");
   await twoMonthPrice.getByLabel("Selling price (NGN)").fill("5000");
-  await expect(twoMonthPrice).toContainText("Custom price · Recommended ₦4,500");
+  await expect(twoMonthPrice).toContainText("Custom price · Suggested ₦4,500");
   await twoMonthPrice.getByLabel("Selling price (NGN)").fill("4500");
 
+  await objectivePlan.getByRole("button", { name: "Edit inactive prices" }).click();
   const sixMonthPrice = objectivePlan.locator(".admin-pricing-price-row").filter({ hasText: "6 months" });
-  await expect(sixMonthPrice.getByRole("button", { name: "Use recommended" })).toBeDisabled();
+  await expect(sixMonthPrice).toContainText("Inactive duration");
+  await expect(sixMonthPrice.getByRole("button", { name: "Use suggested price" })).toBeDisabled();
   await sixMonthPrice.getByLabel("Recommended saving for Individual Module, 6 months").fill("12.5");
   await expect(sixMonthPrice).toContainText("₦13,000");
-  await sixMonthPrice.getByRole("button", { name: "Use recommended" }).click();
+  await sixMonthPrice.getByRole("button", { name: "Use suggested price" }).click();
   await expect(sixMonthPrice.getByLabel("Selling price (NGN)")).toHaveValue("13000");
 
   await twoMonthPrice.getByRole("button", { name: "Save price" }).click();

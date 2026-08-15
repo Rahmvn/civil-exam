@@ -2902,7 +2902,7 @@ export default function Admin() {
     await Promise.all([refreshPricingPlans(), refreshAudit()]);
     setFeedback({
       tone: "success",
-      message: duration.enabled ? "Access duration enabled for future checkout." : "Access duration disabled for future checkout.",
+      message: "Access duration changes saved.",
     });
   }
 
@@ -2973,11 +2973,11 @@ export default function Admin() {
   function handleUpdatePricingDuration(duration) {
     return new Promise((resolve, reject) => {
       requestConfirmation({
-        title: duration.enabled ? `Enable ${duration.months}-month access?` : `Disable ${duration.months}-month access?`,
+        title: `Save changes to ${duration.months}-month access?`,
         body: duration.enabled
-          ? "New checkout will show this duration only after every enabled plan has a valid enabled price."
+          ? "This duration will be available in new checkout only while every enabled plan has a valid enabled price."
           : "New checkout will stop showing this duration. Existing orders and access remain unchanged.",
-        label: duration.enabled ? "Enable duration" : "Disable duration",
+        label: "Save changes",
         onCancel: resolve,
         action: async () => {
           try {

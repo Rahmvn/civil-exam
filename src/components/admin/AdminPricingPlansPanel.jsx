@@ -104,6 +104,8 @@ export function AdminPricingPlansPanel({
   const [savingKey, setSavingKey] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [expandedPlanCode, setExpandedPlanCode] = useState(null);
+  const [editorView, setEditorView] = useState("prices");
+  const [showInactivePrices, setShowInactivePrices] = useState(false);
 
   const sortedPlans = useMemo(
     () => [...plans].sort((left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0)),
@@ -113,10 +115,17 @@ export function AdminPricingPlansPanel({
     () => [...durations].sort((left, right) => Number(left.sort_order ?? 0) - Number(right.sort_order ?? 0)),
     [durations],
   );
+  const activeDurations = useMemo(
+    () => sortedDurations.filter((duration) => duration.enabled),
+    [sortedDurations],
+  );
+  const inactiveDurations = useMemo(
+    () => sortedDurations.filter((duration) => !duration.enabled),
+    [sortedDurations],
+  );
 
   const enabledCount = sortedPlans.filter((plan) => plan.enabled).length;
-  const enabledDurationLabel = sortedDurations
-    .filter((duration) => duration.enabled)
+  const enabledDurationLabel = activeDurations
     .map((duration) => `${duration.months} month${Number(duration.months) === 1 ? "" : "s"}`)
     .join(", ");
 
@@ -162,6 +171,17 @@ export function AdminPricingPlansPanel({
     updatePrice(planCode, months, "price", toNairaInput(priceKobo));
   }
 
+  function moveEditorTabFocus(event) {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    const tabs = [...event.currentTarget.parentElement.querySelectorAll('[role="tab"]')];
+    const currentIndex = tabs.indexOf(event.currentTarget);
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const nextTab = tabs[(currentIndex + direction + tabs.length) % tabs.length];
+    event.preventDefault();
+    setEditorView(nextTab.dataset.editorView);
+    nextTab.focus();
+  }
+
   async function createDuration(event) {
     event.preventDefault();
     const months = Number(newDurationMonths);
@@ -185,6 +205,30 @@ export function AdminPricingPlansPanel({
         months: Number(duration.months),
         enabled: draft.enabled,
         sortOrder: Number(draft.sortOrder),
+      });
+    } catch {
+      // The parent admin shell reports the actionable error in the shared feedback area.
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function moveDuration(duration, direction) {
+    const currentIndex = sortedDurations.findIndex((item) => Number(item.months) === Number(duration.months));
+    const adjacent = sortedDurations[currentIndex + direction];
+    if (!adjacent) return;
+
+    const draft = durationDrafts[duration.months] ?? {
+      enabled: Boolean(duration.enabled),
+      sortOrder: String(duration.sort_order ?? 100),
+    };
+    const nextSortOrder = Number(adjacent.sort_order ?? 100) + direction;
+    setSavingKey(`duration:${duration.months}`);
+    try {
+      await onUpdateDuration({
+        months: Number(duration.months),
+        enabled: draft.enabled,
+        sortOrder: nextSortOrder,
       });
     } catch {
       // The parent admin shell reports the actionable error in the shared feedback area.
@@ -275,69 +319,109 @@ export function AdminPricingPlansPanel({
           <section className="admin-pricing-durations" aria-labelledby="admin-pricing-durations-title">
             <div className="admin-pricing-durations-heading">
               <div>
-                <h3 id="admin-pricing-durations-title">Access durations</h3>
-                <p>Enabled durations appear in new checkout. Historical purchases remain unchanged.</p>
+                <h3 id="admin-pricing-durations-title">Customer durations</h3>
+                <p>These are the only access periods offered in new checkout.</p>
               </div>
-              <form className="admin-pricing-duration-add" onSubmit={createDuration}>
-                <label>
-                  <span>Calendar months</span>
-                  <input
-                    min="1"
-                    required
-                    step="1"
-                    type="number"
-                    value={newDurationMonths}
-                    onChange={(event) => setNewDurationMonths(event.target.value)}
-                  />
-                </label>
-                <button disabled={busy || savingKey === "duration:new"} type="submit">
-                  {savingKey === "duration:new" ? "Adding" : "Add duration"}
-                </button>
-              </form>
             </div>
 
-            <div className="admin-pricing-duration-list">
-              {sortedDurations.map((duration) => {
-                const draft = durationDrafts[duration.months] ?? {
-                  enabled: Boolean(duration.enabled),
-                  sortOrder: String(duration.sort_order ?? 100),
-                };
-                const saving = savingKey === `duration:${duration.months}`;
-                return (
-                  <div className="admin-pricing-duration-config" key={duration.duration_id ?? duration.months}>
-                    <div>
-                      <strong>{duration.months} month{Number(duration.months) === 1 ? "" : "s"}</strong>
-                      <small>{duration.used_by_orders ? "Used by historical orders" : "Not yet used by an order"}</small>
-                    </div>
-                    <label>
-                      <span>Order</span>
-                      <input
-                        step="1"
-                        type="number"
-                        value={draft.sortOrder}
-                        onChange={(event) => updateDuration(duration.months, "sortOrder", event.target.value)}
-                      />
-                    </label>
-                    <label className="admin-pricing-price-enabled">
-                      <input
-                        checked={draft.enabled}
-                        type="checkbox"
-                        onChange={(event) => updateDuration(duration.months, "enabled", event.target.checked)}
-                      />
-                      Enabled
-                    </label>
-                    <button
-                      className="ghost-button"
-                      disabled={busy || saving}
-                      type="button"
-                      onClick={() => saveDuration(duration)}
-                    >
-                      {saving ? "Saving" : "Save"}
-                    </button>
-                  </div>
-                );
-              })}
+            <div className="admin-pricing-active-durations" aria-label="Durations available in new checkout">
+              {activeDurations.map((duration) => (
+                <div key={duration.duration_id ?? duration.months}>
+                  <strong>{duration.months}</strong>
+                  <span>month{Number(duration.months) === 1 ? "" : "s"}</span>
+                </div>
+              ))}
             </div>
+
+            <details className="admin-pricing-duration-manager">
+              <summary>
+                <span>Manage durations</span>
+                <small>Add, reorder, enable or disable checkout periods</small>
+              </summary>
+              <div className="admin-pricing-duration-manager-body">
+                <form className="admin-pricing-duration-add" onSubmit={createDuration}>
+                  <label>
+                    <span>New duration in calendar months</span>
+                    <input
+                      min="1"
+                      required
+                      step="1"
+                      type="number"
+                      value={newDurationMonths}
+                      onChange={(event) => setNewDurationMonths(event.target.value)}
+                    />
+                  </label>
+                  <button disabled={busy || savingKey === "duration:new"} type="submit">
+                    {savingKey === "duration:new" ? "Adding" : "Add duration"}
+                  </button>
+                </form>
+
+                <div className="admin-pricing-duration-list">
+                  {sortedDurations.map((duration) => {
+                    const draft = durationDrafts[duration.months] ?? {
+                      enabled: Boolean(duration.enabled),
+                      sortOrder: String(duration.sort_order ?? 100),
+                    };
+                    const saving = savingKey === `duration:${duration.months}`;
+                    return (
+                      <div className="admin-pricing-duration-config" key={duration.duration_id ?? duration.months}>
+                        <div>
+                          <strong>{duration.months} month{Number(duration.months) === 1 ? "" : "s"}</strong>
+                          <small>
+                            {duration.enabled
+                              ? "Available in new checkout"
+                              : duration.used_by_orders
+                                ? "Inactive; retained for historical orders"
+                                : "Inactive"}
+                          </small>
+                        </div>
+                        <div className="admin-pricing-duration-order">
+                          <span>Checkout order</span>
+                          <div>
+                            <button
+                              aria-label={`Move ${duration.months}-month duration earlier`}
+                              className="ghost-button"
+                              disabled={busy || saving || sortedDurations[0] === duration}
+                              title="Move earlier"
+                              type="button"
+                              onClick={() => moveDuration(duration, -1)}
+                            >
+                              &uarr;
+                            </button>
+                            <button
+                              aria-label={`Move ${duration.months}-month duration later`}
+                              className="ghost-button"
+                              disabled={busy || saving || sortedDurations[sortedDurations.length - 1] === duration}
+                              title="Move later"
+                              type="button"
+                              onClick={() => moveDuration(duration, 1)}
+                            >
+                              &darr;
+                            </button>
+                          </div>
+                        </div>
+                        <label className="admin-pricing-price-enabled">
+                          <input
+                            checked={draft.enabled}
+                            type="checkbox"
+                            onChange={(event) => updateDuration(duration.months, "enabled", event.target.checked)}
+                          />
+                          Available in new checkout
+                        </label>
+                        <button
+                          className="ghost-button"
+                          disabled={busy || saving}
+                          type="button"
+                          onClick={() => saveDuration(duration)}
+                        >
+                          {saving ? "Saving" : "Save changes"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </details>
           </section>
 
           {sortedPlans.length === 0 ? (
@@ -350,7 +434,7 @@ export function AdminPricingPlansPanel({
           {sortedPlans.map((plan) => {
             const planDraft = drafts[plan.plan_code]?.plan ?? initialPlanDraft(plan);
             const isPlanExpanded = expandedPlanCode === plan.plan_code;
-            const priceSummary = sortedDurations.map((duration) => {
+            const priceSummary = activeDurations.map((duration) => {
               const months = Number(duration.months);
               const price = plan.prices?.find((item) => Number(item.duration_months) === months);
               return price?.price_kobo == null
@@ -360,12 +444,20 @@ export function AdminPricingPlansPanel({
             const previewBullets = splitBullets(planDraft.includedBullets);
 
             return (
-              <article className={`admin-pricing-plan${isPlanExpanded ? " is-expanded" : ""}`} key={plan.plan_code}>
+              <article
+                className={`admin-pricing-plan${isPlanExpanded ? " is-expanded" : ""}`}
+                data-plan-code={plan.plan_code}
+                key={plan.plan_code}
+              >
                 <button
                   className="admin-pricing-plan-summary"
                   type="button"
                   aria-expanded={isPlanExpanded}
-                  onClick={() => setExpandedPlanCode((current) => (current === plan.plan_code ? null : plan.plan_code))}
+                  onClick={() => {
+                    setExpandedPlanCode((current) => (current === plan.plan_code ? null : plan.plan_code));
+                    setEditorView("prices");
+                    setShowInactivePrices(false);
+                  }}
                 >
                   <span className="admin-pricing-plan-title">
                     <span className={`admin-status ${plan.enabled ? "admin-status-live" : "admin-status-paused"}`}>
@@ -373,7 +465,7 @@ export function AdminPricingPlansPanel({
                     </span>
                     <span>
                       <strong>{plan.display_name || titleFromCode(plan.plan_code)}</strong>
-                      <small>{plan.plan_code}</small>
+                      <small>{plan.short_description || "Candidate access plan"}</small>
                     </span>
                   </span>
                   <span className="admin-pricing-plan-summary-prices">{priceSummary.join(" · ")}</span>
@@ -382,6 +474,34 @@ export function AdminPricingPlansPanel({
 
                 {isPlanExpanded && (
                   <>
+                    <div className="admin-pricing-editor-tabs" role="tablist" aria-label={`${plan.display_name} editor`}>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={editorView === "prices"}
+                        className={`admin-pricing-editor-tab${editorView === "prices" ? " is-active" : ""}`}
+                        data-editor-view="prices"
+                        tabIndex={editorView === "prices" ? 0 : -1}
+                        onKeyDown={moveEditorTabFocus}
+                        onClick={() => setEditorView("prices")}
+                      >
+                        Selling prices
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={editorView === "details"}
+                        className={`admin-pricing-editor-tab${editorView === "details" ? " is-active" : ""}`}
+                        data-editor-view="details"
+                        tabIndex={editorView === "details" ? 0 : -1}
+                        onKeyDown={moveEditorTabFocus}
+                        onClick={() => setEditorView("details")}
+                      >
+                        Plan details
+                      </button>
+                    </div>
+
+                    {editorView === "details" && (
                     <form className="admin-pricing-plan-form" onSubmit={(event) => savePlan(event, plan)}>
                   <aside className="admin-pricing-copy-preview" aria-label={`${plan.display_name} candidate preview`}>
                     {planDraft.savingsLabel && <span>{planDraft.savingsLabel}</span>}
@@ -505,9 +625,20 @@ export function AdminPricingPlansPanel({
                     </button>
                   </div>
                     </form>
+                    )}
 
+                    {editorView === "prices" && (
                     <div className="admin-pricing-price-grid" aria-label={`${plan.display_name} prices`}>
-                  {sortedDurations.map((duration) => {
+                      <div className="admin-pricing-price-intro">
+                        <div>
+                          <h4>Selling prices</h4>
+                          <p>Amounts used for future checkout. Recommendations are guidance until you save.</p>
+                        </div>
+                        {plan.plan_type === "complete_bundle" && (
+                          <p>{Number(plan.current_available_module_count ?? 0)} currently available modules included</p>
+                        )}
+                      </div>
+                  {(showInactivePrices ? sortedDurations : activeDurations).map((duration) => {
                     const months = Number(duration.months);
                     const price = plan.prices?.find((item) => Number(item.duration_months) === months);
                     const priceDraft = drafts[plan.plan_code]?.prices?.[months] ?? initialPriceDraft(price);
@@ -549,23 +680,27 @@ export function AdminPricingPlansPanel({
                         <div className="admin-pricing-price-heading">
                           <div className="admin-pricing-duration">
                             <strong>{months} month{months === 1 ? "" : "s"}</strong>
-                            <span>{duration.enabled ? (price?.enabled ? "Customer-visible" : "Price hidden") : "Duration disabled"}</span>
+                            <span>
+                              {duration.enabled
+                                ? (price?.enabled ? "Available to customers" : "Price unavailable")
+                                : "Inactive duration"}
+                            </span>
                           </div>
                           {plan.plan_type === "complete_bundle" && (
-                            <small>{Number(serverGuidance?.current_available_module_count ?? 0)} currently purchasable modules</small>
+                            <small>Price reflects {Number(serverGuidance?.current_available_module_count ?? 0)} currently available modules</small>
                           )}
                         </div>
                         <dl className="admin-pricing-guidance">
                           <div>
-                            <dt>1-month price</dt>
+                              <dt>Monthly baseline</dt>
                             <dd>{formatModuleMoney(serverGuidance?.one_month_price_kobo, currency)}</dd>
                           </div>
                           <div>
-                            <dt>{months}-month full total</dt>
+                              <dt>Full price</dt>
                             <dd>{formatModuleMoney(serverGuidance?.full_monthly_total_kobo, currency)}</dd>
                           </div>
                           <div>
-                            <dt>Recommended saving</dt>
+                              <dt>Suggested saving</dt>
                             <dd>
                               {hasConfiguredRecommendation ? (
                                 `~${formatPercent(recommendation.discountPercent)}`
@@ -587,7 +722,7 @@ export function AdminPricingPlansPanel({
                             </dd>
                           </div>
                           <div>
-                            <dt>Recommended price</dt>
+                              <dt>Suggested price</dt>
                             <dd>{recommendation.priceKobo == null ? "Choose a saving" : formatModuleMoney(recommendation.priceKobo, currency)}</dd>
                           </div>
                         </dl>
@@ -606,9 +741,9 @@ export function AdminPricingPlansPanel({
                             {actualPriceKobo == null
                               ? "Enter the price future checkout should use."
                               : actualMatchesRecommendation
-                                ? "Matches recommendation"
+                                ? "Matches suggested price"
                                 : recommendation.priceKobo != null
-                                  ? `Custom price · Recommended ${formatModuleMoney(recommendation.priceKobo, currency)}`
+                                  ? `Custom price · Suggested ${formatModuleMoney(recommendation.priceKobo, currency)}`
                                   : "Custom price"}
                           </small>
                         </label>
@@ -627,17 +762,19 @@ export function AdminPricingPlansPanel({
                             type="checkbox"
                             onChange={(event) => updatePrice(plan.plan_code, months, "enabled", event.target.checked)}
                           />
-                          Price enabled
+                          Offer this {months}-month price
                         </label>
                         <div className="admin-pricing-price-actions">
-                          <button
-                            className="ghost-button"
-                            disabled={busy || recommendation.priceKobo == null}
-                            type="button"
-                            onClick={() => applyRecommendedPrice(plan.plan_code, months, recommendation.priceKobo)}
-                          >
-                            Use recommended
-                          </button>
+                          {months > 1 && (
+                            <button
+                              className="ghost-button"
+                              disabled={busy || recommendation.priceKobo == null}
+                              type="button"
+                              onClick={() => applyRecommendedPrice(plan.plan_code, months, recommendation.priceKobo)}
+                            >
+                              Use suggested price
+                            </button>
+                          )}
                           <button
                             className="ghost-button"
                             disabled={busy || isSavingPrice}
@@ -650,7 +787,16 @@ export function AdminPricingPlansPanel({
                       </section>
                     );
                   })}
+                      {inactiveDurations.length > 0 && (
+                        <div className="admin-pricing-inactive-note">
+                          <p>Inactive duration prices are retained for historical orders and are not part of current checkout.</p>
+                          <button className="ghost-button" type="button" onClick={() => setShowInactivePrices((current) => !current)}>
+                            {showInactivePrices ? "Hide inactive prices" : "Edit inactive prices"}
+                          </button>
+                        </div>
+                      )}
                     </div>
+                    )}
                   </>
                 )}
               </article>

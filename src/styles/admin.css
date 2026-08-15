@@ -825,6 +825,431 @@
   }
 }
 
+/* Pricing management: keep current checkout choices clear and advanced controls deliberate. */
+.admin-pricing-plans {
+  gap: 18px;
+  border-radius: 10px;
+}
+
+.admin-pricing-plans-body {
+  gap: 22px;
+}
+
+.admin-pricing-durations {
+  gap: 12px;
+  padding-bottom: 20px;
+}
+
+.admin-pricing-active-durations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--admin-border, #d9dfdc);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-pricing-active-durations > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  min-height: 58px;
+  padding: 12px;
+  border-left: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-pricing-active-durations > div:first-child {
+  border-left: 0;
+}
+
+.admin-pricing-active-durations strong {
+  color: #071713;
+  font-size: 1.05rem;
+}
+
+.admin-pricing-active-durations span {
+  color: var(--admin-muted, #667067);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.admin-pricing-duration-manager {
+  border-top: 1px solid #edf0ee;
+}
+
+.admin-pricing-duration-manager > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 10px 0;
+  color: var(--admin-green, #0f6747);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.admin-pricing-duration-manager > summary small {
+  color: var(--admin-muted, #667067);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.admin-pricing-duration-manager-body {
+  display: grid;
+  gap: 16px;
+  padding: 8px 0 4px;
+}
+
+.admin-pricing-duration-add {
+  justify-content: flex-start;
+  padding: 14px;
+  border: 1px solid #e4e9e6;
+  border-radius: 8px;
+  background: #f8faf8;
+}
+
+.admin-pricing-duration-config {
+  grid-template-columns: minmax(190px, 1fr) 150px minmax(190px, auto) auto;
+  min-height: 62px;
+  padding: 10px 2px;
+}
+
+.admin-pricing-duration-config input[type="number"] {
+  width: 100%;
+}
+
+.admin-pricing-duration-order {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-pricing-duration-order > span {
+  color: var(--admin-muted, #667067);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-pricing-duration-order > div {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-pricing-duration-order button {
+  width: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.admin-pricing-plan-list {
+  gap: 10px;
+}
+
+.admin-pricing-plan {
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-pricing-plan.is-expanded {
+  gap: 0;
+  padding-bottom: 0;
+}
+
+.admin-pricing-plan-summary {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(300px, auto) auto;
+  gap: 20px;
+  min-height: 72px;
+  padding: 14px 16px;
+}
+
+.admin-pricing-plan-title {
+  min-width: 0;
+}
+
+.admin-pricing-plan-title > span:last-child {
+  min-width: 0;
+}
+
+.admin-pricing-plan-title strong,
+.admin-pricing-plan-title small {
+  overflow-wrap: anywhere;
+}
+
+.admin-pricing-plan-summary-prices {
+  min-width: 0;
+  text-align: right;
+}
+
+.admin-pricing-editor-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0 16px 16px;
+  border-bottom: 1px solid var(--admin-border, #d9dfdc);
+}
+
+.admin-pricing-editor-tabs button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--admin-muted, #667067);
+}
+
+.admin-pricing-editor-tabs button.is-active {
+  border-bottom-color: var(--admin-green, #0f6747);
+  color: var(--admin-green, #0f6747);
+}
+
+.admin-pricing-editor-tabs button:focus-visible {
+  outline: 3px solid rgba(15, 103, 71, 0.25);
+  outline-offset: -3px;
+}
+
+.admin-pricing-plan-form {
+  padding-bottom: 18px;
+}
+
+.admin-pricing-price-grid {
+  gap: 0;
+  margin: 0;
+  padding: 0 16px 16px;
+  border-top: 0;
+}
+
+.admin-pricing-price-intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 0 14px;
+}
+
+.admin-pricing-price-intro h4,
+.admin-pricing-price-intro p,
+.admin-pricing-inactive-note p {
+  margin: 0;
+}
+
+.admin-pricing-price-intro h4 {
+  color: #071713;
+  font-size: 0.98rem;
+}
+
+.admin-pricing-price-intro p,
+.admin-pricing-inactive-note p {
+  color: var(--admin-muted, #667067);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.admin-pricing-price-row {
+  grid-template-columns: minmax(120px, 0.5fr) minmax(170px, 0.75fr) minmax(300px, 1.35fr) auto;
+  gap: 12px 18px;
+  padding: 16px 2px;
+  border: 0;
+  border-top: 1px solid #e4e9e6;
+  border-radius: 0;
+}
+
+.admin-pricing-price-heading {
+  grid-row: 1 / span 2;
+}
+
+.admin-pricing-selling-price {
+  grid-column: 2;
+}
+
+.admin-pricing-guidance {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.admin-pricing-actual-saving {
+  grid-column: 3;
+  grid-row: 2;
+  min-height: 0;
+}
+
+.admin-pricing-price-row > .admin-pricing-price-enabled {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.admin-pricing-price-actions {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  align-self: center;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.admin-pricing-price-actions button {
+  min-width: 132px;
+}
+
+.admin-pricing-inactive-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0 0;
+  border-top: 1px solid #e4e9e6;
+}
+
+@media (max-width: 1080px) {
+  .admin-pricing-plan-summary {
+    grid-template-columns: minmax(220px, 1fr) auto;
+  }
+
+  .admin-pricing-plan-summary-prices {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: left;
+  }
+
+  .admin-pricing-plan-expand {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .admin-pricing-price-row {
+    grid-template-columns: minmax(120px, 0.45fr) minmax(190px, 0.7fr) minmax(260px, 1fr);
+  }
+
+  .admin-pricing-guidance,
+  .admin-pricing-actual-saving {
+    grid-column: 3;
+  }
+
+  .admin-pricing-price-actions {
+    grid-column: 2 / -1;
+    grid-row: 3;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .admin-pricing-duration-config {
+    grid-template-columns: minmax(180px, 1fr) 140px auto;
+  }
+
+  .admin-pricing-duration-config > button {
+    grid-column: 3;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-pricing-plans {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .admin-pricing-active-durations {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-pricing-active-durations > div {
+    align-items: center;
+    flex-direction: column;
+    gap: 0;
+    min-height: 64px;
+  }
+
+  .admin-pricing-duration-manager > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .admin-pricing-duration-config {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 14px 0;
+  }
+
+  .admin-pricing-duration-config > button,
+  .admin-pricing-duration-config label,
+  .admin-pricing-duration-order {
+    grid-column: 1;
+  }
+
+  .admin-pricing-duration-config > button {
+    width: 100%;
+  }
+
+  .admin-pricing-plan-summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px 14px;
+  }
+
+  .admin-pricing-plan-title {
+    align-items: flex-start;
+  }
+
+  .admin-pricing-plan-summary-prices {
+    grid-column: 1 / -1;
+  }
+
+  .admin-pricing-editor-tabs {
+    margin: 0 14px 14px;
+  }
+
+  .admin-pricing-editor-tabs button {
+    flex: 1;
+  }
+
+  .admin-pricing-price-grid {
+    padding: 0 14px 14px;
+  }
+
+  .admin-pricing-price-intro,
+  .admin-pricing-inactive-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-pricing-price-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px 0;
+  }
+
+  .admin-pricing-price-heading,
+  .admin-pricing-selling-price,
+  .admin-pricing-guidance,
+  .admin-pricing-actual-saving,
+  .admin-pricing-price-row > .admin-pricing-price-enabled,
+  .admin-pricing-price-actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .admin-pricing-guidance {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f6f8f6;
+  }
+
+  .admin-pricing-price-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-pricing-inactive-note button {
+    width: 100%;
+  }
+}
+
 .admin-content-manager {
   width: min(1420px, calc(100% - 24px));
   padding: 8px 0 28px;
