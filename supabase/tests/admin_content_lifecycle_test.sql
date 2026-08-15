@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(65);
+select plan(68);
 
 select ok(
   has_table_privilege('service_role', 'public.objective_practice_sessions', 'SELECT')
@@ -138,6 +138,27 @@ select is((select payload->>'practice_set_id' from lifecycle_session), 'd3000000
   'new objective session is pinned to the published version');
 select is((select (payload->>'time_limit_seconds')::integer from lifecycle_session), 1800,
   'new objective sessions snapshot the configured module duration');
+select is(
+  public.get_objective_practice_session(
+    (select (payload->>'practice_session_id')::uuid from lifecycle_session)
+  )->>'status',
+  'active',
+  'a known active objective session can be read without starting another one'
+);
+select is(
+  jsonb_array_length(public.get_objective_practice_session(
+    (select (payload->>'practice_session_id')::uuid from lifecycle_session)
+  )->'questions'),
+  2,
+  'the read-only objective session payload restores its pinned questions'
+);
+select is(
+  public.get_objective_practice_session(
+    (select (payload->>'practice_session_id')::uuid from lifecycle_session)
+  )->>'practice_session_id',
+  (select payload->>'practice_session_id' from lifecycle_session),
+  'reading a known objective session preserves the exact server session identity'
+);
 
 create temporary table lifecycle_abandoned_session as
 select payload from lifecycle_session;

@@ -356,6 +356,19 @@ export async function getPracticeQuestions({ subjectId, limit = 30, batchNumber 
   );
 }
 
+export async function getObjectivePracticeSession(practiceSessionId) {
+  if (!practiceSessionId) return null;
+
+  const session = requireData(await supabase.rpc("get_objective_practice_session", {
+    requested_session_id: practiceSessionId,
+  }));
+
+  return {
+    ...session,
+    questions: decorateObjectiveSessionQuestions(session),
+  };
+}
+
 export async function startPracticeBatch(subjectSlug, batchNumber = null) {
   if (!subjectSlug) return [];
 

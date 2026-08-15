@@ -1206,7 +1206,7 @@ export default function Review() {
           <ReviewDetailView
             error={error}
             key={`${attemptId}-${queueQuestionIds.join("-")}-${targetQuestionId ?? "first"}`}
-            onBack={() => navigate(detailReturnTo)}
+            onBack={() => navigate(detailReturnTo, { replace: true })}
             queueScoped={queueScoped}
             rows={baseReviewRows}
             targetQuestionId={targetQuestionId}

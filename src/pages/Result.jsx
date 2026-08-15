@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
 import { AnimatedProgressBar } from "../components/DashboardUi";
-import { getAttemptReview, getModuleBatchAccess } from "../lib/appApi";
+import { getAttemptReview, getModuleBatchAccess, startPracticeBatch } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import {
   getModuleDisplayName,
@@ -11,6 +11,8 @@ import {
   isPublishedBatchRow,
 } from "../lib/moduleDisplay";
 import { withReturnTo } from "../lib/navigation";
+import { storePracticeBatch } from "../lib/practiceSession";
+import { useAuth } from "../lib/useAuth";
 
 function getResultSummary(rows, navigationState) {
   const first = rows[0] ?? null;
@@ -69,13 +71,18 @@ function ResultConfetti() {
 }
 
 export default function Result() {
+  const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const attemptId = searchParams.get("attempt") ?? location.state?.result?.attempt_id ?? null;
   const [rows, setRows] = useState([]);
   const [moduleRows, setModuleRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [startingPractice, setStartingPractice] = useState(false);
+  const practiceLaunchRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -167,9 +174,6 @@ export default function Result() {
 
   const resultPath = `/result?attempt=${summary.attemptId}`;
   const reviewPath = withReturnTo(`/review?attempt=${summary.attemptId}`, resultPath);
-  const retryPath = summary.subjectSlug
-    ? `/practice/${summary.subjectSlug}?batch=${summary.batchNumber}`
-    : "/dashboard";
   const recommendedBatchNumber = Number(moduleProgress.recommendedRow?.batch_number ?? summary.nextBatchNumber ?? 0) || null;
   const nextPracticePath = summary.subjectSlug && recommendedBatchNumber
     ? `/practice/${summary.subjectSlug}?batch=${recommendedBatchNumber}`
@@ -186,9 +190,31 @@ export default function Result() {
   const passedPrimaryAction = (() => {
     if (isFreeCompletion) return { label: "Unlock module", to: unlockPath };
     if (isModuleComplete) return { label: "Back to modules", to: "/dashboard#modules" };
-    if (nextPracticePath) return { label: "Continue practice", to: nextPracticePath };
+    if (nextPracticePath) return { label: "Continue practice", batchNumber: recommendedBatchNumber };
     return { label: "Back to modules", to: "/dashboard#modules" };
   })();
+  const modulePath = summary.subjectSlug ? `/modules/${encodeURIComponent(summary.subjectSlug)}` : "/dashboard#modules";
+
+  async function launchPractice(batchNumber) {
+    if (!summary.subjectSlug || practiceLaunchRef.current) return;
+    practiceLaunchRef.current = true;
+    setStartingPractice(true);
+    setActionError("");
+    try {
+      const batch = await startPracticeBatch(summary.subjectSlug, batchNumber);
+      storePracticeBatch(summary.subjectSlug, batch, user?.id);
+      navigate(`/practice/${summary.subjectSlug}?batch=${batchNumber}`, {
+        replace: true,
+        state: { batchStarted: true },
+      });
+    } catch (startError) {
+      logAppError(`Result start practice:${summary.subjectSlug}`, startError);
+      setActionError(friendlyErrorMessage(startError, "We could not start this practice right now."));
+    } finally {
+      practiceLaunchRef.current = false;
+      setStartingPractice(false);
+    }
+  }
 
   return (
     <AppFrame showBottomNav={false} showFooter={false}>
@@ -232,9 +258,16 @@ export default function Result() {
           )}
 
           <div className="result-actions">
+            {actionError && <p className="action-error" role="alert">{actionError}</p>}
             {summary.passed ? (
               <>
-                <Link className="primary-action" to={passedPrimaryAction.to}>{passedPrimaryAction.label}</Link>
+                {passedPrimaryAction.batchNumber ? (
+                  <button className="primary-action" disabled={startingPractice} onClick={() => void launchPractice(passedPrimaryAction.batchNumber)} type="button">
+                    {passedPrimaryAction.label}
+                  </button>
+                ) : (
+                  <Link className="primary-action" replace={passedPrimaryAction.label === "Back to modules"} to={passedPrimaryAction.to}>{passedPrimaryAction.label}</Link>
+                )}
                 <Link className="result-secondary-action" to={reviewPath}>
                   Review answers
                 </Link>
@@ -245,7 +278,7 @@ export default function Result() {
                   Review answers
                 </Link>
                 {showRetry ? (
-                  <Link className="result-secondary-action" to={retryPath}>Retry</Link>
+                  <button className="result-secondary-action" disabled={startingPractice} onClick={() => void launchPractice(summary.batchNumber)} type="button">Retry</button>
                 ) : summary.nextAction === "unlock_module" ? (
                   <Link className="result-secondary-action" to={unlockPath}>Unlock module</Link>
                 ) : (
@@ -253,6 +286,7 @@ export default function Result() {
                 )}
               </>
             )}
+            <Link className="result-secondary-action" replace to={modulePath}>Back to practice sets</Link>
           </div>
         </article>
       </section>

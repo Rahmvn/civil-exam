@@ -49,3 +49,20 @@ export async function signIn(page, email, password, destination = /\/dashboard(?
   await page.locator("form").getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(destination);
 }
+
+export async function startObjectivePractice(page, subjectSlug, batchNumber = 1) {
+  await page.goto(`/modules/${subjectSlug}`);
+  const practiceSet = page.locator(".practice-set-choice").filter({
+    has: page.getByRole("heading", { name: `Practice set ${batchNumber}`, exact: true }),
+  });
+  const launchButton = practiceSet.getByRole("button", {
+    name: /^(Start|Retry|Continue|Practice again)$/,
+  });
+  await expect(launchButton).toBeVisible();
+  await launchButton.click();
+  const skipAheadDialog = page.getByRole("dialog", { name: "Start this set?" });
+  if (await skipAheadDialog.isVisible()) {
+    await skipAheadDialog.getByRole("button", { name: "Continue", exact: true }).click();
+  }
+  await page.waitForURL(new RegExp(`/practice/${subjectSlug}\\?batch=${batchNumber}$`));
+}

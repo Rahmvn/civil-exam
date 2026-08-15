@@ -6,8 +6,7 @@ import { MobileSheetGrabber } from "../components/MobileSheetGrabber";
 import { useMobileSheetDrag } from "../components/useMobileSheetDrag";
 import {
   abandonObjectivePracticeSession,
-  getCandidateSummary,
-  getPracticeQuestions,
+  getObjectivePracticeSession,
   getSubjects,
   submitAttempt,
 } from "../lib/appApi";
@@ -265,10 +264,7 @@ export default function Practice() {
       submissionTokenRef.current = crypto.randomUUID();
 
       try {
-        const [nextSummary, nextSubjects] = await Promise.all([
-          getCandidateSummary(),
-          getSubjects(),
-        ]);
+        const nextSubjects = await getSubjects();
 
         if (!active) return;
 
@@ -290,6 +286,15 @@ export default function Practice() {
           savedDraft &&
           (!requestedBatchNumber || savedBatchNumber === requestedBatchNumber)
         ) {
+          const practiceSessionId = savedDraft.questions[0]?.practice_session_id ?? null;
+          const serverSession = await getObjectivePracticeSession(practiceSessionId);
+          if (!active) return;
+          if (serverSession?.status !== "active") {
+            clearActivePractice(nextSubject.slug, userId);
+            clearPracticeDraft(nextSubject.slug, userId);
+            navigate(`/modules/${nextSubject.slug}`, { replace: true });
+            return;
+          }
           setQuestions(savedDraft.questions);
           setAnswers(savedDraft.answers && typeof savedDraft.answers === "object" ? savedDraft.answers : {});
           setTimeSpent(savedDraft.time_spent && typeof savedDraft.time_spent === "object" ? savedDraft.time_spent : {});
@@ -321,32 +326,26 @@ export default function Practice() {
           return;
         }
 
-        if (!nextSummary.has_paid_access && !nextSummary.free_module_subject_slug) {
-          setEmptyMessage("Start your free practice from the dashboard to continue.");
-          return;
+        const activePractice = readActivePractice(nextSubject.slug, userId);
+        const activeBatchNumber = Number(activePractice?.batch_number ?? 0) || null;
+        if (
+          activePractice?.practice_session_id
+          && (!requestedBatchNumber || activeBatchNumber === requestedBatchNumber)
+        ) {
+          const serverSession = await getObjectivePracticeSession(activePractice.practice_session_id);
+          if (!active) return;
+          if (serverSession?.status === "active" && serverSession.questions.length > 0) {
+            const preparedQuestions = preparePracticeQuestions(serverSession.questions, activeBatchNumber);
+            setQuestions(preparedQuestions);
+            setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at));
+            return;
+          }
         }
 
-        const nextQuestions = await getPracticeQuestions({
-          subjectId: nextSubject.id,
-          batchNumber: requestedBatchNumber,
-          limit: undefined,
-        });
-
-        if (!active) return;
-
-        if (nextQuestions.length === 0) {
-          setEmptyMessage("Questions for this module are not available yet.");
-          return;
-        }
-
-        const activeBatchNumber = requestedBatchNumber ?? nextQuestions[0]?.batch_number;
-        const preparedQuestions = preparePracticeQuestions(nextQuestions, activeBatchNumber);
-        setQuestions(preparedQuestions);
-        markActivePractice(nextSubject.slug, {
-          batch_number: activeBatchNumber,
-          practice_session_id: preparedQuestions[0]?.practice_session_id ?? null,
-        }, userId);
-        setDeadlineAt(Number(preparedQuestions[0]?.session_deadline_at) || Date.now() + EXAM_DURATION_MINUTES * 60 * 1000);
+        clearPracticeBatch(nextSubject.slug, userId);
+        clearActivePractice(nextSubject.slug, userId);
+        clearPracticeDraft(nextSubject.slug, userId);
+        navigate(`/modules/${nextSubject.slug}`, { replace: true });
       } catch (loadError) {
         if (!active || isExpectedAbortError(loadError)) return;
         logAppError(`Practice load:${subjectSlug}`, loadError);
@@ -366,7 +365,7 @@ export default function Practice() {
     return () => {
       active = false;
     };
-  }, [requestedBatchNumber, restartPending, subjectSlug, userId]);
+  }, [navigate, requestedBatchNumber, restartPending, subjectSlug, userId]);
 
   const submitCurrentSession = useCallback(async () => {
     if (submitting || !subject || questions.length === 0) return;
@@ -400,6 +399,7 @@ export default function Practice() {
       clearPracticeDraft(subject.slug, userId);
       allowExitRef.current = true;
       navigate(`/result?attempt=${nextResult.attempt_id}`, {
+        replace: true,
         state: {
           result: nextResult,
           subject: {
@@ -560,7 +560,7 @@ export default function Practice() {
         blocker.proceed();
         return;
       }
-      navigate("/dashboard#modules", { replace: true });
+      navigate(subject?.slug ? `/modules/${subject.slug}` : "/dashboard#modules", { replace: true });
     } catch (exitError) {
       logAppError(`Practice exit:${subject?.slug ?? "unknown"}`, exitError);
       setExitConfirmOpen(false);
@@ -596,15 +596,6 @@ export default function Practice() {
         ?? activePractice?.practice_session_id
         ?? null;
 
-      if (!practiceSessionId && subject?.id) {
-        const resumedQuestions = await getPracticeQuestions({
-          subjectId: subject.id,
-          batchNumber: Number(activePractice?.batch_number ?? requestedBatchNumber ?? 0) || null,
-          limit: undefined,
-        });
-        practiceSessionId = resumedQuestions[0]?.practice_session_id ?? null;
-      }
-
       if (practiceSessionId) {
         await abandonObjectivePracticeSession(practiceSessionId);
       }
@@ -613,7 +604,7 @@ export default function Practice() {
       clearActivePractice(subjectSlug, userId);
       clearPracticeDraft(subjectSlug, userId);
       allowExitRef.current = true;
-      navigate("/dashboard#modules", { replace: true });
+      navigate(subjectSlug ? `/modules/${subjectSlug}` : "/dashboard#modules", { replace: true });
     } catch (exitError) {
       logAppError(`Practice restart exit:${subjectSlug}`, exitError);
       setError(friendlyErrorMessage(

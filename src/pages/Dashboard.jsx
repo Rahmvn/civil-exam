@@ -38,7 +38,7 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
-import { buildLocationPath } from "../lib/navigation";
+import { buildLocationPath, withReturnTo } from "../lib/navigation";
 import { useAuth } from "../lib/useAuth";
 
 function formatPracticeSetCount(count) {
@@ -307,7 +307,10 @@ export default function Dashboard() {
     }
 
     if (targetRow.state === "completed_failed") {
-      return { label: "Retry practice", to: getPracticeRoute(subject, batchNumber) };
+      return {
+        label: "Retry practice",
+        action: (event) => void launchPractice(subject, batchNumber, event.currentTarget),
+      };
     }
 
     if (!hasModuleAccess && targetRow.state === "completed_passed") {
@@ -315,13 +318,39 @@ export default function Dashboard() {
     }
 
     if (Number(targetRow.attempt_count ?? 0) > 0) {
-      return { label: "Continue practice", to: getPracticeRoute(subject, batchNumber) };
+      return {
+        label: "Continue practice",
+        action: (event) => void launchPractice(subject, batchNumber, event.currentTarget),
+      };
     }
 
     return {
       label: subject.slug === freeModuleSlug ? "Continue practice" : "Start practice",
-      to: getPracticeRoute(subject, batchNumber),
+      action: (event) => void launchPractice(subject, batchNumber, event.currentTarget),
     };
+  }
+
+  async function launchPractice(subject, batchNumber, trigger = null) {
+    if (!subject?.slug || trigger?.disabled) return;
+    if (trigger) trigger.disabled = true;
+    if (subject.practice_type === "oral") {
+      navigate(getPracticeRoute(subject, batchNumber));
+      return;
+    }
+
+    setStartingBatch(true);
+    setCtaError("");
+    try {
+      const batch = await startPracticeBatch(subject.slug, batchNumber);
+      storePracticeBatch(subject.slug, batch, user?.id);
+      navigate(`/practice/${subject.slug}?batch=${batchNumber}`, { state: { batchStarted: true } });
+    } catch (error) {
+      logAppError(`Dashboard start practice:${subject.slug}`, error);
+      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
+    } finally {
+      if (trigger?.isConnected) trigger.disabled = false;
+      setStartingBatch(false);
+    }
   }
 
   function getModuleSortGroup(card) {
@@ -432,30 +461,11 @@ export default function Dashboard() {
       ? "Continue practising or unlock another module."
       : "Continue your free module or unlock any module.";
 
-  async function confirmStartFreeBatch() {
-    if (!startConfirmSubject) return;
-    setStartingBatch(true);
-    setCtaError("");
-
-    try {
-      if (startConfirmSubject.practice_type === "oral") {
-        const nextPath = getPracticeRoute(startConfirmSubject, 1);
-        setStartConfirmSubject(null);
-        navigate(nextPath);
-        return;
-      }
-
-      const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, batch, user?.id);
-      setStartConfirmSubject(null);
-      navigate(`/practice/${startConfirmSubject.slug}?batch=1`, { state: { batchStarted: true } });
-    } catch (error) {
-      logAppError(`Dashboard start practice:${startConfirmSubject.slug}`, error);
-      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
-      setStartConfirmSubject(null);
-    } finally {
-      setStartingBatch(false);
-    }
+  async function confirmStartFreeBatch(trigger = null) {
+    const selectedSubject = startConfirmSubject;
+    if (!selectedSubject) return;
+    setStartConfirmSubject(null);
+    await launchPractice(selectedSubject, 1, trigger);
   }
 
   if (loading) {
@@ -593,7 +603,7 @@ export default function Dashboard() {
                           formatDate(attempt.completed_at ?? attempt.started_at),
                         ].join(" - ")}</p>
                       </div>
-                      <Link className="ghost-button" to={`/review?attempt=${attempt.id}`}>Review</Link>
+                      <Link className="ghost-button" to={withReturnTo(`/review?attempt=${attempt.id}`, "/dashboard")}>Review</Link>
                     </article>
                   );
                 })}
@@ -612,7 +622,7 @@ export default function Dashboard() {
       <FreeBatchConfirmationModal
         loading={startingBatch}
         onCancel={() => setStartConfirmSubject(null)}
-        onConfirm={() => void confirmStartFreeBatch()}
+        onConfirm={(event) => void confirmStartFreeBatch(event.currentTarget)}
         subject={startConfirmSubject}
       />
       <ModuleInfoDialog module={infoModule} onClose={() => setInfoModule(null)} />

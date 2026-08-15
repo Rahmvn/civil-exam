@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow } from "./helpers.js";
+import { expectNoHorizontalOverflow, startObjectivePractice } from "./helpers.js";
 
 test("candidate sessions cannot enter content administration", async ({ page }) => {
   await page.goto("/admin");
@@ -82,7 +82,7 @@ test("active module access can be extended through the shared purchase modal", a
 });
 
 test("WhatsApp support stays out of active practice", async ({ page }) => {
-  await page.goto("/practice/public-financial-management?batch=1");
+  await startObjectivePractice(page, "public-financial-management", 1);
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
 });
@@ -106,6 +106,7 @@ test("payment return stays on the receipt until the candidate opens the purchase
     });
   });
 
+  await page.goto("/access");
   await page.goto(`/payment/verify?trxref=${reference}&reference=${reference}`);
   await expect(page).toHaveURL(new RegExp(`/payment/verify\\?trxref=${reference}&reference=${reference}$`));
   await expect(page.getByRole("heading", { name: "Access unlocked" })).toBeVisible();
@@ -124,6 +125,13 @@ test("payment return stays on the receipt until the candidate opens the purchase
   await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
   await expect(page.getByText("Public Financial Management", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Welcome, Paid" })).toHaveCount(0);
+  const verificationCountAfterContinue = verificationCount;
+  await page.goBack();
+  await expect(page).toHaveURL(/\/access$/);
+  expect(verificationCount).toBe(verificationCountAfterContinue);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
+  expect(verificationCount).toBe(verificationCountAfterContinue);
 });
 
 test("WhatsApp payment context preserves a delayed-access reference", async ({ page }) => {
@@ -221,7 +229,7 @@ test("practice hub prioritises usable modules and keeps unlock options quiet", a
   await expect(page.getByRole("heading", { name: "Your modules" })).toBeVisible();
 
   const usableModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
-  await expect(usableModule.getByRole("link", { name: /^(Start|Continue|Retry) practice$/ })).toBeVisible();
+  await expect(usableModule.getByRole("button", { name: /^(Start|Continue|Retry) practice$/ })).toBeVisible();
   await expect(usableModule.getByRole("link", { name: "Choose practice set" })).toBeVisible();
 
   const availableFreeModule = page.locator("article").filter({ hasText: "Public Service Rules" }).first();
@@ -233,7 +241,7 @@ test("practice hub prioritises usable modules and keeps unlock options quiet", a
 test("oral practice is one-way, durable, and reveals guidance only after completion", async ({ page }) => {
   await page.goto("/modules/e2e-oral-questions");
   await expect(page.getByRole("heading", { name: "Oral Questions" })).toBeVisible();
-  await page.getByRole("link", { name: "Start", exact: true }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
 
   await expect(page).toHaveURL(/\/oral-practice\/e2e-oral-questions\?batch=1/);
   await expect(page.getByText("Oral Questions", { exact: true })).toBeVisible();
@@ -302,7 +310,13 @@ test("oral practice is one-way, durable, and reveals guidance only after complet
 });
 
 test("completed practice opens a durable result and answer review", async ({ page }) => {
-  await page.goto("/practice/public-financial-management?batch=1");
+  let objectiveStartCount = 0;
+  page.on("response", (response) => {
+    if (response.url().includes("/rest/v1/rpc/start_objective_practice_session_v2") && response.ok()) {
+      objectiveStartCount += 1;
+    }
+  });
+  await startObjectivePractice(page, "public-financial-management", 1);
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
 
   const answers = [
@@ -336,6 +350,17 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await page.getByRole("link", { name: "Review answers" }).click();
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Question 1 of 4" })).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(durableResultUrl);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
+  await page.goForward();
+  await expect(page).toHaveURL(durableResultUrl);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/review\?attempt=/);
+  expect(objectiveStartCount).toBe(1);
+
   await page.getByRole("button", { name: "Question 1 of 4" }).click();
   const questionNavigator = page.getByRole("dialog", { name: "Questions" });
   await expect(questionNavigator).toBeVisible();
@@ -344,10 +369,40 @@ test("completed practice opens a durable result and answer review", async ({ pag
   await expect(page.getByRole("button", { name: "Question 2 of 4" })).toBeVisible();
   await expect(page.locator(".answer-review-explanation")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toHaveCount(0);
+
+  await page.goto("/practice/public-financial-management?batch=1");
+  await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
+  expect(objectiveStartCount).toBe(1);
+
+  await page.goto(durableResultUrl);
+  await page.getByRole("button", { name: "Continue practice" }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
+  await page.waitForURL(/\/practice\/public-financial-management\?batch=2$/);
+  expect(objectiveStartCount).toBe(2);
+
+  await page.locator(".option-card").first().click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Submit Test" }).click();
+  await page.getByRole("dialog", { name: "Submit test?" }).getByRole("button", { name: "Submit" }).click();
+  await expect(page.getByRole("heading", { name: "Keep going" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Retry" }).evaluate((button) => {
+    button.click();
+    button.click();
+  });
+  await page.waitForURL(/\/practice\/public-financial-management\?batch=2$/);
+  expect(objectiveStartCount).toBe(3);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Continue your practice?" })).toBeVisible();
+  expect(objectiveStartCount).toBe(3);
+  await page.getByRole("button", { name: "Exit practice" }).click();
+  await expect(page).toHaveURL(/\/modules\/public-financial-management$/);
 });
 
 test("active practice can recover saved work after refresh", async ({ page }) => {
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await page.getByRole("button", { name: "Mark for review" }).first().click();
   await page.reload();
@@ -364,7 +419,7 @@ test("exiting from the refresh recovery screen closes the server session", async
     sessionPayloads.push(await response.json());
   });
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(1);
   const firstSession = sessionPayloads.at(-1);
@@ -372,9 +427,9 @@ test("exiting from the refresh recovery screen closes the server session", async
   await page.reload();
   await expect(page.getByRole("heading", { name: "Continue your practice?" })).toBeVisible();
   await page.getByRole("button", { name: "Exit practice" }).click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(2);
   const secondSession = sessionPayloads.at(-1);
@@ -386,7 +441,7 @@ test("exiting from the refresh recovery screen closes the server session", async
   await page.getByRole("dialog", { name: "Exit this practice?" })
     .getByRole("button", { name: "Exit practice" })
     .click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 });
 
 test("explicit objective practice exit creates a fresh server session and timer", async ({ page }) => {
@@ -396,7 +451,7 @@ test("explicit objective practice exit creates a fresh server session and timer"
     sessionPayloads.push(await response.json());
   });
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(1);
   const firstSession = sessionPayloads.at(-1);
@@ -405,9 +460,9 @@ test("explicit objective practice exit creates a fresh server session and timer"
   const exitDialog = page.getByRole("dialog", { name: "Exit this practice?" });
   await expect(exitDialog).toBeVisible();
   await exitDialog.getByRole("button", { name: "Exit practice" }).click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(2);
   const secondSession = sessionPayloads.at(-1);
@@ -419,7 +474,7 @@ test("explicit objective practice exit creates a fresh server session and timer"
   await page.getByRole("dialog", { name: "Exit this practice?" })
     .getByRole("button", { name: "Exit practice" })
     .click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 });
 
 test("authenticated shell has no serious automated accessibility violations", async ({ page }) => {

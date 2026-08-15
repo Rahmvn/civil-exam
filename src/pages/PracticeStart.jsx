@@ -27,9 +27,10 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { withReturnTo } from "../lib/navigation";
 import { useAuth } from "../lib/useAuth";
 
-function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }) {
+function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule, onStartPractice }) {
   const targetRow = module.progression.recommendedRow;
   const batchNumber = Number(targetRow?.batch_number ?? 1);
 
@@ -76,20 +77,20 @@ function getPracticeAction(module, { hasSelectedFreeModule, onSelectFreeModule }
   if (targetRow.state === "completed_failed") {
     return {
       label: "Retry practice",
-      to: getPracticeRoute(module.subject, batchNumber),
+      action: (event) => onStartPractice(module.subject, batchNumber, event.currentTarget),
     };
   }
 
   if (Number(targetRow.attempt_count ?? 0) > 0) {
     return {
       label: "Continue practice",
-      to: getPracticeRoute(module.subject, batchNumber),
+      action: (event) => onStartPractice(module.subject, batchNumber, event.currentTarget),
     };
   }
 
   return {
     label: "Start practice",
-    to: getPracticeRoute(module.subject, batchNumber),
+    action: (event) => onStartPractice(module.subject, batchNumber, event.currentTarget),
   };
 }
 
@@ -283,7 +284,31 @@ export default function PracticeStart() {
     return getPracticeAction(module, {
       hasSelectedFreeModule,
       onSelectFreeModule: selectFreeModule,
+      onStartPractice: (subject, batchNumber, trigger) => void launchPractice(subject, batchNumber, trigger),
     });
+  }
+
+  async function launchPractice(subject, batchNumber, trigger = null) {
+    if (!subject?.slug || trigger?.disabled) return;
+    if (trigger) trigger.disabled = true;
+    if (subject.practice_type === "oral") {
+      navigate(getPracticeRoute(subject, batchNumber));
+      return;
+    }
+
+    setStartingPractice(true);
+    setActionError("");
+    try {
+      const practiceQuestions = await startPracticeBatch(subject.slug, batchNumber);
+      storePracticeBatch(subject.slug, practiceQuestions, user?.id);
+      navigate(`/practice/${subject.slug}?batch=${batchNumber}`, { state: { batchStarted: true } });
+    } catch (startError) {
+      logAppError(`Practice hub start:${subject.slug}`, startError);
+      setActionError(friendlyErrorMessage(startError, "We could not start this practice right now."));
+    } finally {
+      if (trigger?.isConnected) trigger.disabled = false;
+      setStartingPractice(false);
+    }
   }
 
   function getSecondaryAction(module, { firstChoice = false } = {}) {
@@ -312,38 +337,18 @@ export default function PracticeStart() {
     if (!module.hasModuleAccess && latestAttempt?.id) {
       return {
         label: "Review answers",
-        to: `/review?attempt=${latestAttempt.id}`,
+        to: withReturnTo(`/review?attempt=${latestAttempt.id}`, "/practice"),
       };
     }
 
     return null;
   }
 
-  async function confirmStartFreePractice() {
-    if (!startConfirmSubject) return;
-    setStartingPractice(true);
-    setActionError("");
-
-    try {
-      if (startConfirmSubject.practice_type === "oral") {
-        const nextPath = getPracticeRoute(startConfirmSubject, 1);
-        setStartConfirmSubject(null);
-        navigate(nextPath);
-        return;
-      }
-
-      const practiceQuestions = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, practiceQuestions, user?.id);
-      const subjectSlug = startConfirmSubject.slug;
-      setStartConfirmSubject(null);
-      navigate(`/practice/${subjectSlug}?batch=1`, { state: { batchStarted: true } });
-    } catch (startError) {
-      logAppError(`Practice hub start:${startConfirmSubject.slug}`, startError);
-      setActionError(friendlyErrorMessage(startError, "We could not start this practice right now."));
-      setStartConfirmSubject(null);
-    } finally {
-      setStartingPractice(false);
-    }
+  async function confirmStartFreePractice(trigger = null) {
+    const selectedSubject = startConfirmSubject;
+    if (!selectedSubject) return;
+    setStartConfirmSubject(null);
+    await launchPractice(selectedSubject, 1, trigger);
   }
 
   if (loading) {
@@ -428,7 +433,7 @@ export default function PracticeStart() {
       <FreeBatchConfirmationModal
         loading={startingPractice}
         onCancel={() => setStartConfirmSubject(null)}
-        onConfirm={() => void confirmStartFreePractice()}
+        onConfirm={(event) => void confirmStartFreePractice(event.currentTarget)}
         subject={startConfirmSubject}
       />
     </AppFrame>

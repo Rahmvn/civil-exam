@@ -3,14 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { verifyPayment } from "../lib/appApi";
 import { logAppError, PROBLEM_CODES, resolveAppProblem } from "../lib/errors";
 import { getPaymentVerificationCopy } from "../lib/paymentDisplay";
+import { getSafeReturnTo } from "../lib/navigation";
 import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
-
-function getSafeReturnPath(value) {
-  const candidate = String(value ?? "").trim();
-  if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//")) return "";
-  if (/[\r\n]/.test(candidate)) return "";
-  return candidate;
-}
 
 function getReturnActionLabel(path) {
   const pathname = String(path ?? "").split(/[?#]/, 1)[0];
@@ -26,7 +20,7 @@ function getReturnActionLabel(path) {
 export default function PaymentVerify() {
   const [searchParams] = useSearchParams();
   const reference = searchParams.get("reference") ?? searchParams.get("trxref");
-  const requestedReturnTo = getSafeReturnPath(searchParams.get("returnTo"));
+  const requestedReturnTo = getSafeReturnTo(searchParams.get("returnTo"), "");
   const [verificationRun, setVerificationRun] = useState(0);
   const [state, setState] = useState(reference ? "checking" : "missing");
   const [moduleSlug, setModuleSlug] = useState("");
@@ -47,7 +41,7 @@ export default function PaymentVerify() {
       try {
         const result = await verifyPayment(reference);
         if (!active) return;
-        const storedReturnTo = getSafeReturnPath(window.sessionStorage?.getItem("promotionsure:payment:returnTo"));
+        const storedReturnTo = getSafeReturnTo(window.sessionStorage?.getItem("promotionsure:payment:returnTo"), "");
         const payment = result?.payment;
         const copy = getPaymentVerificationCopy(payment, result);
         const firstItem = Array.isArray(payment?.items) ? payment.items[0] : null;
@@ -110,8 +104,8 @@ export default function PaymentVerify() {
         <div className="payment-verification-actions">
           {state === "success" ? (
             <>
-              <Link className="primary-action" to={continuePath}>{continueLabel}</Link>
-              <Link className="secondary-action" to="/access">View access</Link>
+              <Link className="primary-action" replace to={continuePath}>{continueLabel}</Link>
+              <Link className="secondary-action" replace to="/access">View access</Link>
             </>
           ) : state === "unconfirmed" || state === "access-issue" ? (
             <>

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow } from "./helpers.js";
+import { expectNoHorizontalOverflow, startObjectivePractice } from "./helpers.js";
 
 test("candidate help centre stacks cleanly on mobile", async ({ page }) => {
   await page.goto("/help");
@@ -87,7 +87,7 @@ test("mobile WhatsApp support, navigation, and practice controls fit the viewpor
   await expect(page.getByRole("navigation", { name: "Mobile primary" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Chat on WhatsApp with PromotionSure support (opens in a new tab)" })).toHaveCount(0);
 
-  await page.goto("/practice/public-financial-management?batch=1");
+  await startObjectivePractice(page, "public-financial-management", 1);
   await expect(page.getByRole("heading", { name: "Public Financial Management" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Question Map" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mark for review" }).first()).toBeVisible();
@@ -118,7 +118,7 @@ test("mobile refresh recovery can exit without reusing the stale timer", async (
     sessionPayloads.push(await response.json());
   });
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(1);
   const firstSession = sessionPayloads.at(-1);
@@ -127,9 +127,9 @@ test("mobile refresh recovery can exit without reusing the stale timer", async (
   await expect(page.getByRole("heading", { name: "Continue your practice?" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.getByRole("button", { name: "Exit practice" }).click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 
-  await page.goto("/practice/public-financial-management?batch=2");
+  await startObjectivePractice(page, "public-financial-management", 2);
   await expect(page.getByText(/Question 1 of 2/)).toBeVisible();
   await expect.poll(() => sessionPayloads.length).toBeGreaterThanOrEqual(2);
   const secondSession = sessionPayloads.at(-1);
@@ -140,5 +140,5 @@ test("mobile refresh recovery can exit without reusing the stale timer", async (
   await page.getByRole("dialog", { name: "Exit this practice?" })
     .getByRole("button", { name: "Exit practice" })
     .click();
-  await page.waitForURL(/\/dashboard#modules$/);
+  await page.waitForURL(/\/modules\/public-financial-management$/);
 });

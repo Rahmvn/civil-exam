@@ -28,6 +28,7 @@ import {
 } from "../lib/moduleDisplay";
 import { storePracticeBatch } from "../lib/practiceSession";
 import { getPracticeRoute } from "../lib/oralPractice";
+import { withReturnTo } from "../lib/navigation";
 import { useAuth } from "../lib/useAuth";
 
 export default function ModuleDetail() {
@@ -190,7 +191,7 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: "Retry", to: getPracticeRoute(subject, batchNumber) };
+      return { label: "Retry", action: (event) => void launchPractice(subject, batchNumber, event.currentTarget) };
     }
 
     if (row.state === "completed_passed") {
@@ -209,7 +210,7 @@ export default function ModuleDetail() {
           };
         }
 
-        return { label: "Practice again", to: getPracticeRoute(subject, batchNumber) };
+        return { label: "Practice again", action: (event) => void launchPractice(subject, batchNumber, event.currentTarget) };
       }
 
       return { label: "Unlock module", to: `/access?module=${encodeURIComponent(subjectSlug)}` };
@@ -232,7 +233,7 @@ export default function ModuleDetail() {
         }
       }
 
-      return { label: "Continue", to: getPracticeRoute(subject, batchNumber) };
+      return { label: "Continue", action: (event) => void launchPractice(subject, batchNumber, event.currentTarget) };
     }
 
     if (hasModuleAccess) {
@@ -251,7 +252,30 @@ export default function ModuleDetail() {
       }
     }
 
-    return { label: "Start", to: getPracticeRoute(subject, batchNumber) };
+    return { label: "Start", action: (event) => void launchPractice(subject, batchNumber, event.currentTarget) };
+  }
+
+  async function launchPractice(targetSubject, batchNumber, trigger = null) {
+    if (!targetSubject?.slug || trigger?.disabled) return;
+    if (trigger) trigger.disabled = true;
+    if (targetSubject.practice_type === "oral") {
+      navigate(getPracticeRoute(targetSubject, batchNumber));
+      return;
+    }
+
+    setStartingBatch(true);
+    setCtaError("");
+    try {
+      const batch = await startPracticeBatch(targetSubject.slug, batchNumber);
+      storePracticeBatch(targetSubject.slug, batch, user?.id);
+      navigate(`/practice/${targetSubject.slug}?batch=${batchNumber}`, { state: { batchStarted: true } });
+    } catch (error) {
+      logAppError(`Module detail start practice:${targetSubject.slug}`, error);
+      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
+    } finally {
+      if (trigger?.isConnected) trigger.disabled = false;
+      setStartingBatch(false);
+    }
   }
 
   function getBatchSecondaryAction(row) {
@@ -271,37 +295,15 @@ export default function ModuleDetail() {
 
     return {
       label: "Review",
-      to: `/review?attempt=${latestAttemptForBatch.id}`,
+      to: withReturnTo(`/review?attempt=${latestAttemptForBatch.id}`, `/modules/${subjectSlug}`),
     };
   }
 
-  async function confirmStartFreeBatch() {
-    if (!startConfirmSubject) return;
-
-    setStartingBatch(true);
-    setCtaError("");
-
-    try {
-      if (startConfirmSubject.practice_type === "oral") {
-        const nextPath = getPracticeRoute(startConfirmSubject, 1);
-        setStartConfirmSubject(null);
-        navigate(nextPath);
-        return;
-      }
-
-      const batch = await startPracticeBatch(startConfirmSubject.slug, 1);
-      storePracticeBatch(startConfirmSubject.slug, batch, user?.id);
-      setStartConfirmSubject(null);
-      navigate(`/practice/${startConfirmSubject.slug}?batch=1`, {
-        state: { batchStarted: true },
-      });
-    } catch (error) {
-      logAppError(`Module detail start practice:${startConfirmSubject.slug}`, error);
-      setCtaError(friendlyErrorMessage(error, "We could not start this practice right now."));
-      setStartConfirmSubject(null);
-    } finally {
-      setStartingBatch(false);
-    }
+  async function confirmStartFreeBatch(trigger = null) {
+    const selectedSubject = startConfirmSubject;
+    if (!selectedSubject) return;
+    setStartConfirmSubject(null);
+    await launchPractice(selectedSubject, 1, trigger);
   }
 
   if (loading) {
@@ -450,21 +452,21 @@ export default function ModuleDetail() {
       <FreeBatchConfirmationModal
         loading={startingBatch}
         onCancel={() => setStartConfirmSubject(null)}
-        onConfirm={() => void confirmStartFreeBatch()}
+        onConfirm={(event) => void confirmStartFreeBatch(event.currentTarget)}
         subject={startConfirmSubject}
       />
       <SkipAheadConfirmationModal
         batchNumber={skipAheadConfirm?.batchNumber}
         recommendedBatchNumber={skipAheadConfirm?.recommendedBatchNumber}
         onClose={() => setSkipAheadConfirm(null)}
-        onContinue={() => {
+        onContinue={(event) => {
           if (!skipAheadConfirm?.batchNumber) return;
-          navigate(getPracticeRoute(subject, skipAheadConfirm.batchNumber));
+          void launchPractice(subject, skipAheadConfirm.batchNumber, event.currentTarget);
           setSkipAheadConfirm(null);
         }}
-        onGoRecommended={() => {
+        onGoRecommended={(event) => {
           if (!skipAheadConfirm?.recommendedBatchNumber) return;
-          navigate(getPracticeRoute(subject, skipAheadConfirm.recommendedBatchNumber));
+          void launchPractice(subject, skipAheadConfirm.recommendedBatchNumber, event.currentTarget);
           setSkipAheadConfirm(null);
         }}
       />

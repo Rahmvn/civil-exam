@@ -24,9 +24,9 @@ test("critical access states agree across browser engines", async ({ page }) => 
   const paidModule = page.locator("article").filter({ hasText: "Public Financial Management" }).first();
   const comingSoon = page.locator("article").filter({ hasText: "Coming Soon Regression" }).first();
 
-  await expect(paidModule.getByText("Unlocked", { exact: true })).toBeVisible();
+  await expect(paidModule.getByText(/Access until/)).toBeVisible();
   await expect(paidModule.getByRole("link", { name: "View" })).toBeVisible();
   await expect(comingSoon.getByText("Unlocked", { exact: true })).toHaveCount(0);
-  await expect(comingSoon.getByText("Not available yet")).toBeVisible();
+  await expect(comingSoon.getByText("Practice coming soon")).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
