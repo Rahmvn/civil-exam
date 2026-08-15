@@ -155,14 +155,16 @@ async function main() {
 
     const unsubscribeEndpoint = `${apiUrl}/functions/v1/email-unsubscribe`;
     const unsubscribeToken = engagementUnsubscribeToken(unsubscribeSecret, userId);
-    const unsignedUnsubscribe = await fetch(unsubscribeEndpoint);
-    if (unsignedUnsubscribe.status !== 400) fail("Unsigned unsubscribe request was accepted.");
-    const tamperedUnsubscribe = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(`${unsubscribeToken}x`)}`);
+    const unsignedUnsubscribe = await fetch(unsubscribeEndpoint, { redirect: "manual" });
+    if (unsignedUnsubscribe.status !== 302 || !unsignedUnsubscribe.headers.get("location")?.includes("/profile#email-preferences")) {
+      fail("Unsubscribe GET did not route to account email preferences.");
+    }
+    const tamperedUnsubscribe = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(`${unsubscribeToken}x`)}`, { method: "POST" });
     if (tamperedUnsubscribe.status !== 400) fail("Tampered unsubscribe token was accepted.");
     const preferenceBeforeGet = await service.from("email_preferences").select("user_id").eq("user_id", userId).maybeSingle();
-    const unsubscribeConfirmation = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`);
+    const unsubscribeConfirmation = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`, { redirect: "manual" });
     const preferenceAfterGet = await service.from("email_preferences").select("user_id").eq("user_id", userId).maybeSingle();
-    if (!unsubscribeConfirmation.ok || preferenceBeforeGet.data || preferenceAfterGet.data) {
+    if (unsubscribeConfirmation.status !== 302 || preferenceBeforeGet.data || preferenceAfterGet.data) {
       fail("Unsubscribe GET confirmation mutated preference state.");
     }
     const unsubscribePost = await fetch(`${unsubscribeEndpoint}?token=${encodeURIComponent(unsubscribeToken)}`, { method: "POST" });

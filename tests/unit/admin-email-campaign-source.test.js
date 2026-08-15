@@ -41,6 +41,7 @@ test("lifecycle evaluation feeds E1 and revalidates claimed work before provider
   assert.match(source, /job\.lifecycle_instance_id/);
   assert.match(source, /source", value: "lifecycle"/);
   assert.ok(source.indexOf("evaluate_email_lifecycle_automations") < source.indexOf("claim_transactional_email_events"));
+  assert.ok(source.indexOf("repair_missing_payment_success_email_events") < source.indexOf("evaluate_email_lifecycle_automations"));
   assert.ok(source.indexOf("system_validate_e3_lifecycle_event") < source.indexOf("const result = await sendEmail"));
 });
 

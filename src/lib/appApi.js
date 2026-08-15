@@ -1092,12 +1092,23 @@ export async function getAdminEmailAutomationHistory({
   }));
 }
 
-export async function updateAdminEmailAutomation({ automationKey, enabled, delayMinutes, templateId }) {
+export async function updateAdminEmailAutomation({
+  automationKey,
+  enabled,
+  delayMinutes,
+  templateId,
+  practiceMinIntervalHours = null,
+  practiceRolling7dCap = null,
+  practiceImprovementPoints = null,
+}) {
   return requireData(await supabase.rpc("admin_update_email_automation", {
     requested_automation_key: automationKey,
     requested_enabled: Boolean(enabled),
     requested_delay_minutes: Number(delayMinutes),
     requested_template_id: templateId,
+    requested_practice_min_interval_hours: practiceMinIntervalHours == null ? null : Number(practiceMinIntervalHours),
+    requested_practice_rolling_7d_cap: practiceRolling7dCap == null ? null : Number(practiceRolling7dCap),
+    requested_practice_improvement_points: practiceImprovementPoints == null ? null : Number(practiceImprovementPoints),
   }));
 }
 

@@ -467,6 +467,9 @@ function automationDraft(automation) {
     enabled: automation.enabled,
     delayMinutes: automation.delay_minutes,
     templateId: automation.template_id,
+    practiceMinIntervalHours: automation.practice_min_interval_hours ?? "",
+    practiceRolling7dCap: automation.practice_rolling_7d_cap ?? "",
+    practiceImprovementPoints: automation.practice_improvement_points ?? "",
   };
 }
 
@@ -529,6 +532,12 @@ function AutomationsView({ automations, templates, onRefresh }) {
             <label className="admin-email-checkbox"><input checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} type="checkbox" />Enabled</label>
             <label><span>{selected.timing_mode === "before_expiry" ? "Reminder lead time (minutes)" : "Delay after trigger (minutes)"}</span><input max={selected.max_delay_minutes} min={selected.min_delay_minutes} onChange={(event) => setDraft({ ...draft, delayMinutes: event.target.value })} step="1" type="number" value={draft.delayMinutes} /><small>Allowed: {selected.min_delay_minutes}–{selected.max_delay_minutes} minutes</small></label>
             <label><span>Template</span><select onChange={(event) => setDraft({ ...draft, templateId: event.target.value })} value={draft.templateId}>{compatibleTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+            {selected.automation_key === "practice_progress" && <>
+              <p className="admin-email-automation-guidance">Only meaningful milestones are combined. Completing every set does not send an email.</p>
+              <label><span>Minimum interval (hours)</span><input max="720" min="24" onChange={(event) => setDraft({ ...draft, practiceMinIntervalHours: event.target.value })} step="1" type="number" value={draft.practiceMinIntervalHours} /><small>At least 24 hours between practice-progress emails.</small></label>
+              <label><span>Maximum in 7 days</span><input max="7" min="1" onChange={(event) => setDraft({ ...draft, practiceRolling7dCap: event.target.value })} step="1" type="number" value={draft.practiceRolling7dCap} /></label>
+              <label><span>Personal-best improvement</span><input max="25" min="5" onChange={(event) => setDraft({ ...draft, practiceImprovementPoints: event.target.value })} step="1" type="number" value={draft.practiceImprovementPoints} /><small>Required percentage-point improvement.</small></label>
+            </>}
             <button className="is-primary" disabled={busy} onClick={save} type="button">Save automation</button>
           </div>
           <dl className="admin-email-automation-run">

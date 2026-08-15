@@ -81,10 +81,10 @@ insert into public.module_entitlements (
   ('e3600000-0000-4000-8000-000000000006', 'e3000000-0000-4000-8000-000000000005', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000001', 'e3500000-0000-4000-8000-000000000004', 'active', now() - interval '2 days', now() + interval '28 days', now() - interval '2 days'),
   ('e3600000-0000-4000-8000-000000000007', 'e3000000-0000-4000-8000-000000000007', 'e3100000-0000-4000-8000-000000000001', 'e3200000-0000-4000-8000-000000000002', 'e3500000-0000-4000-8000-000000000003', 'active', now() - interval '23 days', date_trunc('day', now()) + interval '6 days 12 hours', now() - interval '23 days');
 
-select is((select count(*) from public.email_lifecycle_automations), 5::bigint, 'all five lifecycle automations are seeded');
+select is((select count(*) from public.email_lifecycle_automations), 6::bigint, 'all lifecycle automations are seeded');
 select is((select lifecycle_min_interval_hours from public.email_runtime_config where singleton), 24, 'lifecycle engagement interval defaults to 24 hours');
 select is((select engagement_min_interval_hours from public.email_runtime_config where singleton), 168, 'ordinary engagement interval remains 168 hours');
-select is((select count(*) from public.email_lifecycle_automations where not enabled and activated_at is null), 5::bigint, 'all automations are disabled and unactivated by default');
+select is((select count(*) from public.email_lifecycle_automations where not enabled and activated_at is null), 6::bigint, 'all automations are disabled and unactivated by default');
 select is(public.evaluate_email_lifecycle_automations(100)->>'queued', '0', 'disabled automations cannot queue historical work');
 select is((select count(*) from public.email_lifecycle_instances), 0::bigint, 'disabled evaluation creates no lifecycle instances');
 select is((select count(*) from public.transactional_email_events where lifecycle_instance_id is not null), 0::bigint, 'disabled evaluation creates no E1 events');
@@ -102,7 +102,7 @@ select throws_ok(format(
 ), 'P0001', 'Admin access is required', 'candidate cannot enable a lifecycle automation');
 
 select set_config('request.jwt.claim.sub', 'e3000000-0000-4000-8000-000000000001', true);
-select is(jsonb_array_length(public.get_admin_email_automations()->'items'), 5, 'admin sees five lifecycle configurations');
+select is(jsonb_array_length(public.get_admin_email_automations()->'items'), 6, 'admin sees all lifecycle configurations');
 select lives_ok(format(
   'select public.admin_update_email_automation(%L, true, 0, %L::uuid)',
   'getting_started', current_setting('test.e3_getting_template')

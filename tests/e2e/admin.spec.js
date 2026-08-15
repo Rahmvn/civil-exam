@@ -757,9 +757,15 @@ test("admin Email Center exposes bounded lifecycle automation controls on deskto
 
   await expect(page.getByRole("heading", { name: "Automations", exact: true })).toBeVisible();
   const automationList = page.getByLabel("Lifecycle automations");
-  await expect(automationList.getByRole("button")).toHaveCount(5);
+  await expect(automationList.getByRole("button")).toHaveCount(6);
   await expect(automationList.getByRole("button", { name: /Getting started/ })).toContainText("Disabled");
   await expect(automationList.getByRole("button", { name: /Access expiring/ })).toContainText("7 days before expiry");
+
+  await automationList.getByRole("button", { name: /Practice progress/ }).click();
+  await expect(page.getByText("Completing every set does not send an email.")).toBeVisible();
+  await expect(page.getByLabel("Minimum interval (hours)")).toHaveValue("72");
+  await expect(page.getByLabel("Maximum in 7 days")).toHaveValue("2");
+  await expect(page.getByLabel("Personal-best improvement")).toHaveValue("10");
 
   await automationList.getByRole("button", { name: /Incomplete checkout/ }).click();
   await expect(page.getByRole("heading", { name: "Incomplete checkout" })).toBeVisible();

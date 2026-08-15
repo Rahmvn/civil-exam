@@ -253,6 +253,7 @@
 .admin-email-automation-form .admin-email-checkbox { align-self: center; justify-content: flex-start; white-space: nowrap; }
 .admin-email-automation-form input[type="number"], .admin-email-automation-form select { box-sizing: border-box; min-width: 0; width: 100%; }
 .admin-email-automation-form small { color: #64736e; }
+.admin-email-automation-guidance { grid-column: 1 / -1; margin: 0; color: #52635d; line-height: 1.5; }
 .admin-email-automation-form .is-primary { border-color: #0d6546 !important; border-radius: 5px; background: #0d6546 !important; color: #fff !important; }
 
 .admin-email-automation-run { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 24px; }

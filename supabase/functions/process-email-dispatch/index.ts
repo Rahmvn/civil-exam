@@ -56,6 +56,20 @@ Deno.serve(async (request) => {
   }
 
   const adminClient = getAdminClient();
+  let paymentRepair = null;
+  try {
+    const { data, error } = await adminClient.rpc("repair_missing_payment_success_email_events", {
+      requested_batch_size: batchSize(),
+    });
+    if (error) throw error;
+    paymentRepair = data;
+    if (Number(data?.errors ?? 0) > 0) {
+      console.error("Payment email repair completed with errors", { count: data.errors });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Payment email repair failed";
+    console.error("Payment email repair failed", { message });
+  }
   let lifecycleEvaluation = null;
   try {
     const { data, error } = await adminClient.rpc("evaluate_email_lifecycle_automations", {
@@ -83,6 +97,7 @@ Deno.serve(async (request) => {
 
   console.log("Email dispatch batch claimed", { leaseToken, count: jobs?.length ?? 0 });
   const summary = {
+    paymentRepair,
     lifecycle: lifecycleEvaluation,
     claimed: jobs?.length ?? 0,
     accepted: 0,

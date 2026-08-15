@@ -12,8 +12,11 @@ function firstName(value: unknown) {
 
 function personalize(value: string, payload: Record<string, unknown>) {
   return value.replace(MERGE_FIELD_PATTERN, (_match, field: string) => {
-    if (field !== "first_name") throw new Error(`Unsupported email merge field: ${field}`);
-    return firstName(payload.recipient_name);
+    if (field === "first_name") return firstName(payload.recipient_name);
+    if (["achievement_summary", "module_name", "score_percent", "progress_percent"].includes(field)) {
+      return stringField(payload, field, field === "achievement_summary" ? 500 : 160);
+    }
+    throw new Error(`Unsupported email merge field: ${field}`);
   });
 }
 

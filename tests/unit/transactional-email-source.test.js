@@ -24,7 +24,7 @@ test("Resend uses the event identity for provider idempotency and has a timeout"
   assert.doesNotMatch(source, /customHeaders|requested_headers/);
 });
 
-test("structured admin messages escape content and allow only the first-name merge field", () => {
+test("structured admin messages escape content and allow only approved merge fields", () => {
   const message = renderApplicationEmail("admin_campaign", {
     subject: "Hello {{first_name}}",
     preheader: "A safe update",
@@ -36,6 +36,15 @@ test("structured admin messages escape content and allow only the first-name mer
   assert.equal(message.subject, "Hello Ada");
   assert.match(message.html, /&lt;script&gt;alert\(&#39;x&#39;\)&lt;\/script&gt; &amp; continue/);
   assert.match(message.text, /Unsubscribe from engagement emails/);
+  const progress = renderApplicationEmail("admin_campaign", {
+    subject: "Progress in {{module_name}}",
+    body_text: "{{achievement_summary}}",
+    recipient_name: "Ada Candidate",
+    module_name: "Public Financial Management",
+    achievement_summary: "You reached a new personal best.",
+  });
+  assert.equal(progress.subject, "Progress in Public Financial Management");
+  assert.match(progress.text, /new personal best/);
   assert.throws(() => renderApplicationEmail("admin_campaign", {
     subject: "Hello {{email}}",
     body_text: "Body",
