@@ -6,6 +6,7 @@ import {
   createEngagementUnsubscribeToken,
   getUnsubscribeUrl,
 } from "../_shared/email/unsubscribe-token.ts";
+import { getEmailPreferencesUrl } from "../_shared/email/preferences-url.ts";
 
 const BACKOFF_SECONDS = [60, 300, 900, 3_600, 21_600];
 
@@ -145,7 +146,9 @@ Deno.serve(async (request) => {
       const unsubscribeUrl = job.category === "engagement"
         ? getUnsubscribeUrl(await createEngagementUnsubscribeToken(job.user_id))
         : undefined;
-      const message = renderApplicationEmail(job.template_key, job.payload ?? {}, { unsubscribeUrl });
+      const message = renderApplicationEmail(job.template_key, job.payload ?? {}, {
+        unsubscribeUrl: job.category === "engagement" ? getEmailPreferencesUrl() : undefined,
+      });
 
       if (job.campaign_id) {
         const { data: validation, error: validationError } = await adminClient.rpc("system_validate_e2_campaign_event", {

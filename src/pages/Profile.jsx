@@ -226,7 +226,7 @@ export default function Profile() {
               <Link className="account-action-link" to="/help">Open support</Link>
             </section>
 
-            <section className="account-support-card account-email-preference">
+            <section className="account-support-card account-email-preference" id="email-preferences">
               <div>
                 <h2>Email preferences</h2>
                 <p>Choose whether PromotionSure may send preparation tips and product updates.</p>

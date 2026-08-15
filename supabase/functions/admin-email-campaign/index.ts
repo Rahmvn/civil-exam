@@ -12,6 +12,7 @@ import {
   createEngagementUnsubscribeToken,
   getUnsubscribeUrl,
 } from "../_shared/email/unsubscribe-token.ts";
+import { getEmailPreferencesUrl } from "../_shared/email/preferences-url.ts";
 
 const MAX_BODY_BYTES = 2_000;
 
@@ -79,7 +80,7 @@ Deno.serve(async (request) => {
     const message = renderApplicationEmail("admin_campaign", {
       ...payload,
       recipient_name: profile.full_name || "Candidate",
-    }, { unsubscribeUrl });
+    }, { unsubscribeUrl: payload.category === "engagement" ? getEmailPreferencesUrl() : undefined });
 
     try {
       const result = await sendEmail({
