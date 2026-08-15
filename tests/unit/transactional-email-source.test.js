@@ -55,6 +55,18 @@ test("campaign compatibility remains optional when Resend is not configured", as
   assert.match(source, /TRANSACTIONAL_EMAIL_REPLY_TO/);
 });
 
+test("application emails use the accessible PromotionSure brand lockup", () => {
+  const message = renderApplicationEmail("payment_success", {
+    provider_reference: "PS-BRAND",
+    product_label: "Public Service Rules",
+    amount_kobo: 150000,
+    currency: "NGN",
+  });
+  assert.match(message.html, /src="https:\/\/promotionsure\.com\.ng\/logo\/promotionsure-lockup\.png"/);
+  assert.match(message.html, /width="220" alt="PromotionSure"/);
+  assert.match(message.html, /max-width:100%;height:auto/);
+});
+
 test("payment templates render canonical duration, amount, labels, dates, text, and escaped HTML", () => {
   const message = renderApplicationEmail("payment_success", {
     provider_reference: "PS-<unsafe>",
