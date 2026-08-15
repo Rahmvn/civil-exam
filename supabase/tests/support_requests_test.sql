@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(28);
+select plan(32);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -57,6 +57,46 @@ select is(
   1,
   'the support request is stored once'
 );
+
+set local role postgres;
+
+select is(
+  (select count(*)::integer
+   from public.transactional_email_events
+   where event_type = 'admin_support_request'
+     and payload ->> 'payment_reference' = 'PS-support-test'),
+  1,
+  'a support request queues one notification for the current administrator'
+);
+
+select is(
+  (select user_id
+   from public.transactional_email_events
+   where event_type = 'admin_support_request'
+     and payload ->> 'payment_reference' = 'PS-support-test'),
+  'e1000000-0000-4000-8000-000000000003'::uuid,
+  'the notification is addressed to the administrator account'
+);
+
+select is(
+  (select template_key
+   from public.transactional_email_events
+   where event_type = 'admin_support_request'
+     and payload ->> 'payment_reference' = 'PS-support-test'),
+  'admin_support_request',
+  'the notification uses the admin support email template'
+);
+
+select is(
+  (select payload ->> 'admin_path'
+   from public.transactional_email_events
+   where event_type = 'admin_support_request'
+     and payload ->> 'payment_reference' = 'PS-support-test'),
+  '/admin/help',
+  'the notification directs the administrator to the support queue'
+);
+
+set local role authenticated;
 
 select is(
   (select payment_reference from public.support_requests where user_id = 'e1000000-0000-4000-8000-000000000001' limit 1),
