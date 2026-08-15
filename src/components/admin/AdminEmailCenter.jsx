@@ -32,7 +32,7 @@ const EMPTY_DRAFT = {
   internalName: "",
   audienceKind: "segment",
   userIds: [],
-  segmentKey: "all_confirmed",
+  segmentKey: "engagement_subscribers",
   moduleId: "",
   category: "engagement",
   templateId: "",

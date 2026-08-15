@@ -4262,6 +4262,35 @@ button.admin-danger-link {
   text-transform: uppercase;
 }
 
+.admin-user-engagement-state {
+  width: fit-content;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.admin-user-engagement-state.is-subscribed { color: var(--color-primary-dark); }
+.admin-user-engagement-state.is-suppressed { color: var(--color-danger); }
+
+.admin-user-detail-drawer { width: min(680px, 100%); }
+.admin-user-detail-body { display: grid; gap: 24px; }
+.admin-user-detail-body section { display: grid; gap: 10px; }
+.admin-user-detail-body section + section { padding-top: 20px; border-top: 1px solid var(--color-border); }
+.admin-user-detail-body dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
+.admin-user-detail-body dl div { display: grid; gap: 2px; }
+.admin-user-detail-body dt { color: var(--color-text-muted); font-size: 0.74rem; font-weight: 700; }
+.admin-user-detail-body dd { margin: 0; overflow-wrap: anywhere; }
+.admin-user-detail-list { display: grid; gap: 8px; }
+.admin-user-detail-list > div { display: flex; justify-content: space-between; gap: 16px; }
+.admin-user-detail-list span { display: grid; gap: 2px; }
+.admin-user-detail-list em { font-style: normal; text-transform: capitalize; }
+.admin-user-detail-record { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.admin-user-detail-record small { grid-column: 1 / -1; color: var(--color-text-muted); }
+
+@media (max-width: 560px) {
+  .admin-user-detail-body dl { grid-template-columns: 1fr; }
+}
+
 .admin-support-message p {
   margin: 0;
   overflow-wrap: anywhere;

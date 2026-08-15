@@ -39,6 +39,7 @@ import {
   getAdminPurchasePricingGuidance,
   getAdminTransactionalEmailEvents,
   getAdminUserDirectory,
+  getAdminUserDetail,
   getAdminSupportQueue,
   getAdminSupportDiagnostics,
   importAdminQuestions,
@@ -1683,6 +1684,69 @@ function AdminEmailDiagnosticsPanel({
   );
 }
 
+function AdminUserDetailDrawer({ userId, onClose, onComposeEmail }) {
+  const [detail, setDetail] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let current = true;
+    getAdminUserDetail(userId).then((value) => { if (current) setDetail(value); }).catch((caught) => {
+      logAppError("Admin user detail", caught);
+      if (current) setError(friendlyErrorMessage(caught, "User details could not be loaded."));
+    });
+    return () => { current = false; };
+  }, [userId]);
+
+  const account = detail?.account || {};
+  const practice = detail?.practice || {};
+  const email = detail?.email || {};
+  const payments = detail?.payments || {};
+  const access = ensureAdminArray(detail?.access);
+  const support = detail?.support || {};
+  const formatAmount = (amount, currency = "NGN") => amount == null ? "Not recorded" : formatAdminCurrency(Number(amount), currency);
+
+  return (
+    <div className="admin-support-drawer-backdrop" onMouseDown={onClose} role="presentation">
+      <aside aria-labelledby="admin-user-detail-title" aria-modal="true" className="admin-support-drawer admin-user-detail-drawer" onMouseDown={(event) => event.stopPropagation()} role="dialog">
+        <header className="admin-support-drawer-header">
+          <div><span>User details</span><h2 id="admin-user-detail-title">{account.full_name || "Candidate"}</h2><p>{account.email || "Email unavailable"}</p></div>
+          <button autoFocus className="admin-support-drawer-close" onClick={onClose} type="button" aria-label="Close user details">&times;</button>
+        </header>
+        <div className="admin-support-drawer-body admin-user-detail-body">
+          {error ? <p className="action-error" role="alert">{error}</p> : !detail ? <LoadingState /> : <>
+            <section><h3>Account</h3><dl>
+              <div><dt>Phone</dt><dd>{account.phone_number || "Not provided"}</dd></div>
+              <div><dt>State</dt><dd>{account.state_code || "Not provided"}</dd></div>
+              <div><dt>Organisation</dt><dd>{account.organization_name || "Not provided"}</dd></div>
+              <div><dt>Service level</dt><dd>{account.service_level || "Not provided"}</dd></div>
+              <div><dt>Joined</dt><dd>{formatAdminDateTime(account.created_at)}</dd></div>
+              <div><dt>Email verified</dt><dd>{account.email_confirmed_at ? formatAdminDateTime(account.email_confirmed_at) : "Not verified"}</dd></div>
+              <div><dt>Onboarding</dt><dd>{account.onboarding_completed_at ? "Completed" : "Incomplete"}</dd></div>
+            </dl></section>
+            <section><h3>Practice</h3><dl>
+              <div><dt>Objective attempts</dt><dd>{formatCount(practice.objective_attempts)}</dd></div>
+              <div><dt>Oral attempts</dt><dd>{formatCount(practice.oral_attempts)}</dd></div>
+              <div><dt>Completed</dt><dd>{formatCount(practice.completed_attempts)}</dd></div>
+              <div><dt>Last practice</dt><dd>{formatAdminDateTime(practice.last_practice_at)}</dd></div>
+            </dl><p>{joinModuleNames(practice.modules, "No practice yet")}</p></section>
+            <section><h3>Access</h3>{access.length ? <div className="admin-user-detail-list">{access.map((item) => <div key={item.id}><span><strong>{item.module_name}</strong><small>{formatAdminDateTime(item.starts_at)} – {formatAdminDateTime(item.expires_at)}</small></span><em>{item.status}</em></div>)}</div> : <p>No module access history.</p>}</section>
+            <section><h3>Payments</h3><dl><div><dt>Successful</dt><dd>{formatCount(payments.successful_count)}</dd></div><div><dt>Pending</dt><dd>{formatCount(payments.pending_count)}</dd></div></dl>
+              {ensureAdminArray(payments.recent).slice(0, 5).map((item) => <div className="admin-user-detail-record" key={item.id}><span>{item.module_name || "Purchase"}</span><strong>{formatAmount(item.amount_kobo, item.currency)}</strong><small>{item.provider_status || item.status} · {formatAdminDateTime(item.paid_at || item.created_at)}</small></div>)}
+            </section>
+            <section><h3>Email</h3><dl>
+              <div><dt>Engagement</dt><dd>{email.engagement_subscribed ? "Subscribed" : "Unsubscribed"}</dd></div>
+              <div><dt>Delivery</dt><dd>{email.delivery_eligible ? "Eligible" : email.suppression_reason ? "Suppressed" : "Not eligible"}</dd></div>
+              {email.delivery_reason && <div><dt>Reason</dt><dd>{String(email.delivery_reason).replaceAll("_", " ")}</dd></div>}
+            </dl>{ensureAdminArray(email.recent).slice(0, 5).map((item) => <div className="admin-user-detail-record" key={item.id}><span>{item.subject || item.template_key}</span><small>{item.category} · {item.delivery_status} · {formatAdminDateTime(item.created_at)}</small></div>)}</section>
+            <section><h3>Support</h3><p>{formatCount(support.open_count)} open request{Number(support.open_count) === 1 ? "" : "s"}</p>{ensureAdminArray(support.recent).map((item) => <div className="admin-user-detail-record" key={item.id}><span>{item.subject}</span><small>{item.status} · {formatAdminDateTime(item.created_at)}</small></div>)}</section>
+          </>}
+        </div>
+        {detail && <footer className="admin-support-drawer-action"><button onClick={() => onComposeEmail([userId])} type="button">Compose email</button></footer>}
+      </aside>
+    </div>
+  );
+}
+
 function AdminUsersView({
   activeCampaign,
   campaignCatalog,
@@ -1710,6 +1774,7 @@ function AdminUsersView({
 }) {
   const [testEmail, setTestEmail] = useState("promotionsureapp@gmail.com");
   const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [detailUserId, setDetailUserId] = useState(null);
   const firstResult = directory.total === 0 ? 0 : directory.offset + 1;
   const lastResult = Math.min(directory.offset + directory.items.length, directory.total);
   const campaignRecipients = ensureAdminArray(activeCampaign?.recipients);
@@ -1944,6 +2009,7 @@ function AdminUsersView({
                         <input
                           aria-label={`Select ${user.full_name || user.email}`}
                           checked={selectedUserIds.includes(user.id)}
+                          disabled={!user.email_delivery_eligible}
                           onChange={(event) => setSelectedUserIds((current) => event.target.checked ? [...new Set([...current, user.id])] : current.filter((id) => id !== user.id))}
                           type="checkbox"
                         />
@@ -1952,7 +2018,10 @@ function AdminUsersView({
                         <strong>{user.full_name || "Candidate"}</strong>
                         <span>{user.email}</span>
                         {user.service_level && <small>{user.service_level}</small>}
-                        <button className="admin-user-email-action" type="button" onClick={() => onComposeEmail([user.id])}>Email user</button>
+                        <span className={`admin-user-engagement-state${user.email_suppressed ? " is-suppressed" : user.engagement_subscribed ? " is-subscribed" : " is-unsubscribed"}`}>
+                          {user.email_suppressed ? `${user.engagement_subscribed ? "Subscribed" : "Unsubscribed"} - suppressed` : user.engagement_subscribed ? "Engagement subscribed" : "Engagement unsubscribed"}
+                        </span>
+                        <button className="admin-user-email-action" type="button" onClick={() => setDetailUserId(user.id)}>View user</button>
                       </td>
                       <td>
                         <strong>{formatCount(user.total_attempt_count)} attempt{Number(user.total_attempt_count) === 1 ? "" : "s"}</strong>
@@ -1988,6 +2057,7 @@ function AdminUsersView({
           </div>
         )}
       </section>
+      {detailUserId && <AdminUserDetailDrawer userId={detailUserId} onClose={() => setDetailUserId(null)} onComposeEmail={onComposeEmail} />}
     </>
   );
 }

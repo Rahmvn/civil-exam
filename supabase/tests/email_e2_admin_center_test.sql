@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(70);
+select plan(75);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -112,6 +112,7 @@ select ok(private.e2_segment_matches('e2000000-0000-4000-8000-000000000002', 'jo
 select ok(not private.e2_segment_matches('e2000000-0000-4000-8000-000000000003', 'joined_last_30_days'), 'old user does not qualify for thirty-day segment');
 select ok(private.e2_segment_matches('e2000000-0000-4000-8000-000000000003', 'latest_objective_passed'), 'latest stored passed truth is used');
 select ok(private.e2_segment_matches('e2000000-0000-4000-8000-000000000004', 'latest_objective_needs_retry'), 'latest stored failed truth is used');
+select ok(private.e2_segment_matches('e2000000-0000-4000-8000-000000000002', 'engagement_subscribers'), 'default consent qualifies for the engagement subscriber segment');
 
 insert into public.attempts (id, user_id, exam_pack_id, subject_id, mode, started_at, completed_at, score, total_questions, passed)
 values ('e2600000-0000-4000-8000-000000000003', 'e2000000-0000-4000-8000-000000000004', 'e2100000-0000-4000-8000-000000000001', 'e2200000-0000-4000-8000-000000000001', 'practice', now() - interval '1 hour', now() - interval '1 hour', 9, 10, true);
@@ -124,14 +125,18 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'e2000000-0000-4000-8000-000000000002', true);
 select throws_ok($$ select public.admin_preview_email_audience('segment', '{}', 'paid') $$, 'P0001', 'Admin access is required', 'candidate cannot preview an audience');
 select throws_ok($$ select public.get_admin_user_application_email_history('e2000000-0000-4000-8000-000000000003') $$, 'P0001', 'Admin access is required', 'candidate cannot inspect another user email history');
+select throws_ok($$ select public.get_admin_user_detail('e2000000-0000-4000-8000-000000000003') $$, 'P0001', 'Admin access is required', 'candidate cannot inspect another operational user profile');
+select throws_ok($$ select public.get_admin_user_directory_v2() $$, 'P0001', 'Admin access is required', 'candidate cannot retrieve the enriched user directory');
 select is(public.get_my_email_preferences()->>'engagement_enabled', 'true', 'candidate starts opted in without a preference row');
 select is(public.set_my_engagement_email_enabled(false)->>'engagement_enabled', 'false', 'candidate can opt out');
 select is(public.set_my_engagement_email_enabled(true)->>'engagement_enabled', 'true', 'candidate can re-subscribe');
 
 select set_config('request.jwt.claim.sub', 'e2000000-0000-4000-8000-000000000001', true);
-select is(jsonb_array_length(public.get_admin_email_audience_catalog()->'segments'), 14, 'admin sees the server-defined segment catalogue');
+select is(jsonb_array_length(public.get_admin_email_audience_catalog()->'segments'), 15, 'admin sees the server-defined segment catalogue including engagement subscribers');
 select is((public.admin_preview_email_audience('segment', '{}', 'paid')->>'eligible')::integer, 1, 'admin preview returns authoritative eligible count');
 select is(public.get_admin_user_application_email_history('e2000000-0000-4000-8000-000000000002') #>> '{user,current_email}', 'recent-unpaid@example.test', 'admin history reports the current Auth delivery address');
+select is(public.get_admin_user_detail('e2000000-0000-4000-8000-000000000003') #>> '{practice,objective_attempts}', '1', 'admin user detail returns bounded operational practice truth');
+select is((select item->>'engagement_subscribed' from jsonb_array_elements(public.get_admin_user_directory_v2('all', 'recent-unpaid@example.test')->'items') item limit 1), 'true', 'directory reports the real engagement preference');
 
 select set_config('test.e2_support_campaign', (public.admin_create_e2_email_campaign(
   'Direct support', 'individual', array['e2000000-0000-4000-8000-000000000002']::uuid[], null, '{}', 'support',

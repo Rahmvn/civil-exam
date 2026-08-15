@@ -933,7 +933,7 @@ export async function retryAdminTransactionalEmailEvent(eventId) {
 export async function getAdminUserDirectory({ segment = "all", query = "", limit = 50, offset = 0 } = {}) {
   const data = await readWithPolicy(
     `admin-user-directory:${segment}:${query}:${limit}:${offset}`,
-    async () => requireData(await supabase.rpc("get_admin_user_directory", {
+    async () => requireData(await supabase.rpc("get_admin_user_directory_v2", {
       requested_segment: segment,
       requested_query: query || null,
       requested_limit: limit,
@@ -957,6 +957,12 @@ export async function getAdminUserDirectory({ segment = "all", query = "", limit
     offset: Number(data?.offset) || 0,
     hasMore: Boolean(data?.has_more),
   };
+}
+
+export async function getAdminUserDetail(userId) {
+  return requireData(await supabase.rpc("get_admin_user_detail", {
+    requested_user_id: userId,
+  }));
 }
 
 export async function createAdminEmailCampaign({
