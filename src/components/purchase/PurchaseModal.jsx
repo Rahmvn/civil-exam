@@ -171,6 +171,7 @@ export function PurchaseModal({
     disabled: Boolean(paymentAttempt),
     mediaQuery: "(max-width: 680px)",
     onDismiss: onClose,
+    open: Boolean(activePurchase),
   });
 
   useEffect(() => {

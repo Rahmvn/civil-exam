@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 
 const INTERACTIVE_SELECTOR = [
   "button",
@@ -40,15 +40,38 @@ export function useMobileSheetDrag({
   disabled = false,
   mediaQuery = "(max-width: 680px)",
   onDismiss,
+  open = true,
 }) {
   const sheetRef = useRef(null);
   const dragRef = useRef(createDragState());
   const dismissTimerRef = useRef(null);
   const suppressClickRef = useRef(false);
+  const handleNativeTouchStart = useEffectEvent(onTouchStart);
+  const handleNativeTouchMove = useEffectEvent(onTouchMove);
+  const handleNativeTouchEnd = useEffectEvent(onTouchEnd);
+  const handleNativeTouchCancel = useEffectEvent(onTouchCancel);
 
   useEffect(() => () => {
     if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const sheet = sheetRef.current;
+    if (!sheet) return undefined;
+
+    sheet.addEventListener("touchstart", handleNativeTouchStart, { passive: true });
+    sheet.addEventListener("touchmove", handleNativeTouchMove, { passive: false });
+    sheet.addEventListener("touchend", handleNativeTouchEnd);
+    sheet.addEventListener("touchcancel", handleNativeTouchCancel);
+
+    return () => {
+      sheet.removeEventListener("touchstart", handleNativeTouchStart);
+      sheet.removeEventListener("touchmove", handleNativeTouchMove);
+      sheet.removeEventListener("touchend", handleNativeTouchEnd);
+      sheet.removeEventListener("touchcancel", handleNativeTouchCancel);
+    };
+  }, [open]);
 
   function isEnabled() {
     return !disabled && window.matchMedia(mediaQuery).matches;
@@ -86,6 +109,7 @@ export function useMobileSheetDrag({
 
   function onPointerDown(event) {
     if (!isEnabled() || !event.isPrimary) return;
+    if (event.pointerType === "touch") return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
     const target = event.target;
@@ -107,6 +131,7 @@ export function useMobileSheetDrag({
   }
 
   function onPointerMove(event) {
+    if (event.pointerType === "touch") return;
     const drag = dragRef.current;
     if (drag.pointerId !== event.pointerId) return;
 
@@ -139,6 +164,7 @@ export function useMobileSheetDrag({
   }
 
   function onPointerUp(event) {
+    if (event.pointerType === "touch") return;
     const drag = dragRef.current;
     if (drag.pointerId !== event.pointerId) return;
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -161,6 +187,7 @@ export function useMobileSheetDrag({
   }
 
   function onPointerCancel(event) {
+    if (event.pointerType === "touch") return;
     if (dragRef.current.pointerId !== event.pointerId) return;
     reset();
     suppressClickRef.current = false;
@@ -170,6 +197,83 @@ export function useMobileSheetDrag({
     if (!suppressClickRef.current) return;
     event.preventDefault();
     event.stopPropagation();
+  }
+
+  function onTouchStart(event) {
+    if (!isEnabled() || event.touches.length !== 1) return;
+
+    const target = event.target;
+    const isGrabber = target?.closest?.("[data-mobile-sheet-grabber='true']");
+    if (!isGrabber && target?.closest?.(INTERACTIVE_SELECTOR)) return;
+    if (!isGrabber && hasScrolledAncestor(target, event.currentTarget)) return;
+
+    const touch = event.touches[0];
+    const now = performance.now();
+    dragRef.current = {
+      axis: null,
+      lastTime: now,
+      lastY: touch.clientY,
+      offsetY: 0,
+      pointerId: "touch",
+      startX: touch.clientX,
+      startY: touch.clientY,
+      velocityY: 0,
+    };
+  }
+
+  function onTouchMove(event) {
+    const drag = dragRef.current;
+    if (drag.pointerId !== "touch" || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - drag.startX;
+    const deltaY = touch.clientY - drag.startY;
+    if (!drag.axis && Math.max(Math.abs(deltaX), Math.abs(deltaY)) >= 7) {
+      drag.axis = Math.abs(deltaY) > Math.abs(deltaX) ? "vertical" : "horizontal";
+      if (drag.axis === "horizontal" || deltaY < 0) {
+        dragRef.current = createDragState();
+        return;
+      }
+      suppressClickRef.current = true;
+      sheetRef.current?.classList.remove("is-mobile-sheet-dismissing");
+      sheetRef.current?.classList.add("is-mobile-sheet-dragging");
+    }
+
+    if (drag.axis !== "vertical") return;
+
+    const now = performance.now();
+    const elapsed = Math.max(now - drag.lastTime, 1);
+    drag.velocityY = (touch.clientY - drag.lastY) / elapsed;
+    drag.lastTime = now;
+    drag.lastY = touch.clientY;
+    drag.offsetY = Math.max(0, deltaY);
+    setOffset(drag.offsetY);
+    event.preventDefault();
+  }
+
+  function onTouchEnd() {
+    const drag = dragRef.current;
+    if (drag.pointerId !== "touch") return;
+
+    if (drag.axis !== "vertical") {
+      dragRef.current = createDragState();
+      return;
+    }
+
+    const sheetHeight = sheetRef.current?.getBoundingClientRect().height ?? 0;
+    const distanceThreshold = Math.min(180, Math.max(96, sheetHeight * 0.22));
+    const fastDownwardFlick = drag.offsetY >= 36 && drag.velocityY >= 0.7;
+    if (drag.offsetY >= distanceThreshold || fastDownwardFlick) dismiss();
+    else reset();
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+  }
+
+  function onTouchCancel() {
+    if (dragRef.current.pointerId !== "touch") return;
+    reset();
+    suppressClickRef.current = false;
   }
 
   function setSheetRef(node) {

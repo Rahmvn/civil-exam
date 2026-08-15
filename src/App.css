@@ -8173,7 +8173,7 @@ button.mobile-sheet-grabber {
   height: 5px;
   min-width: 0;
   min-height: 5px;
-  margin: 0 0 5px;
+  margin: 10px auto 12px;
   padding: 0;
   border: 0;
   border-radius: 999px;

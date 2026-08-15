@@ -51,7 +51,11 @@ function formatPracticeSetCount(count) {
 }
 
 function ModuleInfoDialog({ module, onClose }) {
-  const [sheetRef, , sheetDragProps] = useMobileSheetDrag({ mediaQuery: "(max-width: 640px)", onDismiss: onClose });
+  const [sheetRef, , sheetDragProps] = useMobileSheetDrag({
+    mediaQuery: "(max-width: 640px)",
+    onDismiss: onClose,
+    open: Boolean(module),
+  });
   useEffect(() => {
     if (!module) return undefined;
 

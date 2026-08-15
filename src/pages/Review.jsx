@@ -717,6 +717,7 @@ function ReviewDetailView({
   const [navigatorSheetRef, navigatorRef, navigatorSheetDragProps] = useMobileSheetDrag({
     mediaQuery: "(max-width: 700px)",
     onDismiss: () => setQuestionNavigatorOpen(false),
+    open: questionNavigatorOpen,
   });
 
   const safeIndex = Math.min(currentIndex, Math.max(rows.length - 1, 0));
