@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(75);
+select plan(76);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -445,6 +445,15 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select set_config('request.jwt.claim.sub', 'e2000000-0000-4000-8000-000000000001', true);
+select is(
+  public.admin_update_e2_email_campaign(
+    current_setting('test.e2_race_campaign')::uuid, 'Checkout race', 'segment', '{}'::uuid[],
+    'incomplete_checkout', '{}', 'engagement', 'Complete your checkout', null,
+    'Hello {{first_name}}, complete your checkout.', null, null, null
+  )->>'test_status',
+  'passed',
+  'saving an unchanged tested campaign preserves the successful test gate'
+);
 select is(
   public.admin_update_e2_email_campaign(
     current_setting('test.e2_race_campaign')::uuid, 'Checkout race', 'segment', '{}'::uuid[],
