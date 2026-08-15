@@ -88,6 +88,55 @@ test("admin can create and safely remove unused content", async ({ page }, testI
   await expectNoHorizontalOverflow(page);
 });
 
+test("admin pricing uses the server duration catalog and preserves historical durations", async ({ page }) => {
+  await page.goto("/admin");
+  await page.locator(".admin-commerce-drawer").getByText("Commerce", { exact: true }).click();
+  const pricingPanel = page.locator(".admin-pricing-plans");
+  await pricingPanel.getByRole("button", { name: "Open", exact: true }).click();
+
+  const durations = page.locator(".admin-pricing-duration-config");
+  await expect(durations).toHaveCount(4);
+  await expect(durations.nth(0)).toContainText("1 month");
+  await expect(durations.nth(1)).toContainText("2 months");
+  await expect(durations.nth(2)).toContainText("3 months");
+  await expect(durations.nth(3)).toContainText("6 months");
+  await expect(durations.nth(0).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
+  await expect(durations.nth(1).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
+  await expect(durations.nth(2).getByRole("checkbox", { name: "Enabled" })).toBeChecked();
+  await expect(durations.nth(3).getByRole("checkbox", { name: "Enabled" })).not.toBeChecked();
+
+  await expect(page.getByLabel("Calendar months")).toBeVisible();
+
+  const objectivePlan = pricingPanel.locator(".admin-pricing-plan").filter({ hasText: "individual_objective" });
+  await objectivePlan.locator(".admin-pricing-plan-summary").click();
+  const twoMonthPrice = objectivePlan.locator(".admin-pricing-price-row").filter({ hasText: "2 months" });
+  await expect(twoMonthPrice).toContainText("1-month price");
+  await expect(twoMonthPrice).toContainText("₦2,500");
+  await expect(twoMonthPrice).toContainText("2-month full total");
+  await expect(twoMonthPrice).toContainText("₦5,000");
+  await expect(twoMonthPrice).toContainText("Recommended price");
+  await expect(twoMonthPrice).toContainText("₦4,500");
+  await twoMonthPrice.getByRole("button", { name: "Use recommended" }).click();
+  await expect(twoMonthPrice.getByLabel("Selling price (NGN)")).toHaveValue("4500");
+  await twoMonthPrice.getByLabel("Selling price (NGN)").fill("5000");
+  await expect(twoMonthPrice).toContainText("Custom price · Recommended ₦4,500");
+  await twoMonthPrice.getByLabel("Selling price (NGN)").fill("4500");
+
+  const sixMonthPrice = objectivePlan.locator(".admin-pricing-price-row").filter({ hasText: "6 months" });
+  await expect(sixMonthPrice.getByRole("button", { name: "Use recommended" })).toBeDisabled();
+  await sixMonthPrice.getByLabel("Recommended saving for Individual Module, 6 months").fill("12.5");
+  await expect(sixMonthPrice).toContainText("₦13,000");
+  await sixMonthPrice.getByRole("button", { name: "Use recommended" }).click();
+  await expect(sixMonthPrice.getByLabel("Selling price (NGN)")).toHaveValue("13000");
+
+  await twoMonthPrice.getByRole("button", { name: "Save price" }).click();
+  await page.getByRole("dialog", { name: "Save and enable this duration price?" })
+    .getByRole("button", { name: "Save price" })
+    .click();
+  await expect(page.getByText("Pricing plan price saved.")).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});
+
 test("admin can bulk upload, review, and publish without silently enabling sales", async ({ page }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`.replace(/[^a-z0-9]+/gi, "-");
   const moduleName = `E2E Import ${suffix}`;

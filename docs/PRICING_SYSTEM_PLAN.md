@@ -2,6 +2,13 @@
 
 Date: 2026-08-08
 
+> **Current architecture update (2026-08-14):** Access durations are now an
+> Admin-managed server catalogue. The active launch set is 1, 2, and 3 calendar
+> months; 6 months is retained as disabled historical configuration. Fixed
+> 1/3/6 lists and duration-specific Complete Bundle discount formulas elsewhere
+> in this original design record are superseded by
+> `ADMIN_CONFIGURABLE_ACCESS_DURATIONS.md`.
+
 ## Executive Summary
 
 PromotionSure is moving from fixed exam-cycle access to duration-based module
@@ -29,8 +36,11 @@ duration, expiry, and Paystack amount.
 Customers can purchase access for:
 
 - 1 month
+- 2 months
 - 3 months
-- 6 months
+
+Admin may add, order, enable, or disable other positive whole calendar-month
+durations. Disabled historical durations remain valid for existing orders.
 
 Access starts after successful payment verification and activation. The expiry
 is calculated from the time the platform activates the purchase, except for
@@ -62,10 +72,10 @@ Objective modules use objective pricing. Oral modules use oral pricing.
 
 Approved prices:
 
-| Module Type | 1 Month | 3 Months | 6 Months |
+| Module Type | 1 Month | 2 Months | 3 Months |
 | --- | ---: | ---: | ---: |
-| Objective Module | NGN 2,500 | NGN 6,500 | NGN 11,000 |
-| Oral Module | NGN 3,500 | NGN 9,000 | NGN 15,500 |
+| Objective Module | NGN 2,500 | NGN 4,500 | NGN 6,500 |
+| Oral Module | NGN 3,500 | NGN 6,500 | NGN 9,000 |
 
 ### 3-Module Bundle
 
@@ -76,9 +86,9 @@ oral from objective bundles.
 
 Approved prices:
 
-| Plan | 1 Month | 3 Months | 6 Months |
+| Plan | 1 Month | 2 Months | 3 Months |
 | --- | ---: | ---: | ---: |
-| 3-Module Bundle | NGN 6,000 | NGN 15,500 | NGN 26,500 |
+| 3-Module Bundle | NGN 6,000 | NGN 11,000 | NGN 15,500 |
 
 The backend must enforce exactly 3 distinct selected modules, all currently
 purchasable, all in the active exam pack, and all not already active for the
@@ -103,11 +113,11 @@ The 1-month base price is:
 current purchasable module count * NGN 1,500
 ```
 
-For the current 9-module example:
+For the current 11-module catalogue:
 
-| Plan | 1 Month | 3 Months | 6 Months |
+| Plan | 1 Month | 2 Months | 3 Months |
 | --- | ---: | ---: | ---: |
-| Complete Module Bundle, 9 modules | NGN 13,500 | NGN 35,000 | NGN 59,500 |
+| Complete Module Bundle, 11 modules | NGN 16,500 | NGN 31,000 | NGN 43,000 |
 
 For future module counts, the backend should calculate the 1-month base from
 the current count and derive duration prices using approved rounding rules.
@@ -115,12 +125,9 @@ Final checkout amounts must still be snapshotted.
 
 ### Duration Discount Messaging
 
-Customer-facing messaging can stay simple:
-
-- 3 months: save about 14%
-- 6 months: save about 26%
-
-The exact percentage may vary after rounding to clean NGN 500 amounts.
+Savings are derived from the current 1-month comparable price multiplied by
+the selected month count. No duration has a hard-coded savings percentage, and
+no savings message is shown when the configured price does not provide one.
 
 ### Future Catalogue Growth
 

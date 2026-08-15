@@ -61,23 +61,10 @@ function readSubjectSlugs(value: unknown) {
 
 function readDurationMonths(value: unknown) {
   const durationMonths = Number(value);
-  if (![1, 3, 6].includes(durationMonths)) {
+  if (!Number.isSafeInteger(durationMonths) || durationMonths <= 0) {
     throw new Error("Choose a supported access duration");
   }
   return durationMonths;
-}
-
-function roundPriceKobo(amountKobo: number, incrementKobo = 50_000) {
-  const increment = Number.isFinite(incrementKobo) && incrementKobo > 0 ? incrementKobo : 50_000;
-  return Math.ceil(Math.max(0, amountKobo) / increment) * increment;
-}
-
-function getCompleteBundlePriceKobo(moduleCount: number, monthlyPerModuleKobo: number, durationMonths: number, roundingIncrementKobo: number) {
-  const monthlyPrice = moduleCount * monthlyPerModuleKobo;
-  if (durationMonths === 1) return monthlyPrice;
-  if (durationMonths === 3) return roundPriceKobo(Math.floor(monthlyPrice * 3 * 0.86), roundingIncrementKobo);
-  if (durationMonths === 6) return roundPriceKobo(Math.floor(monthlyPrice * 6 * 0.735), roundingIncrementKobo);
-  throw new Error("Choose a supported access duration");
 }
 
 async function getPricingPlanCheckout(
@@ -94,22 +81,12 @@ async function getPricingPlanCheckout(
   const durationMonths = readDurationMonths(requestedDurationMonths);
   const { data: plan, error: planError } = await adminClient
     .from("purchase_plans")
-    .select("id, code, plan_type, display_name, module_count, module_practice_type, complete_bundle_monthly_price_per_module_kobo, complete_bundle_rounding_increment_kobo, enabled")
+    .select("id, code, plan_type, display_name, module_count, module_practice_type, enabled")
     .eq("code", planCode)
     .maybeSingle();
 
   if (planError) throw planError;
   if (!plan?.enabled) throw new Error("This pricing plan is not currently available");
-
-  const { data: price, error: priceError } = await adminClient
-    .from("purchase_plan_prices")
-    .select("duration_months, price_kobo, list_price_kobo, currency, generated_by_rule, enabled")
-    .eq("purchase_plan_id", plan.id)
-    .eq("duration_months", durationMonths)
-    .maybeSingle();
-
-  if (priceError) throw priceError;
-  if (!price?.enabled) throw new Error("This access duration is not currently available");
 
   let subjectSlugs: string[];
   if (plan.plan_type === "complete_bundle") {
@@ -155,17 +132,18 @@ async function getPricingPlanCheckout(
   }
 
   const catalogModuleCount = plan.plan_type === "complete_bundle" ? items.length : Number(plan.module_count ?? items.length);
-  const amountKobo = plan.plan_type === "complete_bundle"
-    ? getCompleteBundlePriceKobo(
-      items.length,
-      Number(plan.complete_bundle_monthly_price_per_module_kobo),
-      durationMonths,
-      Number(plan.complete_bundle_rounding_increment_kobo),
-    )
-    : Number(price.price_kobo);
-  const listPriceKobo = plan.plan_type === "complete_bundle"
-    ? items.length * Number(plan.complete_bundle_monthly_price_per_module_kobo) * durationMonths
-    : Number(price.list_price_kobo ?? price.price_kobo);
+  const { data: price, error: priceError } = await adminClient
+    .rpc("get_purchase_plan_checkout_price", {
+      requested_plan_code: planCode,
+      requested_duration_months: durationMonths,
+      requested_module_count: catalogModuleCount,
+    })
+    .single();
+
+  if (priceError) throw priceError;
+
+  const amountKobo = Number(price?.amount_kobo);
+  const listPriceKobo = Number(price?.list_price_kobo ?? price?.amount_kobo);
 
   if (!Number.isInteger(amountKobo) || amountKobo <= 0) {
     throw new Error("This pricing plan does not have a valid price");
@@ -185,7 +163,7 @@ async function getPricingPlanCheckout(
     listPriceKobo,
     catalogModuleCount,
     checkoutKey: `plan:${plan.code}:${durationMonths}:${sortedSubjectIds.join(":")}`,
-    currency: String(price.currency ?? "NGN"),
+    currency: String(price?.currency ?? "NGN"),
     durationMonths,
     items,
     plan,
@@ -197,7 +175,7 @@ async function getPricingPlanCheckout(
       duration_months: durationMonths,
       price_kobo: amountKobo,
       list_price_kobo: listPriceKobo,
-      currency: String(price.currency ?? "NGN"),
+      currency: String(price?.currency ?? "NGN"),
       module_count: items.length,
       catalog_module_count: catalogModuleCount,
       modules,

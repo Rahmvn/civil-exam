@@ -457,11 +457,14 @@ test("Complete uses the authoritative included count and gates review on duratio
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
 
   const oneMonth = dialog.getByRole("radio", { name: /1 month/ });
+  const twoMonths = dialog.getByRole("radio", { name: /2 months/ });
   const threeMonths = dialog.getByRole("radio", { name: /3 months/ });
   const reviewButton = dialog.getByRole("button", { name: "Review purchase" });
   await expect(reviewButton).toBeDisabled();
   await oneMonth.focus();
   await page.keyboard.press("ArrowRight");
+  await expect(twoMonths).toBeChecked();
+  await twoMonths.press("ArrowRight");
   await expect(threeMonths).toBeChecked();
   const selectedPrice = await threeMonths.locator("xpath=ancestor::label").locator(".purchase-duration-selector__price").innerText();
   await expect(dialog.getByText(new RegExp(`3 months access.*${selectedPrice.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`))).toBeVisible();
@@ -543,13 +546,16 @@ test("Complete modal has no serious automated accessibility violations", async (
 
 test("individual access opens in a modal and requires a duration before review", async ({ page }) => {
   await page.goto("/access?module=public-service-rules");
-  const dialog = page.getByRole("dialog", { name: "Unlock Public Service Rules" });
+  const dialog = page.getByRole("dialog", { name: "Public Service Rules" });
   const oneMonth = dialog.getByRole("radio", { name: /1 month/ });
+  const twoMonths = dialog.getByRole("radio", { name: /2 months/ });
   const threeMonths = dialog.getByRole("radio", { name: /3 months/ });
   const reviewButton = dialog.getByRole("button", { name: "Review purchase" });
   await expect(dialog.getByText("Choose how long you want access")).toBeVisible();
   await expect(dialog.getByText("Choose a duration to continue.")).toBeVisible();
   await expect(oneMonth).not.toBeChecked();
+  await expect(twoMonths).not.toBeChecked();
+  await expect(dialog.getByRole("radio", { name: /6 months/ })).toHaveCount(0);
   await expect(reviewButton).toBeDisabled();
   const unselectedDialogBox = await dialog.boundingBox();
   await threeMonths.focus();
@@ -578,8 +584,8 @@ test("individual access opens in a modal and requires a duration before review",
 
 test("module modal traps focus, locks the page, and moves focus with its step", async ({ page }) => {
   await page.goto("/access?module=public-service-rules");
-  const dialog = page.getByRole("dialog", { name: "Unlock Public Service Rules" });
-  const title = dialog.getByRole("heading", { name: "Unlock Public Service Rules" });
+  const dialog = page.getByRole("dialog", { name: "Public Service Rules" });
+  const title = dialog.getByRole("heading", { name: "Public Service Rules" });
   await expect(title).toBeFocused();
   await expect.poll(() => page.evaluate(() => ({
     backgroundIsInert: Boolean(document.querySelector("[inert]")),
@@ -589,7 +595,7 @@ test("module modal traps focus, locks the page, and moves focus with its step", 
   await page.keyboard.press("Tab");
   await expect(dialog.getByRole("button", { name: "Close purchase" })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(dialog.getByRole("radio", { name: /6 months/ })).toBeFocused();
+  await expect(dialog.getByRole("radio", { name: /3 months/ })).toBeFocused();
 
   await dialog.getByRole("radio", { name: /1 month/ }).check();
   await dialog.getByRole("button", { name: "Review purchase" }).click();
@@ -602,13 +608,13 @@ test("module modal supports keyboard and backdrop dismissal and restores its tri
   const moduleTrigger = moduleRow.getByRole("button", { name: /^Unlock/ });
 
   await moduleTrigger.click();
-  await expect(page.getByRole("dialog", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(moduleTrigger).toBeFocused();
 
   await moduleTrigger.click();
-  await expect(page.getByRole("dialog", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toBeVisible();
   await page.locator(".purchase-modal-backdrop").click({ position: { x: 4, y: 4 } });
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(moduleTrigger).toBeFocused();
@@ -616,7 +622,7 @@ test("module modal supports keyboard and backdrop dismissal and restores its tri
 
 test("module modal has no serious automated accessibility violations", async ({ page }) => {
   await page.goto("/access?module=public-service-rules");
-  await expect(page.getByRole("dialog", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toBeVisible();
   const results = await new AxeBuilder({ page })
     .include(".purchase-modal")
     .withTags(["wcag2a", "wcag2aa"])
@@ -659,7 +665,7 @@ test("backend-unavailable durations remain readable and use native disabled stat
   const dialog = page.getByRole("dialog");
   const unavailableDuration = dialog.getByRole("radio", { name: /3 months/ });
   await expect(unavailableDuration).toBeDisabled();
-  await expect(dialog.getByText("Save about 14%")).toBeVisible();
+  await expect(dialog.getByText("Save about 13%")).toBeVisible();
 });
 
 test("access query state controls modal visibility and browser history", async ({ page }) => {
@@ -673,13 +679,13 @@ test("access query state controls modal visibility and browser history", async (
     module: "public-service-rules",
     returnTo: "/practice",
   });
-  await expect(page.getByRole("dialog", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toBeVisible();
 
   await page.goBack();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(moduleTrigger).toBeFocused();
   await page.goForward();
-  await expect(page.getByRole("dialog", { name: "Unlock Public Service Rules" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Public Service Rules" })).toBeVisible();
 
   await page.getByRole("button", { name: "Close purchase" }).last().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

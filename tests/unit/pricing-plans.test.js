@@ -14,6 +14,10 @@ import {
   normalizePricingCatalog,
   validatePlanSelection,
 } from "../../src/lib/pricingPlans.js";
+import {
+  calculatePricingGuidance,
+  roundRecommendedPriceKobo,
+} from "../../src/lib/pricingGuidance.js";
 
 const catalog = [
   {
@@ -23,6 +27,7 @@ const catalog = [
     module_count: 1,
     durations: [
       { duration_months: 1, price_kobo: 250000, list_price_kobo: 250000, currency: "NGN", enabled: true },
+      { duration_months: 2, price_kobo: 450000, list_price_kobo: 500000, currency: "NGN", enabled: true },
       { duration_months: 3, price_kobo: 650000, list_price_kobo: 750000, currency: "NGN", enabled: true },
     ],
   },
@@ -33,6 +38,8 @@ const catalog = [
     module_count: 1,
     durations: [
       { duration_months: 1, price_kobo: 350000, list_price_kobo: 350000, currency: "NGN", enabled: true },
+      { duration_months: 2, price_kobo: 650000, list_price_kobo: 700000, currency: "NGN", enabled: true },
+      { duration_months: 3, price_kobo: 900000, list_price_kobo: 1050000, currency: "NGN", enabled: true },
     ],
   },
   {
@@ -42,37 +49,95 @@ const catalog = [
     module_count: 3,
     durations: [
       { duration_months: 1, price_kobo: 600000, list_price_kobo: 750000, currency: "NGN", enabled: true },
-      { duration_months: 6, price_kobo: 2650000, list_price_kobo: 4500000, currency: "NGN", enabled: true },
+      { duration_months: 2, price_kobo: 1100000, list_price_kobo: 1200000, currency: "NGN", enabled: true },
+      { duration_months: 3, price_kobo: 1550000, list_price_kobo: 1800000, currency: "NGN", enabled: true },
     ],
   },
   {
     plan_code: "complete_bundle",
     plan_type: "complete_bundle",
     display_name: "Complete Bundle",
-    current_available_module_count: 9,
+    current_available_module_count: 11,
     durations: [
-      { duration_months: 1, price_kobo: 1350000, list_price_kobo: 1350000, currency: "NGN", enabled: true },
-      { duration_months: 3, price_kobo: 3500000, list_price_kobo: 4050000, currency: "NGN", enabled: true },
+      { duration_months: 1, price_kobo: 1650000, list_price_kobo: 1650000, currency: "NGN", enabled: true },
+      { duration_months: 2, price_kobo: 3100000, list_price_kobo: 3300000, currency: "NGN", enabled: true },
+      { duration_months: 3, price_kobo: 4300000, list_price_kobo: 4950000, currency: "NGN", enabled: true },
     ],
   },
 ];
 
-test("pricing catalog normalization keeps known enabled durations", () => {
+test("pricing guidance derives reference totals, recommendations, and actual savings", () => {
+  assert.deepEqual(calculatePricingGuidance({
+    actualPriceKobo: 450000,
+    discountPercent: 7,
+    durationMonths: 2,
+    oneMonthPriceKobo: 250000,
+  }), {
+    actualSavingKobo: 50000,
+    actualSavingPercent: 10,
+    fullMonthlyTotalKobo: 500000,
+    oneMonthPriceKobo: 250000,
+    recommendedPriceKobo: 450000,
+  });
+
+  assert.equal(calculatePricingGuidance({
+    discountPercent: 0,
+    durationMonths: 1,
+    oneMonthPriceKobo: 250000,
+  }).recommendedPriceKobo, 250000);
+  assert.equal(calculatePricingGuidance({
+    discountPercent: 14,
+    durationMonths: 3,
+    oneMonthPriceKobo: 250000,
+  }).recommendedPriceKobo, 650000);
+});
+
+test("pricing guidance uses clean NGN rounding without inventing arbitrary-duration policy", () => {
+  assert.equal(roundRecommendedPriceKobo(465000), 450000);
+  assert.equal(roundRecommendedPriceKobo(645000), 650000);
+  assert.equal(calculatePricingGuidance({
+    discountPercent: 12.5,
+    durationMonths: 4,
+    oneMonthPriceKobo: 250000,
+  }).recommendedPriceKobo, 900000);
+  assert.equal(calculatePricingGuidance({
+    discountPercent: Number.NaN,
+    durationMonths: 4,
+    oneMonthPriceKobo: 250000,
+  }), null);
+});
+
+test("Complete guidance follows its authoritative current one-month total", () => {
+  const guidance = calculatePricingGuidance({
+    actualPriceKobo: 3100000,
+    discountPercent: 7,
+    durationMonths: 2,
+    oneMonthPriceKobo: 1650000,
+  });
+
+  assert.equal(guidance.fullMonthlyTotalKobo, 3300000);
+  assert.equal(guidance.recommendedPriceKobo, 3050000);
+  assert.equal(guidance.actualSavingKobo, 200000);
+});
+
+test("pricing catalog normalization accepts any backend-enabled positive whole-month duration", () => {
   const normalized = normalizePricingCatalog([
     {
       plan_code: "individual_objective",
       durations: [
         { duration_months: "1", price_kobo: "250000", currency: "" },
         { duration_months: 12, price_kobo: 2000000 },
+        { duration_months: 2.5, price_kobo: 450000 },
         { duration_months: 3, price_kobo: 650000, enabled: false },
       ],
     },
   ]);
 
   assert.equal(normalized.length, 1);
-  assert.equal(normalized[0].durations.length, 1);
+  assert.equal(normalized[0].durations.length, 2);
   assert.equal(normalized[0].durations[0].price_kobo, 250000);
   assert.equal(normalized[0].durations[0].currency, "NGN");
+  assert.equal(normalized[0].durations[1].duration_months, 12);
 });
 
 test("individual plan code follows module practice type", () => {
@@ -94,6 +159,7 @@ test("duration helpers choose available durations and savings", () => {
   const plan = findPlan(catalog, "individual_objective");
 
   assert.equal(chooseDefaultDuration(plan, 6), 1);
+  assert.equal(chooseDefaultDuration(plan, 2), 2);
   assert.equal(chooseDefaultDuration(plan, 3), 3);
   assert.equal(getDurationPrice(plan, 3).price_kobo, 650000);
   assert.equal(getSavingsAmountKobo(getDurationPrice(plan, 3)), 100000);
@@ -128,13 +194,13 @@ test("checkout payloads include only the authoritative plan, duration, selection
 
   assert.deepEqual(buildPlanCheckoutPayload({
     plan: bundle,
-    durationMonths: 6,
+    durationMonths: 2,
     selectedSlugs: ["civil", "crime", "evidence"],
   }), {
     planCode: "three_module_bundle",
-    durationMonths: 6,
+    durationMonths: 2,
     subjectSlugs: ["civil", "crime", "evidence"],
-    expectedPriceKobo: 2650000,
+    expectedPriceKobo: 1100000,
   });
 
   assert.deepEqual(buildPlanCheckoutPayload({
@@ -145,7 +211,7 @@ test("checkout payloads include only the authoritative plan, duration, selection
     planCode: "complete_bundle",
     durationMonths: 3,
     subjectSlugs: [],
-    expectedPriceKobo: 3500000,
+    expectedPriceKobo: 4300000,
   });
 });
 
