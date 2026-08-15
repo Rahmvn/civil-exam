@@ -2,6 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link, Navigate, useBlocker, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { MobileSheetGrabber } from "../components/MobileSheetGrabber";
+import { useMobileSheetDrag } from "../components/useMobileSheetDrag";
 import {
   abandonObjectivePracticeSession,
   getCandidateSummary,
@@ -43,6 +45,7 @@ function PracticeQuestionMapModal({
   onSelectQuestion,
   questions,
 }) {
+  const [sheetRef, , sheetDragProps] = useMobileSheetDrag({ mediaQuery: "(max-width: 520px)", onDismiss: onClose });
   if (!questions.length) return null;
 
   return (
@@ -50,11 +53,13 @@ function PracticeQuestionMapModal({
       <section
         aria-labelledby="practice-question-map-title"
         aria-modal="true"
-        className="auth-modal-card practice-map-modal"
+        className="auth-modal-card practice-map-modal mobile-sheet-draggable"
         onClick={(event) => event.stopPropagation()}
+        ref={sheetRef}
         role="dialog"
+        {...sheetDragProps}
       >
-        <button className="mobile-modal-grabber practice-map-grabber" aria-label="Close question map" onClick={onClose} type="button" />
+        <MobileSheetGrabber ariaLabel="Close question map" onClose={onClose} />
         <div className="practice-map-modal-head">
           <div>
             <h2 id="practice-question-map-title">Questions</h2>

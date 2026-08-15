@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { MobileSheetGrabber } from "../components/MobileSheetGrabber";
+import { useMobileSheetDrag } from "../components/useMobileSheetDrag";
 import { getAttemptReview, getQueueAttemptMatches, getRecentAttempts, getReviewQueue } from "../lib/appApi";
 import { friendlyErrorMessage, isExpectedAbortError, logAppError } from "../lib/errors";
 import { getModuleDisplayName } from "../lib/moduleDisplay";
@@ -711,8 +713,11 @@ function ReviewDetailView({
   const readerRef = useRef(null);
   const swipeStartRef = useRef(null);
   const questionListButtonRef = useRef(null);
-  const navigatorRef = useRef(null);
   const navigatorCloseRef = useRef(null);
+  const [navigatorSheetRef, navigatorRef, navigatorSheetDragProps] = useMobileSheetDrag({
+    mediaQuery: "(max-width: 700px)",
+    onDismiss: () => setQuestionNavigatorOpen(false),
+  });
 
   const safeIndex = Math.min(currentIndex, Math.max(rows.length - 1, 0));
   const row = rows[safeIndex] ?? null;
@@ -930,17 +935,13 @@ function ReviewDetailView({
           <section
             aria-labelledby="answer-review-navigator-title"
             aria-modal="true"
-            className="answer-review-navigator"
+            className="answer-review-navigator mobile-sheet-draggable"
             onClick={(event) => event.stopPropagation()}
-            ref={navigatorRef}
+            ref={navigatorSheetRef}
             role="dialog"
+            {...navigatorSheetDragProps}
           >
-            <button
-              aria-label="Close question list"
-              className="mobile-modal-grabber answer-review-navigator-grabber"
-              onClick={() => setQuestionNavigatorOpen(false)}
-              type="button"
-            />
+            <MobileSheetGrabber ariaLabel="Close question list" onClose={() => setQuestionNavigatorOpen(false)} />
             <header>
               <div>
                 <h2 id="answer-review-navigator-title">Questions</h2>

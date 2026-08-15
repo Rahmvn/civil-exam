@@ -4,6 +4,8 @@ import { ModuleSelector } from "./ModuleSelector";
 import { getModuleDisplayName } from "../../lib/moduleDisplay";
 import { formatModuleMoney } from "../../lib/pricing";
 import { getDurationLabel, getModuleSlug } from "../../lib/pricingPlans";
+import { MobileSheetGrabber } from "../MobileSheetGrabber";
+import { useMobileSheetDrag } from "../useMobileSheetDrag";
 import "./PurchaseModal.css";
 
 function getPlanName(plan, fallback) {
@@ -163,18 +165,13 @@ export function PurchaseModal({
   step,
   validation,
 }) {
-  const dialogRef = useRef(null);
   const headingRef = useRef(null);
   const paymentAttemptRef = useRef(paymentAttempt);
-  const dragRef = useRef({
-    pointerId: null,
-    startY: 0,
-    lastY: 0,
-    lastTime: 0,
-    offsetY: 0,
-    velocityY: 0,
+  const [sheetRef, dialogRef, sheetDragProps] = useMobileSheetDrag({
+    disabled: Boolean(paymentAttempt),
+    mediaQuery: "(max-width: 680px)",
+    onDismiss: onClose,
   });
-  const dismissTimerRef = useRef(null);
 
   useEffect(() => {
     paymentAttemptRef.current = paymentAttempt;
@@ -211,126 +208,13 @@ export function PurchaseModal({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [activePurchase, onClose]);
+  }, [activePurchase, dialogRef, onClose]);
 
   useEffect(() => {
     if (!activePurchase) return undefined;
     const frameId = window.requestAnimationFrame(() => headingRef.current?.focus({ preventScroll: true }));
     return () => window.cancelAnimationFrame(frameId);
   }, [activePurchase, step]);
-
-  useEffect(() => () => {
-    if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
-  }, []);
-
-  function isMobilePurchaseSheet() {
-    return window.matchMedia("(max-width: 680px)").matches;
-  }
-
-  function setDragOffset(offsetY) {
-    dialogRef.current?.style.setProperty("--purchase-modal-drag-y", `${Math.max(0, offsetY)}px`);
-  }
-
-  function resetDragState() {
-    dragRef.current = {
-      pointerId: null,
-      startY: 0,
-      lastY: 0,
-      lastTime: 0,
-      offsetY: 0,
-      velocityY: 0,
-    };
-  }
-
-  function snapPurchaseSheetBack() {
-    dialogRef.current?.classList.remove("is-dragging", "is-dismissing");
-    setDragOffset(0);
-    resetDragState();
-  }
-
-  function dismissPurchaseSheet() {
-    const sheet = dialogRef.current;
-    resetDragState();
-
-    if (!sheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      onClose();
-      return;
-    }
-
-    sheet.classList.remove("is-dragging");
-    sheet.classList.add("is-dismissing");
-    const dismissDistance = Math.max(window.innerHeight, sheet.getBoundingClientRect().height + 48);
-    setDragOffset(dismissDistance);
-
-    if (dismissTimerRef.current) window.clearTimeout(dismissTimerRef.current);
-    dismissTimerRef.current = window.setTimeout(() => {
-      dismissTimerRef.current = null;
-      onClose();
-    }, 190);
-  }
-
-  function handleSheetPointerDown(event) {
-    if (paymentAttempt || !isMobilePurchaseSheet() || !event.isPrimary) return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-
-    const nestedInteractive = event.target?.closest?.(
-      'button, a, input, select, textarea, [role="button"], [contenteditable="true"]',
-    );
-    if (nestedInteractive && nestedInteractive !== event.currentTarget) return;
-
-    const now = performance.now();
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startY: event.clientY,
-      lastY: event.clientY,
-      lastTime: now,
-      offsetY: 0,
-      velocityY: 0,
-    };
-
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    dialogRef.current?.classList.remove("is-dismissing");
-    dialogRef.current?.classList.add("is-dragging");
-    setDragOffset(0);
-    event.preventDefault();
-  }
-
-  function handleSheetPointerMove(event) {
-    const drag = dragRef.current;
-    if (drag.pointerId !== event.pointerId) return;
-
-    const now = performance.now();
-    const elapsed = Math.max(now - drag.lastTime, 1);
-    const delta = event.clientY - drag.lastY;
-    const nextOffset = Math.max(0, event.clientY - drag.startY);
-
-    drag.velocityY = delta / elapsed;
-    drag.lastY = event.clientY;
-    drag.lastTime = now;
-    drag.offsetY = nextOffset;
-    setDragOffset(nextOffset);
-    event.preventDefault();
-  }
-
-  function handleSheetPointerEnd(event) {
-    const drag = dragRef.current;
-    if (drag.pointerId !== event.pointerId) return;
-
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    const sheetHeight = dialogRef.current?.getBoundingClientRect().height ?? 0;
-    const distanceThreshold = Math.min(180, Math.max(96, sheetHeight * 0.22));
-    const isFastDownwardFlick = drag.offsetY >= 36 && drag.velocityY >= 0.7;
-    const shouldDismiss = drag.offsetY >= distanceThreshold || isFastDownwardFlick;
-
-    if (shouldDismiss) dismissPurchaseSheet();
-    else snapPurchaseSheetBack();
-  }
-
-  function handleSheetPointerCancel(event) {
-    if (dragRef.current.pointerId !== event.pointerId) return;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-    snapPurchaseSheetBack();
-  }
 
   if (!activePurchase) return null;
 
@@ -364,19 +248,14 @@ export function PurchaseModal({
       <section
         aria-labelledby="purchase-modal-title"
         aria-modal="true"
-        className={`purchase-modal purchase-modal--${activePurchase.mode}${step === "review" ? " is-review" : " is-configure"}${paymentAttempt ? " is-paying" : ""}${isPick3 && moduleOptions.length > 6 ? " has-many-modules" : ""}`}
+        className={`purchase-modal purchase-modal--${activePurchase.mode}${step === "review" ? " is-review" : " is-configure"}${paymentAttempt ? " is-paying" : ""}${isPick3 && moduleOptions.length > 6 ? " has-many-modules" : ""} mobile-sheet-draggable`}
         onClick={(event) => event.stopPropagation()}
-        ref={dialogRef}
+        ref={sheetRef}
         role="dialog"
+        {...sheetDragProps}
       >
-        <div
-          className="purchase-modal__drag-region"
-          onPointerCancel={handleSheetPointerCancel}
-          onPointerDown={handleSheetPointerDown}
-          onPointerMove={handleSheetPointerMove}
-          onPointerUp={handleSheetPointerEnd}
-        >
-          <span aria-hidden="true" className="purchase-modal__handle" />
+        <div className="purchase-modal__drag-region">
+          <MobileSheetGrabber ariaLabel="Close purchase" disabled={Boolean(paymentAttempt)} onClose={onClose} />
           <header className="purchase-modal__header">
             <h2 id="purchase-modal-title" ref={headingRef} tabIndex="-1">{title}</h2>
             <button aria-label="Close purchase" className="purchase-modal__close" disabled={Boolean(paymentAttempt)} onClick={onClose} type="button">&times;</button>

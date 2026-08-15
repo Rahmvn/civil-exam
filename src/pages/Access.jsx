@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { MobileSheetGrabber } from "../components/MobileSheetGrabber";
+import { useMobileSheetDrag } from "../components/useMobileSheetDrag";
 import { usePurchaseModal } from "../components/purchase/usePurchaseModal";
 import { BRAND_DESCRIPTOR, BRAND_NAME } from "../lib/brand";
 import {
@@ -120,6 +122,7 @@ function PaymentReference({ value }) {
 }
 
 function ReceiptModal({ payment, profile, onClose }) {
+  const [sheetRef, , sheetDragProps] = useMobileSheetDrag({ mediaQuery: "(max-width: 560px)", onDismiss: onClose });
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
@@ -332,11 +335,13 @@ function ReceiptModal({ payment, profile, onClose }) {
       <section
         aria-labelledby="payment-receipt-title"
         aria-modal="true"
-        className="access-receipt-modal"
+        className="access-receipt-modal mobile-sheet-draggable"
         onClick={(event) => event.stopPropagation()}
+        ref={sheetRef}
         role="dialog"
+        {...sheetDragProps}
       >
-        <button className="mobile-modal-grabber access-receipt-grabber" aria-label="Close receipt" onClick={onClose} type="button" />
+        <MobileSheetGrabber ariaLabel="Close receipt" onClose={onClose} />
         <header className="access-receipt-header">
           <div>
             <h2 id="payment-receipt-title">Payment receipt</h2>

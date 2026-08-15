@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AppFrame } from "../components/AppFrame";
 import { LoadingState } from "../components/LoadingState";
+import { MobileSheetGrabber } from "../components/MobileSheetGrabber";
+import { useMobileSheetDrag } from "../components/useMobileSheetDrag";
 import { usePurchaseModal } from "../components/purchase/usePurchaseModal";
 import {
   AnimatedProgressBar,
@@ -49,6 +51,7 @@ function formatPracticeSetCount(count) {
 }
 
 function ModuleInfoDialog({ module, onClose }) {
+  const [sheetRef, , sheetDragProps] = useMobileSheetDrag({ mediaQuery: "(max-width: 640px)", onDismiss: onClose });
   useEffect(() => {
     if (!module) return undefined;
 
@@ -67,11 +70,13 @@ function ModuleInfoDialog({ module, onClose }) {
       <section
         aria-labelledby="module-info-title"
         aria-modal="true"
-        className="module-info-dialog"
+        className="module-info-dialog mobile-sheet-draggable"
         role="dialog"
         onClick={(event) => event.stopPropagation()}
+        ref={sheetRef}
+        {...sheetDragProps}
       >
-        <button className="module-info-handle" aria-label="Close module details" onClick={onClose} type="button" />
+        <MobileSheetGrabber ariaLabel="Close module details" onClose={onClose} />
         <header className="module-info-header">
           <h2 id="module-info-title">{module.displayName}</h2>
           <button className="module-info-close" aria-label="Close module details" onClick={onClose} type="button">&times;</button>
