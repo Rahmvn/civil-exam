@@ -190,7 +190,7 @@ function IndividualEmailContext({ userId, onChangeRecipient }) {
   );
 }
 
-function ComposeView({ catalog, templates, initialUserIds, onComplete }) {
+function ComposeView({ catalog, templates, initialUserIds, onComplete, onDraftSaved }) {
   const [draft, setDraft] = useState(() => ({
     ...EMPTY_DRAFT,
     audienceKind: initialUserIds.length === 1 ? "individual" : initialUserIds.length > 1 ? "selected" : "segment",
@@ -202,6 +202,7 @@ function ComposeView({ catalog, templates, initialUserIds, onComplete }) {
   const [finalization, setFinalization] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [savedNotice, setSavedNotice] = useState("");
   const [choosingRecipient, setChoosingRecipient] = useState(initialUserIds.length !== 1);
 
   const selectedSegment = catalog.segments?.find((item) => item.segment_key === draft.segmentKey);
@@ -214,6 +215,7 @@ function ComposeView({ catalog, templates, initialUserIds, onComplete }) {
     setDraft((current) => ({ ...current, ...values }));
     setPreview(null);
     setFinalization(null);
+    setSavedNotice("");
   }
 
   function campaignPayload() {
@@ -252,7 +254,11 @@ function ComposeView({ catalog, templates, initialUserIds, onComplete }) {
       () => campaign ? updateAdminE2EmailCampaign(campaign.id, payload) : createAdminE2EmailCampaign(payload),
       "The campaign draft could not be saved.",
     );
-    if (result) setCampaign(result);
+    if (result) {
+      setCampaign(result);
+      setSavedNotice("Draft saved.");
+      onDraftSaved(result);
+    }
     return result;
   }
 
@@ -315,6 +321,7 @@ function ComposeView({ catalog, templates, initialUserIds, onComplete }) {
     <section className={`admin-email-compose${isDirectSupport ? " is-direct-support" : ""}`}>
       <header className="admin-email-compose-heading"><div><button type="button" onClick={() => onComplete(null)}>Back to campaigns</button><h1>Compose email</h1></div>{campaign && <CampaignStatus value={campaign.status} />}</header>
       <ErrorNotice error={error} />
+      {savedNotice && <p className="admin-email-notice is-success" role="status">{savedNotice}</p>}
       <div className="admin-email-compose-grid">
         <div className="admin-email-compose-main">
           <fieldset className="admin-email-section"><legend>{draft.audienceKind === "individual" ? "Recipient" : "Audience"}</legend>
@@ -557,6 +564,6 @@ export function AdminEmailCenter() {
   }, []);
   if (campaignId) return <CampaignDetail campaignId={campaignId} onBack={() => navigate('/admin/email')} />;
   if (loading) return <LoadingState />;
-  if (composing) return <ComposeView catalog={catalog} templates={templates} initialUserIds={initialUserIds} onComplete={(id) => { if (id) navigate(`/admin/email/campaigns/${id}`); else { setComposing(false); navigate('/admin/email', { replace: true }); } }} />;
+  if (composing) return <ComposeView catalog={catalog} templates={templates} initialUserIds={initialUserIds} onDraftSaved={(saved) => setCampaigns((current) => [saved, ...current.filter((campaign) => campaign.id !== saved.id)])} onComplete={(id) => { if (id) navigate(`/admin/email/campaigns/${id}`); else { setComposing(false); navigate('/admin/email', { replace: true }); } }} />;
   return <div className="admin-email-center"><nav className="admin-email-tabs" aria-label="Email sections">{[['campaigns','Campaigns'],['automations','Automations'],['delivery','Delivery'],['templates','Templates']].map(([value,label]) => <button aria-current={tab === value ? 'page' : undefined} key={value} onClick={() => setTab(value)} type="button">{label}</button>)}</nav>{tab === 'campaigns' ? <CampaignsView campaigns={campaigns} onCompose={() => setComposing(true)} onOpen={(id) => navigate(`/admin/email/campaigns/${id}`)} /> : tab === 'automations' ? <AutomationsView automations={automations} templates={templates} onRefresh={load} /> : tab === 'delivery' ? <DeliveryView /> : <TemplatesView templates={templates} onRefresh={load} />}</div>;
 }

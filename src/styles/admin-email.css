@@ -21,6 +21,7 @@
 .admin-email-status.is-queued { color: #0d6546; }
 .admin-email-status.is-cancelled { color: #9d3c30; }
 .admin-email-notice { padding: 12px 14px; border-left: 3px solid #bd7b12; background: #fff9ed; }
+.admin-email-notice.is-success { border-left-color: #0d6546; background: #eef9f4; color: #0b5139; }
 .admin-email-notice.is-error,
 .admin-email-inline-error { border-color: #a23f35; color: #842f27; background: #fff5f3; }
 
